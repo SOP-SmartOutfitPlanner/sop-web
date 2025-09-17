@@ -1,36 +1,89 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SOP Web – Smart Outfit Planner
 
-## Getting Started
+SOP Web là một ứng dụng web hiện đại giúp bạn quản lý tủ đồ cá nhân, nhận gợi ý phối đồ thông minh từ AI, lên kế hoạch trang phục, lưu trữ các outfit yêu thích và kết nối với cộng đồng yêu thời trang. Dự án được phát triển trên nền tảng Next.js, lấy cảm hứng và kế thừa UI từ bản prototype React.
 
-First, run the development server:
+## 🌟 Giới thiệu dự án
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+Bạn thường băn khoăn hôm nay mặc gì? Bạn muốn tối ưu hóa tủ đồ, không lặp lại các outfit nhàm chán? SOP Web giúp bạn:
+- **Quản lý tủ đồ** một cách khoa học, dễ dàng thêm/sửa/xóa các món đồ.
+- **Gợi ý phối đồ tự động** dựa trên thời tiết, lịch trình, sự kiện và phong cách cá nhân nhờ AI.
+- **Lên kế hoạch mặc gì mỗi ngày**, tránh trùng lặp, tiết kiệm thời gian.
+- **Khám phá bộ sưu tập** từ stylist chuyên nghiệp, cộng đồng người dùng.
+- **Lưu lại các outfit yêu thích**, xem lịch sử mặc, chia sẻ phong cách cá nhân.
+
+## 🚀 Demo
+
+- (Bổ sung link deploy nếu có, ví dụ: https://sop-web.vercel.app/)
+
+## 🛠️ Công nghệ sử dụng
+
+- **Next.js** (TypeScript)
+- **Tailwind CSS** (UI framework)
+- **shadcn/ui** (UI Component Library)
+- **lucide-react** (Icon set)
+- (Bổ sung nếu tích hợp backend/API, xác thực, ...)
+
+## 📦 Cài đặt & chạy dự án
+
+1. **Clone repo:**
+   ```bash
+   git clone https://github.com/your-username/your-repo.git
+   cd your-repo
+   ```
+
+2. **Cài đặt dependencies:**
+   ```bash
+   npm install
+   # hoặc
+   yarn install
+   ```
+
+3. **(Tuỳ chọn) Tạo file môi trường `.env.local` nếu cần.**
+
+4. **Chạy dev trên local:**
+   ```bash
+   npm run dev
+   # hoặc
+   yarn dev
+   ```
+   Truy cập: [http://localhost:3000](http://localhost:3000)
+
+## 🗂️ Cấu trúc thư mục
+
+```
+src/
+  ├─ app/            # Trang Next.js (App Router)
+  ├─ components/     # Các thành phần UI tái sử dụng
+  ├─ data/           # Dữ liệu mẫu/mock
+  ├─ styles/         # Các file CSS, Tailwind config
+  └─ ...             # Module khác
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## ⚙️ Tính năng chính
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- Quản lý tủ đồ cá nhân
+- Gợi ý phối đồ thông minh (AI)
+- Lịch sử mặc, tránh lặp lại
+- Lưu, chia sẻ outfit yêu thích
+- Bộ sưu tập, cộng đồng stylist
+- (Bổ sung/ghi chú thêm nếu có phân quyền, gói dịch vụ...)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🚩 Hướng phát triển tiếp theo
 
-## Learn More
+- Kết nối API thực tế (backend)
+- Đăng nhập/xác thực người dùng
+- Tích hợp AI nâng cao, cá nhân hóa gợi ý
+- Tối ưu UI/UX cho mobile
 
-To learn more about Next.js, take a look at the following resources:
+## 🤝 Đóng góp
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Chào đón mọi đóng góp!  
+Hãy tạo issue, pull request hoặc liên hệ nhóm phát triển.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 📄 License
 
-## Deploy on Vercel
+(Bổ sung license nếu cần, ví dụ MIT.)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+> SOP Web – Sản phẩm thuộc nhóm [Tên nhóm/cá nhân], phát triển từ prototype UI trên React.
