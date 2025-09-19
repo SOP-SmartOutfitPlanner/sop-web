@@ -4,6 +4,7 @@ import { useState } from "react";
 import { MoreVertical, Edit, Trash2, Eye } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,7 +13,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ItemCardProps } from "@/types/wardrobe";
 
-export function ItemCard({ item, onEdit, onDelete, onView }: ItemCardProps) {
+export function ItemCard({ 
+  item, 
+  onEdit, 
+  onDelete, 
+  onView, 
+  isSelected = false, 
+  onToggleSelection 
+}: ItemCardProps) {
   const [imageError, setImageError] = useState(false);
 
   const handleImageError = () => {
@@ -20,8 +28,18 @@ export function ItemCard({ item, onEdit, onDelete, onView }: ItemCardProps) {
   };
 
   return (
-    <Card className="group overflow-hidden transition-all hover:shadow-lg">
+    <Card className={`group overflow-hidden transition-all hover:shadow-lg ${isSelected ? 'ring-2 ring-blue-500' : ''}`}>
       <div className="relative aspect-square overflow-hidden bg-gray-100">
+        {/* Selection checkbox */}
+        {onToggleSelection && (
+          <div className="absolute top-2 left-2 z-10">
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={() => onToggleSelection(item.id)}
+              className="bg-white shadow-sm"
+            />
+          </div>
+        )}
         {item.imageUrl && !imageError ? (
           <img
             src={item.imageUrl}

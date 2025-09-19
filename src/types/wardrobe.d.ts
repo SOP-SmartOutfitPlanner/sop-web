@@ -46,6 +46,8 @@ export interface ItemCardProps {
   onEdit?: (item: WardrobeItem) => void;
   onDelete?: (id: string) => void;
   onView?: (item: WardrobeItem) => void;
+  isSelected?: boolean;
+  onToggleSelection?: (id: string) => void;
 }
 
 export interface ItemGridProps {

@@ -23,6 +23,7 @@ interface WardrobeStore {
   filteredItems: WardrobeItem[];
   error: string | null;
   sortBy: string;
+  selectedItems: string[];
   addItem: (item: CreateWardrobeItemRequest) => Promise<void>;
   removeItem: (id: string) => void;
   updateItem: (id: string, item: Partial<WardrobeItem>) => Promise<void>;
@@ -34,6 +35,11 @@ interface WardrobeStore {
   createDemoItems: () => Promise<void>;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
+  // Bulk selection
+  toggleItemSelection: (id: string) => void;
+  clearSelection: () => void;
+  selectAllVisible: () => void;
+  bulkDeleteItems: (ids: string[]) => Promise<void>;
 }
 
 // Helper function to filter items
@@ -109,6 +115,7 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
   filteredItems: [],
   error: null,
   sortBy: "newest",
+  selectedItems: [],
 
   // Fetch items from API
   fetchItems: async () => {
@@ -284,6 +291,51 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
         filteredItems: sorted,
       };
     }),
+
+  // Bulk selection functionality
+  toggleItemSelection: (id: string) =>
+    set((state) => ({
+      selectedItems: state.selectedItems.includes(id)
+        ? state.selectedItems.filter(itemId => itemId !== id)
+        : [...state.selectedItems, id],
+    })),
+
+  clearSelection: () =>
+    set({ selectedItems: [] }),
+
+  selectAllVisible: () =>
+    set((state) => ({
+      selectedItems: state.filteredItems.map(item => item.id),
+    })),
+
+  bulkDeleteItems: async (ids: string[]) => {
+    set({ isLoading: true, error: null });
+    try {
+      // Delete all items from API
+      const deletePromises = ids.map(id => wardrobeAPI.deleteItem(id));
+      await Promise.all(deletePromises);
+      
+      // Update local state
+      set((state) => {
+        const newItems = state.items.filter(item => !ids.includes(item.id));
+        const filtered = filterItems(newItems, state.filters, state.searchQuery);
+        const sorted = sortItems(filtered, state.sortBy);
+        return {
+          items: newItems,
+          filteredItems: sorted,
+          selectedItems: [], // Clear selection after delete
+          isLoading: false,
+        };
+      });
+    } catch (error) {
+      console.error("Failed to delete items:", error);
+      set({ 
+        isLoading: false, 
+        error: error instanceof Error ? error.message : "Failed to delete items" 
+      });
+      throw error;
+    }
+  },
 }));
 
 // Helper function to convert API item to WardrobeItem

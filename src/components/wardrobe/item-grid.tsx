@@ -16,6 +16,8 @@ export function ItemGrid({
     isLoading: storeLoading,
     fetchItems,
     deleteItem,
+    selectedItems,
+    toggleItemSelection,
   } = useWardrobeStore();
 
   // Use external items if provided, otherwise use store items
@@ -38,12 +40,10 @@ export function ItemGrid({
 
   const handleEdit = (item: any) => {
     // TODO: Implement edit functionality
-    console.log("Edit item:", item);
   };
 
   const handleView = (item: any) => {
     // TODO: Implement view details functionality
-    console.log("View item:", item);
   };
 
   if (loading) {
@@ -82,6 +82,8 @@ export function ItemGrid({
           onEdit={handleEdit}
           onDelete={handleDelete}
           onView={handleView}
+          isSelected={selectedItems.includes(item.id)}
+          onToggleSelection={toggleItemSelection}
         />
       ))}
     </div>
