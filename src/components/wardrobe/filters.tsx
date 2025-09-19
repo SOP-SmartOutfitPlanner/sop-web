@@ -14,15 +14,16 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FiltersProps } from "@/types/wardrobe";
 import { useWardrobeStore } from "@/store/wardrobe-store";
-import { categories, colors } from "@/lib/mock/wardrobe-items";
+import { colors } from "@/lib/mock/wardrobe-items";
 
-const seasons = ["spring", "summer", "fall", "winter", "all-season"];
+const categories = ["top", "bottom", "shoes", "outer", "accessory"];
+const seasons = ["spring", "summer", "fall", "winter"];
 
 export function Filters({ onFiltersChange }: FiltersProps) {
   const { filters, setFilters, clearFilters } = useWardrobeStore();
 
   const handleFilterChange = (key: string, value: string) => {
-    const newFilters = { ...filters };
+    const newFilters = { ...(filters || {}) };
 
     if (value === "all" || value === "") {
       delete newFilters[key as keyof typeof newFilters];
@@ -39,7 +40,7 @@ export function Filters({ onFiltersChange }: FiltersProps) {
     onFiltersChange?.({});
   };
 
-  const hasActiveFilters = Object.keys(filters).length > 0;
+  const hasActiveFilters = filters && Object.keys(filters).length > 0;
 
   return (
     <Card>
@@ -67,7 +68,7 @@ export function Filters({ onFiltersChange }: FiltersProps) {
             Category
           </Label>
           <Select
-            value={filters.category || "all"}
+            value={filters?.category || "all"}
             onValueChange={(value) => handleFilterChange("category", value)}
           >
             <SelectTrigger>
@@ -90,7 +91,7 @@ export function Filters({ onFiltersChange }: FiltersProps) {
             Color
           </Label>
           <Select
-            value={filters.color || "all"}
+            value={filters?.color || "all"}
             onValueChange={(value) => handleFilterChange("color", value)}
           >
             <SelectTrigger>
@@ -124,7 +125,7 @@ export function Filters({ onFiltersChange }: FiltersProps) {
             Season
           </Label>
           <Select
-            value={filters.season || "all"}
+            value={filters?.season || "all"}
             onValueChange={(value) => handleFilterChange("season", value)}
           >
             <SelectTrigger>
@@ -148,20 +149,21 @@ export function Filters({ onFiltersChange }: FiltersProps) {
               Active Filters
             </Label>
             <div className="flex flex-wrap gap-2">
-              {Object.entries(filters).map(([key, value]) => (
-                <span
-                  key={key}
-                  className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-800"
-                >
-                  {key}: {value}
-                  <button
-                    onClick={() => handleFilterChange(key, "")}
-                    className="ml-1 hover:text-blue-600"
+              {filters &&
+                Object.entries(filters).map(([key, value]) => (
+                  <span
+                    key={key}
+                    className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-800"
                   >
-                    <X className="h-3 w-3" />
-                  </button>
-                </span>
-              ))}
+                    {key}: {value}
+                    <button
+                      onClick={() => handleFilterChange(key, "")}
+                      className="ml-1 hover:text-blue-600"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
             </div>
           </div>
         )}

@@ -19,16 +19,16 @@ export function ItemGrid({
   } = useWardrobeStore();
 
   // Use external items if provided, otherwise use store items
-  const displayItems = items || filteredItems;
+  const displayItems = items || filteredItems || [];
   const loading =
     externalLoading !== undefined ? externalLoading : storeLoading;
 
   useEffect(() => {
     // Only fetch if no external items provided and store is empty
-    if (!items && filteredItems.length === 0) {
+    if (!items && (!filteredItems || filteredItems.length === 0)) {
       fetchItems();
     }
-  }, [items, filteredItems.length, fetchItems]);
+  }, [items, filteredItems?.length, fetchItems]);
 
   const handleDelete = async (id: string) => {
     if (window.confirm("Are you sure you want to delete this item?")) {

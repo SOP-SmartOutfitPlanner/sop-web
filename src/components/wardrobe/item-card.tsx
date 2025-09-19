@@ -77,11 +77,13 @@ export function ItemCard({ item, onEdit, onDelete, onView }: ItemCardProps) {
         </div>
 
         {/* Season badge */}
-        <div className="absolute bottom-2 left-2">
-          <span className="inline-flex items-center rounded-full bg-white/90 px-2 py-1 text-xs font-medium text-gray-700 backdrop-blur-sm">
-            {item.season}
-          </span>
-        </div>
+        {(item.season || item.seasons?.[0]) && (
+          <div className="absolute bottom-2 left-2">
+            <span className="inline-flex items-center rounded-full bg-white/90 px-2 py-1 text-xs font-medium text-gray-700 backdrop-blur-sm">
+              {item.season || item.seasons?.[0]}
+            </span>
+          </div>
+        )}
       </div>
 
       <CardContent className="p-4">
@@ -91,27 +93,46 @@ export function ItemCard({ item, onEdit, onDelete, onView }: ItemCardProps) {
           </h3>
 
           <div className="flex items-center justify-between text-sm text-gray-600">
-            <span className="truncate">{item.category}</span>
-            <span className="flex-shrink-0 ml-2">{item.color}</span>
+            <span className="truncate">{item.category || item.type}</span>
+            <span className="flex-shrink-0 ml-2">{item.color || item.colors?.[0] || 'No color'}</span>
           </div>
 
           {item.brand && (
             <p className="text-xs text-gray-500 truncate">{item.brand}</p>
           )}
 
-          {item.tags && item.tags.length > 0 && (
+          {/* Show occasions as tags if no tags available */}
+          {((item.tags && item.tags.length > 0) || (item.occasions && item.occasions.length > 0)) && (
             <div className="flex flex-wrap gap-1 pt-1">
-              {item.tags.slice(0, 2).map((tag) => (
+              {/* Show tags first if available */}
+              {item.tags?.slice(0, 2).map((tag) => (
                 <span
                   key={tag}
-                  className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600"
+                  className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-600"
                 >
                   {tag}
                 </span>
               ))}
-              {item.tags.length > 2 && (
+              
+              {/* Show occasions if no tags or as additional info */}
+              {(!item.tags || item.tags.length === 0) && item.occasions?.slice(0, 2).map((occasion) => (
+                <span
+                  key={occasion}
+                  className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600"
+                >
+                  {occasion}
+                </span>
+              ))}
+              
+              {/* Show count for remaining items */}
+              {item.tags && item.tags.length > 2 && (
                 <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
                   +{item.tags.length - 2}
+                </span>
+              )}
+              {(!item.tags || item.tags.length === 0) && item.occasions && item.occasions.length > 2 && (
+                <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+                  +{item.occasions.length - 2}
                 </span>
               )}
             </div>

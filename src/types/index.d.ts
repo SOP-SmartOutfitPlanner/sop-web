@@ -15,6 +15,11 @@ export type WardrobeItem = {
   seasons: ("spring" | "summer" | "fall" | "winter")[];
   occasions: ("casual" | "formal" | "sport" | "travel")[];
   status: "active" | "archived";
+  // Additional fields for UI compatibility
+  category?: string; // Mapped from type
+  color?: string; // First color from colors array
+  season?: string; // First season from seasons array
+  tags?: string[]; // Additional tags
 };
 
 export interface Category {
