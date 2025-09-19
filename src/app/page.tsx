@@ -1,103 +1,199 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  Sparkles,
+  Eye,
+  Calendar,
+  History,
+  Heart,
+  Users,
+  Image as ImageIcon,
+  ArrowLeft,
+} from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+
+export default function WelcomePage() {
+  const router = useRouter();
+  const [showAuth, setShowAuth] = useState(false);
+
+  const handleGetStarted = () => {
+    router.push("/login");
+  };
+
+  const handleTryFree = () => {
+    // Navigate to wardrobe without login (guest mode)
+    router.push("/wardrobe");
+  };
+
+  const handleViewCollections = () => {
+    // Navigate to wardrobe to see items
+    router.push("/wardrobe");
+  };
+
+  const features = [
+    {
+      icon: Eye,
+      title: "Smart Wardrobe",
+      description: "Organize và quản lý tủ đồ thông minh",
+    },
+    {
+      icon: Sparkles,
+      title: "AI Suggestions",
+      description: "Gợi ý outfit phù hợp với thời tiết và sự kiện",
+    },
+    {
+      icon: Calendar,
+      title: "Daily Planner",
+      description: "Lên kế hoạch trang phục hàng ngày",
+    },
+    {
+      icon: ImageIcon,
+      title: "Style Collections",
+      description: "Khám phá bộ sưu tập từ stylist chuyên nghiệp",
+    },
+    {
+      icon: History,
+      title: "Outfit History",
+      description: "Theo dõi lịch sử và tránh lặp lại",
+    },
+    {
+      icon: Heart,
+      title: "Favorites",
+      description: "Lưu những outfit yêu thích",
+    },
+    {
+      icon: Users,
+      title: "Community",
+      description: "Chia sẻ và khám phá phong cách",
+    },
+  ];
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/10 flex items-center justify-center p-4">
+      <div className="max-w-6xl mx-auto">
+        {/* Hero Section */}
+        <div className="text-center mb-16">
+          <div className="flex items-center justify-center mb-8">
+            <div className="text-7xl font-bold animate-pulse">
+              <span className="text-blue-600 hover:text-blue-700 transition-colors duration-300">
+                So
+              </span>
+              <span className="text-indigo-600 hover:text-indigo-700 transition-colors duration-300">
+                P
+              </span>
+            </div>
+          </div>
+          <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
+            Smart Outfit Planner
+          </h1>
+          <p className="text-xl text-gray-600 mb-10 max-w-3xl mx-auto leading-relaxed">
+            Ứng dụng AI giúp bạn lựa chọn trang phục hoàn hảo cho mọi dịp. Thông
+            minh, tiện lợi và phù hợp với phong cách của bạn.
+          </p>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+            <Button
+              size="lg"
+              onClick={handleGetStarted}
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-lg px-8 py-4 h-auto shadow-lg"
+            >
+              Bắt đầu ngay
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={handleViewCollections}
+              className="text-lg px-8 py-4 h-auto border-2 hover:bg-gray-50"
+            >
+              <ImageIcon className="w-5 h-5 mr-2" />
+              Xem Collections
+            </Button>
+            <Button
+              size="lg"
+              variant="ghost"
+              onClick={handleTryFree}
+              className="text-lg px-8 py-4 h-auto hover:bg-blue-50"
+            >
+              Dùng thử miễn phí
+            </Button>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        {/* Features Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-16">
+          {features.map((feature, index) => {
+            const Icon = feature.icon;
+            return (
+              <Card
+                key={index}
+                className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-white/80 backdrop-blur-sm border-0 shadow-md"
+              >
+                <CardContent className="p-6 text-center">
+                  <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                    <Icon className="w-7 h-7 text-white" />
+                  </div>
+                  <h3 className="text-lg font-semibold mb-3 text-gray-900">
+                    {feature.title}
+                  </h3>
+                  <p className="text-gray-600 text-sm leading-relaxed">
+                    {feature.description}
+                  </p>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+
+        {/* Benefits Section */}
+        <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200/50 shadow-lg">
+          <CardContent className="p-10 text-center">
+            <h2 className="text-3xl font-bold text-gray-900 mb-6">
+              Tại sao chọn SOP?
+            </h2>
+            <div className="flex flex-wrap justify-center gap-3 mb-8">
+              <Badge
+                variant="secondary"
+                className="text-sm py-2 px-4 bg-blue-100 text-blue-800 hover:bg-blue-200"
+              >
+                AI thông minh
+              </Badge>
+              <Badge
+                variant="secondary"
+                className="text-sm py-2 px-4 bg-indigo-100 text-indigo-800 hover:bg-indigo-200"
+              >
+                Dễ sử dụng
+              </Badge>
+              <Badge
+                variant="secondary"
+                className="text-sm py-2 px-4 bg-purple-100 text-purple-800 hover:bg-purple-200"
+              >
+                Tiết kiệm thời gian
+              </Badge>
+              <Badge
+                variant="secondary"
+                className="text-sm py-2 px-4 bg-pink-100 text-pink-800 hover:bg-pink-200"
+              >
+                Phong cách cá nhân
+              </Badge>
+            </div>
+            <p className="text-gray-700 text-lg leading-relaxed max-w-3xl mx-auto">
+              Không còn phải lo lắng về việc "mặc gì hôm nay". SOP sẽ giúp bạn
+              luôn tự tin với phong cách của mình.
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Footer */}
+        <div className="text-center mt-12 text-gray-500">
+          <p className="text-sm">
+            © 2024 Smart Outfit Planner. Made with ❤️ for fashion lovers.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

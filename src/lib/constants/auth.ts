@@ -9,5 +9,5 @@ export const AUTH_MESSAGES = {
 export const AUTH_ROUTES = {
   LOGIN: "/login",
   REGISTER: "/register",
-  DASHBOARD: "/dashboard",
+  DASHBOARD: "/wardrobe",
 } as const;
