@@ -7,6 +7,13 @@ interface WardrobeFilters {
   category?: "top" | "bottom" | "shoes" | "outer" | "accessory";
   color?: string;
   season?: "spring" | "summer" | "fall" | "winter";
+  // Advanced filters
+  types?: string[];
+  seasons?: string[];
+  occasions?: string[];
+  colors?: string[];
+  // Quick filter
+  quickFilter?: string; // "all", "casual", "work", etc.
 }
 
 interface WardrobeStore {
@@ -15,11 +22,13 @@ interface WardrobeStore {
   isLoading: boolean;
   filteredItems: WardrobeItem[];
   error: string | null;
+  sortBy: string;
   addItem: (item: CreateWardrobeItemRequest) => Promise<void>;
   removeItem: (id: string) => void;
   updateItem: (id: string, item: Partial<WardrobeItem>) => Promise<void>;
   setFilters: (filters: WardrobeFilters) => void;
   clearFilters: () => void;
+  setSortBy: (sortBy: string) => void;
   fetchItems: () => Promise<void>;
   deleteItem: (id: string) => Promise<void>;
   createDemoItems: () => Promise<void>;
@@ -30,14 +39,67 @@ interface WardrobeStore {
 // Helper function to filter items
 const filterItems = (
   items: WardrobeItem[],
-  filters: WardrobeFilters
+  filters: WardrobeFilters,
+  searchQuery: string = ""
 ): WardrobeItem[] => {
   return items.filter((item) => {
+    // Search query filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      const matchesName = item.name.toLowerCase().includes(query);
+      const matchesBrand = item.brand?.toLowerCase().includes(query);
+      const matchesType = item.type.toLowerCase().includes(query);
+      if (!matchesName && !matchesBrand && !matchesType) return false;
+    }
+
+    // Basic filters
     if (filters.category && item.type !== filters.category) return false;
     if (filters.color && !item.colors?.includes(filters.color)) return false;
     if (filters.season && !item.seasons?.includes(filters.season)) return false;
+    
+    // Quick filter (occasions and seasons)
+    if (filters.quickFilter && filters.quickFilter !== "all") {
+      const hasOccasion = item.occasions?.includes(filters.quickFilter as any);
+      const hasSeason = item.seasons?.includes(filters.quickFilter as any);
+      if (!hasOccasion && !hasSeason) return false;
+    }
+
+    // Advanced filters
+    if (filters.types?.length && !filters.types.includes(item.type)) return false;
+    if (filters.seasons?.length && !filters.seasons.some(s => item.seasons?.includes(s as any))) return false;
+    if (filters.occasions?.length && !filters.occasions.some(o => item.occasions?.includes(o as any))) return false;
+    if (filters.colors?.length && !filters.colors.some(c => item.colors?.some(ic => ic.toLowerCase().includes(c.toLowerCase())))) return false;
+
     return true;
   });
+};
+
+// Helper function to sort items
+const sortItems = (items: WardrobeItem[], sortBy: string): WardrobeItem[] => {
+  const sortedItems = [...items];
+  
+  switch (sortBy) {
+    case "newest":
+      // For now, sort by ID (newer items have higher IDs in mock API)
+      return sortedItems.sort((a, b) => parseInt(b.id) - parseInt(a.id));
+    
+    case "most-worn":
+      // TODO: Implement when we have wear tracking
+      return sortedItems; // For now, no change
+    
+    case "least-worn":
+      // TODO: Implement when we have wear tracking  
+      return sortedItems; // For now, no change
+    
+    case "a-z":
+      return sortedItems.sort((a, b) => a.name.localeCompare(b.name));
+    
+    case "z-a":
+      return sortedItems.sort((a, b) => b.name.localeCompare(a.name));
+    
+    default:
+      return sortedItems;
+  }
 };
 
 export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
@@ -46,6 +108,7 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
   isLoading: false,
   filteredItems: [],
   error: null,
+  sortBy: "newest",
 
   // Fetch items from API
   fetchItems: async () => {
@@ -53,10 +116,13 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
     try {
       const apiItems = await wardrobeAPI.getItems();
       const items = apiItems.map(apiItemToWardrobeItem);
+      const state = get();
+      const filtered = filterItems(items, state.filters, state.searchQuery);
+      const sorted = sortItems(filtered, state.sortBy);
       set({
         items,
         isLoading: false,
-        filteredItems: filterItems(items, get().filters),
+        filteredItems: sorted,
       });
     } catch (error) {
       console.error("Failed to fetch items:", error);
@@ -76,10 +142,12 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
       
       set((state) => {
         const newItems = [...state.items, newItem];
+        const filtered = filterItems(newItems, state.filters, state.searchQuery);
+        const sorted = sortItems(filtered, state.sortBy);
         return {
           items: newItems,
           isLoading: false,
-          filteredItems: filterItems(newItems, state.filters),
+          filteredItems: sorted,
         };
       });
     } catch (error) {
@@ -135,9 +203,11 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
       await wardrobeAPI.deleteItem(id);
       set((state) => {
         const newItems = state.items.filter((item) => item.id !== id);
+        const filtered = filterItems(newItems, state.filters, state.searchQuery);
+        const sorted = sortItems(filtered, state.sortBy);
         return {
           items: newItems,
-          filteredItems: filterItems(newItems, state.filters),
+          filteredItems: sorted,
         };
       });
     } catch (error) {
@@ -173,20 +243,47 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
 
   // Filter functionality
   setFilters: (filters) =>
-    set((state) => ({
-      filters,
-      filteredItems: filterItems(state.items, filters),
-    })),
+    set((state) => {
+      const filtered = filterItems(state.items, filters, state.searchQuery);
+      const sorted = sortItems(filtered, state.sortBy);
+      return {
+        filters,
+        filteredItems: sorted,
+      };
+    }),
 
   clearFilters: () =>
-    set((state) => ({
-      filters: {},
-      filteredItems: state.items,
-    })),
+    set((state) => {
+      const filtered = filterItems(state.items, {}, state.searchQuery);
+      const sorted = sortItems(filtered, state.sortBy);
+      return {
+        filters: {},
+        filteredItems: sorted,
+      };
+    }),
+
+  // Sorting functionality
+  setSortBy: (sortBy) =>
+    set((state) => {
+      const filtered = filterItems(state.items, state.filters, state.searchQuery);
+      const sorted = sortItems(filtered, sortBy);
+      return {
+        sortBy,
+        filteredItems: sorted,
+      };
+    }),
 
   // Search functionality
   searchQuery: "",
-  setSearchQuery: (query: string) => set({ searchQuery: query }),
+  setSearchQuery: (query: string) =>
+    set((state) => {
+      const filtered = filterItems(state.items, state.filters, query);
+      const sorted = sortItems(filtered, state.sortBy);
+      return {
+        searchQuery: query,
+        filteredItems: sorted,
+      };
+    }),
 }));
 
 // Helper function to convert API item to WardrobeItem

@@ -4,18 +4,38 @@ import { useState } from "react";
 import { ItemGrid } from "@/components/wardrobe/item-grid";
 import { Filters } from "@/components/wardrobe/filters";
 import { AddItemForm } from "@/components/wardrobe/add-item-form";
+import { FilterDropdown } from "@/components/wardrobe/filter-dropdown";
+import { SortDropdown } from "@/components/wardrobe/sort-dropdown";
+import { AdvancedFilterModal } from "@/components/wardrobe/advanced-filter-modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useWardrobeStore } from "@/store/wardrobe-store";
-import { Plus, Database, Search } from "lucide-react";
+import { Plus, Search, Database } from "lucide-react";
 
 export default function WardrobePage() {
   const [isAddItemOpen, setIsAddItemOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const { isLoading, error, fetchItems, items } = useWardrobeStore();
-  
+  const [quickFilter, setQuickFilter] = useState("all");
+  const [advancedFilters, setAdvancedFilters] = useState({
+    types: [],
+    seasons: [],
+    occasions: [],
+    colors: [],
+  });
+
+  const {
+    isLoading,
+    error,
+    fetchItems,
+    items,
+    sortBy,
+    setSortBy,
+    setFilters,
+    setSearchQuery: setStoreSearchQuery,
+  } = useWardrobeStore();
+
   // Debug logging
-  console.log('Current items:', items);
+  console.log("Current items:", items);
 
   const handleRefreshItems = async () => {
     try {
@@ -23,6 +43,40 @@ export default function WardrobePage() {
     } catch (error) {
       console.error("Failed to fetch items:", error);
     }
+  };
+
+  const handleQuickFilterChange = (filter: string) => {
+    setQuickFilter(filter);
+    setFilters({ quickFilter: filter });
+  };
+
+  const handleSortChange = (sort: string) => {
+    setSortBy(sort);
+  };
+
+  const handleAdvancedFiltersChange = (filters: any) => {
+    setAdvancedFilters(filters);
+    setFilters({
+      quickFilter,
+      ...filters,
+    });
+  };
+
+  const handleClearAdvancedFilters = () => {
+    const emptyFilters = {
+      types: [],
+      seasons: [],
+      occasions: [],
+      colors: [],
+    };
+    setAdvancedFilters(emptyFilters);
+    setFilters({ quickFilter });
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+    setStoreSearchQuery(value);
   };
 
   return (
@@ -38,21 +92,11 @@ export default function WardrobePage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-blue-600 mb-2">My Wardrobe</h1>
-          <p className="text-gray-600">Test API integration with Mock API</p>
-          <div className="mt-1 text-sm text-gray-500">
-            📊 Total items: {items.length} | Status: {isLoading ? "Loading..." : "Ready"}
-          </div>
+          <p className="text-gray-600">
+            Manage your clothing collection with smart organization
+          </p>
         </div>
         <div className="flex gap-3">
-          <Button 
-            onClick={handleRefreshItems} 
-            variant="outline"
-            disabled={isLoading}
-            className="border-green-600 text-green-600 hover:bg-green-50"
-          >
-            <Database className="w-4 h-4 mr-2" />
-            {isLoading ? "Loading..." : "Refresh"}
-          </Button>
           <Button
             onClick={() => setIsAddItemOpen(true)}
             className="bg-blue-600 hover:bg-blue-700"
@@ -64,17 +108,30 @@ export default function WardrobePage() {
         </div>
       </div>
 
-      {/* Simple Search */}
+      {/* Advanced Search & Filter Bar */}
       <div className="flex items-center gap-4 mb-6">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           <Input
             placeholder="Search wardrobe..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={handleSearchChange}
             className="pl-10"
           />
         </div>
+
+        <FilterDropdown
+          selectedFilter={quickFilter}
+          onFilterChange={handleQuickFilterChange}
+        />
+
+        <SortDropdown selectedSort={sortBy} onSortChange={handleSortChange} />
+
+        <AdvancedFilterModal
+          filters={advancedFilters}
+          onFiltersChange={handleAdvancedFiltersChange}
+          onClearFilters={handleClearAdvancedFilters}
+        />
       </div>
 
       {/* Main Content */}
