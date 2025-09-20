@@ -1,91 +1,230 @@
 "use client";
 
 import { useEffect } from "react";
+import { Package } from "lucide-react";
 import { ItemCard } from "./item-card";
 import { ItemGridProps } from "@/types/wardrobe";
 import { useWardrobeStore } from "@/store/wardrobe-store";
-import { Loader2, Package } from "lucide-react";
+import { Skeleton } from "../ui/skeleton";
+import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+
+interface GridProps {
+  items?: any[];
+  loading?: boolean;
+  error?: Error;
+  selectedItems?: string[];
+  onSelectItem?: (id: string, selected: boolean) => void;
+  onEditItem?: (item: any) => void;
+  onDeleteItem?: (id: string) => void;
+  onViewItem?: (item: any) => void;
+  onUseInOutfit?: (item: any) => void;
+  showCheckboxes?: boolean;
+  emptyMessage?: string;
+}
 
 export function ItemGrid({
-  items,
-  isLoading: externalLoading,
+  items: externalItems,
+  loading: externalLoading,
+  error,
+  selectedItems: externalSelectedItems,
+  onSelectItem,
+  onEditItem,
+  onDeleteItem,
+  onViewItem,
+  onUseInOutfit,
+  showCheckboxes = false,
   emptyMessage = "No items found",
-}: ItemGridProps) {
+}: GridProps) {
   const {
     filteredItems,
     isLoading: storeLoading,
+    error: storeError,
     fetchItems,
     deleteItem,
-    selectedItems,
+    selectedItems: storeSelectedItems,
     toggleItemSelection,
   } = useWardrobeStore();
 
-  // Use external items if provided, otherwise use store items
-  const displayItems = items || filteredItems || [];
-  const loading =
-    externalLoading !== undefined ? externalLoading : storeLoading;
+  // Use external props or fallback to store values
+  const items = externalItems || filteredItems || [];
+  const loading = externalLoading !== undefined ? externalLoading : storeLoading;
+  const selectedItems = externalSelectedItems || storeSelectedItems || [];
+  const currentError = error || storeError;
 
   useEffect(() => {
     // Only fetch if no external items provided and store is empty
-    if (!items && (!filteredItems || filteredItems.length === 0)) {
+    if (!externalItems && (!filteredItems || filteredItems.length === 0)) {
       fetchItems();
     }
-  }, [items, filteredItems?.length, fetchItems]);
+  }, [externalItems, filteredItems?.length, fetchItems]);
 
   const handleDelete = async (id: string) => {
     if (window.confirm("Are you sure you want to delete this item?")) {
-      await deleteItem(id);
+      if (onDeleteItem) {
+        onDeleteItem(id);
+      } else {
+        await deleteItem(id);
+      }
     }
   };
 
   const handleEdit = (item: any) => {
-    // TODO: Implement edit functionality
+    if (onEditItem) {
+      onEditItem(item);
+    } else {
+      // TODO: Implement default edit functionality
+      console.log("Edit item:", item);
+    }
   };
 
   const handleView = (item: any) => {
-    // TODO: Implement view details functionality
+    if (onViewItem) {
+      onViewItem(item);
+    } else {
+      // TODO: Implement default view functionality
+      console.log("View item:", item);
+    }
   };
 
-  if (loading) {
+  const handleUseInOutfit = (item: any) => {
+    if (onUseInOutfit) {
+      onUseInOutfit(item);
+    } else {
+      // TODO: Implement default use in outfit functionality
+      console.log("Use in outfit:", item);
+    }
+  };
+
+  const handleSelectItem = (id: string, selected: boolean) => {
+    if (onSelectItem) {
+      onSelectItem(id, selected);
+    } else {
+      toggleItemSelection(id);
+    }
+  };
+
+  // Error state
+  if (currentError) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <Loader2 className="mx-auto h-8 w-8 animate-spin text-gray-400" />
-          <p className="mt-2 text-sm text-gray-600">Loading items...</p>
+      <div className="text-center py-12">
+        <div className="space-y-4">
+          <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto">
+            <span className="text-2xl">⚠️</span>
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold">Failed to load items</h3>
+            <p className="text-muted-foreground mt-1">
+              {currentError instanceof Error ? currentError.message : "Something went wrong"}
+            </p>
+          </div>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="text-primary hover:underline"
+          >
+            Try again
+          </button>
         </div>
       </div>
     );
   }
 
-  if (displayItems.length === 0) {
+  // Empty state
+  if (!loading && items.length === 0) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <Package className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-4 text-lg font-medium text-gray-900">
-            {emptyMessage}
-          </h3>
-          <p className="mt-2 text-sm text-gray-600">
-            Start adding items to your wardrobe to see them here.
-          </p>
+      <div className="text-center py-12">
+        <div className="space-y-4">
+          <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
+            <Package className="w-8 h-8 text-muted-foreground" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold">{emptyMessage}</h3>
+            <p className="text-muted-foreground mt-1">
+              Try adjusting your filters or add some items to your wardrobe
+            </p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-      {displayItems.map((item) => (
+    <div className={cn(
+      "grid gap-6",
+      "grid-cols-1",
+      "sm:grid-cols-2", 
+      "lg:grid-cols-3",
+      "xl:grid-cols-4"
+    )}>
+      {items.map((item) => (
         <ItemCard
           key={item.id}
           item={item}
+          isSelected={selectedItems.includes(item.id)}
+          onSelect={handleSelectItem}
           onEdit={handleEdit}
           onDelete={handleDelete}
           onView={handleView}
-          isSelected={selectedItems.includes(item.id)}
-          onToggleSelection={toggleItemSelection}
+          onUseInOutfit={handleUseInOutfit}
+          showCheckbox={showCheckboxes}
         />
       ))}
+
+      {/* Loading skeletons */}
+      {loading && (
+        <>
+          {Array.from({ length: 8 }).map((_, index) => (
+            <SkeletonCard key={`skeleton-${index}`} />
+          ))}
+        </>
+      )}
     </div>
+  );
+}
+
+function SkeletonCard() {
+  return (
+    <Card className="overflow-hidden">
+      <CardContent className="p-0">
+        {/* Image */}
+        <Skeleton className="aspect-[4/3] w-full" />
+        
+        {/* Content */}
+        <div className="p-4 space-y-3">
+          {/* Header */}
+          <div className="flex items-start justify-between gap-2">
+            <div className="space-y-1 flex-1">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-3 w-24" />
+            </div>
+            <Skeleton className="h-5 w-16 rounded-full" />
+          </div>
+
+          {/* Colors */}
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-3 w-12" />
+            <div className="flex gap-1">
+              <Skeleton className="w-4 h-4 rounded-full" />
+              <Skeleton className="w-4 h-4 rounded-full" />
+            </div>
+          </div>
+
+          {/* Meta */}
+          <div className="flex gap-4">
+            <Skeleton className="h-3 w-16" />
+            <Skeleton className="h-3 w-20" />
+          </div>
+
+          {/* Stats */}
+          <div className="flex justify-between">
+            <Skeleton className="h-5 w-16 rounded-full" />
+            <Skeleton className="h-3 w-24" />
+          </div>
+
+          {/* Button */}
+          <Skeleton className="h-8 w-full rounded" />
+        </div>
+      </CardContent>
+    </Card>
   );
 }

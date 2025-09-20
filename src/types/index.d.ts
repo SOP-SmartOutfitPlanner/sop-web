@@ -5,21 +5,33 @@ export type User = {
   image?: string;
 };
 
+export type TypeKind = "top" | "bottom" | "shoes" | "outer" | "accessory";
+
+export type Season = "spring" | "summer" | "fall" | "winter" | "all";
+
+export type Occasion = "casual" | "formal" | "sport" | "travel" | "work" | "party" | "date" | "vacation" | "smart";
+
 export type WardrobeItem = {
   id: string;
+  userId?: string;
   name: string;
-  type: "top" | "bottom" | "shoes" | "outer" | "accessory";
+  type: TypeKind;
   imageUrl: string;
   brand?: string;
+  description?: string;
   colors: string[];
-  seasons: ("spring" | "summer" | "fall" | "winter")[];
-  occasions: ("casual" | "formal" | "sport" | "travel")[];
-  status: "active" | "archived";
+  seasons: Season[];
+  occasions: Occasion[];
+  status: "ok" | "laundry" | "donate" | "archived" | "active";
+  timesWorn?: number;
+  lastWorn?: string; // ISO date string
+  tags?: string[];
+  createdAt: string; // ISO date string
+  updatedAt: string; // ISO date string
   // Additional fields for UI compatibility
   category?: string; // Mapped from type
   color?: string; // First color from colors array
   season?: string; // First season from seasons array
-  tags?: string[]; // Additional tags
 };
 
 export interface Category {
@@ -36,7 +48,6 @@ export interface Filter {
   tags?: string[];
 }
 
-export type Season = "spring" | "summer" | "fall" | "winter" | "all-season";
 
 export interface ApiResponse<T> {
   data: T;

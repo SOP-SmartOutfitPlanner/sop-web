@@ -39,15 +39,24 @@ export interface CreateItemFormData {
   description?: string;
   tags: string[];
   image?: File;
+  seasons: Season[];
+  occasions: Occasion[];
+  timesWorn: number;
+  lastWorn?: string;
+  status: Status;
+  collections?: string[];
+  addedAt: string;
 }
 
 export interface ItemCardProps {
   item: WardrobeItem;
+  isSelected?: boolean;
+  onSelect?: (id: string, selected: boolean) => void;
   onEdit?: (item: WardrobeItem) => void;
   onDelete?: (id: string) => void;
   onView?: (item: WardrobeItem) => void;
-  isSelected?: boolean;
-  onToggleSelection?: (id: string) => void;
+  onUseInOutfit?: (item: WardrobeItem) => void;
+  showCheckbox?: boolean;
 }
 
 export interface ItemGridProps {
