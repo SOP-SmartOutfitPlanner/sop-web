@@ -8,6 +8,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -88,105 +89,120 @@ export function SidebarStats({ className }: SidebarStatsProps) {
       <FillGoal totalItems={counts.total} itemsByCategory={itemsByCategory} />
 
       {/* Wardrobe Overview */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Package className="w-5 h-5" />
-            Wardrobe Stats
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Total Items */}
-          <div className="text-center p-4 bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg">
-            <div className="text-3xl font-bold text-primary">
-              {counts.total}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+      >
+        <Card className="bg-white/60 backdrop-blur-md border-white/20 shadow-[0_8px_32px_-12px_hsl(var(--primary)/0.12)]">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Package className="w-5 h-5" />
+              Wardrobe Stats
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Total Items */}
+            <div className="text-center p-4 bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg">
+              <div className="text-3xl font-bold text-primary">
+                {counts.total}
+              </div>
+              <div className="text-sm text-muted-foreground">Total Items</div>
             </div>
-            <div className="text-sm text-muted-foreground">Total Items</div>
-          </div>
 
-          {/* Type Breakdown */}
-          <div className="grid grid-cols-2 gap-3">
-            {Object.entries(counts)
-              .filter(([key]) => key !== "total")
-              .map(([type, count]) => (
-                <div
-                  key={type}
-                  className="text-center p-3 bg-muted/30 rounded-lg"
-                >
-                  <div className="text-lg font-semibold">{count}</div>
-                  <div className="text-xs text-muted-foreground capitalize">
-                    {type}
+            {/* Type Breakdown */}
+            <div className="grid grid-cols-2 gap-3">
+              {Object.entries(counts)
+                .filter(([key]) => key !== "total")
+                .map(([type, count]) => (
+                  <div
+                    key={type}
+                    className="text-center p-3 bg-muted/30 rounded-lg"
+                  >
+                    <div className="text-lg font-semibold">{count}</div>
+                    <div className="text-xs text-muted-foreground capitalize">
+                      {type}
+                    </div>
                   </div>
-                </div>
-              ))}
-          </div>
-        </CardContent>
-      </Card>
+                ))}
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
 
       {/* Type Distribution Chart */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Shirt className="w-5 h-5" />
-            Type Distribution
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={typeData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={40}
-                  outerRadius={80}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {typeData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  content={({ active, payload }) => {
-                    if (active && payload && payload.length) {
-                      const data = payload[0].payload;
-                      return (
-                        <div className="bg-background border rounded-lg p-3 shadow-lg">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium capitalize">
-                              {data.name}
-                            </span>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.1 }}
+      >
+        <Card className="bg-white/60 backdrop-blur-md border-white/20 shadow-[0_8px_32px_-12px_hsl(var(--primary)/0.12)]">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Shirt className="w-5 h-5" />
+              Type Distribution
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={typeData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={40}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {typeData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        const data = payload[0].payload;
+                        return (
+                          <div className="bg-background border rounded-lg p-3 shadow-lg">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium capitalize">
+                                {data.name}
+                              </span>
+                            </div>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {data.value} item{data.value !== 1 ? "s" : ""}
+                            </p>
                           </div>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {data.value} item{data.value !== 1 ? "s" : ""}
-                          </p>
-                        </div>
-                      );
-                    }
-                    return null;
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
 
-          {/* Legend */}
-          <div className="grid grid-cols-2 gap-2 mt-4">
-            {typeData.map((entry) => (
-              <div key={entry.name} className="flex items-center gap-2 text-sm">
+            {/* Legend */}
+            <div className="grid grid-cols-2 gap-2 mt-4">
+              {typeData.map((entry) => (
                 <div
-                  className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: entry.color }}
-                />
-                <span className="capitalize">{entry.name}</span>
-                <span className="text-muted-foreground">({entry.value})</span>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+                  key={entry.name}
+                  className="flex items-center gap-2 text-sm"
+                >
+                  <div
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: entry.color }}
+                  />
+                  <span className="capitalize">{entry.name}</span>
+                  <span className="text-muted-foreground">({entry.value})</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
 
       {/* Color Distribution */}
       <Card>

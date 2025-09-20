@@ -32,10 +32,10 @@ export default function WardrobePage() {
     sort: "newest",
   });
 
-  // Collections data
+  // Collections data - Pass actual items instead of just length
   const collections = useMemo(
-    () => getCollectionsWithCounts(items.length),
-    [items.length]
+    () => getCollectionsWithCounts(items),
+    [items]
   );
 
   // Memoized handlers
@@ -80,6 +80,7 @@ export default function WardrobePage() {
         onClearSelection={clearSelection}
         onSelectMode={handleSelectMode}
         isSelectMode={isSelectionMode}
+        wardrobeItems={items}
       />
 
       {/* Main Content */}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { motion } from "framer-motion";
 import {
   MoreHorizontal,
   Edit,
@@ -62,19 +63,36 @@ export function ItemCard({
   const handleUseInOutfit = () => onUseInOutfit?.(item);
 
   return (
-    <Card
-      className={cn(
-        "group overflow-hidden transition-all duration-200 bg-card/50 backdrop-blur-sm border-2",
-        isHovered && "shadow-xl transform translate-y-[-2px]",
-        isSelected && "border-primary ring-2 ring-primary/20",
-        !isSelected && "border-border hover:border-primary/30"
-      )}
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      whileHover={{ 
+        scale: 1.02,
+        transition: { duration: 0.2 }
+      }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
+      <Card
+        className={cn(
+          "group overflow-hidden transition-all duration-300 rounded-2xl",
+          "bg-white/80 backdrop-blur-sm border border-gray-200/50",
+          "shadow-[0_4px_20px_-4px_hsl(var(--primary)/0.1)]",
+          isHovered && [
+            "shadow-[0_8px_32px_-12px_hsl(var(--primary)/0.25)]",
+            "border-primary/40"
+          ],
+          isSelected && [
+            "border-primary ring-2 ring-primary/20",
+            "shadow-[0_8px_32px_-12px_hsl(var(--primary)/0.3)]"
+          ],
+          !isSelected && !isHovered && "hover:shadow-lg"
+        )}
+      >
       <CardContent className="p-0">
-        {/* Image Container */}
-        <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-muted to-background">
+        {/* Image Container - Larger, more fashionable ratio */}
+        <div className="relative aspect-[3/4] overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
           <img
             src={item.imageUrl}
             alt={item.name}
@@ -171,17 +189,19 @@ export function ItemCard({
 
         {/* Content */}
         <div className="p-4 space-y-3">
-          {/* Header */}
+          {/* Header - Updated typography */}
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1">
-              <h3 className="font-semibold text-sm truncate">{item.name}</h3>
+              <h3 className="font-semibold text-base truncate text-gray-900 font-[Inter,Poppins] tracking-tight">
+                {item.name}
+              </h3>
               {item.brand && (
-                <p className="text-xs text-muted-foreground truncate">
+                <p className="text-sm text-gray-500 truncate font-medium">
                   {item.brand}
                 </p>
               )}
             </div>
-            <Badge variant="outline" className="shrink-0 text-xs">
+            <Badge variant="outline" className="shrink-0 text-xs font-medium bg-gray-50 border-gray-200">
               {item.type}
             </Badge>
           </div>
@@ -321,5 +341,6 @@ export function ItemCard({
         </div>
       </CardContent>
     </Card>
+    </motion.div>
   );
 }

@@ -7,7 +7,7 @@ export type User = {
 
 export type TypeKind = "top" | "bottom" | "shoes" | "outer" | "accessory";
 
-export type Season = "spring" | "summer" | "fall" | "winter" | "all";
+export type Season = "spring" | "summer" | "fall" | "winter";
 
 export type Occasion = "casual" | "formal" | "sport" | "travel" | "work" | "party" | "date" | "vacation" | "smart";
 

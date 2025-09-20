@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { motion } from "framer-motion";
 import { Package } from "lucide-react";
 import { ItemCard } from "./item-card";
 import { ItemGridProps } from "@/types/wardrobe";
@@ -49,7 +50,8 @@ export function ItemGrid({
 
   // Use external props or fallback to store values
   const items = externalItems || filteredItems || [];
-  const loading = externalLoading !== undefined ? externalLoading : storeLoading;
+  const loading =
+    externalLoading !== undefined ? externalLoading : storeLoading;
   const selectedItems = externalSelectedItems || storeSelectedItems || [];
   const currentError = error || storeError;
 
@@ -116,11 +118,13 @@ export function ItemGrid({
           <div>
             <h3 className="text-lg font-semibold">Failed to load items</h3>
             <p className="text-muted-foreground mt-1">
-              {currentError instanceof Error ? currentError.message : "Something went wrong"}
+              {currentError instanceof Error
+                ? currentError.message
+                : "Something went wrong"}
             </p>
           </div>
-          <button 
-            onClick={() => window.location.reload()} 
+          <button
+            onClick={() => window.location.reload()}
             className="text-primary hover:underline"
           >
             Try again
@@ -150,25 +154,46 @@ export function ItemGrid({
   }
 
   return (
-    <div className={cn(
-      "grid gap-6",
-      "grid-cols-1",
-      "sm:grid-cols-2", 
-      "lg:grid-cols-3",
-      "xl:grid-cols-4"
-    )}>
-      {items.map((item) => (
-        <ItemCard
+    <motion.div
+      className={cn(
+        "grid gap-6",
+        "grid-cols-1",
+        "sm:grid-cols-2",
+        "lg:grid-cols-3",
+        "xl:grid-cols-4"
+      )}
+      initial="hidden"
+      animate="visible"
+      variants={{
+        hidden: { opacity: 0 },
+        visible: {
+          opacity: 1,
+          transition: {
+            staggerChildren: 0.1,
+          },
+        },
+      }}
+    >
+      {items.map((item, index) => (
+        <motion.div
           key={item.id}
-          item={item}
-          isSelected={selectedItems.includes(item.id)}
-          onSelect={handleSelectItem}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          onView={handleView}
-          onUseInOutfit={handleUseInOutfit}
-          showCheckbox={showCheckboxes || isSelectionMode}
-        />
+          variants={{
+            hidden: { opacity: 0, y: 20 },
+            visible: { opacity: 1, y: 0 },
+          }}
+          transition={{ duration: 0.3, delay: index * 0.05 }}
+        >
+          <ItemCard
+            item={item}
+            isSelected={selectedItems.includes(item.id)}
+            onSelect={handleSelectItem}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            onView={handleView}
+            onUseInOutfit={handleUseInOutfit}
+            showCheckbox={showCheckboxes || isSelectionMode}
+          />
+        </motion.div>
       ))}
 
       {/* Loading skeletons */}
@@ -179,7 +204,7 @@ export function ItemGrid({
           ))}
         </>
       )}
-    </div>
+    </motion.div>
   );
 }
 
@@ -189,7 +214,7 @@ function SkeletonCard() {
       <CardContent className="p-0">
         {/* Image */}
         <Skeleton className="aspect-[4/3] w-full" />
-        
+
         {/* Content */}
         <div className="p-4 space-y-3">
           {/* Header */}

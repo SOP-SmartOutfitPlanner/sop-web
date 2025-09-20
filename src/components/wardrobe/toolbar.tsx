@@ -19,7 +19,8 @@ import {
 } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { WardrobeFilters, Collection } from "@/types/wardrobe";
-import { TypeKind, Season, Occasion } from "@/types";
+import { TypeKind, Season, Occasion, WardrobeItem } from "@/types";
+import { getUniqueColorsFromItems } from "@/lib/mock/collections";
 import { cn } from "@/lib/utils";
 
 // Types
@@ -31,12 +32,14 @@ interface ToolbarProps {
   onClearSelection: () => void;
   onSelectMode: (enabled: boolean) => void;
   isSelectMode: boolean;
+  wardrobeItems: WardrobeItem[]; // Add this to get real data
 }
 
 interface FilterPanelProps {
   filters: WardrobeFilters;
   onToggleFilterArray: (key: keyof WardrobeFilters, value: any) => void;
   onClearAll: () => void;
+  wardrobeItems: WardrobeItem[]; // Add this for dynamic colors
 }
 
 // Constants
@@ -63,16 +66,7 @@ const OCCASION_OPTIONS: { value: Occasion; label: string }[] = [
   { value: "travel", label: "Travel" },
 ];
 
-const COLOR_OPTIONS = [
-  { value: "#FFFFFF", label: "White" },
-  { value: "#000000", label: "Black" },
-  { value: "#1B365D", label: "Navy" },
-  { value: "#F5DEB3", label: "Beige" },
-  { value: "#8B4513", label: "Brown" },
-  { value: "#808080", label: "Grey" },
-  { value: "#DC143C", label: "Red" },
-  { value: "#228B22", label: "Green" },
-];
+// COLOR_OPTIONS will be generated dynamically from wardrobe items
 
 const SORT_OPTIONS = [
   { value: "newest", label: "Newest First" },
@@ -358,7 +352,11 @@ const FilterPanel = memo(function FilterPanel({
   filters,
   onToggleFilterArray,
   onClearAll,
+  wardrobeItems,
 }: FilterPanelProps) {
+  // Get dynamic colors from wardrobe items
+  const availableColors = getUniqueColorsFromItems(wardrobeItems);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -420,11 +418,11 @@ const FilterPanel = memo(function FilterPanel({
         </div>
       </div>
 
-      {/* Colors */}
+      {/* Colors - Dynamic from wardrobe items */}
       <div>
         <label className="text-sm font-medium mb-2 block">Colors</label>
         <div className="grid grid-cols-4 gap-2">
-          {COLOR_OPTIONS.map((color) => (
+          {availableColors.map((color) => (
             <button
               key={color.value}
               onClick={() => onToggleFilterArray("colors", color.value)}
@@ -453,6 +451,7 @@ export const Toolbar = memo(function Toolbar({
   onClearSelection,
   onSelectMode,
   isSelectMode,
+  wardrobeItems,
 }: ToolbarProps) {
   useKeyboardShortcuts();
 
@@ -510,6 +509,7 @@ export const Toolbar = memo(function Toolbar({
                 filters={filters}
                 onToggleFilterArray={toggleFilterArray}
                 onClearAll={clearAllFilters}
+                wardrobeItems={wardrobeItems}
               />
             </FilterButton>
           </>

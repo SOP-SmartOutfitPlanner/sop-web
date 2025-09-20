@@ -1,6 +1,7 @@
 "use client";
 
 import { memo } from "react";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 
@@ -22,14 +23,24 @@ export const WardrobeHeader = memo(function WardrobeHeader({
         </p>
       </div>
       <div className="flex gap-3">
-        <Button
-          onClick={onAddItem}
-          className="bg-blue-600 hover:bg-blue-700"
-          disabled={isLoading}
+        <motion.div
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
         >
-          <Plus className="w-4 h-4 mr-2" />
-          Add Item
-        </Button>
+          <Button
+            onClick={onAddItem}
+            className="bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-700 hover:to-violet-700 shadow-lg transition-all duration-300"
+            disabled={isLoading}
+          >
+            <motion.div
+              animate={{ rotate: isLoading ? 360 : 0 }}
+              transition={{ duration: 0.5, ease: "easeInOut" }}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+            </motion.div>
+            Add Item
+          </Button>
+        </motion.div>
       </div>
     </div>
   );
