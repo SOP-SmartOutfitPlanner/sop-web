@@ -23,32 +23,33 @@ interface FilterDropdownProps {
   onFilterChange: (filter: string) => void;
 }
 
-export function FilterDropdown({ selectedFilter, onFilterChange }: FilterDropdownProps) {
+export function FilterDropdown({
+  selectedFilter,
+  onFilterChange,
+}: FilterDropdownProps) {
   const { items } = useWardrobeStore();
 
   // Calculate filter options with counts
   const getFilterOptions = (): FilterOption[] => {
     const allCount = items.length;
-    
+
     // Count by occasions
     const occasionCounts = items.reduce((acc, item) => {
-      item.occasions?.forEach(occasion => {
+      item.occasions?.forEach((occasion) => {
         acc[occasion] = (acc[occasion] || 0) + 1;
       });
       return acc;
     }, {} as Record<string, number>);
 
-    // Count by seasons  
+    // Count by seasons
     const seasonCounts = items.reduce((acc, item) => {
-      item.seasons?.forEach(season => {
+      item.seasons?.forEach((season) => {
         acc[season] = (acc[season] || 0) + 1;
       });
       return acc;
     }, {} as Record<string, number>);
 
-    const options: FilterOption[] = [
-      { value: "all", label: "All Items", count: allCount },
-    ];
+    const options: FilterOption[] = [];
 
     // Add occasion filters
     Object.entries(occasionCounts).forEach(([occasion, count]) => {
@@ -80,9 +81,9 @@ export function FilterDropdown({ selectedFilter, onFilterChange }: FilterDropdow
   const getOccasionColor = (occasion: string): string => {
     const colors: Record<string, string> = {
       casual: "#3B82F6", // blue
-      work: "#8B5CF6",   // purple  
+      work: "#8B5CF6", // purple
       formal: "#1F2937", // black
-      sport: "#10B981",  // green
+      sport: "#10B981", // green
     };
     return colors[occasion] || "#6B7280";
   };
@@ -92,13 +93,15 @@ export function FilterDropdown({ selectedFilter, onFilterChange }: FilterDropdow
       summer: "#F59E0B", // yellow
       winter: "#06B6D4", // cyan
       spring: "#10B981", // green
-      fall: "#EF4444",   // red
+      fall: "#EF4444", // red
     };
     return colors[season] || "#6B7280";
   };
 
   const filterOptions = getFilterOptions();
-  const selectedOption = filterOptions.find(opt => opt.value === selectedFilter) || filterOptions[0];
+  const selectedOption =
+    filterOptions.find((opt) => opt.value === selectedFilter) ||
+    filterOptions[0];
 
   return (
     <DropdownMenu>
@@ -106,13 +109,15 @@ export function FilterDropdown({ selectedFilter, onFilterChange }: FilterDropdow
         <Button variant="outline" className="justify-between min-w-[140px]">
           <div className="flex items-center gap-2">
             {selectedOption.color && (
-              <div 
-                className="w-2 h-2 rounded-full" 
+              <div
+                className="w-2 h-2 rounded-full"
                 style={{ backgroundColor: selectedOption.color }}
               />
             )}
             <span>{selectedOption.label}</span>
-            <span className="ml-1 text-sm text-gray-500">{selectedOption.count}</span>
+            <span className="ml-1 text-sm text-gray-500">
+              {selectedOption.count}
+            </span>
           </div>
           <ChevronDown className="ml-2 h-4 w-4" />
         </Button>
@@ -126,8 +131,8 @@ export function FilterDropdown({ selectedFilter, onFilterChange }: FilterDropdow
           >
             <div className="flex items-center gap-2">
               {option.color && (
-                <div 
-                  className="w-2 h-2 rounded-full" 
+                <div
+                  className="w-2 h-2 rounded-full"
                   style={{ backgroundColor: option.color }}
                 />
               )}

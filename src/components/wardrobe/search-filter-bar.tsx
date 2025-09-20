@@ -5,6 +5,7 @@ import { FilterDropdown } from "./filter-dropdown";
 import { SortDropdown } from "./sort-dropdown";
 import { AdvancedFilterModal } from "./advanced-filter-modal";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
 
 interface SearchFilterBarProps {
@@ -22,6 +23,13 @@ interface SearchFilterBarProps {
   };
   onAdvancedFiltersChange: (filters: any) => void;
   onClearAdvancedFilters: () => void;
+  // Selection props
+  isSelectionMode: boolean;
+  selectedCount: number;
+  totalItems: number;
+  onToggleSelectionMode: () => void;
+  onSelectAll: () => void;
+  onClearSelection: () => void;
 }
 
 export const SearchFilterBar = memo(function SearchFilterBar({
@@ -34,6 +42,12 @@ export const SearchFilterBar = memo(function SearchFilterBar({
   advancedFilters,
   onAdvancedFiltersChange,
   onClearAdvancedFilters,
+  isSelectionMode,
+  selectedCount,
+  totalItems,
+  onToggleSelectionMode,
+  onSelectAll,
+  onClearSelection,
 }: SearchFilterBarProps) {
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onSearchChange(e.target.value);
@@ -51,18 +65,41 @@ export const SearchFilterBar = memo(function SearchFilterBar({
         />
       </div>
 
-      <FilterDropdown
-        selectedFilter={quickFilter}
-        onFilterChange={onQuickFilterChange}
-      />
+      {!isSelectionMode && (
+        <>
+          <FilterDropdown
+            selectedFilter={quickFilter}
+            onFilterChange={onQuickFilterChange}
+          />
 
-      <SortDropdown selectedSort={sortBy} onSortChange={onSortChange} />
+          <SortDropdown selectedSort={sortBy} onSortChange={onSortChange} />
 
-      <AdvancedFilterModal
-        filters={advancedFilters}
-        onFiltersChange={onAdvancedFiltersChange}
-        onClearFilters={onClearAdvancedFilters}
-      />
+          <AdvancedFilterModal
+            filters={advancedFilters}
+            onFiltersChange={onAdvancedFiltersChange}
+            onClearFilters={onClearAdvancedFilters}
+          />
+        </>
+      )}
+
+      {/* Selection Mode Controls */}
+      {isSelectionMode ? (
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">
+            {selectedCount} of {totalItems} selected
+          </span>
+          <Button variant="outline" size="sm" onClick={onSelectAll}>
+            Select All
+          </Button>
+          <Button variant="secondary" size="sm" onClick={onToggleSelectionMode}>
+            Cancel
+          </Button>
+        </div>
+      ) : (
+        <Button variant="outline" size="sm" onClick={onToggleSelectionMode}>
+          Select
+        </Button>
+      )}
     </div>
   );
 });

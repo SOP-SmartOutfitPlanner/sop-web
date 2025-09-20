@@ -24,6 +24,7 @@ interface WardrobeStore {
   error: string | null;
   sortBy: string;
   selectedItems: string[];
+  isSelectionMode: boolean;
   addItem: (item: CreateWardrobeItemRequest) => Promise<void>;
   removeItem: (id: string) => void;
   updateItem: (id: string, item: Partial<WardrobeItem>) => Promise<void>;
@@ -40,6 +41,9 @@ interface WardrobeStore {
   clearSelection: () => void;
   selectAllVisible: () => void;
   bulkDeleteItems: (ids: string[]) => Promise<void>;
+  // Selection mode
+  toggleSelectionMode: () => void;
+  setSelectionMode: (mode: boolean) => void;
 }
 
 // Helper function to filter items
@@ -116,6 +120,7 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
   error: null,
   sortBy: "newest",
   selectedItems: [],
+  isSelectionMode: false,
 
   // Fetch items from API
   fetchItems: async () => {
@@ -307,6 +312,19 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
     set((state) => ({
       selectedItems: state.filteredItems.map(item => item.id),
     })),
+
+  // Selection mode functions
+  toggleSelectionMode: () =>
+    set((state) => ({
+      isSelectionMode: !state.isSelectionMode,
+      selectedItems: state.isSelectionMode ? [] : state.selectedItems, // Clear selection when exiting
+    })),
+
+  setSelectionMode: (mode: boolean) =>
+    set({
+      isSelectionMode: mode,
+      selectedItems: mode ? [] : [], // Clear selection when changing mode
+    }),
 
   bulkDeleteItems: async (ids: string[]) => {
     set({ isLoading: true, error: null });

@@ -15,7 +15,18 @@ export default function WardrobePage() {
   const [isAddItemOpen, setIsAddItemOpen] = useState(false);
 
   // Store hooks
-  const { isLoading, error, sortBy, setSortBy } = useWardrobeStore();
+  const { 
+    isLoading, 
+    error, 
+    sortBy, 
+    setSortBy,
+    isSelectionMode,
+    toggleSelectionMode,
+    selectedItems,
+    filteredItems,
+    selectAllVisible,
+    clearSelection
+  } = useWardrobeStore();
 
   // Custom hooks
   const filterHooks = useWardrobeFilters();
@@ -57,6 +68,12 @@ export default function WardrobePage() {
         advancedFilters={filterHooks.advancedFilters}
         onAdvancedFiltersChange={filterHooks.handleAdvancedFiltersChange}
         onClearAdvancedFilters={filterHooks.handleClearAdvancedFilters}
+        isSelectionMode={isSelectionMode}
+        selectedCount={selectedItems.length}
+        totalItems={filteredItems.length}
+        onToggleSelectionMode={toggleSelectionMode}
+        onSelectAll={selectAllVisible}
+        onClearSelection={clearSelection}
       />
 
       {/* Main Content */}
@@ -66,13 +83,15 @@ export default function WardrobePage() {
       <AddItemForm isOpen={isAddItemOpen} onClose={handleCloseAddItem} />
 
       {/* Bulk Actions Bar */}
-      <BulkActionsBar
-        selectedCount={bulkHooks.selectedItems.length}
-        onClearSelection={bulkHooks.clearSelection}
-        onAddToCollection={bulkHooks.handleAddToCollection}
-        onSetStatus={bulkHooks.handleSetStatus}
-        onDelete={bulkHooks.handleBulkDelete}
-      />
+      {selectedItems.length > 0 && (
+        <BulkActionsBar
+          selectedCount={selectedItems.length}
+          onClearSelection={clearSelection}
+          onAddToCollection={bulkHooks.handleAddToCollection}
+          onSetStatus={bulkHooks.handleSetStatus}
+          onDelete={bulkHooks.handleBulkDelete}
+        />
+      )}
     </div>
   );
 }

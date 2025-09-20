@@ -44,6 +44,7 @@ export function ItemGrid({
     deleteItem,
     selectedItems: storeSelectedItems,
     toggleItemSelection,
+    isSelectionMode,
   } = useWardrobeStore();
 
   // Use external props or fallback to store values
@@ -166,7 +167,7 @@ export function ItemGrid({
           onDelete={handleDelete}
           onView={handleView}
           onUseInOutfit={handleUseInOutfit}
-          showCheckbox={showCheckboxes}
+          showCheckbox={showCheckboxes || isSelectionMode}
         />
       ))}
 

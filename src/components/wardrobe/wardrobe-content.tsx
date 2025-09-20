@@ -2,7 +2,7 @@
 
 import { memo } from "react";
 import { ItemGrid } from "./item-grid";
-import { Filters } from "./filters";
+import { SidebarStats } from "./sidebar-stats";
 
 export const WardrobeContent = memo(function WardrobeContent() {
   return (
@@ -11,7 +11,7 @@ export const WardrobeContent = memo(function WardrobeContent() {
         <ItemGrid />
       </div>
       <div className="lg:col-span-1">
-        <Filters />
+        <SidebarStats />
       </div>
     </div>
   );
