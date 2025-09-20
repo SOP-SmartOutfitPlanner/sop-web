@@ -108,15 +108,15 @@ export function FilterDropdown({
       <DropdownMenuTrigger asChild>
         <Button variant="outline" className="justify-between min-w-[140px]">
           <div className="flex items-center gap-2">
-            {selectedOption.color && (
+            {selectedOption?.color && (
               <div
                 className="w-2 h-2 rounded-full"
                 style={{ backgroundColor: selectedOption.color }}
               />
             )}
-            <span>{selectedOption.label}</span>
+            <span>{selectedOption?.label}</span>
             <span className="ml-1 text-sm text-gray-500">
-              {selectedOption.count}
+              {selectedOption?.count}
             </span>
           </div>
           <ChevronDown className="ml-2 h-4 w-4" />

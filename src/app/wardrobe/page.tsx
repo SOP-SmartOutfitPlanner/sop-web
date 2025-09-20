@@ -2,35 +2,41 @@
 
 import { useState, useCallback, useMemo } from "react";
 import { AddItemForm } from "@/components/wardrobe/add-item-form";
-import { BulkActionsBar } from "@/components/wardrobe/bulk-actions-bar";
 import { WardrobeHeader } from "@/components/wardrobe/wardrobe-header";
-import { SearchFilterBar } from "@/components/wardrobe/search-filter-bar";
+import { Toolbar } from "@/components/wardrobe/toolbar";
 import { WardrobeContent } from "@/components/wardrobe/wardrobe-content";
 import { ErrorDisplay } from "@/components/common/error-display";
 import { useWardrobeStore } from "@/store/wardrobe-store";
-import { useWardrobeFilters } from "@/hooks/useWardrobeFilters";
-import { useBulkActions } from "@/hooks/useBulkActions";
+import { getCollectionsWithCounts } from "@/lib/mock/collections";
+import { WardrobeFilters } from "@/types/wardrobe";
 
 export default function WardrobePage() {
   const [isAddItemOpen, setIsAddItemOpen] = useState(false);
 
   // Store hooks
-  const { 
-    isLoading, 
-    error, 
-    sortBy, 
-    setSortBy,
+  const {
+    isLoading,
+    error,
+    items,
     isSelectionMode,
     toggleSelectionMode,
     selectedItems,
     filteredItems,
     selectAllVisible,
-    clearSelection
+    clearSelection,
   } = useWardrobeStore();
 
-  // Custom hooks
-  const filterHooks = useWardrobeFilters();
-  const bulkHooks = useBulkActions();
+  // Toolbar filters state
+  const [filters, setFilters] = useState<WardrobeFilters>({
+    collectionId: "all",
+    sort: "newest",
+  });
+
+  // Collections data
+  const collections = useMemo(
+    () => getCollectionsWithCounts(items.length),
+    [items.length]
+  );
 
   // Memoized handlers
   const handleAddItem = useCallback(() => {
@@ -41,39 +47,39 @@ export default function WardrobePage() {
     setIsAddItemOpen(false);
   }, []);
 
-  const handleSortChange = useCallback(
-    (sort: string) => {
-      setSortBy(sort);
+  const handleFiltersChange = useCallback((newFilters: WardrobeFilters) => {
+    setFilters(newFilters);
+    // TODO: Apply filters to store
+    console.log("Filters changed:", newFilters);
+  }, []);
+
+  const handleSelectMode = useCallback(
+    (enabled: boolean) => {
+      if (enabled !== isSelectionMode) {
+        toggleSelectionMode();
+      }
     },
-    [setSortBy]
+    [isSelectionMode, toggleSelectionMode]
   );
 
   // Render
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="container max-w-7xl mx-auto px-4 py-6 space-y-8">
       {/* Error Display */}
       {error && <ErrorDisplay error={error} />}
 
       {/* Header Section */}
       <WardrobeHeader onAddItem={handleAddItem} isLoading={isLoading} />
 
-      {/* Search & Filter Bar */}
-      <SearchFilterBar
-        searchQuery={filterHooks.searchQuery}
-        onSearchChange={filterHooks.handleSearchChange}
-        quickFilter={filterHooks.quickFilter}
-        onQuickFilterChange={filterHooks.handleQuickFilterChange}
-        sortBy={sortBy}
-        onSortChange={handleSortChange}
-        advancedFilters={filterHooks.advancedFilters}
-        onAdvancedFiltersChange={filterHooks.handleAdvancedFiltersChange}
-        onClearAdvancedFilters={filterHooks.handleClearAdvancedFilters}
-        isSelectionMode={isSelectionMode}
-        selectedCount={selectedItems.length}
-        totalItems={filteredItems.length}
-        onToggleSelectionMode={toggleSelectionMode}
-        onSelectAll={selectAllVisible}
+      {/* Toolbar */}
+      <Toolbar
+        filters={filters}
+        onFiltersChange={handleFiltersChange}
+        collections={collections}
+        selectedItems={selectedItems}
         onClearSelection={clearSelection}
+        onSelectMode={handleSelectMode}
+        isSelectMode={isSelectionMode}
       />
 
       {/* Main Content */}
@@ -81,17 +87,6 @@ export default function WardrobePage() {
 
       {/* Add Item Modal */}
       <AddItemForm isOpen={isAddItemOpen} onClose={handleCloseAddItem} />
-
-      {/* Bulk Actions Bar */}
-      {selectedItems.length > 0 && (
-        <BulkActionsBar
-          selectedCount={selectedItems.length}
-          onClearSelection={clearSelection}
-          onAddToCollection={bulkHooks.handleAddToCollection}
-          onSetStatus={bulkHooks.handleSetStatus}
-          onDelete={bulkHooks.handleBulkDelete}
-        />
-      )}
     </div>
   );
 }

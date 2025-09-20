@@ -1,4 +1,21 @@
-import { WardrobeItem, Filter, Season } from "./index";
+import { WardrobeItem, Filter, Season, TypeKind, Occasion } from "./index";
+
+export interface WardrobeFilters {
+  q?: string;
+  collectionId?: string;
+  sort?: string;
+  types?: TypeKind[];
+  seasons?: Season[];
+  occasions?: Occasion[];
+  colors?: string[];
+}
+
+export interface Collection {
+  id: string;
+  name: string;
+  color: string;
+  count: number;
+}
 
 export interface WardrobeState {
   items: WardrobeItem[];

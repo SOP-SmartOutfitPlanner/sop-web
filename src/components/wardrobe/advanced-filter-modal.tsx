@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Filter, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import {
@@ -95,13 +96,16 @@ export function AdvancedFilterModal({ filters, onFiltersChange, onClearFilters }
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="relative">
+        <Button 
+          variant="outline" 
+          className={`relative ${hasActiveFilters ? 'border-primary' : ''}`}
+        >
           <Filter className="h-4 w-4 mr-2" />
           Filter
           {hasActiveFilters && (
-            <span className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+            <Badge variant="secondary" className="ml-2 h-5 text-xs">
               {activeCount}
-            </span>
+            </Badge>
           )}
         </Button>
       </DialogTrigger>

@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, Check, TrendingUp } from "lucide-react";
+import { ChevronDown, Check, SortAsc } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -21,22 +21,38 @@ interface SortDropdownProps {
 }
 
 const sortOptions: SortOption[] = [
-  { value: "newest", label: "Newest First", description: "Recently added items" },
-  { value: "most-worn", label: "Most Worn", description: "Frequently used items" },
-  { value: "least-worn", label: "Least Worn", description: "Rarely used items" },
+  {
+    value: "newest",
+    label: "Newest First",
+    description: "Recently added items",
+  },
+  {
+    value: "most-worn",
+    label: "Most Worn",
+    description: "Frequently used items",
+  },
+  {
+    value: "least-worn",
+    label: "Least Worn",
+    description: "Rarely used items",
+  },
   { value: "a-z", label: "A → Z", description: "Alphabetical order" },
   { value: "z-a", label: "Z → A", description: "Reverse alphabetical" },
 ];
 
-export function SortDropdown({ selectedSort, onSortChange }: SortDropdownProps) {
-  const selectedOption = sortOptions.find(opt => opt.value === selectedSort) || sortOptions[0];
+export function SortDropdown({
+  selectedSort,
+  onSortChange,
+}: SortDropdownProps) {
+  const selectedOption =
+    sortOptions.find((opt) => opt.value === selectedSort) || sortOptions[0];
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="justify-between min-w-[140px]">
+        <Button variant="outline" className="justify-between w-full lg:w-48">
           <div className="flex items-center gap-2">
-            <TrendingUp className="h-4 w-4" />
+            <SortAsc className="h-4 w-4" />
             <span>{selectedOption.label}</span>
           </div>
           <ChevronDown className="ml-2 h-4 w-4" />
@@ -52,7 +68,9 @@ export function SortDropdown({ selectedSort, onSortChange }: SortDropdownProps) 
             <div className="flex flex-col">
               <span>{option.label}</span>
               {option.description && (
-                <span className="text-xs text-gray-500">{option.description}</span>
+                <span className="text-xs text-gray-500">
+                  {option.description}
+                </span>
               )}
             </div>
             {selectedSort === option.value && (
