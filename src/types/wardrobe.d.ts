@@ -82,6 +82,3 @@ export interface ItemGridProps {
   emptyMessage?: string;
 }
 
-export interface FiltersProps {
-  onFiltersChange?: (filters: Filter) => void;
-}
