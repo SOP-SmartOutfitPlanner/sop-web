@@ -4,7 +4,6 @@ import { useState } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -127,12 +126,12 @@ export function AddItemForm({ isOpen, onClose }: AddItemFormProps) {
       // Create new item object for API
       const newItemData = {
         name: formData.name,
-        type: formData.type as any,
+        type: formData.type as "top" | "bottom" | "shoes" | "outer" | "accessory",
         imageUrl: imageBase64,
         brand: formData.brand,
         colors: formData.colors,
-        seasons: formData.seasons as any,
-        occasions: formData.occasions as any,
+        seasons: formData.seasons.filter(s => s !== "all") as ("spring" | "summer" | "fall" | "winter")[],
+        occasions: formData.occasions.map(o => o === "smart" ? "formal" : o === "active" ? "sport" : o) as ("casual" | "formal" | "sport" | "travel")[],
         status: "active" as const,
       };
 

@@ -21,6 +21,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
           id: "1",
           name: "Test User",
           email,
+          avatar: "https://via.placeholder.com/150",
         },
         isAuthenticated: true,
       });
@@ -29,13 +30,14 @@ export const useAuthStore = create<AuthStore>((set) => ({
     return false;
   },
 
-  register: async (name: string, email: string, password: string) => {
+  register: async (name: string, email: string, _password: string) => {
     // Mock register
     set({
       user: {
         id: Date.now().toString(),
         name,
         email,
+        avatar: "https://via.placeholder.com/150",
       },
       isAuthenticated: true,
     });

@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Sparkles,
@@ -10,7 +9,6 @@ import {
   Heart,
   Users,
   Image as ImageIcon,
-  ArrowLeft,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,7 +16,6 @@ import { Badge } from "@/components/ui/badge";
 
 export default function WelcomePage() {
   const router = useRouter();
-  const [showAuth, setShowAuth] = useState(false);
 
   const handleGetStarted = () => {
     router.push("/login");
@@ -181,7 +178,7 @@ export default function WelcomePage() {
               </Badge>
             </div>
             <p className="text-gray-700 text-lg leading-relaxed max-w-3xl mx-auto">
-              Không còn phải lo lắng về việc "mặc gì hôm nay". SOP sẽ giúp bạn
+              Không còn phải lo lắng về việc &ldquo;mặc gì hôm nay&rdquo;. SOP sẽ giúp bạn
               luôn tự tin với phong cách của mình.
             </p>
           </CardContent>

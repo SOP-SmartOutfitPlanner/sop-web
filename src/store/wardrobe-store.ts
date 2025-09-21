@@ -1,6 +1,10 @@
 import { create } from "zustand";
 import { WardrobeItem } from "@/types";
-import { wardrobeAPI, type ApiWardrobeItem, type CreateWardrobeItemRequest } from "@/lib/api/wardrobe-api";
+import {
+  wardrobeAPI,
+  type ApiWardrobeItem,
+  type CreateWardrobeItemRequest,
+} from "@/lib/api/wardrobe-api";
 import { generateDemoItems } from "@/lib/utils/image-utils";
 
 interface WardrobeFilters {
@@ -66,19 +70,34 @@ const filterItems = (
     if (filters.category && item.type !== filters.category) return false;
     if (filters.color && !item.colors?.includes(filters.color)) return false;
     if (filters.season && !item.seasons?.includes(filters.season)) return false;
-    
+
     // Quick filter (occasions and seasons)
     if (filters.quickFilter && filters.quickFilter !== "all") {
-      const hasOccasion = item.occasions?.includes(filters.quickFilter as any);
-      const hasSeason = item.seasons?.includes(filters.quickFilter as any);
+      const hasOccasion = item.occasions?.includes(filters.quickFilter as "casual" | "smart" | "formal" | "sport" | "travel");
+      const hasSeason = item.seasons?.includes(filters.quickFilter as "spring" | "summer" | "fall" | "winter");
       if (!hasOccasion && !hasSeason) return false;
     }
 
     // Advanced filters
-    if (filters.types?.length && !filters.types.includes(item.type)) return false;
-    if (filters.seasons?.length && !filters.seasons.some(s => item.seasons?.includes(s as any))) return false;
-    if (filters.occasions?.length && !filters.occasions.some(o => item.occasions?.includes(o as any))) return false;
-    if (filters.colors?.length && !filters.colors.some(c => item.colors?.some(ic => ic.toLowerCase().includes(c.toLowerCase())))) return false;
+    if (filters.types?.length && !filters.types.includes(item.type))
+      return false;
+    if (
+      filters.seasons?.length &&
+      !filters.seasons.some((s) => item.seasons?.includes(s as "spring" | "summer" | "fall" | "winter"))
+    )
+      return false;
+    if (
+      filters.occasions?.length &&
+      !filters.occasions.some((o) => item.occasions?.includes(o as "casual" | "smart" | "formal" | "sport" | "travel"))
+    )
+      return false;
+    if (
+      filters.colors?.length &&
+      !filters.colors.some((c) =>
+        item.colors?.some((ic) => ic.toLowerCase().includes(c.toLowerCase()))
+      )
+    )
+      return false;
 
     return true;
   });
@@ -87,26 +106,26 @@ const filterItems = (
 // Helper function to sort items
 const sortItems = (items: WardrobeItem[], sortBy: string): WardrobeItem[] => {
   const sortedItems = [...items];
-  
+
   switch (sortBy) {
     case "newest":
       // For now, sort by ID (newer items have higher IDs in mock API)
       return sortedItems.sort((a, b) => parseInt(b.id) - parseInt(a.id));
-    
+
     case "most-worn":
       // TODO: Implement when we have wear tracking
       return sortedItems; // For now, no change
-    
+
     case "least-worn":
-      // TODO: Implement when we have wear tracking  
+      // TODO: Implement when we have wear tracking
       return sortedItems; // For now, no change
-    
+
     case "a-z":
       return sortedItems.sort((a, b) => a.name.localeCompare(b.name));
-    
+
     case "z-a":
       return sortedItems.sort((a, b) => b.name.localeCompare(a.name));
-    
+
     default:
       return sortedItems;
   }
@@ -138,9 +157,9 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
       });
     } catch (error) {
       console.error("Failed to fetch items:", error);
-      set({ 
-        isLoading: false, 
-        error: error instanceof Error ? error.message : "Failed to fetch items" 
+      set({
+        isLoading: false,
+        error: error instanceof Error ? error.message : "Failed to fetch items",
       });
     }
   },
@@ -151,10 +170,14 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
     try {
       const newApiItem = await wardrobeAPI.createItem(itemData);
       const newItem = apiItemToWardrobeItem(newApiItem);
-      
+
       set((state) => {
         const newItems = [...state.items, newItem];
-        const filtered = filterItems(newItems, state.filters, state.searchQuery);
+        const filtered = filterItems(
+          newItems,
+          state.filters,
+          state.searchQuery
+        );
         const sorted = sortItems(filtered, state.sortBy);
         return {
           items: newItems,
@@ -164,9 +187,9 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
       });
     } catch (error) {
       console.error("Failed to add item:", error);
-      set({ 
-        isLoading: false, 
-        error: error instanceof Error ? error.message : "Failed to add item" 
+      set({
+        isLoading: false,
+        error: error instanceof Error ? error.message : "Failed to add item",
       });
       throw error;
     }
@@ -186,9 +209,12 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
   updateItem: async (id, updatedData) => {
     set({ isLoading: true, error: null });
     try {
-      const updatedApiItem = await wardrobeAPI.updateItem(id, updatedData);
+      const updatedApiItem = await wardrobeAPI.updateItem(
+        id,
+        updatedData as CreateWardrobeItemRequest
+      );
       const updatedItem = apiItemToWardrobeItem(updatedApiItem);
-      
+
       set((state) => {
         const newItems = state.items.map((item) =>
           item.id === id ? updatedItem : item
@@ -201,9 +227,9 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
       });
     } catch (error) {
       console.error("Failed to update item:", error);
-      set({ 
-        isLoading: false, 
-        error: error instanceof Error ? error.message : "Failed to update item" 
+      set({
+        isLoading: false,
+        error: error instanceof Error ? error.message : "Failed to update item",
       });
       throw error;
     }
@@ -215,7 +241,11 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
       await wardrobeAPI.deleteItem(id);
       set((state) => {
         const newItems = state.items.filter((item) => item.id !== id);
-        const filtered = filterItems(newItems, state.filters, state.searchQuery);
+        const filtered = filterItems(
+          newItems,
+          state.filters,
+          state.searchQuery
+        );
         const sorted = sortItems(filtered, state.sortBy);
         return {
           items: newItems,
@@ -224,8 +254,8 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
       });
     } catch (error) {
       console.error("Failed to delete item:", error);
-      set({ 
-        error: error instanceof Error ? error.message : "Failed to delete item" 
+      set({
+        error: error instanceof Error ? error.message : "Failed to delete item",
       });
       throw error;
     }
@@ -236,18 +266,21 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const demoItems = generateDemoItems();
-      
+
       // Add all demo items to API
-      const promises = demoItems.map(item => wardrobeAPI.createItem(item));
+      const promises = demoItems.map((item) => wardrobeAPI.createItem(item));
       await Promise.all(promises);
-      
+
       // Refresh items from API
       await get().fetchItems();
     } catch (error) {
       console.error("Failed to create demo items:", error);
-      set({ 
-        isLoading: false, 
-        error: error instanceof Error ? error.message : "Failed to create demo items" 
+      set({
+        isLoading: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to create demo items",
       });
       throw error;
     }
@@ -277,7 +310,11 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
   // Sorting functionality
   setSortBy: (sortBy) =>
     set((state) => {
-      const filtered = filterItems(state.items, state.filters, state.searchQuery);
+      const filtered = filterItems(
+        state.items,
+        state.filters,
+        state.searchQuery
+      );
       const sorted = sortItems(filtered, sortBy);
       return {
         sortBy,
@@ -301,16 +338,15 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
   toggleItemSelection: (id: string) =>
     set((state) => ({
       selectedItems: state.selectedItems.includes(id)
-        ? state.selectedItems.filter(itemId => itemId !== id)
+        ? state.selectedItems.filter((itemId) => itemId !== id)
         : [...state.selectedItems, id],
     })),
 
-  clearSelection: () =>
-    set({ selectedItems: [] }),
+  clearSelection: () => set({ selectedItems: [] }),
 
   selectAllVisible: () =>
     set((state) => ({
-      selectedItems: state.filteredItems.map(item => item.id),
+      selectedItems: state.filteredItems.map((item) => item.id),
     })),
 
   // Selection mode functions
@@ -330,13 +366,17 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       // Delete all items from API
-      const deletePromises = ids.map(id => wardrobeAPI.deleteItem(id));
+      const deletePromises = ids.map((id) => wardrobeAPI.deleteItem(id));
       await Promise.all(deletePromises);
-      
+
       // Update local state
       set((state) => {
-        const newItems = state.items.filter(item => !ids.includes(item.id));
-        const filtered = filterItems(newItems, state.filters, state.searchQuery);
+        const newItems = state.items.filter((item) => !ids.includes(item.id));
+        const filtered = filterItems(
+          newItems,
+          state.filters,
+          state.searchQuery
+        );
         const sorted = sortItems(filtered, state.sortBy);
         return {
           items: newItems,
@@ -347,9 +387,10 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
       });
     } catch (error) {
       console.error("Failed to delete items:", error);
-      set({ 
-        isLoading: false, 
-        error: error instanceof Error ? error.message : "Failed to delete items" 
+      set({
+        isLoading: false,
+        error:
+          error instanceof Error ? error.message : "Failed to delete items",
       });
       throw error;
     }
@@ -370,13 +411,15 @@ const apiItemToWardrobeItem = (apiItem: ApiWardrobeItem): WardrobeItem => {
     status: apiItem.status,
     // Additional fields for ItemCard compatibility
     category: apiItem.type, // Map type to category
-    color: apiItem.colors?.[0] || '', // Take first color
-    season: apiItem.seasons?.[0] || '', // Take first season
+    color: apiItem.colors?.[0] || "", // Take first color
+    season: apiItem.seasons?.[0] || "", // Take first season
     tags: [], // Default empty array for tags
+    createdAt: apiItem.createdAt || "",
+    updatedAt: apiItem.updatedAt || "",
   };
-  
-  console.log('API Item:', apiItem);
-  console.log('Converted Item:', converted);
-  
+
+  console.log("API Item:", apiItem);
+  console.log("Converted Item:", converted);
+
   return converted;
 };

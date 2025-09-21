@@ -4,22 +4,22 @@ import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { Package } from "lucide-react";
 import { ItemCard } from "./item-card";
-import { ItemGridProps } from "@/types/wardrobe";
 import { useWardrobeStore } from "@/store/wardrobe-store";
 import { Skeleton } from "../ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { WardrobeItem } from "@/types";
 
 interface GridProps {
-  items?: any[];
+  items?: WardrobeItem[];
   loading?: boolean;
   error?: Error;
   selectedItems?: string[];
   onSelectItem?: (id: string, selected: boolean) => void;
-  onEditItem?: (item: any) => void;
+  onEditItem?: (item: WardrobeItem) => void;
   onDeleteItem?: (id: string) => void;
-  onViewItem?: (item: any) => void;
-  onUseInOutfit?: (item: any) => void;
+  onViewItem?: (item: WardrobeItem) => void;
+  onUseInOutfit?: (item: WardrobeItem) => void;
   showCheckboxes?: boolean;
   emptyMessage?: string;
 }
@@ -60,7 +60,7 @@ export function ItemGrid({
     if (!externalItems && (!filteredItems || filteredItems.length === 0)) {
       fetchItems();
     }
-  }, [externalItems, filteredItems?.length, fetchItems]);
+  }, [externalItems, filteredItems, fetchItems]);
 
   const handleDelete = async (id: string) => {
     if (window.confirm("Are you sure you want to delete this item?")) {
@@ -72,7 +72,7 @@ export function ItemGrid({
     }
   };
 
-  const handleEdit = (item: any) => {
+  const handleEdit = (item: WardrobeItem) => {
     if (onEditItem) {
       onEditItem(item);
     } else {
@@ -81,7 +81,7 @@ export function ItemGrid({
     }
   };
 
-  const handleView = (item: any) => {
+  const handleView = (item: WardrobeItem) => {
     if (onViewItem) {
       onViewItem(item);
     } else {
@@ -90,7 +90,7 @@ export function ItemGrid({
     }
   };
 
-  const handleUseInOutfit = (item: any) => {
+  const handleUseInOutfit = (item: WardrobeItem) => {
     if (onUseInOutfit) {
       onUseInOutfit(item);
     } else {

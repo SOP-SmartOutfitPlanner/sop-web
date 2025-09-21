@@ -21,8 +21,6 @@ export default function WardrobePage() {
     isSelectionMode,
     toggleSelectionMode,
     selectedItems,
-    filteredItems,
-    selectAllVisible,
     clearSelection,
   } = useWardrobeStore();
 
@@ -33,10 +31,7 @@ export default function WardrobePage() {
   });
 
   // Collections data - Pass actual items instead of just length
-  const collections = useMemo(
-    () => getCollectionsWithCounts(items),
-    [items]
-  );
+  const collections = useMemo(() => getCollectionsWithCounts(items), [items]);
 
   // Memoized handlers
   const handleAddItem = useCallback(() => {

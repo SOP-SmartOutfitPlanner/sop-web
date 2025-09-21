@@ -37,7 +37,7 @@ interface ToolbarProps {
 
 interface FilterPanelProps {
   filters: WardrobeFilters;
-  onToggleFilterArray: (key: keyof WardrobeFilters, value: any) => void;
+  onToggleFilterArray: (key: keyof WardrobeFilters, value: string) => void;
   onClearAll: () => void;
   wardrobeItems: WardrobeItem[]; // Add this for dynamic colors
 }
@@ -284,8 +284,8 @@ const ActiveFilters = memo(function ActiveFilters({
   onClearAll,
 }: {
   filters: WardrobeFilters;
-  onUpdateFilter: (key: keyof WardrobeFilters, value: any) => void;
-  onToggleFilterArray: (key: keyof WardrobeFilters, value: any) => void;
+  onUpdateFilter: (key: keyof WardrobeFilters, value: string | undefined) => void;
+  onToggleFilterArray: (key: keyof WardrobeFilters, value: string) => void;
   onClearAll: () => void;
 }) {
   const activeCount = useFilterCount(filters);
@@ -298,7 +298,7 @@ const ActiveFilters = memo(function ActiveFilters({
 
       {filters.q && (
         <Badge variant="secondary" className="gap-1">
-          Search: "{filters.q}"
+          Search: &ldquo;{filters.q}&rdquo;
           <X
             className="w-3 h-3 cursor-pointer"
             onClick={() => onUpdateFilter("q", undefined)}
@@ -456,15 +456,15 @@ export const Toolbar = memo(function Toolbar({
   useKeyboardShortcuts();
 
   const updateFilter = useCallback(
-    (key: keyof WardrobeFilters, value: any) => {
+    (key: keyof WardrobeFilters, value: string | string[] | undefined) => {
       onFiltersChange({ ...filters, [key]: value });
     },
     [filters, onFiltersChange]
   );
 
   const toggleFilterArray = useCallback(
-    (key: keyof WardrobeFilters, value: any) => {
-      const currentArray = (filters[key] as any[]) || [];
+    (key: keyof WardrobeFilters, value: string) => {
+      const currentArray = (filters[key] as string[]) || [];
       const newArray = currentArray.includes(value)
         ? currentArray.filter((item) => item !== value)
         : [...currentArray, value];

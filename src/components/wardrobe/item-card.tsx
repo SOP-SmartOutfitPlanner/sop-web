@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
+import Image from "next/image";
 import {
   MoreHorizontal,
   Edit,
@@ -93,11 +94,12 @@ export function ItemCard({
       <CardContent className="p-0">
         {/* Image Container - Larger, more fashionable ratio */}
         <div className="relative aspect-[3/4] overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
-          <img
+          <Image
             src={item.imageUrl}
             alt={item.name}
+            fill
             className={cn(
-              "w-full h-full object-cover transition-transform duration-300",
+              "object-cover transition-transform duration-300",
               isHovered && "scale-105"
             )}
             onError={(e) => {

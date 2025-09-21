@@ -1,15 +1,9 @@
 "use client";
 
-import {
-  TrendingUp,
-  Package,
-  Shirt,
-  PaintBucket,
-  AlertTriangle,
-} from "lucide-react";
+import { TrendingUp, Package, Shirt, PaintBucket } from "lucide-react";
+import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
   PieChart,
@@ -40,7 +34,7 @@ interface SidebarStatsProps {
 }
 
 export function SidebarStats({ className }: SidebarStatsProps) {
-  const { counts, byColor, mostWorn, neverWorn, loading } = useWardrobeStats();
+  const { counts, byColor, mostWorn, loading } = useWardrobeStats();
 
   if (loading) {
     return (
@@ -271,11 +265,12 @@ export function SidebarStats({ className }: SidebarStatsProps) {
         <CardContent className="space-y-3">
           {mostWorn.slice(0, 5).map((item, index) => (
             <div key={item.id} className="flex items-center gap-3">
-              <div className="relative">
-                <img
+              <div className="relative w-12 h-12">
+                <Image
                   src={item.imageUrl}
                   alt={item.name}
-                  className="w-12 h-12 object-cover rounded-lg border"
+                  fill
+                  className="object-cover rounded-lg border"
                 />
                 <div className="absolute -top-1 -left-1 w-5 h-5 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-bold">
                   {index + 1}

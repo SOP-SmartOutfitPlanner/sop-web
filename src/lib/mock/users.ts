@@ -5,16 +5,19 @@ export const mockUsers: User[] = [
     id: "1",
     email: "john.doe@example.com",
     name: "John Doe",
+    avatar: "https://via.placeholder.com/150",
   },
   {
     id: "2",
     email: "jane.smith@example.com",
     name: "Jane Smith",
+    avatar: "https://via.placeholder.com/150",
   },
   {
     id: "3",
     email: "alex.johnson@example.com",
     name: "Alex Johnson",
+    avatar: "https://via.placeholder.com/150",
   },
 ];
 
