@@ -1,7 +1,8 @@
 import { create } from "zustand";
 import { User } from "@/lib/types/auth";
-import { authAPI, ApiError } from "@/lib/api";
+import { authAPI, ApiError, apiClient } from "@/lib/api";
 import type { LoginRequest, RegisterRequest } from "@/lib/api";
+import { extractUserFromToken } from "@/lib/utils/jwt";
 
 interface AuthStore {
   user: User | null;
@@ -63,17 +64,33 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       const loginData: LoginRequest = { email, password };
       const response = await authAPI.login(loginData);
       
-      const userData = response.data as any;
+      // Login successful - tokens are saved automatically by authAPI
+      // Extract user info from JWT token
+      const accessToken = (response.data as any).accessToken;
+      const userInfo = extractUserFromToken(accessToken);
+      
+      if (!userInfo) {
+        throw new Error("Failed to extract user info from token");
+      }
+      
+      // Create user object
+      const user: User = {
+        id: userInfo.id,
+        displayName: userInfo.displayName,
+        email: userInfo.email,
+        avatar: undefined, // No avatar in JWT
+        createdAt: undefined,
+        updatedAt: undefined,
+      };
+      
+      // Save user to localStorage
+      if (typeof window !== "undefined") {
+        localStorage.setItem("user", JSON.stringify(user));
+        sessionStorage.removeItem("pendingVerificationEmail");
+      }
       
       set({
-        user: {
-          id: userData.user.id,
-          displayName: userData.user.displayName,
-          email: userData.user.email,
-          avatar: userData.user.avatar,
-          createdAt: userData.user.createdAt,
-          updatedAt: userData.user.updatedAt,
-        },
+        user,
         isAuthenticated: true,
         isLoading: false,
         error: null,
@@ -81,11 +98,6 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         requiresVerification: false,
         pendingVerificationEmail: null,
       });
-      
-      // Clear pending verification
-      if (typeof window !== 'undefined') {
-        sessionStorage.removeItem('pendingVerificationEmail');
-      }
       
       return true;
     } catch (error) {

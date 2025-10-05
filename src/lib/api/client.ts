@@ -218,13 +218,25 @@ class ApiClient {
     if (!this.refreshToken) return false;
 
     try {
-      const response = await axios.post(`${API_CONFIG.BASE_URL}/auth/refresh`, {
-        refreshToken: this.refreshToken,
-      });
+      // Request body is just the refresh token string (not an object!)
+      const response = await axios.post(
+        `${API_CONFIG.BASE_URL}/auth/refresh-token`,
+        JSON.stringify(this.refreshToken),
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
-      const { accessToken, refreshToken } = response.data;
-      this.saveTokens(accessToken, refreshToken);
-      return true;
+      // Response format: { statusCode, message, data: { accessToken, refreshToken } }
+      const data = response.data.data;
+      if (data && data.accessToken && data.refreshToken) {
+        this.saveTokens(data.accessToken, data.refreshToken);
+        return true;
+      }
+      
+      return false;
     } catch (error) {
       console.error("Failed to refresh token:", error);
       return false;

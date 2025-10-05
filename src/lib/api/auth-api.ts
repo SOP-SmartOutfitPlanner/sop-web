@@ -111,32 +111,39 @@ class AuthAPI {
 
   /**
    * Login user
-   * POST /auth/login
+   * POST /auth (not /auth/login)
    */
   async login(data: LoginRequest): Promise<AuthResponse> {
     try {
-      const response = await apiClient.post<ApiResponse<AuthData>>(
-        `${this.BASE_PATH}/login`,
-        data
-      );
+      // Login endpoint is just /auth
+      const response = await apiClient.post<
+        ApiResponse<{
+          accessToken: string;
+          refreshToken: string;
+        }>
+      >("/auth", data);
 
       // Save tokens after successful login
       if (response.data.accessToken && response.data.refreshToken) {
-        apiClient.setTokens(response.data.accessToken, response.data.refreshToken);
-        
-        // Save user data to localStorage
-        if (response.data.user && typeof window !== 'undefined') {
-          localStorage.setItem('user', JSON.stringify(response.data.user));
-        }
+        apiClient.setTokens(
+          response.data.accessToken,
+          response.data.refreshToken
+        );
+
+        // Note: Login response doesn't include user data
+        // User data is extracted from JWT token in auth store
       }
 
       return {
         message: response.message,
-        data: response.data,
+        data: {
+          accessToken: response.data.accessToken,
+          refreshToken: response.data.refreshToken,
+        } as any,
         statusCode: response.statusCode,
       };
     } catch (error) {
-      console.error('Login failed:', error);
+      console.error("Login failed:", error);
       throw error;
     }
   }
@@ -159,23 +166,32 @@ class AuthAPI {
 
   /**
    * Refresh access token
-   * POST /auth/refresh
+   * POST /auth/refresh-token
    */
-  async refreshToken(refreshToken: string): Promise<RefreshTokenResponse> {
+  async refreshToken(
+    refreshToken: string
+  ): Promise<{ accessToken: string; refreshToken: string }> {
     try {
-      const response = await apiClient.post<RefreshTokenResponse>(
-        `${this.BASE_PATH}/refresh`,
-        { refreshToken }
-      );
+      // Request body is just the refresh token string (not an object!)
+      const response = await apiClient.post<
+        ApiResponse<{
+          accessToken: string;
+          refreshToken: string;
+        }>
+      >(`${this.BASE_PATH}/refresh-token`, JSON.stringify(refreshToken), {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
       // Update tokens
-      if (response.accessToken && response.refreshToken) {
-        apiClient.setTokens(response.accessToken, response.refreshToken);
+      if (response.data.accessToken && response.data.refreshToken) {
+        apiClient.setTokens(response.data.accessToken, response.data.refreshToken);
       }
 
-      return response;
+      return response.data;
     } catch (error) {
-      console.error('Token refresh failed:', error);
+      console.error("Token refresh failed:", error);
       apiClient.clearTokens();
       throw error;
     }
@@ -187,16 +203,21 @@ class AuthAPI {
    */
   async getCurrentUser(): Promise<UserResponse> {
     try {
-      const response = await apiClient.get<UserResponse>(`${this.BASE_PATH}/me`);
-      
+      const response = await apiClient.get<ApiResponse<UserResponse>>(
+        `${this.BASE_PATH}/me`
+      );
+
+      // Extract user data from response wrapper
+      const userData = response.data;
+
       // Update user data in localStorage
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('user', JSON.stringify(response));
+      if (typeof window !== "undefined") {
+        localStorage.setItem("user", JSON.stringify(userData));
       }
-      
-      return response;
+
+      return userData;
     } catch (error) {
-      console.error('Failed to get current user:', error);
+      console.error("Failed to get current user:", error);
       throw error;
     }
   }
