@@ -275,13 +275,17 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     set({ isLoading: true });
     
     try {
+      // Call logout API (will send Authorization header automatically)
       await authAPI.logout();
     } catch (error) {
       console.error('Logout error:', error);
+      // Continue with local logout even if API fails
     } finally {
-      // Clear session storage
+      // Clear all storage
       if (typeof window !== 'undefined') {
+        localStorage.removeItem('user');
         sessionStorage.removeItem('pendingVerificationEmail');
+        sessionStorage.removeItem('googleCredential');
       }
       
       set({

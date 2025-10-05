@@ -1,4 +1,4 @@
-import { apiClient } from './client';
+import { apiClient } from "./client";
 import type {
   ApiResponse,
   LoginRequest,
@@ -16,7 +16,7 @@ import type {
  * Auth API Service
  */
 class AuthAPI {
-  private readonly BASE_PATH = '/auth';
+  private readonly BASE_PATH = "/auth";
 
   /**
    * Register a new user
@@ -86,7 +86,9 @@ class AuthAPI {
    * Login with Google OAuth
    * POST /auth/login/google/oauth
    */
-  async loginWithGoogle(credential: string): Promise<ApiResponse<LoginResponse>> {
+  async loginWithGoogle(
+    credential: string
+  ): Promise<ApiResponse<LoginResponse>> {
     try {
       // Request body is just the Google credential string (not an object!)
       const response = await apiClient.post<ApiResponse<LoginResponse>>(
@@ -125,7 +127,7 @@ class AuthAPI {
     try {
       await apiClient.post(`${this.BASE_PATH}/logout`);
     } catch (error) {
-      console.error('Logout API call failed:', error);
+      console.error("Logout API call failed:", error);
       // Continue with local logout even if API fails
     } finally {
       // Clear tokens and user data
@@ -183,9 +185,11 @@ class AuthAPI {
    */
   async forgotPassword(email: string): Promise<{ message: string }> {
     try {
-      return await apiClient.post(`${this.BASE_PATH}/forgot-password`, { email });
+      return await apiClient.post(`${this.BASE_PATH}/forgot-password`, {
+        email,
+      });
     } catch (error) {
-      console.error('Forgot password failed:', error);
+      console.error("Forgot password failed:", error);
       throw error;
     }
   }
@@ -194,14 +198,17 @@ class AuthAPI {
    * Reset password with token
    * POST /auth/reset-password
    */
-  async resetPassword(token: string, password: string): Promise<{ message: string }> {
+  async resetPassword(
+    token: string,
+    password: string
+  ): Promise<{ message: string }> {
     try {
       return await apiClient.post(`${this.BASE_PATH}/reset-password`, {
         token,
         password,
       });
     } catch (error) {
-      console.error('Reset password failed:', error);
+      console.error("Reset password failed:", error);
       throw error;
     }
   }
@@ -210,9 +217,7 @@ class AuthAPI {
    * Verify email with OTP
    * POST /auth/otp/verify
    */
-  async verifyOtp(
-    data: VerifyOtpRequest
-  ): Promise<ApiResponse<null>> {
+  async verifyOtp(data: VerifyOtpRequest): Promise<ApiResponse<null>> {
     try {
       const response = await apiClient.post<ApiResponse<null>>(
         `${this.BASE_PATH}/otp/verify`,
@@ -240,7 +245,7 @@ class AuthAPI {
     try {
       return await apiClient.post(`${this.BASE_PATH}/verify-email`, { token });
     } catch (error) {
-      console.error('Email verification failed:', error);
+      console.error("Email verification failed:", error);
       throw error;
     }
   }
@@ -269,9 +274,11 @@ class AuthAPI {
    */
   async resendVerification(email: string): Promise<{ message: string }> {
     try {
-      return await apiClient.post(`${this.BASE_PATH}/resend-verification`, { email });
+      return await apiClient.post(`${this.BASE_PATH}/resend-verification`, {
+        email,
+      });
     } catch (error) {
-      console.error('Resend verification failed:', error);
+      console.error("Resend verification failed:", error);
       throw error;
     }
   }
@@ -279,4 +286,3 @@ class AuthAPI {
 
 // Export singleton instance
 export const authAPI = new AuthAPI();
-
