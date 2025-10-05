@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, Eye, EyeOff, Mail } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, Mail, CheckCircle } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,7 +16,22 @@ import type { LoginFormValues } from "@/lib/types/auth";
 
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
+  const [showVerifiedBanner, setShowVerifiedBanner] = useState(false);
   const { isLoading, handleLogin } = useAuth();
+  const searchParams = useSearchParams();
+
+  // Check if redirected from OTP verification
+  useEffect(() => {
+    const verified = searchParams.get("verified");
+    if (verified === "true") {
+      setShowVerifiedBanner(true);
+      // Auto-hide after 10 seconds
+      const timer = setTimeout(() => {
+        setShowVerifiedBanner(false);
+      }, 10000);
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams]);
 
   const {
     register,
@@ -54,6 +70,41 @@ export function LoginForm() {
           </p>
         </div>
       </div>
+
+      {/* Success Banner - Email Verified */}
+      {showVerifiedBanner && (
+        <div className="mb-6 bg-green-50 border border-green-200 rounded-xl p-4 animate-in slide-in-from-top duration-300">
+          <div className="flex items-start">
+            <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 mr-3 flex-shrink-0" />
+            <div>
+              <h3 className="text-sm font-semibold text-green-900 mb-1">
+                ✅ Email đã được xác thực thành công!
+              </h3>
+              <p className="text-xs text-green-800">
+                Tài khoản của bạn đã được kích hoạt. Vui lòng đăng nhập để tiếp tục.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowVerifiedBanner(false)}
+              className="ml-auto text-green-600 hover:text-green-800"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Form */}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">

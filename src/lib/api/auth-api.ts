@@ -231,6 +231,30 @@ class AuthAPI {
   }
 
   /**
+   * Verify email with OTP
+   * POST /auth/otp/verify
+   */
+  async verifyOtp(email: string, otp: string): Promise<ApiResponse<null>> {
+    try {
+      const response = await apiClient.post<ApiResponse<null>>(
+        `${this.BASE_PATH}/otp/verify`,
+        { email, otp }
+      );
+
+      // After successful OTP verification, user needs to login
+      // Clear pending verification email
+      if (response.statusCode === 200 && typeof window !== 'undefined') {
+        sessionStorage.removeItem('pendingVerificationEmail');
+      }
+
+      return response;
+    } catch (error) {
+      console.error('OTP verification failed:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Verify email with token
    * POST /auth/verify-email
    */
@@ -239,6 +263,31 @@ class AuthAPI {
       return await apiClient.post(`${this.BASE_PATH}/verify-email`, { token });
     } catch (error) {
       console.error('Email verification failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Resend OTP to email
+   * POST /auth/otp/resend
+   */
+  async resendOtp(
+    email: string
+  ): Promise<
+    ApiResponse<{
+      expiryMinutes: number;
+      remainingAttempts: number;
+    } | null>
+  > {
+    try {
+      return await apiClient.post<
+        ApiResponse<{
+          expiryMinutes: number;
+          remainingAttempts: number;
+        } | null>
+      >(`${this.BASE_PATH}/otp/resend`, { email });
+    } catch (error) {
+      console.error("Resend OTP failed:", error);
       throw error;
     }
   }

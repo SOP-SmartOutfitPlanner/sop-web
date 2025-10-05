@@ -3,7 +3,7 @@ export { apiClient, ApiError } from './client';
 export type { ErrorResponse, AxiosRequestConfig, AxiosResponse, AxiosError } from './client';
 
 // Export Auth API
-export { authAPI } from './auth-api';
+export { authAPI } from "./auth-api";
 export type {
   RegisterRequest,
   LoginRequest,
@@ -14,7 +14,7 @@ export type {
   AuthResponse,
   UserResponse,
   RefreshTokenResponse,
-} from './auth-api';
+} from "./auth-api";
 
 // Export Wardrobe API
 export { wardrobeAPI } from './wardrobe-api';
