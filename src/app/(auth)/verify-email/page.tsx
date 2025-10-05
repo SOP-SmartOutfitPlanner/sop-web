@@ -77,10 +77,42 @@ export default function VerifyEmailPage() {
         pendingVerificationEmail: null,
       });
 
-      // Redirect to login page to authenticate
-      setTimeout(() => {
-        router.push("/login?verified=true");
-      }, 1500);
+      // Check if this was a Google login registration
+      const googleCredential = sessionStorage.getItem("googleCredential");
+
+      if (googleCredential) {
+        // Auto-login with Google after OTP verification
+        toast.loading("Đang đăng nhập...", { duration: 1000 });
+
+        // Import loginWithGoogle from store
+        const { loginWithGoogle } = useAuthStore.getState();
+
+        setTimeout(async () => {
+          try {
+            const result = await loginWithGoogle(googleCredential);
+
+            // Clear stored credential
+            sessionStorage.removeItem("googleCredential");
+
+            if (result.success && !result.requiresVerification) {
+              toast.success("Đăng nhập thành công!");
+              router.push("/wardrobe");
+            } else {
+              // Fallback to login page
+              router.push("/login?verified=true");
+            }
+          } catch (error) {
+            console.error("Auto-login failed:", error);
+            // Fallback to login page
+            router.push("/login?verified=true");
+          }
+        }, 1500);
+      } else {
+        // Regular email/password registration - redirect to login
+        setTimeout(() => {
+          router.push("/login?verified=true");
+        }, 1500);
+      }
     } catch (error) {
       const errorMessage =
         error instanceof ApiError ? error.message : "Xác thực thất bại";

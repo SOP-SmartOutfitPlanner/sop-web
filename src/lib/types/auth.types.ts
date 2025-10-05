@@ -41,6 +41,10 @@ export interface ResendOtpRequest {
   email: string;
 }
 
+export interface GoogleLoginRequest {
+  credential: string; // Google ID token
+}
+
 // ============================================================================
 // Auth Responses
 // ============================================================================
@@ -106,6 +110,11 @@ export interface AuthState {
 export interface AuthStore extends AuthState {
   // Actions
   login: (email: string, password: string) => Promise<boolean>;
+  loginWithGoogle: (credential: string) => Promise<{
+    success: boolean;
+    requiresVerification: boolean;
+    message: string;
+  }>;
   register: (credentials: RegisterRequest) => Promise<{
     success: boolean;
     requiresVerification: boolean;

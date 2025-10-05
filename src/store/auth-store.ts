@@ -103,6 +103,92 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     }
   },
 
+  loginWithGoogle: async (credential: string) => {
+    set({ isLoading: true, error: null, successMessage: null });
+
+    try {
+      const response = await authAPI.loginWithGoogle(credential);
+
+      // Case 1: New user - requires email verification (201)
+      if (response.statusCode === 201) {
+        const email = (response.data as any).email;
+
+        if (typeof window !== "undefined" && email) {
+          sessionStorage.setItem("pendingVerificationEmail", email);
+        }
+
+        set({
+          isLoading: false,
+          error: null,
+          successMessage: response.message,
+          requiresVerification: true,
+          pendingVerificationEmail: email,
+        });
+
+        return {
+          success: true,
+          requiresVerification: true,
+          message: response.message,
+        };
+      }
+
+      // Case 2: Existing user - login successfully (200)
+      const accessToken = response.data.accessToken;
+      const userInfo = extractUserFromToken(accessToken);
+
+      if (!userInfo) {
+        throw new Error("Failed to extract user info from token");
+      }
+
+      const user: User = {
+        id: userInfo.id,
+        displayName: userInfo.displayName,
+        email: userInfo.email,
+        avatar: undefined,
+        createdAt: undefined,
+        updatedAt: undefined,
+      };
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem("user", JSON.stringify(user));
+        sessionStorage.removeItem("pendingVerificationEmail");
+      }
+
+      set({
+        user,
+        isAuthenticated: true,
+        isLoading: false,
+        error: null,
+        successMessage: response.message,
+        requiresVerification: false,
+        pendingVerificationEmail: null,
+      });
+
+      return {
+        success: true,
+        requiresVerification: false,
+        message: response.message,
+      };
+    } catch (error) {
+      const errorMessage =
+        error instanceof ApiError
+          ? error.message
+          : "Đăng nhập với Google thất bại. Vui lòng thử lại.";
+
+      set({
+        isLoading: false,
+        error: errorMessage,
+        successMessage: null,
+      });
+
+      return {
+        success: false,
+        requiresVerification: false,
+        message: errorMessage,
+      };
+    }
+  },
+
   register: async (displayName: string, email: string, password: string, confirmPassword: string) => {
     set({ isLoading: true, error: null, successMessage: null });
     

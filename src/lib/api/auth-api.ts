@@ -9,7 +9,8 @@ import type {
   VerifyOtpRequest,
   ResendOtpRequest,
   ResendOtpResponse,
-} from '@/lib/types';
+  GoogleLoginRequest,
+} from "@/lib/types";
 
 /**
  * Auth API Service
@@ -77,6 +78,41 @@ class AuthAPI {
       return response;
     } catch (error) {
       console.error("Login failed:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Login with Google OAuth
+   * POST /auth/login/google/oauth
+   */
+  async loginWithGoogle(credential: string): Promise<ApiResponse<LoginResponse>> {
+    try {
+      // Request body is just the Google credential string (not an object!)
+      const response = await apiClient.post<ApiResponse<LoginResponse>>(
+        `${this.BASE_PATH}/login/google/oauth`,
+        JSON.stringify(credential),
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      // Save tokens after successful login
+      if (response.data.accessToken && response.data.refreshToken) {
+        apiClient.setTokens(
+          response.data.accessToken,
+          response.data.refreshToken
+        );
+
+        // Note: Login response doesn't include user data
+        // User data is extracted from JWT token in auth store
+      }
+
+      return response;
+    } catch (error) {
+      console.error("Google login failed:", error);
       throw error;
     }
   }
