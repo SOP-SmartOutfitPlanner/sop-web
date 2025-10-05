@@ -8,14 +8,21 @@ import axios, {
 
 // API Configuration
 const API_CONFIG = {
-  BASE_URL:
-    process.env.NEXT_PUBLIC_API_BASE_URL || "https://sop.wizlab.io.vn/api/v1",
+  BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL,
   TIMEOUT: 30000, // 30 seconds
   HEADERS: {
     "Content-Type": "application/json",
     Accept: "*/*",
   },
 };
+
+// Validate required environment variables
+if (!API_CONFIG.BASE_URL) {
+  console.error(
+    "Missing NEXT_PUBLIC_API_BASE_URL environment variable. " +
+    "Please add it to your .env.local file."
+  );
+}
 
 // Custom error class for API errors
 export class ApiError extends Error {
