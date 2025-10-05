@@ -4,7 +4,7 @@ export interface LoginCredentials {
 }
 
 export interface RegisterCredentials {
-  name: string;
+  displayName: string;
   email: string;
   password: string;
   confirmPassword: string;
@@ -27,6 +27,6 @@ export interface AuthStore extends AuthState {
 
 export interface AuthResponse {
   user: User;
-  token: string;
+  accessToken: string;
   refreshToken: string;
 }

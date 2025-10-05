@@ -24,9 +24,10 @@ export function RegisterForm() {
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
-      name: "",
+      displayName: "",
       email: "",
       password: "",
+      confirmPassword: "",
     },
   });
 
@@ -59,21 +60,21 @@ export function RegisterForm() {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Name Field */}
         <div className="space-y-2">
-          <Label htmlFor="name" className="text-sm font-medium text-gray-700">
+          <Label htmlFor="displayName" className="text-sm font-medium text-gray-700">
             Họ và tên
           </Label>
           <div className="relative">
             <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <Input
-              id="name"
+              id="displayName"
               type="text"
               placeholder="Nguyễn Văn A"
               className="pl-10 h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-blue-500 rounded-xl"
-              {...register("name")}
+              {...register("displayName")}
             />
           </div>
-          {errors.name && (
-            <p className="text-sm text-red-600">{errors.name.message}</p>
+          {errors.displayName && (
+            <p className="text-sm text-red-600">{errors.displayName.message}</p>
           )}
         </div>
 
@@ -127,6 +128,39 @@ export function RegisterForm() {
           </div>
           {errors.password && (
             <p className="text-sm text-red-600">{errors.password.message}</p>
+          )}
+        </div>
+
+        {/* Confirm Password Field */}
+        <div className="space-y-2">
+          <Label
+            htmlFor="confirmPassword"
+            className="text-sm font-medium text-gray-700"
+          >
+            Xác nhận mật khẩu
+          </Label>
+          <div className="relative">
+            <Input
+              id="confirmPassword"
+              type={showPassword ? "text" : "password"}
+              placeholder="••••••"
+              className="pr-10 h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-blue-500 rounded-xl"
+              {...register("confirmPassword")}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            >
+              {showPassword ? (
+                <EyeOff className="w-5 h-5" />
+              ) : (
+                <Eye className="w-5 h-5" />
+              )}
+            </button>
+          </div>
+          {errors.confirmPassword && (
+            <p className="text-sm text-red-600">{errors.confirmPassword.message}</p>
           )}
         </div>
 

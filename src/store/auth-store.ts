@@ -1,48 +1,215 @@
 import { create } from "zustand";
 import { User } from "@/lib/types/auth";
+import { authAPI, ApiError } from "@/lib/api";
+import type { LoginRequest, RegisterRequest } from "@/lib/api";
 
 interface AuthStore {
   user: User | null;
   isAuthenticated: boolean;
+  isLoading: boolean;
+  error: string | null;
+  successMessage: string | null;
+  requiresVerification: boolean;
+  pendingVerificationEmail: string | null;
   login: (email: string, password: string) => Promise<boolean>;
-  register: (name: string, email: string, password: string) => Promise<boolean>;
-  logout: () => void;
+  register: (displayName: string, email: string, password: string, confirmPassword: string) => Promise<{ success: boolean; requiresVerification: boolean; message: string }>;
+  logout: () => Promise<void>;
+  clearError: () => void;
+  clearMessages: () => void;
+  initializeAuth: () => void;
 }
 
-export const useAuthStore = create<AuthStore>((set) => ({
+export const useAuthStore = create<AuthStore>((set, get) => ({
   user: null,
   isAuthenticated: false,
+  isLoading: false,
+  error: null,
+  successMessage: null,
+  requiresVerification: false,
+  pendingVerificationEmail: null,
+
+  // Initialize auth from localStorage
+  initializeAuth: () => {
+    if (typeof window !== 'undefined') {
+      const userStr = localStorage.getItem('user');
+      const accessToken = localStorage.getItem('accessToken');
+      const pendingEmail = sessionStorage.getItem('pendingVerificationEmail');
+      
+      if (userStr && accessToken) {
+        try {
+          const user = JSON.parse(userStr);
+          set({ user, isAuthenticated: true });
+        } catch (error) {
+          console.error('Failed to parse stored user:', error);
+          localStorage.removeItem('user');
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+        }
+      }
+      
+      if (pendingEmail) {
+        set({ 
+          requiresVerification: true,
+          pendingVerificationEmail: pendingEmail 
+        });
+      }
+    }
+  },
 
   login: async (email: string, password: string) => {
-    // Mock login for development
-    if (email === "test@example.com" && password === "123456") {
+    set({ isLoading: true, error: null, successMessage: null });
+    
+    try {
+      const loginData: LoginRequest = { email, password };
+      const response = await authAPI.login(loginData);
+      
+      const userData = response.data as any;
+      
       set({
         user: {
-          id: "1",
-          name: "Test User",
-          email,
-          avatar: "https://via.placeholder.com/150",
+          id: userData.user.id,
+          displayName: userData.user.displayName,
+          email: userData.user.email,
+          avatar: userData.user.avatar,
+          createdAt: userData.user.createdAt,
+          updatedAt: userData.user.updatedAt,
         },
         isAuthenticated: true,
+        isLoading: false,
+        error: null,
+        successMessage: response.message,
+        requiresVerification: false,
+        pendingVerificationEmail: null,
       });
+      
+      // Clear pending verification
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('pendingVerificationEmail');
+      }
+      
       return true;
+    } catch (error) {
+      const errorMessage = error instanceof ApiError 
+        ? error.message 
+        : "Đăng nhập thất bại. Vui lòng thử lại.";
+      
+      set({
+        isLoading: false,
+        error: errorMessage,
+        successMessage: null,
+      });
+      
+      return false;
     }
-    return false;
   },
 
-  register: async (name: string, email: string, _password: string) => {
-    // Mock register
-    set({
-      user: {
-        id: Date.now().toString(),
-        name,
+  register: async (displayName: string, email: string, password: string, confirmPassword: string) => {
+    set({ isLoading: true, error: null, successMessage: null });
+    
+    try {
+      const registerData: RegisterRequest = {
+        displayName,
         email,
-        avatar: "https://via.placeholder.com/150",
-      },
-      isAuthenticated: true,
-    });
-    return true;
+        password,
+        confirmPassword,
+      };
+      
+      const response = await authAPI.register(registerData);
+      
+      // Case 1: Registration successful with status 201 - requires email verification
+      if (response.statusCode === 201) {
+        set({
+          isLoading: false,
+          error: null,
+          successMessage: response.message,
+          requiresVerification: true,
+          pendingVerificationEmail: email,
+        });
+        
+        return {
+          success: true,
+          requiresVerification: true,
+          message: response.message,
+        };
+      }
+      
+      // Case 2: Registration successful with tokens - no verification needed
+      const userData = response.data as any;
+      if (userData.user && userData.accessToken) {
+        set({
+          user: {
+            id: userData.user.id,
+            displayName: userData.user.displayName,
+            email: userData.user.email,
+            avatar: userData.user.avatar,
+            createdAt: userData.user.createdAt,
+            updatedAt: userData.user.updatedAt,
+          },
+          isAuthenticated: true,
+          isLoading: false,
+          error: null,
+          successMessage: response.message,
+          requiresVerification: false,
+        });
+        
+        return {
+          success: true,
+          requiresVerification: false,
+          message: response.message,
+        };
+      }
+      
+      // Fallback
+      set({ isLoading: false });
+      return {
+        success: false,
+        requiresVerification: false,
+        message: "Registration completed but authentication failed.",
+      };
+    } catch (error) {
+      const errorMessage = error instanceof ApiError 
+        ? error.message 
+        : "Đăng ký thất bại. Vui lòng thử lại.";
+      
+      set({
+        isLoading: false,
+        error: errorMessage,
+        successMessage: null,
+      });
+      
+      return {
+        success: false,
+        requiresVerification: false,
+        message: errorMessage,
+      };
+    }
   },
 
-  logout: () => set({ user: null, isAuthenticated: false }),
+  logout: async () => {
+    set({ isLoading: true });
+    
+    try {
+      await authAPI.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      // Clear session storage
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('pendingVerificationEmail');
+      }
+      
+      set({
+        user: null,
+        isAuthenticated: false,
+        isLoading: false,
+        error: null,
+        successMessage: null,
+        requiresVerification: false,
+        pendingVerificationEmail: null,
+      });
+    }
+  },
+
+  clearError: () => set({ error: null }),
+  clearMessages: () => set({ error: null, successMessage: null }),
 }));

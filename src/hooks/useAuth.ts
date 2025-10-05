@@ -31,16 +31,28 @@ export function useAuth() {
   const handleRegister = async (values: RegisterFormValues) => {
     setIsLoading(true);
     try {
-      const success = await register(
-        values.name,
+      const result = await register(
+        values.displayName,
         values.email,
-        values.password
+        values.password,
+        values.confirmPassword
       );
-      if (success) {
-        toast.success(AUTH_MESSAGES.REGISTER_SUCCESS);
-        router.push(AUTH_ROUTES.DASHBOARD);
+      
+      if (result.success) {
+        // Show message from API
+        toast.success(result.message);
+        
+        // If requires email verification, redirect to verification page
+        if (result.requiresVerification) {
+          // You can create a verification page or show a modal
+          // For now, just show the message
+          router.push('/verify-email');
+        } else {
+          // Direct login, go to dashboard
+          router.push(AUTH_ROUTES.DASHBOARD);
+        }
       } else {
-        toast.error(AUTH_MESSAGES.REGISTER_ERROR);
+        toast.error(result.message || AUTH_MESSAGES.REGISTER_ERROR);
       }
     } catch (error) {
       console.error(error);

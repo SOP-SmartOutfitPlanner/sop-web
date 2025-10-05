@@ -1,8 +1,10 @@
 export interface User {
   id: string;
-  name: string;
+  displayName: string;
   email: string;
-  avatar: string;
+  avatar?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export type AuthFormType = "login" | "register";
@@ -13,5 +15,6 @@ export interface LoginFormValues {
 }
 
 export interface RegisterFormValues extends LoginFormValues {
-  name: string;
+  displayName: string;
+  confirmPassword: string;
 }

@@ -68,9 +68,9 @@ export function Header({ onMenuClick }: HeaderProps) {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={user?.avatar} alt={user?.name} />
+                  <AvatarImage src={user?.avatar} alt={user?.displayName} />
                   <AvatarFallback>
-                    {user?.name?.charAt(0)?.toUpperCase() || "U"}
+                    {user?.displayName?.charAt(0)?.toUpperCase() || "U"}
                   </AvatarFallback>
                 </Avatar>
               </Button>
@@ -78,7 +78,7 @@ export function Header({ onMenuClick }: HeaderProps) {
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <div className="flex items-center justify-start gap-2 p-2">
                 <div className="flex flex-col space-y-1 leading-none">
-                  {user?.name && <p className="font-medium">{user.name}</p>}
+                  {user?.displayName && <p className="font-medium">{user.displayName}</p>}
                   {user?.email && (
                     <p className="w-[200px] truncate text-sm text-muted-foreground">
                       {user.email}
