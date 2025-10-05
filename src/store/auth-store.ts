@@ -1,24 +1,12 @@
 import { create } from "zustand";
-import { User } from "@/lib/types/auth";
 import { authAPI, ApiError, apiClient } from "@/lib/api";
-import type { LoginRequest, RegisterRequest } from "@/lib/api";
 import { extractUserFromToken } from "@/lib/utils/jwt";
-
-interface AuthStore {
-  user: User | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  error: string | null;
-  successMessage: string | null;
-  requiresVerification: boolean;
-  pendingVerificationEmail: string | null;
-  login: (email: string, password: string) => Promise<boolean>;
-  register: (displayName: string, email: string, password: string, confirmPassword: string) => Promise<{ success: boolean; requiresVerification: boolean; message: string }>;
-  logout: () => Promise<void>;
-  clearError: () => void;
-  clearMessages: () => void;
-  initializeAuth: () => void;
-}
+import type {
+  User,
+  LoginRequest,
+  RegisterRequest,
+  AuthStore,
+} from "@/lib/types";
 
 export const useAuthStore = create<AuthStore>((set, get) => ({
   user: null,

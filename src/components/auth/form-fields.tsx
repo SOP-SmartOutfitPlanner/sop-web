@@ -7,7 +7,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { LoginFormValues, RegisterFormValues } from "@/lib/types/auth";
+import { LoginFormValues, RegisterFormValues } from "@/lib/types";
 
 interface FieldProps {
   control: Control<LoginFormValues | RegisterFormValues>;

@@ -189,8 +189,30 @@ class ApiClient {
         }
 
         // Handle 401 Unauthorized - Try to refresh token
-        if (error.response?.status === 401 && this.refreshToken) {
+        // BUT: Don't refresh for login/register/refresh-token endpoints!
+        const url = error.config?.url || "";
+        const isAuthEndpoint =
+          url.includes("/auth") &&
+          (url.endsWith("/auth") || // Login endpoint
+            url.includes("/register") ||
+            url.includes("/refresh-token") ||
+            url.includes("/otp"));
+
+        // Also check if this request already failed after a retry
+        const isRetry = (error.config as any)?._retry;
+
+        if (
+          error.response?.status === 401 &&
+          this.refreshToken &&
+          !isAuthEndpoint &&
+          !isRetry
+        ) {
           try {
+            // Mark this request as being retried to prevent infinite loops
+            if (error.config) {
+              (error.config as any)._retry = true;
+            }
+
             const refreshed = await this.refreshAccessToken();
             if (refreshed && error.config) {
               // Retry the original request with new token

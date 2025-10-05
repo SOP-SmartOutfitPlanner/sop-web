@@ -66,7 +66,7 @@ export default function VerifyEmailPage() {
 
     setIsVerifying(true);
     try {
-      const response = await authAPI.verifyOtp(email, otp);
+      const response = await authAPI.verifyOtp({ email, otp });
 
       // Success! OTP verified
       toast.success(response.message || "Xác thực thành công!");
@@ -96,7 +96,7 @@ export default function VerifyEmailPage() {
 
     setIsResending(true);
     try {
-      const response = await authAPI.resendOtp(email);
+      const response = await authAPI.resendOtp({ email });
 
       // Success - show info
       if (response.statusCode === 200 && response.data) {

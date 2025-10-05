@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { loginSchema } from "@/lib/validations/auth";
 import { SocialLoginButton } from "./auth-container";
-import type { LoginFormValues } from "@/lib/types/auth";
+import type { LoginFormValues } from "@/lib/types";
 
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);

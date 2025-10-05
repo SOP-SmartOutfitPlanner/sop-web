@@ -3,7 +3,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/auth-store";
 import { AUTH_MESSAGES, AUTH_ROUTES } from "@/lib/constants/auth";
-import type { LoginFormValues, RegisterFormValues } from "@/lib/types/auth";
+import type { LoginFormValues, RegisterFormValues } from "@/lib/types";
 
 export function useAuth() {
   const [isLoading, setIsLoading] = useState(false);

@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import type { AuthFormType } from "@/lib/types/auth";
+import type { AuthFormType } from "@/lib/types";
 
 interface SubmitButtonProps {
   isLoading: boolean;

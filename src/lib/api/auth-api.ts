@@ -1,64 +1,15 @@
 import { apiClient } from './client';
-
-// Request interfaces
-export interface RegisterRequest {
-  email: string;
-  displayName: string;
-  password: string;
-  confirmPassword: string;
-}
-
-export interface LoginRequest {
-  email: string;
-  password: string;
-}
-
-export interface RefreshTokenRequest {
-  refreshToken: string;
-}
-
-// Generic API Response Wrapper
-export interface ApiResponse<T> {
-  statusCode: number;
-  message: string;
-  data: T;
-}
-
-// Response data interfaces
-export interface RegisterResponseData {
-  email: string;
-  message: string;
-  accessToken?: string;
-  refreshToken?: string;
-  user?: UserResponse;
-}
-
-export interface AuthData {
-  accessToken: string;
-  refreshToken: string;
-  user: UserResponse;
-}
-
-export interface UserResponse {
-  id: string;
-  email: string;
-  displayName: string;
-  avatar?: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-// Combined response for convenience
-export interface AuthResponse {
-  message: string;
-  data: RegisterResponseData | AuthData;
-  statusCode: number;
-}
-
-export interface RefreshTokenResponse {
-  accessToken: string;
-  refreshToken: string;
-}
+import type {
+  ApiResponse,
+  LoginRequest,
+  RegisterRequest,
+  LoginResponse,
+  RegisterResponse,
+  TokenPair,
+  VerifyOtpRequest,
+  ResendOtpRequest,
+  ResendOtpResponse,
+} from '@/lib/types';
 
 /**
  * Auth API Service
@@ -69,11 +20,13 @@ class AuthAPI {
   /**
    * Register a new user
    * POST /auth/register
-   * Returns 201 with OTP message or auth data
+   * Returns 201 with OTP message
    */
-  async register(data: RegisterRequest): Promise<AuthResponse> {
+  async register(
+    data: RegisterRequest
+  ): Promise<ApiResponse<RegisterResponse>> {
     try {
-      const response = await apiClient.post<ApiResponse<RegisterResponseData>>(
+      const response = await apiClient.post<ApiResponse<RegisterResponse>>(
         `${this.BASE_PATH}/register`,
         data
       );
@@ -82,29 +35,18 @@ class AuthAPI {
       if (response.statusCode === 201) {
         // Registration successful, but needs email verification
         // Don't save tokens yet, user needs to verify email first
-        if (typeof window !== 'undefined') {
+        if (typeof window !== "undefined") {
           // Store email for verification step
-          sessionStorage.setItem('pendingVerificationEmail', response.data.email);
+          sessionStorage.setItem(
+            "pendingVerificationEmail",
+            response.data.email
+          );
         }
       }
 
-      // If tokens are provided (no email verification needed), save them
-      if (response.data.accessToken && response.data.refreshToken) {
-        apiClient.setTokens(response.data.accessToken, response.data.refreshToken);
-        
-        // Save user data to localStorage
-        if (response.data.user && typeof window !== 'undefined') {
-          localStorage.setItem('user', JSON.stringify(response.data.user));
-        }
-      }
-
-      return {
-        message: response.message,
-        data: response.data,
-        statusCode: response.statusCode,
-      };
+      return response;
     } catch (error) {
-      console.error('Registration failed:', error);
+      console.error("Registration failed:", error);
       throw error;
     }
   }
@@ -113,15 +55,13 @@ class AuthAPI {
    * Login user
    * POST /auth (not /auth/login)
    */
-  async login(data: LoginRequest): Promise<AuthResponse> {
+  async login(data: LoginRequest): Promise<ApiResponse<LoginResponse>> {
     try {
       // Login endpoint is just /auth
-      const response = await apiClient.post<
-        ApiResponse<{
-          accessToken: string;
-          refreshToken: string;
-        }>
-      >("/auth", data);
+      const response = await apiClient.post<ApiResponse<LoginResponse>>(
+        "/auth",
+        data
+      );
 
       // Save tokens after successful login
       if (response.data.accessToken && response.data.refreshToken) {
@@ -134,14 +74,7 @@ class AuthAPI {
         // User data is extracted from JWT token in auth store
       }
 
-      return {
-        message: response.message,
-        data: {
-          accessToken: response.data.accessToken,
-          refreshToken: response.data.refreshToken,
-        } as any,
-        statusCode: response.statusCode,
-      };
+      return response;
     } catch (error) {
       console.error("Login failed:", error);
       throw error;
@@ -168,25 +101,25 @@ class AuthAPI {
    * Refresh access token
    * POST /auth/refresh-token
    */
-  async refreshToken(
-    refreshToken: string
-  ): Promise<{ accessToken: string; refreshToken: string }> {
+  async refreshToken(refreshToken: string): Promise<TokenPair> {
     try {
       // Request body is just the refresh token string (not an object!)
-      const response = await apiClient.post<
-        ApiResponse<{
-          accessToken: string;
-          refreshToken: string;
-        }>
-      >(`${this.BASE_PATH}/refresh-token`, JSON.stringify(refreshToken), {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      const response = await apiClient.post<ApiResponse<TokenPair>>(
+        `${this.BASE_PATH}/refresh-token`,
+        JSON.stringify(refreshToken),
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       // Update tokens
       if (response.data.accessToken && response.data.refreshToken) {
-        apiClient.setTokens(response.data.accessToken, response.data.refreshToken);
+        apiClient.setTokens(
+          response.data.accessToken,
+          response.data.refreshToken
+        );
       }
 
       return response.data;
@@ -199,28 +132,14 @@ class AuthAPI {
 
   /**
    * Get current user profile
-   * GET /auth/me
+   * NOTE: This endpoint doesn't exist in the API
+   * User data is extracted from JWT token instead
+   * See: lib/utils/jwt.ts - extractUserFromToken()
    */
-  async getCurrentUser(): Promise<UserResponse> {
-    try {
-      const response = await apiClient.get<ApiResponse<UserResponse>>(
-        `${this.BASE_PATH}/me`
-      );
-
-      // Extract user data from response wrapper
-      const userData = response.data;
-
-      // Update user data in localStorage
-      if (typeof window !== "undefined") {
-        localStorage.setItem("user", JSON.stringify(userData));
-      }
-
-      return userData;
-    } catch (error) {
-      console.error("Failed to get current user:", error);
-      throw error;
-    }
-  }
+  // async getCurrentUser(): Promise<User> {
+  //   // Not implemented - no /auth/me endpoint
+  //   throw new Error("Use extractUserFromToken() instead");
+  // }
 
   /**
    * Request password reset
@@ -255,22 +174,24 @@ class AuthAPI {
    * Verify email with OTP
    * POST /auth/otp/verify
    */
-  async verifyOtp(email: string, otp: string): Promise<ApiResponse<null>> {
+  async verifyOtp(
+    data: VerifyOtpRequest
+  ): Promise<ApiResponse<null>> {
     try {
       const response = await apiClient.post<ApiResponse<null>>(
         `${this.BASE_PATH}/otp/verify`,
-        { email, otp }
+        data
       );
 
       // After successful OTP verification, user needs to login
       // Clear pending verification email
-      if (response.statusCode === 200 && typeof window !== 'undefined') {
-        sessionStorage.removeItem('pendingVerificationEmail');
+      if (response.statusCode === 200 && typeof window !== "undefined") {
+        sessionStorage.removeItem("pendingVerificationEmail");
       }
 
       return response;
     } catch (error) {
-      console.error('OTP verification failed:', error);
+      console.error("OTP verification failed:", error);
       throw error;
     }
   }
@@ -293,20 +214,13 @@ class AuthAPI {
    * POST /auth/otp/resend
    */
   async resendOtp(
-    email: string
-  ): Promise<
-    ApiResponse<{
-      expiryMinutes: number;
-      remainingAttempts: number;
-    } | null>
-  > {
+    data: ResendOtpRequest
+  ): Promise<ApiResponse<ResendOtpResponse | null>> {
     try {
-      return await apiClient.post<
-        ApiResponse<{
-          expiryMinutes: number;
-          remainingAttempts: number;
-        } | null>
-      >(`${this.BASE_PATH}/otp/resend`, { email });
+      return await apiClient.post<ApiResponse<ResendOtpResponse | null>>(
+        `${this.BASE_PATH}/otp/resend`,
+        data
+      );
     } catch (error) {
       console.error("Resend OTP failed:", error);
       throw error;

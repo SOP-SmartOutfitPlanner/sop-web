@@ -12,7 +12,7 @@ import type {
   AuthFormType,
   LoginFormValues,
   RegisterFormValues,
-} from "@/lib/types/auth";
+} from "@/lib/types";
 
 interface AuthFormProps {
   type: AuthFormType;

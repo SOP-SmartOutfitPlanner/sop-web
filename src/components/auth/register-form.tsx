@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { registerSchema } from "@/lib/validations/auth";
 import { SocialLoginButton } from "./auth-container";
-import type { RegisterFormValues } from "@/lib/types/auth";
+import type { RegisterFormValues } from "@/lib/types";
 
 export function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
