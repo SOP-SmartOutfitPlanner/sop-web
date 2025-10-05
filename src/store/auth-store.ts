@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { authAPI, ApiError, apiClient } from "@/lib/api";
+import { authAPI, ApiError } from "@/lib/api";
 import { extractUserFromToken } from "@/lib/utils/jwt";
 import type {
   User,
@@ -8,7 +8,7 @@ import type {
   AuthStore,
 } from "@/lib/types";
 
-export const useAuthStore = create<AuthStore>((set, get) => ({
+export const useAuthStore = create<AuthStore>((set) => ({
   user: null,
   isAuthenticated: false,
   isLoading: false,
@@ -28,7 +28,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         try {
           const user = JSON.parse(userStr);
           set({ user, isAuthenticated: true });
-        } catch (error) {
+        } catch (error: unknown) {
           console.error('Failed to parse stored user:', error);
           localStorage.removeItem('user');
           localStorage.removeItem('accessToken');
@@ -54,7 +54,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       
       // Login successful - tokens are saved automatically by authAPI
       // Extract user info from JWT token
-      const accessToken = (response.data as any).accessToken;
+      const accessToken = (response.data as { accessToken: string }).accessToken;
       const userInfo = extractUserFromToken(accessToken);
       
       if (!userInfo) {
@@ -88,7 +88,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       });
       
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
       const errorMessage = error instanceof ApiError 
         ? error.message 
         : "Đăng nhập thất bại. Vui lòng thử lại.";
@@ -109,9 +109,9 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     try {
       const response = await authAPI.loginWithGoogle(credential);
 
-      // Case 1: New user - requires email verification (201)
-      if (response.statusCode === 201) {
-        const email = (response.data as any).email;
+        // Case 1: New user - requires email verification (201)
+        if (response.statusCode === 201) {
+          const email = (response.data as { email?: string }).email;
 
         if (typeof window !== "undefined" && email) {
           sessionStorage.setItem("pendingVerificationEmail", email);
@@ -169,7 +169,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         requiresVerification: false,
         message: response.message,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       const errorMessage =
         error instanceof ApiError
           ? error.message
@@ -189,18 +189,11 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     }
   },
 
-  register: async (displayName: string, email: string, password: string, confirmPassword: string) => {
+  register: async (credentials: RegisterRequest) => {
     set({ isLoading: true, error: null, successMessage: null });
     
     try {
-      const registerData: RegisterRequest = {
-        displayName,
-        email,
-        password,
-        confirmPassword,
-      };
-      
-      const response = await authAPI.register(registerData);
+      const response = await authAPI.register(credentials);
       
       // Case 1: Registration successful with status 201 - requires email verification
       if (response.statusCode === 201) {
@@ -209,7 +202,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
           error: null,
           successMessage: response.message,
           requiresVerification: true,
-          pendingVerificationEmail: email,
+          pendingVerificationEmail: credentials.email,
         });
         
         return {
@@ -220,7 +213,18 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       }
       
       // Case 2: Registration successful with tokens - no verification needed
-      const userData = response.data as any;
+      const userData = response.data as {
+        user?: { 
+          id: string; 
+          displayName: string; 
+          email: string; 
+          avatar?: string;
+          createdAt?: string;
+          updatedAt?: string;
+        };
+        accessToken?: string;
+        refreshToken?: string;
+      };
       if (userData.user && userData.accessToken) {
         set({
           user: {
@@ -252,7 +256,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         requiresVerification: false,
         message: "Registration completed but authentication failed.",
       };
-    } catch (error) {
+    } catch (error: unknown) {
       const errorMessage = error instanceof ApiError 
         ? error.message 
         : "Đăng ký thất bại. Vui lòng thử lại.";
@@ -277,7 +281,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     try {
       // Call logout API (will send Authorization header automatically)
       await authAPI.logout();
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Logout error:', error);
       // Continue with local logout even if API fails
     } finally {
@@ -302,4 +306,5 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   clearError: () => set({ error: null }),
   clearMessages: () => set({ error: null, successMessage: null }),
+  setLoading: (loading: boolean) => set({ isLoading: loading }),
 }));

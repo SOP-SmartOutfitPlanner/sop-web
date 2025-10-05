@@ -12,6 +12,7 @@ export interface DecodedToken {
   iss?: string;
   aud?: string;
   jti?: string;
+  [key: string]: unknown; // Allow dynamic claim names
 }
 
 /**
@@ -55,9 +56,9 @@ export function extractUserFromToken(token: string) {
   }
 
   // Extract user info from JWT claims
-  const email = decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"] || decoded.emailaddress;
+  const email = (decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"] as string | undefined) || decoded.emailaddress;
   const userId = decoded.UserId;
-  const role = decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] || decoded.role;
+  const role = (decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] as string | undefined) || decoded.role;
   const firstTime = decoded.FirstTime === "True";
 
   return {

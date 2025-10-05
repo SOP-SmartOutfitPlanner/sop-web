@@ -9,7 +9,6 @@ import type {
   VerifyOtpRequest,
   ResendOtpRequest,
   ResendOtpResponse,
-  GoogleLoginRequest,
 } from "@/lib/types";
 
 /**

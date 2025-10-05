@@ -56,6 +56,7 @@ export default function VerifyEmailPage() {
     if (otp.length === 6) {
       handleVerifyOtp();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [otp]);
 
   const handleVerifyOtp = async () => {

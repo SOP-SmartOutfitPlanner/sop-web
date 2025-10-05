@@ -54,15 +54,11 @@ export interface TokenPair {
   refreshToken: string;
 }
 
-export interface LoginResponse extends TokenPair {}
+export type LoginResponse = TokenPair;
 
 export interface RegisterResponse {
   email: string;
   message: string;
-}
-
-export interface VerifyOtpResponse {
-  // API returns null on success
 }
 
 export interface ResendOtpResponse {

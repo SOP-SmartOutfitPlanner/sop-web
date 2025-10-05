@@ -48,7 +48,7 @@ export const PasswordField = ({ control }: FieldProps) => (
 export const NameField = ({ control }: FieldProps) => (
   <FormField
     control={control}
-    name="name"
+    name="displayName"
     render={({ field }) => (
       <FormItem>
         <FormLabel>Tên</FormLabel>

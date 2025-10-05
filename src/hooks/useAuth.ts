@@ -31,12 +31,7 @@ export function useAuth() {
   const handleRegister = async (values: RegisterFormValues) => {
     setIsLoading(true);
     try {
-      const result = await register(
-        values.displayName,
-        values.email,
-        values.password,
-        values.confirmPassword
-      );
+      const result = await register(values);
       
       if (result.success) {
         // Show message from API

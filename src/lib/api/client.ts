@@ -29,7 +29,7 @@ export class ApiError extends Error {
   constructor(
     message: string,
     public statusCode?: number,
-    public data?: any,
+    public data?: unknown,
     public originalError?: AxiosError
   ) {
     super(message);
@@ -42,7 +42,7 @@ export interface ErrorResponse {
   message: string;
   statusCode?: number;
   errors?: Record<string, string[]>;
-  details?: any;
+  details?: unknown;
 }
 
 class ApiClient {
@@ -206,6 +206,7 @@ class ApiClient {
             url.includes("/otp"));
 
         // Also check if this request already failed after a retry
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const isRetry = (error.config as any)?._retry;
 
         if (
@@ -217,6 +218,7 @@ class ApiClient {
           try {
             // Mark this request as being retried to prevent infinite loops
             if (error.config) {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               (error.config as any)._retry = true;
             }
 
@@ -225,7 +227,7 @@ class ApiClient {
               // Retry the original request with new token
               return this.client.request(error.config);
             }
-          } catch (refreshError) {
+          } catch {
             // Refresh failed, clear tokens and redirect to login
             this.clearTokens();
             if (typeof window !== "undefined") {
@@ -287,8 +289,9 @@ class ApiClient {
     }
 
     // Server error response
-    const response = error.response;
-    const data = response.data as any;
+      const response = error.response;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const data = response.data as any;
 
     let message = "An unexpected error occurred";
     let statusCode = response.status;
@@ -339,6 +342,7 @@ class ApiClient {
   /**
    * Generic GET request
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public async get<T = any>(
     url: string,
     config?: AxiosRequestConfig
@@ -350,8 +354,10 @@ class ApiClient {
   /**
    * Generic POST request
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public async post<T = any>(
     url: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     data?: any,
     config?: AxiosRequestConfig
   ): Promise<T> {
@@ -362,8 +368,10 @@ class ApiClient {
   /**
    * Generic PUT request
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public async put<T = any>(
     url: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     data?: any,
     config?: AxiosRequestConfig
   ): Promise<T> {
@@ -374,8 +382,10 @@ class ApiClient {
   /**
    * Generic PATCH request
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public async patch<T = any>(
     url: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     data?: any,
     config?: AxiosRequestConfig
   ): Promise<T> {
@@ -386,6 +396,7 @@ class ApiClient {
   /**
    * Generic DELETE request
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public async delete<T = any>(
     url: string,
     config?: AxiosRequestConfig
@@ -397,6 +408,7 @@ class ApiClient {
   /**
    * Upload file with progress tracking
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public async uploadFile<T = any>(
     url: string,
     file: File,

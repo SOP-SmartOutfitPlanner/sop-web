@@ -45,11 +45,11 @@ export function GoogleLoginButton() {
           toast.error(result.message);
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Google login error:", error);
       
       // Handle specific error messages
-      const errorMessage = error?.message || "Đăng nhập với Google thất bại";
+      const errorMessage = (error as Error)?.message || "Đăng nhập với Google thất bại";
       
       if (errorMessage.includes("must login with email and password")) {
         toast.error(

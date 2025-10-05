@@ -24,9 +24,10 @@ export function AuthForm({ type }: AuthFormProps) {
   const form = useForm<LoginFormValues | RegisterFormValues>({
     resolver: zodResolver(type === "login" ? loginSchema : registerSchema),
     defaultValues: {
-      name: "",
+      displayName: "",
       email: "",
       password: "",
+      confirmPassword: "",
     },
   });
 
