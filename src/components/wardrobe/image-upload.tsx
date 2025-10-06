@@ -7,7 +7,7 @@ import Image from "next/image";
 
 interface ImageUploadProps {
   value?: string;
-  onChange: (file: File | null) => void;
+  onChange: (file: File | null) => void | Promise<void>;
   onRemove?: () => void;
 }
 
@@ -16,30 +16,35 @@ export function ImageUpload({ value, onChange, onRemove }: ImageUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = (file: File) => {
+  const handleFileSelect = async (file: File) => {
     if (file && file.type.startsWith("image/")) {
       const reader = new FileReader();
       reader.onload = (e) => {
         setPreview(e.target?.result as string);
       };
       reader.readAsDataURL(file);
-      onChange(file);
+      
+      // Handle async onChange
+      const result = onChange(file);
+      if (result instanceof Promise) {
+        await result;
+      }
     }
   };
 
-  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileInput = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      handleFileSelect(file);
+      await handleFileSelect(file);
     }
   };
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
     const file = e.dataTransfer.files[0];
     if (file) {
-      handleFileSelect(file);
+      await handleFileSelect(file);
     }
   };
 
