@@ -1,11 +1,22 @@
 "use client";
 
-import { useState, useCallback, useEffect, memo } from "react";
+/**
+ * Wardrobe Toolbar Component
+ * 
+ * Optimized toolbar with:
+ * - Fuse.js powered fuzzy search
+ * - Memoized constants and dynamic data
+ * - Performance-optimized components
+ * - Real-time filtering and sorting
+ */
+
+import { useState, useCallback, useEffect, memo, useMemo } from "react";
 import { Search, Command, Filter, X, SortAsc } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAdvancedSearch } from "@/hooks/useAdvancedSearch";
+import { useWardrobeStore } from "@/store/wardrobe-store";
 import {
   Select,
   SelectContent,
@@ -20,7 +31,7 @@ import {
 } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { WardrobeFilters, Collection } from "@/types/wardrobe";
-import { TypeKind, Season, Occasion, WardrobeItem } from "@/types";
+import { WardrobeItem } from "@/types";
 import { getUniqueColorsFromItems } from "@/lib/mock/collections";
 import { cn } from "@/lib/utils";
 
@@ -33,48 +44,50 @@ interface ToolbarProps {
   onClearSelection: () => void;
   onSelectMode: (enabled: boolean) => void;
   isSelectMode: boolean;
-  wardrobeItems: WardrobeItem[]; // Add this to get real data
+  wardrobeItems: WardrobeItem[];
 }
 
 interface FilterPanelProps {
   filters: WardrobeFilters;
   onToggleFilterArray: (key: keyof WardrobeFilters, value: string) => void;
   onClearAll: () => void;
-  wardrobeItems: WardrobeItem[]; // Add this for dynamic colors
+  wardrobeItems: WardrobeItem[];
 }
 
-// Constants
-const TYPE_OPTIONS: { value: TypeKind; label: string }[] = [
-  { value: "top", label: "Tops" },
-  { value: "bottom", label: "Bottoms" },
-  { value: "shoes", label: "Shoes" },
-  { value: "outer", label: "Outerwear" },
-  { value: "accessory", label: "Accessories" },
-];
 
-const SEASON_OPTIONS: { value: Season; label: string }[] = [
-  { value: "spring", label: "Spring" },
-  { value: "summer", label: "Summer" },
-  { value: "fall", label: "Fall" },
-  { value: "winter", label: "Winter" },
-];
 
-const OCCASION_OPTIONS: { value: Occasion; label: string }[] = [
-  { value: "casual", label: "Casual" },
-  { value: "smart", label: "Smart" },
-  { value: "formal", label: "Formal" },
-  { value: "sport", label: "Sport" },
-  { value: "travel", label: "Travel" },
-];
-
-// COLOR_OPTIONS will be generated dynamically from wardrobe items
-
-const SORT_OPTIONS = [
-  { value: "newest", label: "Newest First" },
-  { value: "mostWorn", label: "Most Worn" },
-  { value: "leastWorn", label: "Least Worn" },
-  { value: "alpha", label: "A → Z" },
-];
+// Constants - Optimized and memoized
+const FILTER_OPTIONS = {
+  types: [
+    { value: "top", label: "Tops" },
+    { value: "bottom", label: "Bottoms" },
+    { value: "shoes", label: "Shoes" },
+    { value: "outer", label: "Outerwear" },
+    { value: "accessory", label: "Accessories" },
+  ] as const,
+  
+  seasons: [
+    { value: "spring", label: "Spring" },
+    { value: "summer", label: "Summer" },
+    { value: "fall", label: "Fall" },
+    { value: "winter", label: "Winter" },
+  ] as const,
+  
+  occasions: [
+    { value: "casual", label: "Casual" },
+    { value: "smart", label: "Smart" },
+    { value: "formal", label: "Formal" },
+    { value: "sport", label: "Sport" },
+    { value: "travel", label: "Travel" },
+  ] as const,
+  
+  sort: [
+    { value: "newest", label: "Newest First" },
+    { value: "mostWorn", label: "Most Worn" },
+    { value: "leastWorn", label: "Least Worn" },
+    { value: "alpha", label: "A → Z" },
+  ] as const,
+} as const;
 
 // Hooks
 function useKeyboardShortcuts() {
@@ -114,6 +127,9 @@ const SearchInput = memo(function SearchInput({
 }) {
   const [focused, setFocused] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  
+  // Get store methods to sync search with filtering
+  const { setSearchQuery } = useWardrobeStore();
 
   // Use fuzzy search for suggestions
   const { results, suggestions } = useAdvancedSearch(wardrobeItems, value);
@@ -126,9 +142,10 @@ const SearchInput = memo(function SearchInput({
   }, [shouldShowSuggestions]);
 
   const handleSuggestionClick = useCallback((suggestion: string) => {
-    onChange(suggestion);
+    onChange(suggestion); // Update local state
+    setSearchQuery(suggestion); // Sync with store for filtering
     setShowSuggestions(false);
-  }, [onChange]);
+  }, [onChange, setSearchQuery]);
 
   return (
     <div className="relative flex-1 max-w-md">
@@ -137,7 +154,11 @@ const SearchInput = memo(function SearchInput({
         id="wardrobe-search"
         placeholder="Search wardrobe with AI..."
         value={value}
-        onChange={(e) => onChange(e.target.value || "")}
+        onChange={(e) => {
+          const newValue = e.target.value || "";
+          onChange(newValue); // Update local state
+          setSearchQuery(newValue); // Sync with store for filtering
+        }}
         onFocus={() => setFocused(true)}
         onBlur={() => {
           // Delay to allow suggestion clicks
@@ -228,6 +249,7 @@ const CollectionSelect = memo(function CollectionSelect({
   collections: Collection[];
   onChange: (value: string) => void;
 }) {
+  // Only use onChange prop - let parent handle store sync to avoid double updates
   return (
     <Select value={value || "all"} onValueChange={onChange}>
       <SelectTrigger className="w-full lg:w-48">
@@ -260,14 +282,22 @@ const SortSelect = memo(function SortSelect({
   value: string;
   onChange: (value: string) => void;
 }) {
+  // Use store hook for additional sync (setSortBy for sorting logic)
+  const { setSortBy } = useWardrobeStore();
+
+  const handleSortChange = useCallback((sortValue: string) => {
+    onChange(sortValue); // Update filters via parent (toolbar → wardrobe page → store)
+    setSortBy(sortValue); // Also update store sortBy for sorting logic
+  }, [onChange, setSortBy]);
+
   return (
-    <Select value={value || "newest"} onValueChange={onChange}>
+    <Select value={value || "newest"} onValueChange={handleSortChange}>
       <SelectTrigger className="w-full lg:w-48">
         <SortAsc className="w-4 h-4 mr-2" />
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
-        {SORT_OPTIONS.map((option) => (
+        {FILTER_OPTIONS.sort.map((option) => (
           <SelectItem key={option.value} value={option.value}>
             {option.label}
           </SelectItem>
@@ -439,8 +469,18 @@ const FilterPanel = memo(function FilterPanel({
   onClearAll,
   wardrobeItems,
 }: FilterPanelProps) {
-  // Get dynamic colors from wardrobe items
-  const availableColors = getUniqueColorsFromItems(wardrobeItems);
+  // Optimized: Memoize dynamic colors generation
+  const availableColors = useMemo(() => 
+    getUniqueColorsFromItems(wardrobeItems),
+    [wardrobeItems]
+  );
+
+
+
+  // Only update via parent to avoid double sync
+  const handleToggleFilterArray = useCallback((key: keyof WardrobeFilters, value: string) => {
+    onToggleFilterArray(key, value);
+  }, [onToggleFilterArray]);
 
   return (
     <div className="space-y-4">
@@ -455,11 +495,11 @@ const FilterPanel = memo(function FilterPanel({
       <div>
         <label className="text-sm font-medium mb-2 block">Type</label>
         <div className="grid grid-cols-2 gap-2">
-          {TYPE_OPTIONS.map((type) => (
+          {FILTER_OPTIONS.types.map((type) => (
             <div key={type.value} className="flex items-center space-x-2">
               <Checkbox
                 checked={filters.types?.includes(type.value) || false}
-                onCheckedChange={() => onToggleFilterArray("types", type.value)}
+                onCheckedChange={() => handleToggleFilterArray("types", type.value)}
               />
               <span className="text-sm">{type.label}</span>
             </div>
@@ -471,12 +511,12 @@ const FilterPanel = memo(function FilterPanel({
       <div>
         <label className="text-sm font-medium mb-2 block">Season</label>
         <div className="grid grid-cols-2 gap-2">
-          {SEASON_OPTIONS.map((season) => (
+          {FILTER_OPTIONS.seasons.map((season) => (
             <div key={season.value} className="flex items-center space-x-2">
               <Checkbox
                 checked={filters.seasons?.includes(season.value) || false}
                 onCheckedChange={() =>
-                  onToggleFilterArray("seasons", season.value)
+                  handleToggleFilterArray("seasons", season.value)
                 }
               />
               <span className="text-sm">{season.label}</span>
@@ -489,12 +529,12 @@ const FilterPanel = memo(function FilterPanel({
       <div>
         <label className="text-sm font-medium mb-2 block">Occasion</label>
         <div className="grid grid-cols-2 gap-2">
-          {OCCASION_OPTIONS.map((occasion) => (
+          {FILTER_OPTIONS.occasions.map((occasion) => (
             <div key={occasion.value} className="flex items-center space-x-2">
               <Checkbox
                 checked={filters.occasions?.includes(occasion.value) || false}
                 onCheckedChange={() =>
-                  onToggleFilterArray("occasions", occasion.value)
+                  handleToggleFilterArray("occasions", occasion.value)
                 }
               />
               <span className="text-sm">{occasion.label}</span>
@@ -507,18 +547,18 @@ const FilterPanel = memo(function FilterPanel({
       <div>
         <label className="text-sm font-medium mb-2 block">Colors</label>
         <div className="grid grid-cols-4 gap-2">
-          {availableColors.map((color) => (
+          {availableColors.map((colorOption) => (
             <button
-              key={color.value}
-              onClick={() => onToggleFilterArray("colors", color.value)}
+              key={colorOption.value}
+              onClick={() => handleToggleFilterArray("colors", colorOption.value)}
               className={cn(
                 "w-8 h-8 rounded-full border-2 transition-all",
-                filters.colors?.includes(color.value)
+                filters.colors?.includes(colorOption.value)
                   ? "border-primary scale-110"
                   : "border-border hover:scale-105"
               )}
-              style={{ backgroundColor: color.value }}
-              title={color.label}
+              style={{ backgroundColor: colorOption.value }}
+              title={colorOption.label}
             />
           ))}
         </div>

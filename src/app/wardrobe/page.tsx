@@ -23,13 +23,9 @@ export default function WardrobePage() {
     toggleSelectionMode,
     selectedItems,
     clearSelection,
+    filters,
+    setFilters: setStoreFilters,
   } = useWardrobeStore();
-
-  // Toolbar filters state
-  const [filters, setFilters] = useState<WardrobeFilters>({
-    collectionId: "all",
-    sort: "newest",
-  });
 
   // Collections data - Pass actual items instead of just length
   const collections = useMemo(() => getCollectionsWithCounts(items), [items]);
@@ -44,8 +40,8 @@ export default function WardrobePage() {
   }, []);
 
   const handleFiltersChange = useCallback((newFilters: WardrobeFilters) => {
-    setFilters(newFilters);
-  }, []);
+    setStoreFilters(newFilters);
+  }, [setStoreFilters]);
 
   const handleSelectMode = useCallback(
     (enabled: boolean) => {

@@ -1,23 +1,12 @@
 import { create } from "zustand";
+import Fuse from "fuse.js";
 import { WardrobeItem } from "@/types";
+import { WardrobeFilters } from "@/types/wardrobe";
 import {
   wardrobeAPI,
   type ApiWardrobeItem,
   type CreateWardrobeItemRequest,
 } from "@/lib/api/wardrobe-api";
-
-interface WardrobeFilters {
-  category?: "top" | "bottom" | "shoes" | "outer" | "accessory";
-  color?: string;
-  season?: "spring" | "summer" | "fall" | "winter";
-  // Advanced filters
-  types?: string[];
-  seasons?: string[];
-  occasions?: string[];
-  colors?: string[];
-  // Quick filter
-  quickFilter?: string; // "all", "casual", "work", etc.
-}
 
 interface WardrobeStore {
   items: WardrobeItem[];
@@ -50,32 +39,60 @@ interface WardrobeStore {
   setSelectionMode: (mode: boolean) => void;
 }
 
-// Helper function to filter items
+// Fuse.js configuration for filtering
+const fuseOptions = {
+  keys: [
+    { name: 'name', weight: 0.4 },
+    { name: 'brand', weight: 0.3 },
+    { name: 'colors', weight: 0.2 },
+    { name: 'tags', weight: 0.1 },
+    { name: 'type', weight: 0.1 },
+    { name: 'seasons', weight: 0.05 },
+    { name: 'occasions', weight: 0.05 },
+  ],
+  threshold: 0.4, // More lenient for filtering
+  location: 0,
+  distance: 100,
+  minMatchCharLength: 2,
+  includeScore: true,
+  ignoreLocation: true,
+};
+
+// Helper function to filter items with Fuse.js
 const filterItems = (
   items: WardrobeItem[],
   filters: WardrobeFilters,
   searchQuery: string = ""
 ): WardrobeItem[] => {
-  return items.filter((item) => {
-    // Search query filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      const matchesName = item.name.toLowerCase().includes(query);
-      const matchesBrand = item.brand?.toLowerCase().includes(query);
-      const matchesType = item.type.toLowerCase().includes(query);
-      if (!matchesName && !matchesBrand && !matchesType) return false;
-    }
+  let filteredItems = [...items];
 
-    // Basic filters
-    if (filters.category && item.type !== filters.category) return false;
-    if (filters.color && !item.colors?.includes(filters.color)) return false;
-    if (filters.season && !item.seasons?.includes(filters.season)) return false;
+  // Fuzzy search filter using Fuse.js
+  if (searchQuery && searchQuery.length >= 2) {
+    const fuse = new Fuse(items, fuseOptions);
+    const fuseResults = fuse.search(searchQuery);
+    
+    // Extract items from Fuse results
+    const searchMatchIds = new Set(fuseResults.map(result => result.item.id));
+    filteredItems = items.filter(item => searchMatchIds.has(item.id));
+  }
 
-    // Quick filter (occasions and seasons)
-    if (filters.quickFilter && filters.quickFilter !== "all") {
-      const hasOccasion = item.occasions?.includes(filters.quickFilter as "casual" | "smart" | "formal" | "sport" | "travel");
-      const hasSeason = item.seasons?.includes(filters.quickFilter as "spring" | "summer" | "fall" | "winter");
-      if (!hasOccasion && !hasSeason) return false;
+  // Apply additional filters to the search results
+  const result = filteredItems.filter((item) => {
+    // Occasion filtering
+    if (
+      filters.occasions?.length &&
+      !filters.occasions.some((o) => item.occasions?.includes(o as "casual" | "smart" | "formal" | "sport" | "travel"))
+    )
+      return false;
+
+    // Collection filter - based on occasions or tags
+    if (filters.collectionId && filters.collectionId !== "all") {
+      const hasOccasion = item.occasions?.includes(filters.collectionId as "casual" | "smart" | "formal" | "sport" | "travel");
+      const hasTag = item.tags?.includes(filters.collectionId);
+      
+      if (!hasOccasion && !hasTag) {
+        return false;
+      }
     }
 
     // Advanced filters
@@ -84,11 +101,6 @@ const filterItems = (
     if (
       filters.seasons?.length &&
       !filters.seasons.some((s) => item.seasons?.includes(s as "spring" | "summer" | "fall" | "winter"))
-    )
-      return false;
-    if (
-      filters.occasions?.length &&
-      !filters.occasions.some((o) => item.occasions?.includes(o as "casual" | "smart" | "formal" | "sport" | "travel"))
     )
       return false;
     if (
@@ -101,6 +113,8 @@ const filterItems = (
 
     return true;
   });
+  
+  return result;
 };
 
 // Helper function to sort items
