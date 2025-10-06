@@ -56,7 +56,7 @@ export function useAdvancedSearch(
 
   const results = useMemo(() => {
     if (!fuse || !searchQuery.trim()) {
-      return items.map(item => ({ item }));
+      return items.map(item => ({ item, score: undefined }));
     }
 
     const fuseResults = fuse.search(searchQuery);
@@ -126,11 +126,11 @@ export function useCategorizedSearch(items: WardrobeItem[], searchQuery: string)
     }
 
     results.forEach(result => {
-      const { item, score = 1 } = result;
+      const { item, score } = result;
       const query = searchQuery.toLowerCase();
       
       // Exact match (very high score)
-      if (score && score < 0.1) {
+      if (score !== undefined && score < 0.1) {
         categories.exactMatches.push(result);
       }
       // Name matches
