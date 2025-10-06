@@ -5,7 +5,6 @@ import {
   type ApiWardrobeItem,
   type CreateWardrobeItemRequest,
 } from "@/lib/api/wardrobe-api";
-import { generateDemoItems } from "@/lib/utils/image-utils";
 
 interface WardrobeFilters {
   category?: "top" | "bottom" | "shoes" | "outer" | "accessory";
@@ -29,6 +28,7 @@ interface WardrobeStore {
   sortBy: string;
   selectedItems: string[];
   isSelectionMode: boolean;
+  hasInitialFetch: boolean;
   addItem: (item: CreateWardrobeItemRequest) => Promise<void>;
   removeItem: (id: string) => void;
   updateItem: (id: string, item: Partial<WardrobeItem>) => Promise<void>;
@@ -140,6 +140,7 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
   sortBy: "newest",
   selectedItems: [],
   isSelectionMode: false,
+  hasInitialFetch: false,
 
   // Fetch items from API
   fetchItems: async () => {
@@ -154,6 +155,7 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
         items,
         isLoading: false,
         filteredItems: sorted,
+        hasInitialFetch: true,
       });
     } catch (error) {
       console.error("Failed to fetch items:", error);
@@ -209,9 +211,21 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
   updateItem: async (id, updatedData) => {
     set({ isLoading: true, error: null });
     try {
+      // Convert string id to number for API call
+      const numericId = parseInt(id);
+      
+      // Convert WardrobeItem fields to API format  
+      const apiUpdateData: Partial<CreateWardrobeItemRequest> = {
+        name: updatedData.name,
+        color: updatedData.color || updatedData.colors?.[0],
+        brand: updatedData.brand,
+        imgUrl: updatedData.imageUrl,
+        // Add other necessary fields as needed
+      };
+      
       const updatedApiItem = await wardrobeAPI.updateItem(
-        id,
-        updatedData as CreateWardrobeItemRequest
+        numericId,
+        apiUpdateData
       );
       const updatedItem = apiItemToWardrobeItem(updatedApiItem);
 
@@ -238,7 +252,9 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
   // Delete item via API
   deleteItem: async (id) => {
     try {
-      await wardrobeAPI.deleteItem(id);
+      // Convert string id to number for API call
+      const numericId = parseInt(id);
+      await wardrobeAPI.deleteItem(numericId);
       set((state) => {
         const newItems = state.items.filter((item) => item.id !== id);
         const filtered = filterItems(
@@ -261,18 +277,10 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
     }
   },
 
-  // Create demo items
+  // Create demo items (temporarily disabled for real API)
   createDemoItems: async () => {
     set({ isLoading: true, error: null });
     try {
-      const demoItems = generateDemoItems();
-
-      // Add all demo items to API
-      const promises = demoItems.map((item) => wardrobeAPI.createItem(item));
-      await Promise.all(promises);
-
-      // Refresh items from API
-      await get().fetchItems();
     } catch (error) {
       console.error("Failed to create demo items:", error);
       set({
@@ -366,7 +374,7 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       // Delete all items from API
-      const deletePromises = ids.map((id) => wardrobeAPI.deleteItem(id));
+      const deletePromises = ids.map((id) => wardrobeAPI.deleteItem(parseInt(id)));
       await Promise.all(deletePromises);
 
       // Update local state
@@ -399,27 +407,55 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
 
 // Helper function to convert API item to WardrobeItem
 const apiItemToWardrobeItem = (apiItem: ApiWardrobeItem): WardrobeItem => {
-  const converted = {
-    id: apiItem.id,
-    name: apiItem.name,
-    type: apiItem.type,
-    imageUrl: apiItem.imageUrl,
-    brand: apiItem.brand,
-    colors: apiItem.colors,
-    seasons: apiItem.seasons,
-    occasions: apiItem.occasions,
-    status: apiItem.status,
-    // Additional fields for ItemCard compatibility
-    category: apiItem.type, // Map type to category
-    color: apiItem.colors?.[0] || "", // Take first color
-    season: apiItem.seasons?.[0] || "", // Take first season
-    tags: [], // Default empty array for tags
-    createdAt: apiItem.createdAt || "",
-    updatedAt: apiItem.updatedAt || "",
+  // Map categoryName to type for compatibility
+  const getTypeFromCategory = (categoryName: string): "top" | "bottom" | "shoes" | "outer" | "accessory" => {
+    const category = categoryName.toLowerCase();
+    if (category.includes('top') || category.includes('shirt') || category.includes('áo')) return 'top';
+    if (category.includes('bottom') || category.includes('pants') || category.includes('quần')) return 'bottom';
+    if (category.includes('shoes') || category.includes('giày')) return 'shoes';
+    if (category.includes('outer') || category.includes('jacket') || category.includes('coat')) return 'outer';
+    return 'accessory';
   };
 
-  console.log("API Item:", apiItem);
-  console.log("Converted Item:", converted);
+  // Parse weather suitable for seasons
+  const parseSeasons = (weatherSuitable: string): ("spring" | "summer" | "fall" | "winter")[] => {
+    const weather = weatherSuitable.toLowerCase();
+    const seasons: ("spring" | "summer" | "fall" | "winter")[] = [];
+    
+    if (weather.includes('mùa hè') || weather.includes('summer') || weather.includes('nóng')) seasons.push('summer');
+    if (weather.includes('mùa đông') || weather.includes('winter') || weather.includes('lạnh')) seasons.push('winter');
+    if (weather.includes('mùa xuân') || weather.includes('spring')) seasons.push('spring');
+    if (weather.includes('mùa thu') || weather.includes('fall') || weather.includes('mát')) seasons.push('fall');
+    
+    // Default to summer if no specific season found
+    if (seasons.length === 0) seasons.push('summer');
+    
+    return seasons;
+  };
+
+  const type = getTypeFromCategory(apiItem.categoryName);
+  const seasons = parseSeasons(apiItem.weatherSuitable);
+  const occasions: ("casual" | "formal" | "sport" | "travel")[] = ["casual"]; // Default to casual
+
+  const converted: WardrobeItem = {
+    id: apiItem.id?.toString() || `${apiItem.userId}-${Date.now()}`, // Generate ID if not present
+    userId: apiItem.userId.toString(),
+    name: apiItem.name,
+    type: type,
+    imageUrl: apiItem.imgUrl,
+    brand: apiItem.brand || "",
+    colors: [apiItem.color], // Single color to array
+    seasons: seasons,
+    occasions: occasions,
+    status: "active", // Default status
+    // Additional fields for ItemCard compatibility
+    category: type,
+    color: apiItem.color,
+    season: seasons[0],
+    tags: apiItem.tag ? [apiItem.tag] : [],
+    createdAt: apiItem.createdAt || new Date().toISOString(),
+    updatedAt: apiItem.updatedAt || new Date().toISOString(),
+  };
 
   return converted;
 };

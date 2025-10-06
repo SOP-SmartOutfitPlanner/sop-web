@@ -24,6 +24,7 @@ export interface WardrobeState {
   error: string | null;
   filters: Filter;
   searchQuery: string;
+  hasInitialFetch: boolean;
 }
 
 export interface WardrobeStore extends WardrobeState {

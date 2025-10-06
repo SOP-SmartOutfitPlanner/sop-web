@@ -28,8 +28,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
         try {
           const user = JSON.parse(userStr);
           set({ user, isAuthenticated: true });
-        } catch (error: unknown) {
-          console.error('Failed to parse stored user:', error);
+        } catch {
           localStorage.removeItem('user');
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
@@ -281,8 +280,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
     try {
       // Call logout API (will send Authorization header automatically)
       await authAPI.logout();
-    } catch (error: unknown) {
-      console.error('Logout error:', error);
+    } catch {
       // Continue with local logout even if API fails
     } finally {
       // Clear all storage

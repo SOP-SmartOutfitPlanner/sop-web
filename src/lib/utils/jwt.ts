@@ -25,7 +25,6 @@ export function decodeJWT(token: string): DecodedToken | null {
     // JWT format: header.payload.signature
     const parts = token.split(".");
     if (parts.length !== 3) {
-      console.error("Invalid JWT format");
       return null;
     }
 
@@ -36,9 +35,9 @@ export function decodeJWT(token: string): DecodedToken | null {
     const decoded = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
     
     // Parse JSON
-    return JSON.parse(decoded);
-  } catch (error) {
-    console.error("Failed to decode JWT:", error);
+    const parsedPayload = JSON.parse(decoded);
+    return parsedPayload;
+  } catch {
     return null;
   }
 }

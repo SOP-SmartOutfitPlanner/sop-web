@@ -46,6 +46,7 @@ export function ItemGrid({
     selectedItems: storeSelectedItems,
     toggleItemSelection,
     isSelectionMode,
+    hasInitialFetch,
   } = useWardrobeStore();
 
   // Use external props or fallback to store values
@@ -56,11 +57,12 @@ export function ItemGrid({
   const currentError = error || storeError;
 
   useEffect(() => {
-    // Only fetch if no external items provided and store is empty
-    if (!externalItems && (!filteredItems || filteredItems.length === 0)) {
+    // Only fetch if no external items provided and haven't done initial fetch yet
+    if (!externalItems && !hasInitialFetch && (!filteredItems || filteredItems.length === 0)) {
+      console.log("📥 Fetching items from API (initial load)...");
       fetchItems();
     }
-  }, [externalItems, filteredItems, fetchItems]);
+  }, [externalItems, hasInitialFetch, filteredItems, fetchItems]);
 
   const handleDelete = async (id: string) => {
     if (window.confirm("Are you sure you want to delete this item?")) {

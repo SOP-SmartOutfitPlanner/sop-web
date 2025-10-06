@@ -5,6 +5,7 @@ import { Search, Command, Filter, X, SortAsc } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useAdvancedSearch } from "@/hooks/useAdvancedSearch";
 import {
   Select,
   SelectContent,
@@ -105,22 +106,43 @@ function useFilterCount(filters: WardrobeFilters) {
 const SearchInput = memo(function SearchInput({
   value,
   onChange,
+  wardrobeItems = [],
 }: {
   value: string;
   onChange: (value: string) => void;
+  wardrobeItems?: WardrobeItem[];
 }) {
   const [focused, setFocused] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // Use fuzzy search for suggestions
+  const { results, suggestions } = useAdvancedSearch(wardrobeItems, value);
+
+  // Show suggestions when focused and typing
+  const shouldShowSuggestions = focused && value.length >= 2 && (results.length > 0 || suggestions.length > 0);
+
+  useEffect(() => {
+    setShowSuggestions(shouldShowSuggestions);
+  }, [shouldShowSuggestions]);
+
+  const handleSuggestionClick = useCallback((suggestion: string) => {
+    onChange(suggestion);
+    setShowSuggestions(false);
+  }, [onChange]);
 
   return (
     <div className="relative flex-1 max-w-md">
       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
       <Input
         id="wardrobe-search"
-        placeholder="Search wardrobe..."
+        placeholder="Search wardrobe with AI..."
         value={value}
         onChange={(e) => onChange(e.target.value || "")}
         onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
+        onBlur={() => {
+          // Delay to allow suggestion clicks
+          setTimeout(() => setFocused(false), 200);
+        }}
         className={cn(
           "pl-10 pr-16 transition-all duration-200",
           focused && "ring-2 ring-primary/20"
@@ -130,6 +152,69 @@ const SearchInput = memo(function SearchInput({
         <Command className="w-3 h-3" />
         <span>K</span>
       </div>
+
+      {/* Fuzzy Search Suggestions Dropdown */}
+      {showSuggestions && (
+        <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-background border border-border rounded-lg shadow-lg max-h-60 overflow-y-auto">
+          {/* Search Results */}
+          {results.length > 0 && (
+            <div className="p-2">
+              <div className="text-xs font-medium text-muted-foreground mb-2">
+                Found {results.length} items
+              </div>
+              {results.slice(0, 5).map((result) => (
+                <div
+                  key={result.item.id}
+                  className="flex items-center gap-2 p-2 rounded-md hover:bg-accent cursor-pointer text-sm"
+                  onClick={() => handleSuggestionClick(result.item.name)}
+                >
+                  <div className="w-6 h-6 bg-muted rounded flex-shrink-0 flex items-center justify-center">
+                    <span className="text-xs">
+                      {result.item.type === 'top' ? '👕' : 
+                       result.item.type === 'bottom' ? '👖' : 
+                       result.item.type === 'shoes' ? '👟' : '🧥'}
+                    </span>
+                  </div>
+                  <div className="flex-1 truncate">
+                    <span className="font-medium">{result.item.name}</span>
+                    {result.item.brand && (
+                      <span className="text-muted-foreground ml-2">• {result.item.brand}</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Search Suggestions */}
+          {suggestions.length > 0 && (
+            <div className="border-t p-2">
+              <div className="text-xs font-medium text-muted-foreground mb-2">
+                Suggestions
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {suggestions.slice(0, 6).map((suggestion, index) => (
+                  <Badge
+                    key={index}
+                    variant="outline"
+                    className="text-xs cursor-pointer hover:bg-accent"
+                    onClick={() => handleSuggestionClick(suggestion)}
+                  >
+                    {suggestion}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* No results */}
+          {results.length === 0 && suggestions.length === 0 && value.length >= 2 && (
+            <div className="p-4 text-center text-muted-foreground text-sm">
+              No items found for &ldquo;{value}&rdquo;
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 });
@@ -489,6 +574,7 @@ export const Toolbar = memo(function Toolbar({
         <SearchInput
           value={filters.q || ""}
           onChange={(value) => updateFilter("q", value || undefined)}
+          wardrobeItems={wardrobeItems}
         />
 
         {!isSelectMode && (

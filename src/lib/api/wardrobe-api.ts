@@ -1,90 +1,115 @@
-const API_BASE_URL = "https://68cd6eccda4697a7f305f673.mockapi.io";
+import { apiClient } from "./client";
 
+// API wardrobe item interface matching the real API
 export interface ApiWardrobeItem {
-  id: string;
+  userId: number;
+  userDisplayName?: string;
   name: string;
-  type: "top" | "bottom" | "shoes" | "outer" | "accessory";
-  imageUrl: string; // Base64 string
+  categoryId: number;
+  categoryName: string;
+  color: string;
+  aiDescription: string;
   brand?: string;
-  colors: string[];
-  seasons: ("spring" | "summer" | "fall" | "winter")[];
-  occasions: ("casual" | "formal" | "sport" | "travel")[];
-  status: "active" | "archived";
+  frequencyWorn?: string;
+  lastWornAt?: string;
+  imgUrl: string;
+  weatherSuitable: string;
+  condition: string;
+  pattern: string;
+  fabric: string;
+  tag?: string;
+  id?: number; // Optional as it might not be present in all responses
   createdAt?: string;
   updatedAt?: string;
 }
 
+// API response with pagination
+export interface ApiItemsResponse {
+  data: ApiWardrobeItem[];
+  metaData: {
+    totalCount: number;
+    pageSize: number;
+    currentPage: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrevious: boolean;
+  };
+}
+
 export interface CreateWardrobeItemRequest {
+  userId: number;
   name: string;
-  type: "top" | "bottom" | "shoes" | "outer" | "accessory";
-  imageUrl: string; // Base64 string
+  categoryId: number;
+  categoryName: string;
+  color: string;
+  aiDescription: string;
   brand?: string;
-  colors: string[];
-  seasons: ("spring" | "summer" | "fall" | "winter")[];
-  occasions: ("casual" | "formal" | "sport" | "travel")[];
-  status?: "active" | "archived";
+  frequencyWorn?: string;
+  lastWornAt?: string;
+  imgUrl: string;
+  weatherSuitable: string;
+  condition: string;
+  pattern: string;
+  fabric: string;
+  tag?: string;
 }
 
 class WardrobeAPI {
-  private async request<T>(endpoint: string, options?: RequestInit): Promise<T> {
-    const url = `${API_BASE_URL}/${endpoint}`;
-    
-    const config: RequestInit = {
-      headers: {
-        "Content-Type": "application/json",
-        ...options?.headers,
-      },
-      ...options,
-    };
-
-    try {
-      const response = await fetch(url, config);
-      
-      if (!response.ok) {
-        throw new Error(`API Error: ${response.status} ${response.statusText}`);
-      }
-
-      return response.json();
-    } catch (error) {
-      console.error("API Request failed:", error);
-      throw error;
-    }
-  }
-
+  /**
+   * Get all wardrobe items for current user
+   */
   async getItems(): Promise<ApiWardrobeItem[]> {
-    return this.request<ApiWardrobeItem[]>("item");
+    const response = await apiClient.get('/items');
+    
+    // API returns { statusCode, message, data: { data: [...], metaData: {...} } }
+    const apiData = response.data.data;
+    
+    // Handle different response structures
+    let items: ApiWardrobeItem[] = [];
+    
+    if (apiData && typeof apiData === 'object') {
+      // Case 1: Paginated response with data.data array
+      if (apiData.data && Array.isArray(apiData.data)) {
+        items = apiData.data;
+      }
+      // Case 2: Direct array response
+      else if (Array.isArray(apiData)) {
+        items = apiData;
+      }
+    }
+    
+    return items;
   }
 
-  async getItem(id: string): Promise<ApiWardrobeItem> {
-    return this.request<ApiWardrobeItem>(`item/${id}`);
+  /**
+   * Get specific wardrobe item
+   */
+  async getItem(id: number): Promise<ApiWardrobeItem> {
+    const response = await apiClient.get(`/items/${id}`);
+    return response.data.data;
   }
 
+  /**
+   * Create new wardrobe item
+   */
   async createItem(item: CreateWardrobeItemRequest): Promise<ApiWardrobeItem> {
-    return this.request<ApiWardrobeItem>("item", {
-      method: "POST",
-      body: JSON.stringify({
-        ...item,
-        status: item.status || "active",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      }),
-    });
+    const response = await apiClient.post('/items', item);
+    return response.data.data;
   }
 
-  async updateItem(id: string, item: Partial<CreateWardrobeItemRequest>): Promise<ApiWardrobeItem> {
-    return this.request<ApiWardrobeItem>(`item/${id}`, {
-      method: "PUT",
-      body: JSON.stringify({
-        ...item,
-        updatedAt: new Date().toISOString(),
-      }),
-    });
+  /**
+   * Update wardrobe item
+   */
+  async updateItem(id: number, item: Partial<CreateWardrobeItemRequest>): Promise<ApiWardrobeItem> {
+    const response = await apiClient.put(`/items/${id}`, item);
+    return response.data.data;
   }
 
-  async deleteItem(id: string): Promise<{ id: string }> {
-    return this.request<{ id: string }>(`item/${id}`, {
-      method: "DELETE",
-    });
+  /**
+   * Delete wardrobe item
+   */
+  async deleteItem(id: number): Promise<void> {
+    await apiClient.delete(`/items/${id}`);
   }
 }
 

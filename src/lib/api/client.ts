@@ -128,19 +128,12 @@ class ApiClient {
           config.headers.Authorization = `Bearer ${this.accessToken}`;
         }
 
-        // Log request in development
-        if (process.env.NODE_ENV === "development") {
-          console.group(`🚀 API Request`);
-          console.log("Method:", config.method?.toUpperCase());
-          console.log("URL:", config.url);
-          if (config.data) {
-            console.log("Body:", JSON.stringify(config.data, null, 2));
-          }
-          if (config.params) {
-            console.log("Params:", config.params);
-          }
-          console.groupEnd();
+        // Handle FormData - Remove Content-Type to let browser set it with boundary
+        if (config.data instanceof FormData && config.headers) {
+          delete config.headers['Content-Type'];
         }
+
+
 
         return config;
       },
@@ -159,41 +152,13 @@ class ApiClient {
   private setupResponseInterceptor() {
     this.client.interceptors.response.use(
       (response: AxiosResponse) => {
-        // Log response in development
-        if (process.env.NODE_ENV === "development") {
-          console.group(`✅ API Response`);
-          console.log("Method:", response.config.method?.toUpperCase());
-          console.log("URL:", response.config.url);
-          console.log("Status:", response.status, response.statusText);
-          if (response.data) {
-            console.log("Data:", JSON.stringify(response.data, null, 2));
-          }
-          console.groupEnd();
-        }
+
 
         // Transform response data if needed
         return response;
       },
       async (error: AxiosError) => {
-        // Log error in development with full details
-        if (process.env.NODE_ENV === "development") {
-          console.group("❌ API Response Error");
-          console.log("Method:", error.config?.method?.toUpperCase());
-          console.log("URL:", error.config?.url);
-          console.log(
-            "Status:",
-            error.response?.status,
-            error.response?.statusText
-          );
-          console.log("Error Message:", error.message);
 
-          // Log full error data for debugging
-          if (error.response?.data) {
-            console.log("📦 Response Data:");
-            console.log(JSON.stringify(error.response.data, null, 2));
-          }
-          console.groupEnd();
-        }
 
         // Handle 401 Unauthorized - Try to refresh token
         // BUT: Don't refresh for login/register/refresh-token endpoints!
@@ -326,15 +291,7 @@ class ApiClient {
       message = data;
     }
 
-    // Log the parsed error for debugging
-    if (process.env.NODE_ENV === "development") {
-      console.log("🔍 Parsed Error:");
-      console.log("  Status Code:", statusCode);
-      console.log("  Message:", message);
-      if (data) {
-        console.log("  Original Data:", JSON.stringify(data, null, 2));
-      }
-    }
+
 
     return new ApiError(message, statusCode, data, error);
   }
