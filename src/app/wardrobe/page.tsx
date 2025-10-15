@@ -10,7 +10,6 @@ import { useWardrobeStore } from "@/store/wardrobe-store";
 import { getCollectionsWithCounts } from "@/lib/mock/collections";
 import { WardrobeFilters } from "@/types/wardrobe";
 
-
 export default function WardrobePage() {
   const [isAddItemOpen, setIsAddItemOpen] = useState(false);
 
@@ -39,9 +38,12 @@ export default function WardrobePage() {
     setIsAddItemOpen(false);
   }, []);
 
-  const handleFiltersChange = useCallback((newFilters: WardrobeFilters) => {
-    setStoreFilters(newFilters);
-  }, [setStoreFilters]);
+  const handleFiltersChange = useCallback(
+    (newFilters: WardrobeFilters) => {
+      setStoreFilters(newFilters);
+    },
+    [setStoreFilters]
+  );
 
   const handleSelectMode = useCallback(
     (enabled: boolean) => {

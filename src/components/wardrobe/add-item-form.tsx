@@ -72,8 +72,18 @@ const ITEM_TYPES = [
 ] as const;
 
 const COLORS = [
-  "White", "Black", "Navy", "Blue", "Beige", "Brown",
-  "Grey", "Red", "Green", "Yellow", "Pink", "Purple",
+  "White",
+  "Black",
+  "Navy",
+  "Blue",
+  "Beige",
+  "Brown",
+  "Grey",
+  "Red",
+  "Green",
+  "Yellow",
+  "Pink",
+  "Purple",
 ] as const;
 
 const SEASONS = [
@@ -93,11 +103,11 @@ const OCCASIONS = [
 
 // Season mapping for Vietnamese to English
 const SEASON_MAP: Record<string, string> = {
-  'mùa hè': 'summer',
-  'mùa xuân': 'spring', 
-  'mùa thu': 'fall',
-  'mùa đông': 'winter',
-  'thời tiết mát mẻ': 'fall'
+  "mùa hè": "summer",
+  "mùa xuân": "spring",
+  "mùa thu": "fall",
+  "mùa đông": "winter",
+  "thời tiết mát mẻ": "fall",
 };
 
 // Initial form state
@@ -118,35 +128,38 @@ const getUserId = async (user: { id?: string } | null): Promise<number> => {
   if (user?.id) {
     return parseInt(user.id);
   }
-  
+
   // Fallback to token
-  const token = localStorage.getItem('accessToken');
+  const token = localStorage.getItem("accessToken");
   if (token) {
     const userInfo = extractUserFromToken(token);
     if (userInfo?.id) {
       return parseInt(userInfo.id);
     }
   }
-  
+
   throw new Error("User not logged in");
 };
 
 // Helper function to map Vietnamese seasons to English
 const mapSeasons = (weatherSuitable: string): string[] => {
-  return weatherSuitable.split(", ").map((season: string) => 
-    SEASON_MAP[season.trim().toLowerCase()] || season.trim().toLowerCase()
-  );
+  return weatherSuitable
+    .split(", ")
+    .map(
+      (season: string) =>
+        SEASON_MAP[season.trim().toLowerCase()] || season.trim().toLowerCase()
+    );
 };
 
 export function AddItemForm({ isOpen, onClose }: AddItemFormProps) {
   // Store hooks
   const { fetchItems } = useWardrobeStore();
   const { user } = useAuthStore();
-  
+
   // Form state
   const [formData, setFormData] = useState<FormData>(INITIAL_FORM_STATE);
   const [aiSummary, setAiSummary] = useState<AiSummary | null>(null);
-  
+
   // UI state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
@@ -159,95 +172,108 @@ export function AddItemForm({ isOpen, onClose }: AddItemFormProps) {
     setIsAnalyzingImage(false);
   }, []);
 
-  const handleCheckboxChange = useCallback((
-    field: "colors" | "seasons" | "occasions",
-    value: string,
-    checked: boolean
-  ) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: checked
-        ? [...prev[field], value]
-        : prev[field].filter((item) => item !== value),
-    }));
-  }, []);
+  const handleCheckboxChange = useCallback(
+    (
+      field: "colors" | "seasons" | "occasions",
+      value: string,
+      checked: boolean
+    ) => {
+      setFormData((prev) => ({
+        ...prev,
+        [field]: checked
+          ? [...prev[field], value]
+          : prev[field].filter((item) => item !== value),
+      }));
+    },
+    []
+  );
 
   // Image upload handler with AI summary
   const handleImageUpload = useCallback(async (file: File | null) => {
     if (!file) return;
 
     // Update form with selected file
-    setFormData(prev => ({ ...prev, image: file }));
+    setFormData((prev) => ({ ...prev, image: file }));
 
     // Analyze image with AI
     setIsAnalyzingImage(true);
     try {
       const summary = await wardrobeAPI.getImageSummary(file);
-      
+
       if (summary?.aiDescription) {
         setAiSummary(summary);
-        
+
         // Auto-populate form fields
-        setFormData(prev => ({
+        setFormData((prev) => ({
           ...prev,
           name: summary.aiDescription || prev.name,
           colors: summary.color ? [summary.color] : prev.colors,
-          seasons: summary.weatherSuitable ? mapSeasons(summary.weatherSuitable) : prev.seasons,
+          seasons: summary.weatherSuitable
+            ? mapSeasons(summary.weatherSuitable)
+            : prev.seasons,
         }));
       }
     } catch (error) {
       console.error("AI analysis failed:", error);
-      alert("Failed to analyze image with AI. You can still fill the form manually.");
+      alert(
+        "Failed to analyze image with AI. You can still fill the form manually."
+      );
     } finally {
       setIsAnalyzingImage(false);
     }
   }, []);
 
   // Form submission handler
-  const handleSubmit = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      setIsSubmitting(true);
 
-    try {
-      const userId = await getUserId(user);
-      const categoryInfo = getCategoryInfo(formData.type);
-      
-      const itemData = {
-        userId,
-        name: formData.name,
-        categoryId: categoryInfo.id,
-        categoryName: categoryInfo.name,
-        color: formData.colors.join(", "),
-        aiDescription: aiSummary?.aiDescription || `${formData.brand} ${formData.name}`.trim(),
-        brand: formData.brand,
-        frequencyWorn: "0",
-        lastWornAt: undefined,
-        imgUrl: aiSummary?.imageRemBgURL || "",
-        weatherSuitable: aiSummary?.weatherSuitable || formData.seasons.join(", "),
-        condition: aiSummary?.condition || "New",
-        pattern: aiSummary?.pattern || "Solid",
-        fabric: aiSummary?.fabric || "Cotton",
-        tag: formData.tags.join(", "),
-      };
+      try {
+        const userId = await getUserId(user);
+        const categoryInfo = getCategoryInfo(formData.type);
 
-      await wardrobeAPI.createItem(itemData);
-      await fetchItems();
-      
-      // Success handling
-      setSubmitSuccess(true);
-      resetForm();
-      
-      setTimeout(() => {
-        setSubmitSuccess(false);
-        onClose();
-      }, 1500);
-    } catch (error) {
-      console.error("Failed to create item:", error);
-      alert("Failed to create item. Please try again.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [formData, aiSummary, user, fetchItems, onClose, resetForm]);
+        const itemData = {
+          userId,
+          name: formData.name,
+          categoryId: categoryInfo.id,
+          categoryName: categoryInfo.name,
+          color: formData.colors.join(", "),
+          aiDescription:
+            aiSummary?.aiDescription ||
+            `${formData.brand} ${formData.name}`.trim(),
+          brand: formData.brand,
+          frequencyWorn: "0",
+          lastWornAt: undefined,
+          imgUrl: aiSummary?.imageRemBgURL || "",
+          weatherSuitable:
+            aiSummary?.weatherSuitable || formData.seasons.join(", "),
+          condition: aiSummary?.condition || "New",
+          pattern: aiSummary?.pattern || "Solid",
+          fabric: aiSummary?.fabric || "Cotton",
+          tag: formData.tags.join(", "),
+        };
+
+        await wardrobeAPI.createItem(itemData);
+        await fetchItems();
+
+        // Success handling
+        setSubmitSuccess(true);
+        resetForm();
+
+        setTimeout(() => {
+          setSubmitSuccess(false);
+          onClose();
+        }, 1500);
+      } catch (error) {
+        console.error("Failed to create item:", error);
+        alert("Failed to create item. Please try again.");
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [formData, aiSummary, user, fetchItems, onClose, resetForm]
+  );
 
   // Handle dialog close
   const handleClose = useCallback(() => {
@@ -265,12 +291,24 @@ export function AddItemForm({ isOpen, onClose }: AddItemFormProps) {
         <DialogContent className="sm:max-w-md">
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <div className="mb-4 h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
-              <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              <svg
+                className="h-6 w-6 text-green-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
             </div>
             <h3 className="text-lg font-semibold text-gray-900">Success!</h3>
-            <p className="mt-2 text-sm text-gray-500">Your item has been added to your wardrobe.</p>
+            <p className="mt-2 text-sm text-gray-500">
+              Your item has been added to your wardrobe.
+            </p>
           </div>
         </DialogContent>
       </Dialog>
@@ -282,23 +320,21 @@ export function AddItemForm({ isOpen, onClose }: AddItemFormProps) {
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add New Item</DialogTitle>
-          <Button
+          {/* <Button
             variant="ghost"
             size="icon"
             className="absolute right-4 top-4"
             onClick={handleClose}
           >
             <X className="h-4 w-4" />
-          </Button>
+          </Button> */}
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Image Upload */}
           <div className="space-y-2">
             <Label>Upload Image</Label>
-            <ImageUpload 
-              onChange={handleImageUpload}
-            />
+            <ImageUpload onChange={handleImageUpload} />
             {isAnalyzingImage && (
               <div className="flex items-center gap-2 text-sm text-blue-600">
                 <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
@@ -307,7 +343,8 @@ export function AddItemForm({ isOpen, onClose }: AddItemFormProps) {
             )}
             {aiSummary && (
               <div className="text-sm text-green-600 bg-green-50 p-2 rounded">
-                ✓ AI analysis complete! Form fields have been pre-filled with detected information.
+                ✓ AI analysis complete! Form fields have been pre-filled with
+                detected information.
               </div>
             )}
           </div>
@@ -393,7 +430,11 @@ export function AddItemForm({ isOpen, onClose }: AddItemFormProps) {
                     id={season.value}
                     checked={formData.seasons.includes(season.value)}
                     onCheckedChange={(checked) =>
-                      handleCheckboxChange("seasons", season.value, checked as boolean)
+                      handleCheckboxChange(
+                        "seasons",
+                        season.value,
+                        checked as boolean
+                      )
                     }
                   />
                   <Label htmlFor={season.value} className="text-sm">
@@ -409,12 +450,19 @@ export function AddItemForm({ isOpen, onClose }: AddItemFormProps) {
             <Label>Occasions</Label>
             <div className="grid grid-cols-2 gap-2">
               {OCCASIONS.map((occasion) => (
-                <div key={occasion.value} className="flex items-center space-x-2">
+                <div
+                  key={occasion.value}
+                  className="flex items-center space-x-2"
+                >
                   <Checkbox
                     id={occasion.value}
                     checked={formData.occasions.includes(occasion.value)}
                     onCheckedChange={(checked) =>
-                      handleCheckboxChange("occasions", occasion.value, checked as boolean)
+                      handleCheckboxChange(
+                        "occasions",
+                        occasion.value,
+                        checked as boolean
+                      )
                     }
                   />
                   <Label htmlFor={occasion.value} className="text-sm">
@@ -430,9 +478,7 @@ export function AddItemForm({ isOpen, onClose }: AddItemFormProps) {
             <Label>Tags</Label>
             <TagInput
               value={formData.tags}
-              onChange={(tags) =>
-                setFormData((prev) => ({ ...prev, tags }))
-              }
+              onChange={(tags) => setFormData((prev) => ({ ...prev, tags }))}
               placeholder="Add tags (press Enter)"
             />
           </div>
@@ -441,7 +487,12 @@ export function AddItemForm({ isOpen, onClose }: AddItemFormProps) {
           <Button
             type="submit"
             className="w-full"
-            disabled={isSubmitting || !formData.name || !formData.type || formData.colors.length === 0}
+            disabled={
+              isSubmitting ||
+              !formData.name ||
+              !formData.type ||
+              formData.colors.length === 0
+            }
           >
             {isSubmitting ? "Adding Item..." : "Add Item"}
           </Button>
