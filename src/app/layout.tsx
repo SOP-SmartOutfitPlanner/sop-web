@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { Navbar } from "@/components/layout/navbar";
 import { GoogleAuthProvider } from "@/components/providers/google-oauth-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
+import { StagewiseProvider } from "@/components/providers/stagewise-provider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -38,17 +39,19 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${poppins.variable} antialiased`}
         suppressHydrationWarning={true}
       >
-        <QueryProvider>
-          <GoogleAuthProvider>
-            <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-gray-100">
-              <Navbar />
-              <main className="container mx-auto px-4 py-8">
-                {children}
-              </main>
-            </div>
-            <Toaster />
-          </GoogleAuthProvider>
-        </QueryProvider>
+        <StagewiseProvider>
+          <QueryProvider>
+            <GoogleAuthProvider>
+              <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-gray-100">
+                <Navbar />
+                <main className="container mx-auto px-4 py-8">
+                  {children}
+                </main>
+              </div>
+              <Toaster />
+            </GoogleAuthProvider>
+          </QueryProvider>
+        </StagewiseProvider>
       </body>
     </html>
   );
