@@ -59,7 +59,6 @@ export function ItemGrid({
   useEffect(() => {
     // Only fetch if no external items provided and haven't done initial fetch yet
     if (!externalItems && !hasInitialFetch && (!filteredItems || filteredItems.length === 0)) {
-      console.log("📥 Fetching items from API (initial load)...");
       fetchItems();
     }
   }, [externalItems, hasInitialFetch, filteredItems, fetchItems]);

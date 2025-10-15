@@ -286,6 +286,8 @@ export const useAuthStore = create<AuthStore>((set) => ({
       // Clear all storage
       if (typeof window !== 'undefined') {
         localStorage.removeItem('user');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
         sessionStorage.removeItem('pendingVerificationEmail');
         sessionStorage.removeItem('googleCredential');
       }
