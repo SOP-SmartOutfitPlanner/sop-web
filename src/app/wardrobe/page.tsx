@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
-// import { AddItemForm } from "@/components/wardrobe/add-item-form"; // Old form
 import { AddItemWizard } from "@/components/wardrobe/wizard";
 import { WardrobeHeader } from "@/components/wardrobe/wardrobe-header";
 import { Toolbar } from "@/components/wardrobe/toolbar";
@@ -40,9 +39,6 @@ export default function WardrobePage() {
     setIsAddItemOpen(true);
   }, []);
 
-  const handleCloseAddItem = useCallback(() => {
-    setIsAddItemOpen(false);
-  }, []);
 
   const handleFiltersChange = useCallback(
     (newFilters: WardrobeFilters) => {
@@ -110,11 +106,7 @@ export default function WardrobePage() {
       {/* Main Content */}
       <WardrobeContent />
 
-      {/* Add Item Modal */}
-      {/* Old single-page form */}
-      {/* <AddItemForm isOpen={isAddItemOpen} onClose={handleCloseAddItem} /> */}
-      
-      {/* New wizard form */}
+      {/* Add Item Wizard */}
       <AddItemWizard open={isAddItemOpen} onOpenChange={setIsAddItemOpen} />
     </div>
   );
