@@ -42,67 +42,67 @@ export function RegisterForm() {
   return (
     <div className="w-full">
       {/* Header */}
-      <div className="flex items-center mb-8">
-        <Link href="/" className="mr-4">
+      <div className="flex items-center mb-6">
+        <Link href="/" className="mr-3">
           <ArrowLeft className="w-5 h-5 text-gray-500 hover:text-gray-700" />
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">
+          <h1 className="text-xl font-bold text-gray-900 mb-0.5">
             Tạo tài khoản mới
           </h1>
-          <p className="text-sm text-gray-500">
+          <p className="text-xs text-gray-500">
             Bắt đầu hành trình thời trang của bạn
           </p>
         </div>
       </div>
 
       {/* Form */}
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         {/* Name Field */}
-        <div className="space-y-2">
-          <Label htmlFor="displayName" className="text-sm font-medium text-gray-700">
+        <div className="space-y-1.5">
+          <Label htmlFor="displayName" className="text-xs font-medium text-gray-700">
             Họ và tên
           </Label>
           <div className="relative">
-            <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <Input
               id="displayName"
               type="text"
               placeholder="Nguyễn Văn A"
-              className="pl-10 h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-blue-500 rounded-xl"
+              className="pl-9 h-10 text-sm bg-gray-50 border-gray-200 focus:bg-white focus:border-blue-500 rounded-xl"
               {...register("displayName")}
             />
           </div>
           {errors.displayName && (
-            <p className="text-sm text-red-600">{errors.displayName.message}</p>
+            <p className="text-xs text-red-600">{errors.displayName.message}</p>
           )}
         </div>
 
         {/* Email Field */}
-        <div className="space-y-2">
-          <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+        <div className="space-y-1.5">
+          <Label htmlFor="email" className="text-xs font-medium text-gray-700">
             Email address
           </Label>
           <div className="relative">
-            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <Input
               id="email"
               type="email"
               placeholder="name@example.com"
-              className="pl-10 h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-blue-500 rounded-xl"
+              className="pl-9 h-10 text-sm bg-gray-50 border-gray-200 focus:bg-white focus:border-blue-500 rounded-xl"
               {...register("email")}
             />
           </div>
           {errors.email && (
-            <p className="text-sm text-red-600">{errors.email.message}</p>
+            <p className="text-xs text-red-600">{errors.email.message}</p>
           )}
         </div>
 
         {/* Password Field */}
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <Label
             htmlFor="password"
-            className="text-sm font-medium text-gray-700"
+            className="text-xs font-medium text-gray-700"
           >
             Mật khẩu
           </Label>
@@ -111,7 +111,7 @@ export function RegisterForm() {
               id="password"
               type={showPassword ? "text" : "password"}
               placeholder="••••••"
-              className="pr-10 h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-blue-500 rounded-xl"
+              className="pr-9 h-10 text-sm bg-gray-50 border-gray-200 focus:bg-white focus:border-blue-500 rounded-xl"
               {...register("password")}
             />
             <button
@@ -120,22 +120,22 @@ export function RegisterForm() {
               className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
             >
               {showPassword ? (
-                <EyeOff className="w-5 h-5" />
+                <EyeOff className="w-4 h-4" />
               ) : (
-                <Eye className="w-5 h-5" />
+                <Eye className="w-4 h-4" />
               )}
             </button>
           </div>
           {errors.password && (
-            <p className="text-sm text-red-600">{errors.password.message}</p>
+            <p className="text-xs text-red-600">{errors.password.message}</p>
           )}
         </div>
 
         {/* Confirm Password Field */}
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <Label
             htmlFor="confirmPassword"
-            className="text-sm font-medium text-gray-700"
+            className="text-xs font-medium text-gray-700"
           >
             Xác nhận mật khẩu
           </Label>
@@ -144,7 +144,7 @@ export function RegisterForm() {
               id="confirmPassword"
               type={showPassword ? "text" : "password"}
               placeholder="••••••"
-              className="pr-10 h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-blue-500 rounded-xl"
+              className="pr-9 h-10 text-sm bg-gray-50 border-gray-200 focus:bg-white focus:border-blue-500 rounded-xl"
               {...register("confirmPassword")}
             />
             <button
@@ -153,14 +153,14 @@ export function RegisterForm() {
               className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
             >
               {showPassword ? (
-                <EyeOff className="w-5 h-5" />
+                <EyeOff className="w-4 h-4" />
               ) : (
-                <Eye className="w-5 h-5" />
+                <Eye className="w-4 h-4" />
               )}
             </button>
           </div>
           {errors.confirmPassword && (
-            <p className="text-sm text-red-600">{errors.confirmPassword.message}</p>
+            <p className="text-xs text-red-600">{errors.confirmPassword.message}</p>
           )}
         </div>
 
@@ -169,10 +169,10 @@ export function RegisterForm() {
           <input
             type="checkbox"
             id="terms"
-            className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            className="mt-0.5 w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
             required
           />
-          <label htmlFor="terms" className="text-sm text-gray-600">
+          <label htmlFor="terms" className="text-xs text-gray-600 leading-tight">
             Tôi đồng ý với{" "}
             <Link href="/terms" className="text-blue-600 hover:text-blue-500">
               Điều khoản sử dụng
@@ -188,11 +188,11 @@ export function RegisterForm() {
         <Button
           type="submit"
           disabled={isLoading}
-          className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-all duration-300 hover:scale-[1.02] shadow-lg"
+          className="w-full h-10 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-all duration-300 hover:scale-[1.02] shadow-lg"
         >
           {isLoading ? (
             <div className="flex items-center justify-center">
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+              <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
               Đang tạo tài khoản...
             </div>
           ) : (
@@ -201,12 +201,12 @@ export function RegisterForm() {
         </Button>
 
         {/* Divider */}
-        <div className="relative my-6">
+        <div className="relative my-4">
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-gray-200" />
           </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="px-4 bg-white text-gray-500">hoặc</span>
+          <div className="relative flex justify-center text-xs">
+            <span className="px-3 bg-white text-gray-500">hoặc</span>
           </div>
         </div>
 
@@ -237,8 +237,8 @@ export function RegisterForm() {
         />
 
         {/* Login Link */}
-        <div className="text-center pt-4">
-          <p className="text-sm text-gray-600">
+        <div className="text-center pt-2">
+          <p className="text-xs text-gray-600">
             Đã có tài khoản?{" "}
             <Link
               href="/login"

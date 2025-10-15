@@ -13,6 +13,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Logo } from "@/components/ui/logo";
 
 export default function WelcomePage() {
   const router = useRouter();
@@ -74,29 +75,37 @@ export default function WelcomePage() {
       <div className="max-w-6xl mx-auto">
         {/* Hero Section */}
         <div className="text-center mb-16">
-          <div className="flex items-center justify-center mb-8">
-            <div className="text-7xl font-bold animate-pulse">
-              <span className="text-blue-600 hover:text-blue-700 transition-colors duration-300">
-                So
-              </span>
-              <span className="text-indigo-600 hover:text-indigo-700 transition-colors duration-300">
-                P
-              </span>
+          {/* Logo with decorative background */}
+          <div className="relative flex items-center justify-center mb-12 py-8">
+            {/* Decorative circles */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-gradient-to-r from-blue-200/20 via-cyan-200/20 to-blue-200/20 rounded-full blur-3xl animate-pulse" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-gradient-to-br from-indigo-300/10 to-cyan-300/10 rounded-full blur-2xl" />
+            
+            {/* Logo */}
+            <div 
+              className="relative z-10 animate-in fade-in zoom-in duration-1000"
+              suppressHydrationWarning
+            >
+              <Logo 
+                variant="full" 
+                width={280} 
+                height={280}
+                showGlow={true}
+                className="hover:scale-[1.02] transition-all duration-500"
+              />
             </div>
           </div>
-          <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
-            Smart Outfit Planner
-          </h1>
-          <p className="text-xl text-gray-600 mb-10 max-w-3xl mx-auto leading-relaxed">
+
+          <p className="text-xl text-gray-600 mb-10 max-w-3xl mx-auto leading-relaxed animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-300">
             Ứng dụng AI giúp bạn lựa chọn trang phục hoàn hảo cho mọi dịp. Thông
             minh, tiện lợi và phù hợp với phong cách của bạn.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16 animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-500">
             <Button
               size="lg"
               onClick={handleGetStarted}
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-lg px-8 py-4 h-auto shadow-lg"
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-lg px-8 py-4 h-auto shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300"
             >
               Bắt đầu ngay
             </Button>
@@ -104,7 +113,7 @@ export default function WelcomePage() {
               size="lg"
               variant="outline"
               onClick={handleViewCollections}
-              className="text-lg px-8 py-4 h-auto border-2 hover:bg-gray-50"
+              className="text-lg px-8 py-4 h-auto border-2 hover:bg-gray-50 hover:border-blue-600 hover:text-blue-600 hover:scale-105 transition-all duration-300"
             >
               <ImageIcon className="w-5 h-5 mr-2" />
               Xem Collections
@@ -113,7 +122,7 @@ export default function WelcomePage() {
               size="lg"
               variant="ghost"
               onClick={handleTryFree}
-              className="text-lg px-8 py-4 h-auto hover:bg-blue-50"
+              className="text-lg px-8 py-4 h-auto hover:bg-blue-50 hover:text-blue-600 hover:scale-105 transition-all duration-300"
             >
               Dùng thử miễn phí
             </Button>

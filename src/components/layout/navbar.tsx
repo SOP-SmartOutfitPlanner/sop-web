@@ -34,6 +34,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuthStore } from "@/store/auth-store";
+import { Logo } from "@/components/ui/logo";
 
 const mainNavigationItems = [
   { path: "/wardrobe", label: "Wardrobe", icon: Shirt, enabled: true },
@@ -115,17 +116,25 @@ export function Navbar() {
 
   return (
     <TooltipProvider>
-      <nav className="sticky top-0 z-50 backdrop-blur-xl bg-white/80 border-b border-gray-200/50 shadow-sm">
+      <nav className="sticky top-0 z-50 backdrop-blur-xl bg-white/90 border-b border-gray-200/50 shadow-md">
         <div className="container mx-auto px-6">
-          <div className="flex items-center justify-between h-14">
+          <div className="flex items-center justify-between h-16">
             {/* Logo - Left */}
             <Link
               href="/wardrobe"
-              className="flex items-center space-x-3 group"
+              className="flex items-center space-x-3 group relative py-2"
+              suppressHydrationWarning
             >
-              <div className="text-2xl font-bold tracking-tight">
-                <span className="text-blue-600">So</span>
-                <span className="text-orange-500">P</span>
+              <div
+                className="transform transition-all duration-300 group-hover:scale-110 group-hover:rotate-3"
+                suppressHydrationWarning
+              >
+                <Logo
+                  variant="rectangle"
+                  width={85}
+                  height={48}
+                  className="filter drop-shadow-md group-hover:drop-shadow-lg"
+                />
               </div>
             </Link>
 
@@ -164,7 +173,10 @@ export function Navbar() {
               {/* User Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-8 w-8 rounded-full p-0">
+                  <Button
+                    variant="ghost"
+                    className="relative h-8 w-8 rounded-full p-0"
+                  >
                     <Avatar className="h-8 w-8">
                       <AvatarImage src={user?.avatar} alt={user?.displayName} />
                       <AvatarFallback className="bg-blue-600 text-white text-sm">

@@ -76,7 +76,8 @@ export function LoginForm() {
                 ✅ Email đã được xác thực thành công!
               </h3>
               <p className="text-xs text-green-800">
-                Tài khoản của bạn đã được kích hoạt. Vui lòng đăng nhập để tiếp tục.
+                Tài khoản của bạn đã được kích hoạt. Vui lòng đăng nhập để tiếp
+                tục.
               </p>
             </div>
             <button
@@ -205,18 +206,6 @@ export function LoginForm() {
             >
               Đăng ký ngay
             </Link>
-          </p>
-        </div>
-
-        {/* Demo Account */}
-        <div className="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-100">
-          <p className="text-sm font-medium text-blue-800 mb-2">
-            Tài khoản demo:
-          </p>
-          <p className="text-xs text-blue-600">
-            Email: test@example.com
-            <br />
-            Password: 123456
           </p>
         </div>
       </form>

@@ -5,7 +5,7 @@ import { LoginForm } from "@/components/auth/login-form";
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex bg-gradient-to-br from-slate-50 to-blue-50">
+    <div className="h-full flex bg-gradient-to-br from-slate-50 to-blue-50">
       <HeroSection />
       <AuthContainer>
         <Suspense fallback={<div>Loading...</div>}>
