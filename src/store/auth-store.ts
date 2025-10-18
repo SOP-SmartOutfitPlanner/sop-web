@@ -65,6 +65,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
         id: userInfo.id,
         displayName: userInfo.displayName,
         email: userInfo.email,
+        role: userInfo.role,
         avatar: undefined, // No avatar in JWT
         createdAt: undefined,
         updatedAt: undefined,
@@ -143,6 +144,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
         id: userInfo.id,
         displayName: userInfo.displayName,
         email: userInfo.email,
+        role: userInfo.role,
         avatar: undefined,
         createdAt: undefined,
         updatedAt: undefined,
@@ -230,6 +232,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
             id: userData.user.id,
             displayName: userData.user.displayName,
             email: userData.user.email,
+            role: "User", // Default role for new registrations
             avatar: userData.user.avatar,
             createdAt: userData.user.createdAt,
             updatedAt: userData.user.updatedAt,
