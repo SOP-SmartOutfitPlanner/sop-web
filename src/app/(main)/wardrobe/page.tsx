@@ -84,30 +84,33 @@ export default function WardrobePage() {
 
   // Render
   return (
-    <div className="container max-w-7xl mx-auto px-4 py-6 space-y-8">
-      {/* Error Display */}
-      {error && <ErrorDisplay error={error} />}
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-gray-100">
+      <div className="container max-w-7xl mx-auto px-4 py-6 space-y-8">
+        {/* Error Display */}
+        {error && <ErrorDisplay error={error} />}
 
-      {/* Header Section */}
-      <WardrobeHeader onAddItem={handleAddItem} isLoading={isLoading} />
+        {/* Header Section */}
+        <WardrobeHeader onAddItem={handleAddItem} isLoading={isLoading} />
 
-      {/* Toolbar */}
-      <Toolbar
-        filters={filters}
-        onFiltersChange={handleFiltersChange}
-        collections={collections}
-        selectedItems={selectedItems}
-        onClearSelection={clearSelection}
-        onSelectMode={handleSelectMode}
-        isSelectMode={isSelectionMode}
-        wardrobeItems={items}
-      />
+        {/* Toolbar */}
+        <Toolbar
+          filters={filters}
+          onFiltersChange={handleFiltersChange}
+          collections={collections}
+          selectedItems={selectedItems}
+          onClearSelection={clearSelection}
+          onSelectMode={handleSelectMode}
+          isSelectMode={isSelectionMode}
+          wardrobeItems={items}
+        />
 
-      {/* Main Content */}
-      <WardrobeContent />
+        {/* Main Content */}
+        <WardrobeContent />
 
-      {/* Add Item Wizard */}
-      <AddItemWizard open={isAddItemOpen} onOpenChange={setIsAddItemOpen} />
+        {/* Add Item Wizard */}
+        <AddItemWizard open={isAddItemOpen} onOpenChange={setIsAddItemOpen} />
+      </div>
     </div>
   );
 }
+
