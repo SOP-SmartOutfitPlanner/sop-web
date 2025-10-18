@@ -97,22 +97,13 @@ export default function WelcomePage() {
         <div className="w-full h-screen flex items-center justify-center">
           <div className="text-center w-full">
             <div className="mb-20">
-              <h1 className="font-dela-gothic text-5xl md:text-[150px] mb-10">
-                {["Smart", "Outfit", "Planner"].map((word, index) => (
-                  <span
-                    key={index}
-                    className="inline-block bg-clip-text text-transparent bg-gradient-to-br from-white/100 to-white/80 drop-shadow-[0_0_30px_rgba(255,255,255,0.5)] [text-shadow:_0_0_20px_rgba(255,255,255,0.3),_0_0_20px_rgba(255,255,255,0.2)] mr-4"
-                    style={{
-                      backdropFilter: 'blur(2px)',
-                      filter: 'url(#textDisplacementFilter)'
-                    }}
-                  >
-                    {word}
-                  </span>
-                ))}
+              <h1
+                className="font-dela-gothic text-5xl md:text-[150px] mb-10 text-white/70 drop-shadow-[0_0_20px_rgba(255,255,255,0.4)] [text-shadow:_0_0_10px_rgba(255,255,255,0.3),_0_0_15px_rgba(255,255,255,0.2)]"
+              >
+                Smart Outfit <br/> Planner
               </h1>
               <p className="font-bricolage font-semibold text-xl text-white leading-relaxed">
-                Your digital wardrobe assistant. <br />Add your clothes, let our AI suggest what to wear, and get inspired by others' looks.
+                Your digital wardrobe assistant. <br />Add your clothes, let our AI suggest what to wear, and get inspired by others looks.
               </p>
             </div>
 
@@ -166,7 +157,7 @@ export default function WelcomePage() {
                 borderWidth="2px"
                 displacementScale={10}
               >
-                Try free
+                Free Trial
               </GlassButton>
             </div>
           </div>
@@ -322,6 +313,26 @@ export default function WelcomePage() {
           </p>
         </div>
       </div>
+
+      {/* SVG Filter for Text Turbulence */}
+      <svg style={{ display: 'none' }}>
+        <filter id="textDisplacementFilter">
+          <feTurbulence
+            type="turbulence"
+            baseFrequency="0.02"
+            numOctaves={3}
+            result="turbulence"
+            seed={1}
+          />
+          <feDisplacementMap
+            in="SourceGraphic"
+            in2="turbulence"
+            scale={20}
+            xChannelSelector="R"
+            yChannelSelector="G"
+          />
+        </filter>
+      </svg>
     </div>
   );
 }
