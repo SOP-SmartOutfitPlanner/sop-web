@@ -181,7 +181,7 @@ export function AddItemWizard({ open, onOpenChange }: AddItemWizardProps) {
                   { step: 1, label: "Ảnh & AI" },
                   { step: 2, label: "Thông tin" },
                   { step: 3, label: "Chi tiết" }
-                ].map((item, idx) => (
+                ].map((item) => (
                   <div key={item.step} className="flex flex-col items-center relative z-10" style={{ width: '33.333%' }}>
                     {/* Step Circle */}
                     <div

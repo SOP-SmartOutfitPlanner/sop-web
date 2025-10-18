@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Sparkles, Check, ChevronsUpDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
@@ -142,7 +141,7 @@ export function StepBasics({ formData, updateFormData, aiSuggestions }: StepBasi
                       }}
                     >
                       <Check className="w-4 h-4 mr-2" />
-                      Dùng "{formData.brand}"
+                      Dùng &ldquo;{formData.brand}&rdquo;
                     </Button>
                   </div>
                 </CommandEmpty>
@@ -173,7 +172,7 @@ export function StepBasics({ formData, updateFormData, aiSuggestions }: StepBasi
         {formData.brand && !BRAND_OPTIONS.includes(formData.brand) && (
           <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
             <span className="inline-block w-2 h-2 rounded-full bg-blue-500"></span>
-            Thương hiệu tùy chỉnh: "{formData.brand}"
+            Thương hiệu tùy chỉnh: &ldquo;{formData.brand}&rdquo;
           </p>
         )}
       </div>

@@ -60,7 +60,6 @@ export function ItemCard({
 
   const handleEdit = () => onEdit?.(item);
   const handleDelete = () => onDelete?.(item.id);
-  const handleView = () => onView?.(item);
   const handleUseInOutfit = () => onUseInOutfit?.(item);
 
   return (

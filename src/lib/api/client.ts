@@ -193,8 +193,15 @@ class ApiClient {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const isRetry = (error.config as any)?._retry;
 
+        // Check if token is invalid (401 or 403 with "Token not valid" message)
+        const isTokenInvalid =
+          error.response?.status === 401 ||
+          (error.response?.status === 403 &&
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (error.response?.data as any)?.message?.toLowerCase().includes("token"));
+
         if (
-          error.response?.status === 401 &&
+          isTokenInvalid &&
           this.refreshToken &&
           !isAuthEndpoint &&
           !isRetry
@@ -253,7 +260,9 @@ class ApiClient {
       
       return false;
     } catch (error) {
-      console.error("Failed to refresh token:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to refresh token:", error);
+      }
       return false;
     }
   }
@@ -272,10 +281,9 @@ class ApiClient {
       );
     }
 
-    // Server error response
-      const response = error.response;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const data = response.data as any;
+    const response = error.response;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = response.data as any;
 
     let message = "An unexpected error occurred";
     let statusCode = response.status;

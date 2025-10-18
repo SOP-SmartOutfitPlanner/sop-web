@@ -69,14 +69,6 @@ export function SidebarStats({ className }: SidebarStatsProps) {
     color: item.color,
   }));
 
-  // Calculate items by category for FillGoal
-  const itemsByCategory = Object.entries(counts)
-    .filter(([key]) => key !== "total")
-    .reduce((acc, [type, count]) => {
-      acc[type] = count;
-      return acc;
-    }, {} as Record<string, number>);
-
   return (
     <aside className={cn("w-full space-y-6", className)}>
       {/* Fill Goal Component */}

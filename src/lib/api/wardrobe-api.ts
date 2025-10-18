@@ -143,7 +143,7 @@ class WardrobeAPI {
         : null;
 
       return userId;
-    } catch (error) {
+    } catch {
       return null;
     }
   }
