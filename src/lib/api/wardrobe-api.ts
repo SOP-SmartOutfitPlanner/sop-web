@@ -109,7 +109,6 @@ class WardrobeAPI {
 
     // Handle different response structures
     let items: ApiWardrobeItem[] = [];
-
     if (apiData && typeof apiData === "object") {
       // Case 1: Paginated response with data.data array
       if (apiData.data && Array.isArray(apiData.data)) {

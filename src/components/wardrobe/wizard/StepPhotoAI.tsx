@@ -1,10 +1,11 @@
 import { useState, useRef } from 'react';
-import { Upload, Sparkles, Check, X } from 'lucide-react';
+import { Upload, Sparkles, Check, X, Crop } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { wardrobeAPI } from '@/lib/api/wardrobe-api';
 import { parseAIResponseToFormData, base64ToFile } from '@/lib/utils/ai-suggestions-parser';
+import { ImageCropper } from '@/components/wardrobe/image-cropper';
 import type { WizardFormData, AISuggestions } from './types';
 
 interface StepPhotoAIProps {
@@ -17,6 +18,8 @@ interface StepPhotoAIProps {
 export function StepPhotoAI({ formData, updateFormData, aiSuggestions, setAiSuggestions }: StepPhotoAIProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [tempImage, setTempImage] = useState<string | null>(null);
+  const [showCropper, setShowCropper] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (file: File) => {
@@ -28,9 +31,22 @@ export function StepPhotoAI({ formData, updateFormData, aiSuggestions, setAiSugg
     const reader = new FileReader();
     reader.onload = (e) => {
       const imageUrl = e.target?.result as string;
-      updateFormData({ uploadedImageURL: imageUrl });
+      setTempImage(imageUrl);
+      setShowCropper(true);
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleCropComplete = (croppedImage: string) => {
+    updateFormData({ uploadedImageURL: croppedImage });
+    setShowCropper(false);
+    setTempImage(null);
+    toast.success('Ảnh đã được cắt thành công!');
+  };
+
+  const handleCropCancel = () => {
+    setShowCropper(false);
+    setTempImage(null);
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -87,7 +103,18 @@ export function StepPhotoAI({ formData, updateFormData, aiSuggestions, setAiSugg
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <>
+      {/* Image Cropper Dialog */}
+      {tempImage && (
+        <ImageCropper
+          image={tempImage}
+          onCropComplete={handleCropComplete}
+          onCancel={handleCropCancel}
+          open={showCropper}
+        />
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       {/* Dropzone */}
       <div className="space-y-4">
         <div
@@ -133,14 +160,25 @@ export function StepPhotoAI({ formData, updateFormData, aiSuggestions, setAiSugg
                 alt="Uploaded item"
                 className="w-full h-64 object-contain rounded-lg"
               />
-              <Button
-                size="sm"
-                variant="destructive"
-                className="absolute top-2 right-2"
-                onClick={() => updateFormData({ uploadedImageURL: '', imageRemBgURL: '' })}
-              >
-                <X className="w-4 h-4" />
-              </Button>
+              <div className="absolute top-2 right-2 flex gap-2">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => {
+                    setTempImage(formData.uploadedImageURL);
+                    setShowCropper(true);
+                  }}
+                >
+                  <Crop className="w-4 h-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => updateFormData({ uploadedImageURL: '', imageRemBgURL: '' })}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
           )}
         </div>
@@ -239,7 +277,7 @@ export function StepPhotoAI({ formData, updateFormData, aiSuggestions, setAiSugg
               <div className="p-2 rounded bg-background border">
                 <span className="text-xs font-medium text-muted-foreground block mb-1">Mô tả:</span>
                 <p className="text-sm line-clamp-3">{aiSuggestions.aiDescription}</p>
-                <Button 
+                {/* <Button 
                   size="sm" 
                   variant="ghost" 
                   className="mt-2 h-7"
@@ -247,7 +285,7 @@ export function StepPhotoAI({ formData, updateFormData, aiSuggestions, setAiSugg
                 >
                   <Check className="w-3 h-3 mr-1" />
                   Sử dụng mô tả này
-                </Button>
+                </Button> */}
               </div>
             </div>
 
@@ -257,7 +295,8 @@ export function StepPhotoAI({ formData, updateFormData, aiSuggestions, setAiSugg
           </Card>
         )}
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 

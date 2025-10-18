@@ -61,6 +61,7 @@ export function ItemGrid({
     if (!externalItems && !hasInitialFetch && (!filteredItems || filteredItems.length === 0)) {
       fetchItems();
     }
+
   }, [externalItems, hasInitialFetch, filteredItems, fetchItems]);
 
   const handleDelete = async (id: string) => {

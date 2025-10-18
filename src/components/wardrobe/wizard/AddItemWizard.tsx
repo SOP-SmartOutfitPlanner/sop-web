@@ -175,34 +175,56 @@ export function AddItemWizard({ open, onOpenChange }: AddItemWizardProps) {
 
           {/* Stepper */}
           <div className="px-6 py-4 border-b">
-            <div className="flex items-center justify-between max-w-md mx-auto">
-              {[1, 2, 3].map((step, idx) => (
-                <div key={step} className="flex items-center flex-1">
-                  <div className="flex flex-col items-center flex-1">
+            <div className="max-w-lg mx-auto">
+              <div className="flex items-start justify-between relative">
+                {[
+                  { step: 1, label: "Ảnh & AI" },
+                  { step: 2, label: "Thông tin" },
+                  { step: 3, label: "Chi tiết" }
+                ].map((item, idx) => (
+                  <div key={item.step} className="flex flex-col items-center relative z-10" style={{ width: '33.333%' }}>
+                    {/* Step Circle */}
                     <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
-                        step <= currentStep
+                      className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-200 ${
+                        item.step === currentStep
+                          ? "bg-gradient-to-r from-login-navy to-login-blue text-white ring-4 ring-login-blue/20 scale-110"
+                          : item.step < currentStep
                           ? "bg-primary text-primary-foreground"
                           : "bg-muted text-muted-foreground"
                       }`}
                     >
-                      {step}
+                      {item.step}
                     </div>
-                    <span className="text-xs mt-1 text-muted-foreground">
-                      {step === 1 && "Ảnh & AI"}
-                      {step === 2 && "Thông tin"}
-                      {step === 3 && "Chi tiết"}
+                    <span className={`text-xs mt-2 text-center font-medium transition-colors ${
+                      item.step === currentStep ? "text-login-navy" : "text-muted-foreground"
+                    }`}>
+                      {item.label}
                     </span>
                   </div>
-                  {idx < 2 && (
-                    <div
-                      className={`h-0.5 flex-1 mx-2 transition-colors ${
-                        step < currentStep ? "bg-primary" : "bg-muted"
-                      }`}
-                    />
-                  )}
+                ))}
+
+                {/* Connector Lines - Absolute positioned */}
+                <div className="absolute top-5 left-0 right-0 flex justify-between px-[16.666%] z-0">
+                  <div 
+                    className="h-0.5 transition-colors duration-200" 
+                    style={{
+                      width: '33.333%',
+                      background: currentStep > 1 
+                        ? "linear-gradient(to right, hsl(var(--login-navy)), hsl(var(--login-blue)))"
+                        : "hsl(var(--muted))"
+                    }}
+                  />
+                  <div 
+                    className="h-0.5 transition-colors duration-200" 
+                    style={{
+                      width: '33.333%',
+                      background: currentStep > 2
+                        ? "linear-gradient(to right, hsl(var(--login-navy)), hsl(var(--login-blue)))"
+                        : "hsl(var(--muted))"
+                    }}
+                  />
                 </div>
-              ))}
+              </div>
             </div>
           </div>
 

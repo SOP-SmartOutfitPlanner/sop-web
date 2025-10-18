@@ -103,7 +103,7 @@ export function StepBasics({ formData, updateFormData, aiSuggestions }: StepBasi
         )}
       </div>
 
-      {/* Brand */}
+      {/* Brand - Hybrid: Select từ list phổ biến hoặc tự nhập */}
       <div>
         <Label>Thương hiệu</Label>
         <Popover open={openBrand} onOpenChange={setOpenBrand}>
@@ -114,24 +114,45 @@ export function StepBasics({ formData, updateFormData, aiSuggestions }: StepBasi
               aria-expanded={openBrand}
               className="w-full justify-between mt-2"
             >
-              {formData.brand || "Chọn thương hiệu..."}
+              {formData.brand || "Chọn hoặc nhập thương hiệu..."}
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-full p-0" align="start">
             <Command>
-              <CommandInput placeholder="Tìm thương hiệu..." />
+              <CommandInput 
+                placeholder="Tìm hoặc nhập thương hiệu mới..." 
+                value={formData.brand}
+                onValueChange={(value) => updateFormData({ brand: value })}
+              />
               <CommandList>
-                <CommandEmpty>Không tìm thấy.</CommandEmpty>
-                <CommandGroup>
+                <CommandEmpty>
+                  <div className="p-2 text-center">
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Không tìm thấy trong danh sách
+                    </p>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      className="w-full"
+                      onClick={() => {
+                        // Keep the current input value as custom brand
+                        setOpenBrand(false);
+                      }}
+                    >
+                      <Check className="w-4 h-4 mr-2" />
+                      Dùng "{formData.brand}"
+                    </Button>
+                  </div>
+                </CommandEmpty>
+                <CommandGroup heading="Thương hiệu phổ biến">
                   {BRAND_OPTIONS.map((brand) => (
                     <CommandItem
                       key={brand}
                       value={brand}
-                      onSelect={(currentValue) => {
-                        updateFormData({ 
-                          brand: currentValue === formData.brand.toLowerCase() ? '' : brand 
-                        });
+                      onSelect={() => {
+                        updateFormData({ brand });
                         setOpenBrand(false);
                       }}
                     >
@@ -149,6 +170,12 @@ export function StepBasics({ formData, updateFormData, aiSuggestions }: StepBasi
             </Command>
           </PopoverContent>
         </Popover>
+        {formData.brand && !BRAND_OPTIONS.includes(formData.brand) && (
+          <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+            <span className="inline-block w-2 h-2 rounded-full bg-blue-500"></span>
+            Thương hiệu tùy chỉnh: "{formData.brand}"
+          </p>
+        )}
       </div>
 
       {/* Notes/Description */}

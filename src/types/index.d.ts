@@ -24,6 +24,7 @@ export type WardrobeItem = {
   occasions: Occasion[];
   status: "ok" | "laundry" | "donate" | "archived" | "active";
   timesWorn?: number;
+  frequencyWorn?: string;
   lastWorn?: string; // ISO date string
   tags?: string[];
   createdAt: string; // ISO date string

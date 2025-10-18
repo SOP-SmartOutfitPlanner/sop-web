@@ -188,7 +188,7 @@ export function RegisterForm() {
         <Button
           type="submit"
           disabled={isLoading}
-          className="w-full h-10 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-all duration-300 hover:scale-[1.02] shadow-lg"
+          className="w-full h-10 text-sm bg-gradient-to-r from-login-navy to-login-blue hover:from-login-navy/90 hover:to-login-blue/90 text-white font-semibold rounded-xl transition-all duration-300 hover:scale-[1.02] shadow-lg"
         >
           {isLoading ? (
             <div className="flex items-center justify-center">
