@@ -38,7 +38,7 @@ import { Logo } from "@/components/ui/logo";
 
 const mainNavigationItems = [
   { path: "/wardrobe", label: "Wardrobe", icon: Shirt, enabled: true },
-  { path: "/suggest", label: "Suggest", icon: Sparkles, enabled: false },
+  { path: "/suggest", label: "Suggest", icon: Sparkles, enabled: true },
   { path: "/daily", label: "Daily", icon: Calendar, enabled: false },
   { path: "/weekly", label: "Weekly", icon: CalendarDays, enabled: false },
   { path: "/community", label: "Community", icon: Users, enabled: false },
