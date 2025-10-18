@@ -25,8 +25,7 @@ import {
 } from "lucide-react";
 import { useAdminUsers } from "@/hooks/useAdminUsers";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { format, formatDistanceToNow } from "date-fns";
-import { vi } from "date-fns/locale";
+import { format } from "date-fns";
 import {
   useReactTable,
   getCoreRowModel,
@@ -210,17 +209,13 @@ export default function AdminUsersPage() {
           return (
             <div className="flex flex-col gap-1 text-gray-600">
               <span>{format(date, "dd/MM/yyyy")}</span>
-              {/* <span className="text-xs text-gray-400">
-                {formatDistanceToNow(date, { addSuffix: true, locale: vi })}
-              </span> */}
             </div>
           );
         },
       },
       {
         id: "actions",
-        cell: ({ row }) => {
-          const user = row.original;
+        cell: () => {
           return (
             <div className="text-right">
               <DropdownMenu>
@@ -447,7 +442,7 @@ export default function AdminUsersPage() {
                 </Button>
                 {Array.from(
                   { length: Math.min(5, metaData.totalPages) },
-                  (_: unknown, i: number) => {
+                  (_: unknown, i: number): React.ReactElement | null => {
                     const page = i + 1;
                     return (
                       <Button

@@ -63,8 +63,12 @@ export default function AdminCategoriesPage() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
-  const [expandedCategories, setExpandedCategories] = useState<Set<number>>(new Set());
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(
+    null
+  );
+  const [expandedCategories, setExpandedCategories] = useState<Set<number>>(
+    new Set()
+  );
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
   // Form states
@@ -81,16 +85,8 @@ export default function AdminCategoriesPage() {
   const deleteMutation = useDeleteCategory();
   const bulkDeleteMutation = useBulkDeleteCategories();
 
-  // Create stats map for quick lookup
-  const statsMap = useMemo(() => {
-    const map = new Map<number, number>();
-    if (statsData) {
-      statsData.forEach((stat) => {
-        map.set(stat.categoryId, stat.itemCount);
-      });
-    }
-    return map;
-  }, [statsData]);
+  // Suppress unused variable warning - statsData fetched for future use
+  void statsData;
 
   // Build category tree
   const categoryTree = useMemo(() => {
@@ -172,7 +168,7 @@ export default function AdminCategoriesPage() {
       setIsCreateOpen(false);
       setFormName("");
       setFormParentId("null");
-    } catch (error) {
+    } catch {
       toast.error("Có lỗi xảy ra khi tạo category");
     }
   };
@@ -193,7 +189,7 @@ export default function AdminCategoriesPage() {
       setSelectedCategory(null);
       setFormName("");
       setFormParentId("null");
-    } catch (error) {
+    } catch {
       toast.error("Có lỗi xảy ra khi cập nhật category");
     }
   };
@@ -206,7 +202,7 @@ export default function AdminCategoriesPage() {
       toast.success("Xóa category thành công!");
       setIsDeleteOpen(false);
       setSelectedCategory(null);
-    } catch (error) {
+    } catch {
       toast.error("Có lỗi xảy ra khi xóa category");
     }
   };
@@ -219,7 +215,7 @@ export default function AdminCategoriesPage() {
       toast.success(`Đã xóa ${selectedIds.size} categories!`);
       setIsBulkDeleteOpen(false);
       setSelectedIds(new Set());
-    } catch (error) {
+    } catch {
       toast.error("Có lỗi xảy ra khi xóa categories");
     }
   };
@@ -242,7 +238,6 @@ export default function AdminCategoriesPage() {
       const isExpanded = expandedCategories.has(node.id);
       const hasChildren = node.children.length > 0;
       const isSelected = selectedIds.has(node.id);
-      const itemCount = statsMap.get(node.id) || 0;
 
       return (
         <div key={node.id}>
@@ -276,12 +271,16 @@ export default function AdminCategoriesPage() {
             {/* Category Info */}
             <div className="flex-1 flex items-center gap-3">
               <FolderTree
-                className={`w-4 h-4 ${level === 0 ? "text-blue-600" : "text-gray-400"}`}
+                className={`w-4 h-4 ${
+                  level === 0 ? "text-blue-600" : "text-gray-400"
+                }`}
               />
               <div>
                 <p className="font-medium text-gray-900">{node.name}</p>
                 {node.parentName && (
-                  <p className="text-xs text-gray-500">Parent: {node.parentName}</p>
+                  <p className="text-xs text-gray-500">
+                    Parent: {node.parentName}
+                  </p>
                 )}
               </div>
             </div>
@@ -289,12 +288,12 @@ export default function AdminCategoriesPage() {
             {/* Usage Stats */}
             <div className="flex items-center gap-2 mr-2">
               <Badge variant="secondary">{node.children.length} children</Badge>
-              <Badge
+              {/* <Badge
                 variant={itemCount > 0 ? "default" : "outline"}
                 className={itemCount > 0 ? "bg-green-600" : ""}
               >
                 {itemCount} items
-              </Badge>
+              </Badge> */}
             </div>
 
             {/* Actions */}
@@ -319,7 +318,9 @@ export default function AdminCategoriesPage() {
           </div>
 
           {/* Children */}
-          {hasChildren && isExpanded && renderCategoryTree(node.children, level + 1)}
+          {hasChildren &&
+            isExpanded &&
+            renderCategoryTree(node.children, level + 1)}
         </div>
       );
     });
@@ -336,15 +337,17 @@ export default function AdminCategoriesPage() {
     );
   }
 
-  const totalItems = Array.from(statsMap.values()).reduce((sum, count) => sum + count, 0);
-
   return (
     <div className="space-y-6">
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Quản lý Categories</h1>
-          <p className="text-gray-600 mt-2">Quản lý danh mục sản phẩm và phân loại</p>
+          <h1 className="text-3xl font-bold text-gray-900">
+            Quản lý Categories
+          </h1>
+          <p className="text-gray-600 mt-2">
+            Quản lý danh mục sản phẩm và phân loại
+          </p>
         </div>
         <Button
           onClick={() => {
@@ -383,12 +386,6 @@ export default function AdminCategoriesPage() {
               {(data?.metaData.totalCount || 0) - parentCategories.length}
             </div>
             <p className="text-sm text-gray-600 mt-1">Child Categories</p>
-          </CardContent>
-        </Card>
-        <Card className="border-0 shadow">
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-purple-600">{totalItems}</div>
-            <p className="text-sm text-gray-600 mt-1">Total Items</p>
           </CardContent>
         </Card>
       </div>
@@ -447,7 +444,8 @@ export default function AdminCategoriesPage() {
           <DialogHeader>
             <DialogTitle>Tạo Category Mới</DialogTitle>
             <DialogDescription>
-              Thêm category mới vào hệ thống. Chọn parent nếu đây là subcategory.
+              Thêm category mới vào hệ thống. Chọn parent nếu đây là
+              subcategory.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -555,8 +553,9 @@ export default function AdminCategoriesPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
             <AlertDialogDescription>
-              Bạn có chắc muốn xóa category <strong>{selectedCategory?.name}</strong>?
-              Hành động này không thể hoàn tác.
+              Bạn có chắc muốn xóa category{" "}
+              <strong>{selectedCategory?.name}</strong>? Hành động này không thể
+              hoàn tác.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -585,8 +584,9 @@ export default function AdminCategoriesPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Xác nhận xóa hàng loạt</AlertDialogTitle>
             <AlertDialogDescription>
-              Bạn có chắc muốn xóa <strong>{selectedIds.size} categories</strong>? Hành
-              động này không thể hoàn tác và có thể ảnh hưởng đến dữ liệu liên quan.
+              Bạn có chắc muốn xóa{" "}
+              <strong>{selectedIds.size} categories</strong>? Hành động này
+              không thể hoàn tác và có thể ảnh hưởng đến dữ liệu liên quan.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -611,4 +611,3 @@ export default function AdminCategoriesPage() {
     </div>
   );
 }
-

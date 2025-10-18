@@ -169,13 +169,11 @@ export default function AdminDashboardPage() {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    ((props: any) => {
-                      const { name, percent } = props;
-                      return `${name}: ${(percent * 100).toFixed(0)}%`;
-                    }) as any
-                  }
+                  label={(props) => {
+                    const name = (props as unknown as { name: string }).name;
+                    const percent = (props as unknown as { percent: number }).percent;
+                    return `${name}: ${(percent * 100).toFixed(0)}%`;
+                  }}
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="count"
