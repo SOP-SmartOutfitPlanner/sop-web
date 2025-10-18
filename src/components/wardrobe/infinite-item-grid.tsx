@@ -23,7 +23,6 @@ interface InfiniteItemGridProps {
   showCheckbox?: boolean;
   onEdit?: (item: WardrobeItem) => void;
   onDelete?: (id: string) => void;
-  onView?: (item: WardrobeItem) => void;
   itemsPerPage?: number;
 }
 
@@ -37,7 +36,6 @@ export function InfiniteItemGrid({
   showCheckbox = false,
   onEdit,
   onDelete,
-  onView,
   itemsPerPage = 12,
 }: InfiniteItemGridProps) {
   const [displayCount, setDisplayCount] = useState(itemsPerPage);
@@ -163,7 +161,6 @@ export function InfiniteItemGrid({
             onSelect={onSelect}
             onEdit={onEdit}
             onDelete={onDelete}
-            onView={onView}
             showCheckbox={showCheckbox}
           />
         ))}
