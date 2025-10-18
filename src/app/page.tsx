@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import {
   Sparkles,
   Eye,
@@ -10,12 +11,37 @@ import {
   Users,
   Image as ImageIcon,
 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import GlassCard from "@/components/ui/glass-card";
+import GlassButton from "@/components/ui/glass-button";
 
 export default function WelcomePage() {
   const router = useRouter();
+  const featuresRef = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsVisible(true);
+          }
+        });
+      },
+      { threshold: 0.2 } // Trigger when 20% of the element is visible
+    );
+
+    const currentRef = featuresRef.current;
+    if (currentRef) {
+      observer.observe(currentRef);
+    }
+
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef);
+      }
+    };
+  }, []);
 
   const handleGetStarted = () => {
     router.push("/login");
@@ -35,154 +61,259 @@ export default function WelcomePage() {
     {
       icon: Eye,
       title: "Smart Wardrobe",
-      description: "Organize và quản lý tủ đồ thông minh",
+      description: "Organize and manage your closet intelligently",
     },
     {
       icon: Sparkles,
       title: "AI Suggestions",
-      description: "Gợi ý outfit phù hợp với thời tiết và sự kiện",
+      description: "Get outfit recommendations based on weather and events",
     },
     {
       icon: Calendar,
       title: "Daily Planner",
-      description: "Lên kế hoạch trang phục hàng ngày",
-    },
-    {
-      icon: ImageIcon,
-      title: "Style Collections",
-      description: "Khám phá bộ sưu tập từ stylist chuyên nghiệp",
+      description: "Plan your daily outfits with ease",
     },
     {
       icon: History,
       title: "Outfit History",
-      description: "Theo dõi lịch sử và tránh lặp lại",
+      description: "Track your outfit history and avoid repetition",
     },
     {
       icon: Heart,
       title: "Favorites",
-      description: "Lưu những outfit yêu thích",
+      description: "Save and revisit your favorite outfits",
     },
     {
       icon: Users,
       title: "Community",
-      description: "Chia sẻ và khám phá phong cách",
+      description: "Share and discover new styles together",
     },
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/10 flex items-center justify-center p-4">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen">
+      <div className="">
         {/* Hero Section */}
-        <div className="text-center mb-16">
-          <div className="flex items-center justify-center mb-8">
-            <div className="text-7xl font-bold animate-pulse">
-              <span className="text-blue-600 hover:text-blue-700 transition-colors duration-300">
-                So
-              </span>
-              <span className="text-indigo-600 hover:text-indigo-700 transition-colors duration-300">
-                P
-              </span>
+        <div className="w-full h-screen flex items-center justify-center">
+          <div className="text-center w-full">
+            <div className="mb-20">
+              <h1 className="font-dela-gothic text-5xl md:text-[150px] mb-10">
+                {["Smart", "Outfit", "Planner"].map((word, index) => (
+                  <span
+                    key={index}
+                    className="inline-block bg-clip-text text-transparent bg-gradient-to-br from-white/100 to-white/80 drop-shadow-[0_0_30px_rgba(255,255,255,0.5)] [text-shadow:_0_0_20px_rgba(255,255,255,0.3),_0_0_20px_rgba(255,255,255,0.2)] mr-4"
+                    style={{
+                      backdropFilter: 'blur(2px)',
+                      filter: 'url(#textDisplacementFilter)'
+                    }}
+                  >
+                    {word}
+                  </span>
+                ))}
+              </h1>
+              <p className="font-bricolage font-semibold text-xl text-white leading-relaxed">
+                Your digital wardrobe assistant. <br />Add your clothes, let our AI suggest what to wear, and get inspired by others' looks.
+              </p>
             </div>
-          </div>
-          <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
-            Smart Outfit Planner
-          </h1>
-          <p className="text-xl text-gray-600 mb-10 max-w-3xl mx-auto leading-relaxed">
-            Ứng dụng AI giúp bạn lựa chọn trang phục hoàn hảo cho mọi dịp. Thông
-            minh, tiện lợi và phù hợp với phong cách của bạn.
-          </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-            <Button
-              size="lg"
-              onClick={handleGetStarted}
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-lg px-8 py-4 h-auto shadow-lg"
-            >
-              Bắt đầu ngay
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              onClick={handleViewCollections}
-              className="text-lg px-8 py-4 h-auto border-2 hover:bg-gray-50"
-            >
-              <ImageIcon className="w-5 h-5 mr-2" />
-              Xem Collections
-            </Button>
-            <Button
-              size="lg"
-              variant="ghost"
-              onClick={handleTryFree}
-              className="text-lg px-8 py-4 h-auto hover:bg-blue-50"
-            >
-              Dùng thử miễn phí
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <GlassButton
+                className="font-bricolage font-bold"
+                size="lg"
+                variant="primary"
+                onClick={handleGetStarted}
+                borderRadius="100px"
+                blur="7px"
+                brightness={1.1}
+                glowColor="rgba(0, 183, 255, 0.5)"
+                glowIntensity={8}
+                borderColor="rgba(255, 255, 255, 0.3)"
+                borderWidth="2px"
+                displacementScale={10}
+                backgroundColor="rgba(60, 16, 255, 1)"
+              >
+                Start Now
+              </GlassButton>
+              <GlassButton
+                className="font-bricolage font-bold"
+                textColor="rgba(70, 69, 77, 0.97)"
+                size="lg"
+                variant="outline"
+                onClick={handleViewCollections}
+                borderRadius="100px"
+                blur="2px"
+                brightness={1.1}
+                glowColor="rgba(255, 255, 255, 0.5)"
+                glowIntensity={8}
+                borderColor="rgba(255, 255, 255, 0.3)"
+                borderWidth="2px"
+                backgroundColor="rgba(255, 255, 255, 0.6)"
+                displacementScale={10}
+              >
+                View Collection
+              </GlassButton>
+              <GlassButton
+                className="font-bricolage font-bold"
+                size="lg"
+                variant="ghost"
+                onClick={handleTryFree}
+                borderRadius="100px"
+                blur="2px"
+                brightness={1.1}
+                glowColor="rgba(255, 255, 255, 0.5)"
+                glowIntensity={8}
+                borderColor="rgba(255, 255, 255, 0.3)"
+                borderWidth="2px"
+                displacementScale={10}
+              >
+                Try free
+              </GlassButton>
+            </div>
           </div>
         </div>
 
         {/* Features Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-16">
-          {features.map((feature, index) => {
-            const Icon = feature.icon;
-            return (
-              <Card
+        <div className="mb-16 w-full h-screen" ref={featuresRef}>
+          <h2 className="font-dela-gothic text-3xl md:text-6xl text-center mb-12">
+            {["Discover", "Our", "Features"].map((word, index) => (
+              <span
                 key={index}
-                className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-white/80 backdrop-blur-sm border-0 shadow-md"
+                className={`inline-block bg-clip-text text-transparent bg-gradient-to-br from-white/100 to-white/80 drop-shadow-[0_0_20px_rgba(255,255,255,0.4)] mr-3 ${isVisible ? 'animate-word-wipe' : 'opacity-0'
+                  }`}
+                style={{
+                  animationDelay: isVisible ? `${index * 0.2}s` : '0s',
+                  animationFillMode: 'forwards'
+                }}
               >
-                <CardContent className="p-6 text-center">
-                  <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
-                    <Icon className="w-7 h-7 text-white" />
+                {word}
+              </span>
+            ))}
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 px-4 max-w-6xl mx-auto">
+            {features.map((feature, index) => {
+              const Icon = feature.icon;
+              return (
+                <GlassCard
+                  key={index}
+                  blur="2px"
+                  displacementScale={50}
+                  glowIntensity={10}
+                  brightness={1.2}
+                  className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+                  padding="1.5rem"
+                >
+                  <div className="text-center">
+                    <div className="w-20 h-20 mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                      <GlassCard
+                        padding="1rem"
+                        borderRadius="50%"
+                        blur="2px"
+                        brightness={1.1}
+                        glowColor="rgba(255, 255, 255, 0.5)"
+                        glowIntensity={8}
+                        borderColor="rgba(255, 255, 255, 0.3)"
+                        borderWidth="2px"
+                        displacementScale={50}
+                        width="100%"
+                        height="100%"
+                        className="flex items-center justify-center bg-white/80"
+                      >
+                        <Icon className="w-8 h-8 text-blue-600" />
+                      </GlassCard>
+                    </div>
+                    <h3 className="font-bricolage text-lg font-semibold mb-3 text-white">
+                      {feature.title}
+                    </h3>
+                    <p className="font-bricolage text-white/80 text-sm leading-relaxed">
+                      {feature.description}
+                    </p>
                   </div>
-                  <h3 className="text-lg font-semibold mb-3 text-gray-900">
-                    {feature.title}
-                  </h3>
-                  <p className="text-gray-600 text-sm leading-relaxed">
-                    {feature.description}
-                  </p>
-                </CardContent>
-              </Card>
-            );
-          })}
+                </GlassCard>
+              );
+            })}
+          </div>
         </div>
 
         {/* Benefits Section */}
-        <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200/50 shadow-lg">
-          <CardContent className="p-10 text-center">
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">
-              Tại sao chọn SOP?
-            </h2>
-            <div className="flex flex-wrap justify-center gap-3 mb-8">
-              <Badge
-                variant="secondary"
-                className="text-sm py-2 px-4 bg-blue-100 text-blue-800 hover:bg-blue-200"
+        <div className="mb-16 w-full h-screen" ref={featuresRef}>
+          <h2 className="font-dela-gothic text-3xl md:text-6xl text-center mb-50">
+            {["Why", "Choose", "SOP"].map((word, index) => (
+              <span
+                key={index}
+                className={` bg-clip-text text-transparent bg-gradient-to-br from-white/100 to-white/80 drop-shadow-[0_0_20px_rgba(255,255,255,0.4)] mr-3 ${isVisible ? 'animate-word-wipe' : 'opacity-0'
+                  }`}
+                style={{
+                  animationDelay: isVisible ? `${index * 0.2}s` : '0s',
+                  animationFillMode: 'forwards'
+                }}
               >
-                AI thông minh
-              </Badge>
-              <Badge
-                variant="secondary"
-                className="text-sm py-2 px-4 bg-indigo-100 text-indigo-800 hover:bg-indigo-200"
+                {word}
+              </span>
+            ))}
+          </h2>
+
+          <GlassCard
+            className="mb-8 mx-50"
+            padding="2rem"
+            blur="2px"
+            brightness={1.1}
+            glowColor="rgba(255, 255, 255, 0.5)"
+            glowIntensity={8}
+            borderColor="rgba(255, 255, 255, 0.3)"
+            borderWidth="2px"
+            displacementScale={10}
+          >
+            <div className="flex flex-wrap justify-center gap-4 mb-6">
+              <GlassButton
+                variant="custom"
+                size="sm"
+                backgroundColor="rgba(59, 130, 246, 0.3)"
+                borderColor="rgba(59, 130, 246, 0.5)"
+                borderWidth="2px"
+                borderRadius="20px"
+                textColor="white"
               >
-                Dễ sử dụng
-              </Badge>
-              <Badge
-                variant="secondary"
-                className="text-sm py-2 px-4 bg-purple-100 text-purple-800 hover:bg-purple-200"
+                Smart AI
+              </GlassButton>
+              <GlassButton
+                variant="custom"
+                size="sm"
+                backgroundColor="rgba(99, 102, 241, 0.3)"
+                borderColor="rgba(99, 102, 241, 0.5)"
+                borderWidth="2px"
+                borderRadius="20px"
+                textColor="white"
               >
-                Tiết kiệm thời gian
-              </Badge>
-              <Badge
-                variant="secondary"
-                className="text-sm py-2 px-4 bg-pink-100 text-pink-800 hover:bg-pink-200"
+                Easy to Use
+              </GlassButton>
+              <GlassButton
+                variant="custom"
+                size="sm"
+                backgroundColor="rgba(168, 85, 247, 0.3)"
+                borderColor="rgba(168, 85, 247, 0.5)"
+                borderWidth="2px"
+                borderRadius="20px"
+                textColor="white"
               >
-                Phong cách cá nhân
-              </Badge>
+                Time Saving
+              </GlassButton>
+              <GlassButton
+                variant="custom"
+                size="sm"
+                backgroundColor="rgba(236, 72, 153, 0.3)"
+                borderColor="rgba(236, 72, 153, 0.5)"
+                borderWidth="2px"
+                borderRadius="20px"
+                textColor="white"
+              >
+                Personal Style
+              </GlassButton>
             </div>
-            <p className="text-gray-700 text-lg leading-relaxed max-w-3xl mx-auto">
-              Không còn phải lo lắng về việc &ldquo;mặc gì hôm nay&rdquo;. SOP sẽ giúp bạn
-              luôn tự tin với phong cách của mình.
+            <p className="font-bricolage text-white/90 text-lg leading-relaxed text-center max-w-3xl mx-auto">
+              No more worrying about &ldquo;what to wear today&rdquo;. SOP helps you stay confident with your personal style.
             </p>
-          </CardContent>
-        </Card>
+          </GlassCard>
+        </div>
 
         {/* Footer */}
         <div className="text-center mt-12 text-gray-500">

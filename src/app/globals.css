@@ -1,3 +1,6 @@
+/* Google Fonts - Dela Gothic One */
+@import url('https://fonts.googleapis.com/css2?family=Dela+Gothic+One&display=swap');
+
 @import "tailwindcss";
 @plugin "tailwindcss-animate";
 @custom-variant dark (&:is(.dark *));
@@ -38,6 +41,9 @@
   --login-blue: 213 100% 68%;
   --login-gray: 107 23% 42%;
   --login-light-gray: 220 15% 97%;
+  --login-bg-start: 213 100% 96%;
+  --login-bg-end: 267 100% 98%;
+  --login-input-focus: 213 94% 68%;
 }
 
 /* 2) Dark tokens */
@@ -92,9 +98,21 @@
   --color-warning: hsl(var(--warning));
   --color-error: hsl(var(--error));
 
+  /* login colors */
+  --color-login-navy: hsl(var(--login-navy));
+  --color-login-teal: hsl(var(--login-teal));
+  --color-login-blue: hsl(var(--login-blue));
+  --color-login-gray: hsl(var(--login-gray));
+  --color-login-light-gray: hsl(var(--login-light-gray));
+  --color-login-bg-start: hsl(var(--login-bg-start));
+  --color-login-bg-end: hsl(var(--login-bg-end));
+  --color-login-input-focus: hsl(var(--login-input-focus));
+
   /* fonts (nếu bạn có biến font từ next/font) */
   --font-sans: var(--font-geist-sans), "Poppins", system-ui, sans-serif;
   --font-mono: var(--font-geist-mono);
+  --font-dela-gothic: "Dela Gothic One", system-ui, sans-serif;
+  --font-bricolage-grotesque: var(--font-bricolage-grotesque), system-ui, sans-serif;
 }
 
 /* 4) Base applies */
@@ -104,5 +122,51 @@
   }
   body {
     @apply bg-background text-foreground;
+    background-image: linear-gradient(rgba(0, 38, 255, 0.5), rgba(0, 26, 255, 0.5)), url('/main-theme.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: repeat;
+    background-attachment: scroll;
   }
+}
+
+/* Custom font utilities */
+.font-bricolage {
+  font-family: var(--font-bricolage-grotesque);
+}
+
+/* Word-by-word animation */
+@keyframes word-appear {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.8);
+    filter: blur(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+.animate-word-appear {
+  animation: word-appear 0.6s ease-out forwards;
+}
+
+/* Word-by-word wipe-out animation */
+@keyframes word-wipe {
+  0% {
+    opacity: 0;
+    transform: translateX(-30px);
+    filter: blur(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+    filter: blur(0);
+  }
+}
+
+.animate-word-wipe {
+  animation: word-wipe 0.5s ease-out forwards;
 }

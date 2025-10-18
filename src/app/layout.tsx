@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Poppins } from "next/font/google";
+import { Geist, Geist_Mono, Poppins, Bricolage_Grotesque } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
-import { Navbar } from "@/components/layout/navbar";
+import { LayoutContent } from "@/components/layout/layout-content";
 import { GoogleAuthProvider } from "@/components/providers/google-oauth-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
 import "./globals.css";
@@ -22,6 +22,12 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const bricolageGrotesque = Bricolage_Grotesque({
+  subsets: ["latin"],
+  weight: ["200", "300", "400", "500", "600", "700", "800"],
+  variable: "--font-bricolage-grotesque",
+});
+
 export const metadata: Metadata = {
   title: "SOP Wardrobe",
   description: "Standard Operating Procedure for Wardrobe Management",
@@ -35,17 +41,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${poppins.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${poppins.variable} ${bricolageGrotesque.variable} antialiased`}
         suppressHydrationWarning={true}
       >
         <QueryProvider>
           <GoogleAuthProvider>
-            <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-gray-100">
-              <Navbar />
-              <main className="container mx-auto px-4 py-8">
-                {children}
-              </main>
-            </div>
+            <LayoutContent>{children}</LayoutContent>
             <Toaster />
           </GoogleAuthProvider>
         </QueryProvider>
