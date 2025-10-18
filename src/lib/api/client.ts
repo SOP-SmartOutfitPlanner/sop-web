@@ -123,8 +123,22 @@ class ApiClient {
   private setupRequestInterceptor() {
     this.client.interceptors.request.use(
       (config: InternalAxiosRequestConfig) => {
-        // Add authorization header if token exists
-        if (this.accessToken && config.headers) {
+        const url = config.url || "";
+        
+        // Skip adding auth token for public endpoints
+        const isPublicEndpoint =
+          url.endsWith("/auth") || // Login endpoint
+          url.includes("/register") ||
+          url.includes("/refresh-token") ||
+          url.includes("/otp") ||
+          url.includes("/password/forgot") ||
+          url.includes("/password/verify-otp") ||
+          url.includes("/password/reset") ||
+          url.includes("/verify-email") ||
+          url.includes("/login/google/oauth");
+
+        // Add authorization header if token exists and endpoint is not public
+        if (this.accessToken && config.headers && !isPublicEndpoint) {
           config.headers.Authorization = `Bearer ${this.accessToken}`;
         }
 
@@ -161,14 +175,19 @@ class ApiClient {
 
 
         // Handle 401 Unauthorized - Try to refresh token
-        // BUT: Don't refresh for login/register/refresh-token endpoints!
+        // BUT: Don't refresh for public auth endpoints!
         const url = error.config?.url || "";
         const isAuthEndpoint =
           url.includes("/auth") &&
           (url.endsWith("/auth") || // Login endpoint
             url.includes("/register") ||
             url.includes("/refresh-token") ||
-            url.includes("/otp"));
+            url.includes("/otp") ||
+            url.includes("/password/forgot") ||
+            url.includes("/password/verify-otp") ||
+            url.includes("/password/reset") ||
+            url.includes("/verify-email") ||
+            url.includes("/login/google/oauth"));
 
         // Also check if this request already failed after a retry
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

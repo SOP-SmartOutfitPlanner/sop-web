@@ -152,7 +152,7 @@ export function StepBasics({ formData, updateFormData, aiSuggestions }: StepBasi
       </div>
 
       {/* Notes/Description */}
-      <div>
+      {/* <div>
         <Label htmlFor="notes">Ghi chú / Mô tả</Label>
         <Textarea
           id="notes"
@@ -174,7 +174,7 @@ export function StepBasics({ formData, updateFormData, aiSuggestions }: StepBasi
             Dùng mô tả từ AI
           </Button>
         )}
-      </div>
+      </div> */}
 
       <div className="pt-4 border-t">
         <p className="text-sm text-muted-foreground">

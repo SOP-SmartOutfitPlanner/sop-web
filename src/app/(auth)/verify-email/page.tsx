@@ -244,11 +244,11 @@ export default function VerifyEmailPage() {
               </div>
             )}
 
-            {otp.length === 6 && !isVerifying && (
+            {/* {otp.length === 6 && !isVerifying && (
               <p className="text-center text-sm text-green-600">
                 ✓ Đã nhập đủ mã OTP
               </p>
-            )}
+            )} */}
           </div>
 
           {/* Instructions */}

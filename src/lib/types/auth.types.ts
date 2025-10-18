@@ -45,6 +45,22 @@ export interface GoogleLoginRequest {
   credential: string; // Google ID token
 }
 
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface VerifyOtpResetRequest {
+  email: string;
+  otp: string;
+}
+
+export interface ResetPasswordRequest {
+  email: string;
+  resetToken: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
 // ============================================================================
 // Auth Responses
 // ============================================================================
@@ -64,6 +80,11 @@ export interface RegisterResponse {
 export interface ResendOtpResponse {
   expiryMinutes: number;
   remainingAttempts: number;
+}
+
+export interface VerifyOtpResetResponse {
+  resetToken: string;
+  expiryMinutes: number;
 }
 
 // ============================================================================

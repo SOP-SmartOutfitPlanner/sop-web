@@ -38,6 +38,9 @@
   --login-blue: 213 100% 68%;
   --login-gray: 107 23% 42%;
   --login-light-gray: 220 15% 97%;
+  --login-bg-start: 213 100% 96%;
+  --login-bg-end: 267 100% 98%;
+  --login-input-focus: 213 94% 68%;
 }
 
 /* 2) Dark tokens */
@@ -91,6 +94,16 @@
   --color-success: hsl(var(--success));
   --color-warning: hsl(var(--warning));
   --color-error: hsl(var(--error));
+
+  /* login colors */
+  --color-login-navy: hsl(var(--login-navy));
+  --color-login-teal: hsl(var(--login-teal));
+  --color-login-blue: hsl(var(--login-blue));
+  --color-login-gray: hsl(var(--login-gray));
+  --color-login-light-gray: hsl(var(--login-light-gray));
+  --color-login-bg-start: hsl(var(--login-bg-start));
+  --color-login-bg-end: hsl(var(--login-bg-end));
+  --color-login-input-focus: hsl(var(--login-input-focus));
 
   /* fonts (nếu bạn có biến font từ next/font) */
   --font-sans: var(--font-geist-sans), "Poppins", system-ui, sans-serif;
