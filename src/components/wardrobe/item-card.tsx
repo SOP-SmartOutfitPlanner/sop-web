@@ -37,7 +37,6 @@ interface ItemCardProps {
   onSelect?: (id: string, selected: boolean) => void;
   onEdit?: (item: WardrobeItem) => void;
   onDelete?: (id: string) => void;
-  onView?: (item: WardrobeItem) => void;
   onUseInOutfit?: (item: WardrobeItem) => void;
   showCheckbox?: boolean;
 }
@@ -48,7 +47,6 @@ export function ItemCard({
   onSelect,
   onEdit,
   onDelete,
-  onView,
   onUseInOutfit,
   showCheckbox = false,
 }: ItemCardProps) {
