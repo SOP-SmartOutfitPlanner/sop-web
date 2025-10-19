@@ -1,4 +1,6 @@
-import { Navbar } from "@/components/layout/navbar";
+import { ConditionalNavbar } from "@/components/layout/conditional-navbar";
+import GlassCursor from "@/components/ui/glass-cursor";
+import LoadingPreloader from "@/components/ui/preloading";
 
 export default function MainLayout({
   children,
@@ -7,7 +9,9 @@ export default function MainLayout({
 }>) {
   return (
     <>
-      <Navbar />
+      <LoadingPreloader />
+      <GlassCursor />
+      <ConditionalNavbar />
       {children}
     </>
   );
