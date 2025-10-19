@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
 import Image from "next/image";
 import {
   MoreHorizontal,
@@ -61,16 +60,10 @@ export function ItemCard({
   const handleUseInOutfit = () => onUseInOutfit?.(item);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      whileHover={{
-        scale: 1.02,
-        transition: { duration: 0.2 },
-      }}
+    <div
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      className="transition-transform duration-200 hover:scale-[1.02]"
     >
       <Card
         className={cn(
@@ -337,6 +330,6 @@ export function ItemCard({
           </div>
         </CardContent>
       </Card>
-    </motion.div>
+    </div>
   );
 }

@@ -145,7 +145,7 @@ export function ItemGrid({
   }
 
   return (
-    <motion.div
+    <div
       className={cn(
         "grid gap-6",
         "grid-cols-1",
@@ -153,26 +153,17 @@ export function ItemGrid({
         "lg:grid-cols-3",
         "xl:grid-cols-4"
       )}
-      initial="hidden"
-      animate="visible"
-      variants={{
-        hidden: { opacity: 0 },
-        visible: {
-          opacity: 1,
-          transition: {
-            staggerChildren: 0.1,
-          },
-        },
-      }}
     >
       {items.map((item, index) => (
         <motion.div
           key={item.id}
-          variants={{
-            hidden: { opacity: 0, y: 20 },
-            visible: { opacity: 1, y: 0 },
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ 
+            duration: 0.3,
+            delay: index * 0.05,
+            ease: "easeOut"
           }}
-          transition={{ duration: 0.3, delay: index * 0.05 }}
         >
           <ItemCard
             item={item}
@@ -194,7 +185,7 @@ export function ItemGrid({
           ))}
         </>
       )}
-    </motion.div>
+    </div>
   );
 }
 
