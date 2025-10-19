@@ -197,7 +197,7 @@ class WardrobeAPI {
     const formData = new FormData();
     formData.append("file", file, file.name);
 
-    const response = await apiClient.post("/items/summary", formData, {
+    const response = await apiClient.post("/items/analysis", formData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },

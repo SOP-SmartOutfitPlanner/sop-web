@@ -14,3 +14,15 @@ export { authAPI } from "./auth-api";
 export { wardrobeAPI } from "./wardrobe-api";
 export type { ApiWardrobeItem, CreateWardrobeItemRequest } from "./wardrobe-api";
 
+// Export Admin API
+export { adminAPI } from "./admin-api";
+export type {
+  AdminUser,
+  PaginationMetaData,
+  UsersListResponse,
+  GetUsersParams,
+  Category,
+  CategoriesListResponse,
+  CategoryStats,
+} from "./admin-api";
+

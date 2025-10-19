@@ -77,7 +77,7 @@ class ApiClient {
   }
 
   /**
-   * Save tokens to localStorage
+   * Save tokens to localStorage and cookies
    */
   private saveTokens(accessToken: string, refreshToken: string) {
     this.accessToken = accessToken;
@@ -86,11 +86,15 @@ class ApiClient {
     if (typeof window !== "undefined") {
       localStorage.setItem("accessToken", accessToken);
       localStorage.setItem("refreshToken", refreshToken);
+      
+      // Also save to cookies for middleware access
+      document.cookie = `accessToken=${accessToken}; path=/; max-age=86400; samesite=strict`;
+      document.cookie = `refreshToken=${refreshToken}; path=/; max-age=604800; samesite=strict`;
     }
   }
 
   /**
-   * Clear tokens from memory and localStorage
+   * Clear tokens from memory, localStorage and cookies
    */
   public clearTokens() {
     this.accessToken = null;
@@ -100,6 +104,10 @@ class ApiClient {
       localStorage.removeItem("accessToken");
       localStorage.removeItem("refreshToken");
       localStorage.removeItem("user");
+      
+      // Clear cookies
+      document.cookie = "accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      document.cookie = "refreshToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     }
   }
 
