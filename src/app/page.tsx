@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import {
   Sparkles,
   Eye,
@@ -9,37 +11,122 @@ import {
   History,
   Heart,
   Users,
-  Image as ImageIcon,
 } from "lucide-react";
 import GlassCard from "@/components/ui/glass-card";
 import GlassButton from "@/components/ui/glass-button";
+import HorizontalFeatures from "@/components/layout/horizontal-features";
+import Lenis from "lenis";
+
+gsap.registerPlugin(ScrollTrigger);
 
 export default function WelcomePage() {
   const router = useRouter();
   const featuresRef = useRef<HTMLDivElement>(null);
-  const [isVisible, setIsVisible] = useState(false);
+  const benefitsSectionRef = useRef<HTMLDivElement>(null);
+  const benefitsTextRef = useRef<HTMLDivElement>(null);
+  const benefitsContentRef = useRef<HTMLDivElement>(null);
+  const [heroVisible, setHeroVisible] = useState(false);
+  const [featuresVisible, setFeaturesVisible] = useState(false);
+
+  useEffect(() => {
+    const preloaderDelay = setTimeout(() => {
+      setHeroVisible(true);
+    }, 2500);
+
+    return () => clearTimeout(preloaderDelay);
+  }, []);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            setIsVisible(true);
+            if (entry.target === featuresRef.current) {
+              setFeaturesVisible(true);
+            }
           }
         });
       },
-      { threshold: 0.2 } // Trigger when 20% of the element is visible
+      { threshold: 0.2 }
     );
 
-    const currentRef = featuresRef.current;
-    if (currentRef) {
-      observer.observe(currentRef);
+    const currentFeaturesRef = featuresRef.current;
+
+    if (currentFeaturesRef) {
+      observer.observe(currentFeaturesRef);
     }
 
     return () => {
-      if (currentRef) {
-        observer.unobserve(currentRef);
+      if (currentFeaturesRef) {
+        observer.unobserve(currentFeaturesRef);
       }
+    };
+  }, []);
+
+  useEffect(() => {
+    const lenis = new Lenis({
+      duration: 1,
+      smoothWheel: true,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), 
+    });
+
+    function raf(time: number) {
+      lenis.raf(time);
+      requestAnimationFrame(raf);
+    }
+
+    requestAnimationFrame(raf);
+  }, []);
+
+  useEffect(() => {
+    if (!benefitsSectionRef.current || !benefitsTextRef.current || !benefitsContentRef.current) return;
+
+    const ctx = gsap.context(() => {
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: benefitsSectionRef.current,
+          start: "top top",
+          end: "+=200%",
+          pin: true,
+          scrub: 1,
+          anticipatePin: 1,
+        }
+      });
+
+      // Phase 1: Large text appears and stays
+      tl.fromTo(benefitsTextRef.current,
+        {
+          opacity: 0,
+          scale: 0.8,
+        },
+        {
+          opacity: 1,
+          scale: 1,
+          duration: 0.3,
+        }
+      );
+
+      tl.to(benefitsTextRef.current, {
+        scale: 0.3,
+        opacity: 0,
+        duration: 0.5,
+      }, "+=0.2")
+        .fromTo(benefitsContentRef.current,
+          {
+            scale: 0.5,
+            opacity: 0,
+          },
+          {
+            scale: 1,
+            opacity: 1,
+            duration: 0.5,
+          },
+          "<"
+        );
+    }, benefitsSectionRef);
+
+    return () => {
+      ctx.revert();
     };
   }, []);
 
@@ -48,12 +135,10 @@ export default function WelcomePage() {
   };
 
   const handleTryFree = () => {
-    // Navigate to wardrobe without login (guest mode)
     router.push("/wardrobe");
   };
 
   const handleViewCollections = () => {
-    // Navigate to wardrobe to see items
     router.push("/wardrobe");
   };
 
@@ -91,7 +176,16 @@ export default function WelcomePage() {
   ];
 
   return (
-    <div className="min-h-screen">
+    <div
+      className="min-h-screen"
+      style={{
+        backgroundImage: 'linear-gradient(rgba(0, 38, 255, 0.5), rgba(0, 26, 255, 0.5)), url("/main-theme.jpg")',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'repeat',
+        backgroundAttachment: 'fixed'
+      }}
+    >
       <div className="">
         {/* Hero Section */}
         <div className="w-full h-screen flex items-center justify-center">
@@ -100,7 +194,19 @@ export default function WelcomePage() {
               <h1
                 className="font-dela-gothic text-5xl md:text-[150px] mb-10 text-white/70 drop-shadow-[0_0_20px_rgba(255,255,255,0.4)] [text-shadow:_0_0_10px_rgba(255,255,255,0.3),_0_0_15px_rgba(255,255,255,0.2)]"
               >
-                Smart Outfit <br/> Planner
+                {["Smart", "Outfit", "Planner"].map((word, index) => (
+                  <span
+                    key={index}
+                    className={`inline-block bg-clip-text text-transparent bg-gradient-to-br from-white/100 to-white/80 drop-shadow-[0_0_20px_rgba(255,255,255,0.4)] mr-3 ${heroVisible ? 'animate-word-wipe' : 'opacity-0'
+                      }`}
+                    style={{
+                      animationDelay: heroVisible ? `${index * 0.2}s` : '0s',
+                      animationFillMode: 'forwards'
+                    }}
+                  >
+                    {word}
+                  </span>
+                ))}
               </h1>
               <p className="font-bricolage font-semibold text-xl text-white leading-relaxed">
                 Your digital wardrobe assistant. <br />Add your clothes, let our AI suggest what to wear, and get inspired by others looks.
@@ -165,14 +271,14 @@ export default function WelcomePage() {
 
         {/* Features Grid */}
         <div className="mb-16 w-full h-screen" ref={featuresRef}>
-          <h2 className="font-dela-gothic text-3xl md:text-6xl text-center mb-12">
+          <h2 className="font-dela-gothic text-6xl md:text-8xl text-center mb-50">
             {["Discover", "Our", "Features"].map((word, index) => (
               <span
                 key={index}
-                className={`inline-block bg-clip-text text-transparent bg-gradient-to-br from-white/100 to-white/80 drop-shadow-[0_0_20px_rgba(255,255,255,0.4)] mr-3 ${isVisible ? 'animate-word-wipe' : 'opacity-0'
+                className={`inline-block bg-clip-text text-transparent bg-gradient-to-br from-white/100 to-white/80 drop-shadow-[0_0_20px_rgba(255,255,255,0.4)] mr-3 ${featuresVisible ? 'animate-word-wipe' : 'opacity-0'
                   }`}
                 style={{
-                  animationDelay: isVisible ? `${index * 0.2}s` : '0s',
+                  animationDelay: featuresVisible ? `${index * 0.2}s` : '0s',
                   animationFillMode: 'forwards'
                 }}
               >
@@ -180,137 +286,146 @@ export default function WelcomePage() {
               </span>
             ))}
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 px-4 max-w-6xl mx-auto">
-            {features.map((feature, index) => {
-              const Icon = feature.icon;
-              return (
-                <GlassCard
-                  key={index}
-                  blur="2px"
-                  displacementScale={50}
-                  glowIntensity={10}
-                  brightness={1.2}
-                  className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
-                  padding="1.5rem"
-                >
-                  <div className="text-center">
-                    <div className="w-20 h-20 mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
-                      <GlassCard
-                        padding="1rem"
-                        borderRadius="50%"
-                        blur="2px"
-                        brightness={1.1}
-                        glowColor="rgba(255, 255, 255, 0.5)"
-                        glowIntensity={8}
-                        borderColor="rgba(255, 255, 255, 0.3)"
-                        borderWidth="2px"
-                        displacementScale={50}
-                        width="100%"
-                        height="100%"
-                        className="flex items-center justify-center bg-white/80"
-                      >
-                        <Icon className="w-8 h-8 text-blue-600" />
-                      </GlassCard>
-                    </div>
-                    <h3 className="font-bricolage text-lg font-semibold mb-3 text-white">
-                      {feature.title}
-                    </h3>
-                    <p className="font-bricolage text-white/80 text-sm leading-relaxed">
-                      {feature.description}
-                    </p>
-                  </div>
-                </GlassCard>
-              );
-            })}
-          </div>
+          <HorizontalFeatures features={features} />
         </div>
 
-        {/* Benefits Section */}
-        <div className="mb-16 w-full h-screen" ref={featuresRef}>
-          <h2 className="font-dela-gothic text-3xl md:text-6xl text-center mb-50">
-            {["Why", "Choose", "SOP"].map((word, index) => (
-              <span
-                key={index}
-                className={` bg-clip-text text-transparent bg-gradient-to-br from-white/100 to-white/80 drop-shadow-[0_0_20px_rgba(255,255,255,0.4)] mr-3 ${isVisible ? 'animate-word-wipe' : 'opacity-0'
-                  }`}
-                style={{
-                  animationDelay: isVisible ? `${index * 0.2}s` : '0s',
-                  animationFillMode: 'forwards'
-                }}
-              >
-                {word}
-              </span>
-            ))}
-          </h2>
-
-          <GlassCard
-            className="mb-8 mx-50"
-            padding="2rem"
-            blur="2px"
-            brightness={1.1}
-            glowColor="rgba(255, 255, 255, 0.5)"
-            glowIntensity={8}
-            borderColor="rgba(255, 255, 255, 0.3)"
-            borderWidth="2px"
-            displacementScale={10}
+        {/* Benefits Section with GSAP Animation */}
+        <div className="relative w-full h-screen" ref={benefitsSectionRef}>
+          {/* Large Text Overlay */}
+          <div
+            ref={benefitsTextRef}
+            className="absolute inset-0 flex flex-col justify-between p-8 md:p-16 pointer-events-none"
           >
-            <div className="flex flex-wrap justify-center gap-4 mb-6">
-              <GlassButton
-                variant="custom"
-                size="sm"
-                backgroundColor="rgba(59, 130, 246, 0.3)"
-                borderColor="rgba(59, 130, 246, 0.5)"
-                borderWidth="2px"
-                borderRadius="20px"
-                textColor="white"
-              >
-                Smart AI
-              </GlassButton>
-              <GlassButton
-                variant="custom"
-                size="sm"
-                backgroundColor="rgba(99, 102, 241, 0.3)"
-                borderColor="rgba(99, 102, 241, 0.5)"
-                borderWidth="2px"
-                borderRadius="20px"
-                textColor="white"
-              >
-                Easy to Use
-              </GlassButton>
-              <GlassButton
-                variant="custom"
-                size="sm"
-                backgroundColor="rgba(168, 85, 247, 0.3)"
-                borderColor="rgba(168, 85, 247, 0.5)"
-                borderWidth="2px"
-                borderRadius="20px"
-                textColor="white"
-              >
-                Time Saving
-              </GlassButton>
-              <GlassButton
-                variant="custom"
-                size="sm"
-                backgroundColor="rgba(236, 72, 153, 0.3)"
-                borderColor="rgba(236, 72, 153, 0.5)"
-                borderWidth="2px"
-                borderRadius="20px"
-                textColor="white"
-              >
-                Personal Style
-              </GlassButton>
+            <div className="text-left h-full">
+              <h2 className="font-dela-gothic text-[13vw] md:text-[10vw] leading-none h-full">
+                <span className="block bg-clip-text h-full text-transparent bg-gradient-to-br from-white/100 to-white/80 drop-shadow-[0_0_30px_rgba(255,255,255,0.6)]">
+                  Why Choose
+                </span>
+              </h2>
             </div>
-            <p className="font-bricolage text-white/90 text-lg leading-relaxed text-center max-w-3xl mx-auto">
-              No more worrying about &ldquo;what to wear today&rdquo;. SOP helps you stay confident with your personal style.
-            </p>
-          </GlassCard>
-        </div>
+            <div className="text-right">
+              <h2 className="font-dela-gothic text-[13vw] md:text-[10vw] leading-none">
+                <span className="block bg-clip-text text-transparent bg-gradient-to-br from-white/100 to-white/80 drop-shadow-[0_0_30px_rgba(255,255,255,0.6)]">
+                  Smart Outfit
+                </span>
+                <span className="block bg-clip-text text-transparent bg-gradient-to-br from-white/100 to-white/80 drop-shadow-[0_0_30px_rgba(255,255,255,0.6)]">
+                  Planner
+                </span>
+              </h2>
+            </div>
+          </div>
 
-        {/* Footer */}
-        <div className="text-center mt-12 text-gray-500">
-          <p className="text-sm">
-            © 2024 Smart Outfit Planner. Made with ❤️ for fashion lovers.
-          </p>
+          {/* Content that zooms in */}
+          <div
+            ref={benefitsContentRef}
+            className="absolute inset-0 flex items-center justify-center px-4"
+          >
+            <div className="max-w-4xl w-full">
+              <div className="flex flex-wrap justify-center gap-4 mb-6">
+                <GlassCard
+                  padding="0.75rem 1.5rem"
+                  blur="2px"
+                  brightness={1.1}
+                  glowColor="rgba(255, 255, 255, 1)"
+                  glowIntensity={4}
+                  borderColor="rgba(0, 225, 255, 1)"
+                  borderWidth="2px"
+                  borderRadius="20px"
+                  displacementScale={10}
+                  width="auto"
+                  height="auto"
+                  draggable
+                >
+                  <span className="font-bricolage text-5xl font-semibold text-white">Smart AI</span>
+                </GlassCard>
+
+                <GlassCard
+                  padding="0.75rem 1.5rem"
+                  blur="2px"
+                  brightness={1.1}
+                  glowColor="rgba(255, 255, 255, 1)"
+                  glowIntensity={4}
+                  borderColor="rgba(0, 225, 255, 1)"
+                  borderWidth="2px"
+                  borderRadius="20px"
+                  displacementScale={10}
+                  width="auto"
+                  height="auto"
+                  draggable
+                >
+                  <span className="font-bricolage text-5xl font-semibold text-white">Easy to Use</span>
+                </GlassCard>
+
+                <GlassCard
+                  padding="0.75rem 1.5rem"
+                  blur="2px"
+                  brightness={1.1}
+                  glowColor="rgba(255, 255, 255, 1)"
+                  glowIntensity={4}
+                  borderColor="rgba(0, 225, 255, 1)"
+                  borderWidth="2px"
+                  borderRadius="20px"
+                  displacementScale={10}
+                  width="auto"
+                  height="auto"
+                  draggable
+                >
+                  <span className="font-bricolage text-5xl font-semibold text-white">Time Saving</span>
+                </GlassCard>
+
+                <GlassCard
+                  padding="0.75rem 1.5rem"
+                  blur="2px"
+                  brightness={1.1}
+                  glowColor="rgba(255, 255, 255, 1)"
+                  glowIntensity={4}
+                  borderColor="rgba(0, 225, 255, 1)"
+                  borderWidth="2px"
+                  borderRadius="20px"
+                  displacementScale={10}
+                  width="auto"
+                  height="auto"
+                  draggable
+                >
+                  <span className="font-bricolage text-5xl font-semibold text-white">Personal Style</span>
+                </GlassCard>
+              </div>
+<div className="flex flex-col sm:flex-row gap-4 justify-center mt-50">
+                  <GlassButton
+                    size="lg"
+                    variant="primary"
+                    onClick={handleGetStarted}
+                    borderRadius="100px"
+                    blur="7px"
+                    brightness={1.1}
+                    glowColor="rgba(0, 183, 255, 0.5)"
+                    glowIntensity={8}
+                    borderColor="rgba(255, 255, 255, 0.3)"
+                    borderWidth="2px"
+                    displacementScale={10}
+                    backgroundColor="rgba(60, 16, 255, 1)"
+                  >
+                    <span className="font-bricolage text-3xl font-semibold text-white">Start Now</span>
+                  </GlassButton>
+
+                  <GlassButton
+                    size="lg"
+                    variant="ghost"
+                    onClick={handleTryFree}
+                    borderRadius="100px"
+                    blur="2px"
+                    brightness={1.1}
+                    glowColor="rgba(255, 255, 255, 0.5)"
+                    glowIntensity={8}
+                    borderColor="rgba(255, 255, 255, 0.3)"
+                    borderWidth="2px"
+                    displacementScale={10}
+                  >
+                    <span className="font-bricolage text-3xl font-semibold text-white">Free Trial</span>
+                  </GlassButton>
+                </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -336,3 +451,4 @@ export default function WelcomePage() {
     </div>
   );
 }
+

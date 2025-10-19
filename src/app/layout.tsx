@@ -5,6 +5,7 @@ import { LayoutContent } from "@/components/layout/layout-content";
 import { GoogleAuthProvider } from "@/components/providers/google-oauth-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
 import "./globals.css";
+import LoadingPreloader from "@/components/ui/preloading";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -44,6 +45,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${poppins.variable} ${bricolageGrotesque.variable} antialiased`}
         suppressHydrationWarning={true}
       >
+        <LoadingPreloader/>
         <QueryProvider>
           <GoogleAuthProvider>
             <LayoutContent>{children}</LayoutContent>

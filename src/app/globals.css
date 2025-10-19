@@ -2,8 +2,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Dela+Gothic+One&display=swap');
 
 @import "tailwindcss";
-@plugin "tailwindcss-animate";
-@custom-variant dark (&:is(.dark *));
+
 
 /* 1) Design tokens (HSL) */
 :root {
@@ -122,11 +121,6 @@
   }
   body {
     @apply bg-background text-foreground;
-    background-image: linear-gradient(rgba(0, 38, 255, 0.5), rgba(0, 26, 255, 0.5)), url('/main-theme.jpg');
-    background-size: cover;
-    background-position: center;
-    background-repeat: repeat;
-    background-attachment: scroll;
   }
 }
 

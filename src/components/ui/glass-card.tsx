@@ -23,6 +23,7 @@ interface GlassCardProps {
   displacementScale?: number;
   width?: string;
   height?: string;
+  onClick?: () => void;
 }
 
 const GlassCard: React.FC<GlassCardProps> = ({
@@ -41,7 +42,8 @@ const GlassCard: React.FC<GlassCardProps> = ({
   className = '',
   displacementScale = 200,
   width = 'auto',
-  height = 'auto'
+  height = 'auto',
+  onClick
 }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const positionRef = useRef<Position>({ x: 0, y: 0 });
@@ -94,6 +96,7 @@ const GlassCard: React.FC<GlassCardProps> = ({
         ref={cardRef}
         className={`glass-card ${className}`}
         style={cardStyle}
+        onClick={onClick}
       >
         <div className="glass-card-before" style={beforeStyle} />
         <div className="glass-card-content">
