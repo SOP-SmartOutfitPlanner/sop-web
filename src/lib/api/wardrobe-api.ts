@@ -94,15 +94,22 @@ class WardrobeAPI {
    * Get all wardrobe items for current user
    */
   async getItems(): Promise<ApiWardrobeItem[]> {
-    const response = await apiClient.get('/items');
-    
+    // Get userId from localStorage token
+    const userId = this.getUserIdFromToken();
+
+    if (!userId) {
+      return [];
+    }
+
+    // New endpoint: /items/user/{userId}
+    const response = await apiClient.get(`/items/user/${userId}`);
+
     // API returns { statusCode, message, data: { data: [...], metaData: {...} } }
     const apiData = response.data.data;
-    
+
     // Handle different response structures
     let items: ApiWardrobeItem[] = [];
-    
-    if (apiData && typeof apiData === 'object') {
+    if (apiData && typeof apiData === "object") {
       // Case 1: Paginated response with data.data array
       if (apiData.data && Array.isArray(apiData.data)) {
         items = apiData.data;
@@ -112,8 +119,33 @@ class WardrobeAPI {
         items = apiData;
       }
     }
-    
+
     return items;
+  }
+
+  /**
+   * Get user ID from JWT token in localStorage
+   * @private
+   */
+  private getUserIdFromToken(): number | null {
+    try {
+      const token = localStorage.getItem("accessToken");
+      if (!token) return null;
+
+      // Decode JWT token (format: header.payload.signature)
+      const payload = JSON.parse(atob(token.split(".")[1]));
+
+      // Backend uses "UserId" (capital U) in JWT, not "id"
+      const userId = payload?.UserId
+        ? parseInt(payload.UserId)
+        : payload?.id
+        ? parseInt(payload.id)
+        : null;
+
+      return userId;
+    } catch {
+      return null;
+    }
   }
 
   /**
@@ -128,14 +160,17 @@ class WardrobeAPI {
    * Create new wardrobe item
    */
   async createItem(item: CreateWardrobeItemRequest): Promise<ApiWardrobeItem> {
-    const response = await apiClient.post('/items', item);
+    const response = await apiClient.post("/items", item);
     return response.data.data;
   }
 
   /**
    * Update wardrobe item
    */
-  async updateItem(id: number, item: Partial<CreateWardrobeItemRequest>): Promise<ApiWardrobeItem> {
+  async updateItem(
+    id: number,
+    item: Partial<CreateWardrobeItemRequest>
+  ): Promise<ApiWardrobeItem> {
     const response = await apiClient.put(`/items/${id}`, item);
     return response.data.data;
   }
@@ -160,19 +195,19 @@ class WardrobeAPI {
     imageRemBgURL: string;
   }> {
     const formData = new FormData();
-    formData.append('file', file, file.name);
-    
-    const response = await apiClient.post('/items/summary', formData, {
+    formData.append("file", file, file.name);
+
+    const response = await apiClient.post("/items/summary", formData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        "Content-Type": "multipart/form-data",
       },
     });
-    
+
     // Based on the logs, the API returns the data directly in response.data
     // But looking at the curl example, it should be response.data.data
     // Let's check both cases
     const apiResponse = response.data;
-    
+
     if (apiResponse.data) {
       // Case 1: { statusCode, message, data: { actualData } }
       return apiResponse.data;

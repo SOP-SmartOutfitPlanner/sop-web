@@ -21,6 +21,7 @@ Bạn thường băn khoăn hôm nay mặc gì? Bạn muốn tối ưu hóa tủ
 - **Tailwind CSS** (UI framework)
 - **shadcn/ui** (UI Component Library)
 - **lucide-react** (Icon set)
+- **Stagewise** (AI-powered dev-tool for browser-based editing)
 - (Bổ sung nếu tích hợp backend/API, xác thực, ...)
 
 ## 📦 Cài đặt & chạy dự án
@@ -67,6 +68,20 @@ src/
 - Lưu, chia sẻ outfit yêu thích
 - Bộ sưu tập, cộng đồng stylist
 - (Bổ sung/ghi chú thêm nếu có phân quyền, gói dịch vụ...)
+
+## 🤖 AI-Powered Development with Stagewise
+
+This project includes **Stagewise** integration for AI-powered in-browser editing. Stagewise allows you to:
+- Select elements directly in the browser
+- Describe changes you want to make
+- Let AI agents (Cursor, GitHub Copilot, etc.) automatically update your code
+
+**To use Stagewise:**
+1. Run `npm run dev` to start your development server
+2. In a separate terminal, run `npm run stagewise`
+3. Access your app through the Stagewise proxy URL
+
+📖 **For detailed instructions, see [STAGEWISE.md](./STAGEWISE.md)**
 
 ## 🚩 Hướng phát triển tiếp theo
 

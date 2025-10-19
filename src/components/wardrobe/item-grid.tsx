@@ -18,7 +18,6 @@ interface GridProps {
   onSelectItem?: (id: string, selected: boolean) => void;
   onEditItem?: (item: WardrobeItem) => void;
   onDeleteItem?: (id: string) => void;
-  onViewItem?: (item: WardrobeItem) => void;
   onUseInOutfit?: (item: WardrobeItem) => void;
   showCheckboxes?: boolean;
   emptyMessage?: string;
@@ -32,7 +31,6 @@ export function ItemGrid({
   onSelectItem,
   onEditItem,
   onDeleteItem,
-  onViewItem,
   onUseInOutfit,
   showCheckboxes = false,
   emptyMessage = "No items found",
@@ -59,9 +57,9 @@ export function ItemGrid({
   useEffect(() => {
     // Only fetch if no external items provided and haven't done initial fetch yet
     if (!externalItems && !hasInitialFetch && (!filteredItems || filteredItems.length === 0)) {
-      console.log("📥 Fetching items from API (initial load)...");
       fetchItems();
     }
+
   }, [externalItems, hasInitialFetch, filteredItems, fetchItems]);
 
   const handleDelete = async (id: string) => {
@@ -80,15 +78,6 @@ export function ItemGrid({
     } else {
       // TODO: Implement default edit functionality
       console.log("Edit item:", item);
-    }
-  };
-
-  const handleView = (item: WardrobeItem) => {
-    if (onViewItem) {
-      onViewItem(item);
-    } else {
-      // TODO: Implement default view functionality
-      console.log("View item:", item);
     }
   };
 
@@ -191,7 +180,6 @@ export function ItemGrid({
             onSelect={handleSelectItem}
             onEdit={handleEdit}
             onDelete={handleDelete}
-            onView={handleView}
             onUseInOutfit={handleUseInOutfit}
             showCheckbox={showCheckboxes || isSelectionMode}
           />

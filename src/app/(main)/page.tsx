@@ -67,7 +67,7 @@ export default function WelcomePage() {
     const lenis = new Lenis({
       duration: 1,
       smoothWheel: true,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), 
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
     });
 
     function raf(time: number) {
@@ -390,40 +390,40 @@ export default function WelcomePage() {
                   <span className="font-bricolage text-5xl font-semibold text-white">Personal Style</span>
                 </GlassCard>
               </div>
-<div className="flex flex-col sm:flex-row gap-4 justify-center mt-50">
-                  <GlassButton
-                    size="lg"
-                    variant="primary"
-                    onClick={handleGetStarted}
-                    borderRadius="100px"
-                    blur="7px"
-                    brightness={1.1}
-                    glowColor="rgba(0, 183, 255, 0.5)"
-                    glowIntensity={8}
-                    borderColor="rgba(255, 255, 255, 0.3)"
-                    borderWidth="2px"
-                    displacementScale={10}
-                    backgroundColor="rgba(60, 16, 255, 1)"
-                  >
-                    <span className="font-bricolage text-3xl font-semibold text-white">Start Now</span>
-                  </GlassButton>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center mt-50">
+                <GlassButton
+                  size="lg"
+                  variant="primary"
+                  onClick={handleGetStarted}
+                  borderRadius="100px"
+                  blur="7px"
+                  brightness={1.1}
+                  glowColor="rgba(0, 183, 255, 0.5)"
+                  glowIntensity={8}
+                  borderColor="rgba(255, 255, 255, 0.3)"
+                  borderWidth="2px"
+                  displacementScale={10}
+                  backgroundColor="rgba(60, 16, 255, 1)"
+                >
+                  <span className="font-bricolage text-3xl font-semibold text-white">Start Now</span>
+                </GlassButton>
 
-                  <GlassButton
-                    size="lg"
-                    variant="ghost"
-                    onClick={handleTryFree}
-                    borderRadius="100px"
-                    blur="2px"
-                    brightness={1.1}
-                    glowColor="rgba(255, 255, 255, 0.5)"
-                    glowIntensity={8}
-                    borderColor="rgba(255, 255, 255, 0.3)"
-                    borderWidth="2px"
-                    displacementScale={10}
-                  >
-                    <span className="font-bricolage text-3xl font-semibold text-white">Free Trial</span>
-                  </GlassButton>
-                </div>
+                <GlassButton
+                  size="lg"
+                  variant="ghost"
+                  onClick={handleTryFree}
+                  borderRadius="100px"
+                  blur="2px"
+                  brightness={1.1}
+                  glowColor="rgba(255, 255, 255, 0.5)"
+                  glowIntensity={8}
+                  borderColor="rgba(255, 255, 255, 0.3)"
+                  borderWidth="2px"
+                  displacementScale={10}
+                >
+                  <span className="font-bricolage text-3xl font-semibold text-white">Free Trial</span>
+                </GlassButton>
+              </div>
             </div>
           </div>
         </div>

@@ -17,17 +17,29 @@ import { GoogleLoginButton } from "./google-login-button";
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showVerifiedBanner, setShowVerifiedBanner] = useState(false);
+  const [showResetBanner, setShowResetBanner] = useState(false);
   const { isLoading, handleLogin } = useAuth();
   const searchParams = useSearchParams();
 
-  // Check if redirected from OTP verification
+  // Check if redirected from OTP verification or password reset
   useEffect(() => {
     const verified = searchParams.get("verified");
+    const reset = searchParams.get("reset");
+    
     if (verified === "true") {
       setShowVerifiedBanner(true);
       // Auto-hide after 10 seconds
       const timer = setTimeout(() => {
         setShowVerifiedBanner(false);
+      }, 10000);
+      return () => clearTimeout(timer);
+    }
+    
+    if (reset === "success") {
+      setShowResetBanner(true);
+      // Auto-hide after 10 seconds
+      const timer = setTimeout(() => {
+        setShowResetBanner(false);
       }, 10000);
       return () => clearTimeout(timer);
     }
@@ -76,11 +88,47 @@ export function LoginForm() {
                 ✅ Email đã được xác thực thành công!
               </h3>
               <p className="text-xs text-green-800">
-                Tài khoản của bạn đã được kích hoạt. Vui lòng đăng nhập để tiếp tục.
+                Tài khoản của bạn đã được kích hoạt. Vui lòng đăng nhập để tiếp
+                tục.
               </p>
             </div>
             <button
               onClick={() => setShowVerifiedBanner(false)}
+              className="ml-auto text-green-600 hover:text-green-800"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Success Banner - Password Reset */}
+      {showResetBanner && (
+        <div className="mb-6 bg-green-50 border border-green-200 rounded-xl p-4 animate-in slide-in-from-top duration-300">
+          <div className="flex items-start">
+            <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 mr-3 flex-shrink-0" />
+            <div>
+              <h3 className="text-sm font-semibold text-green-900 mb-1">
+                ✅ Mật khẩu đã được đặt lại thành công!
+              </h3>
+              <p className="text-xs text-green-800">
+                Vui lòng đăng nhập bằng mật khẩu mới của bạn.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowResetBanner(false)}
               className="ml-auto text-green-600 hover:text-green-800"
             >
               <svg
@@ -170,7 +218,7 @@ export function LoginForm() {
         <Button
           type="submit"
           disabled={isLoading}
-          className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-all duration-300 hover:scale-[1.02] shadow-lg"
+          className="w-full h-12 bg-gradient-to-r from-login-navy to-login-blue hover:from-login-navy/90 hover:to-login-blue/90 text-white font-semibold rounded-xl transition-all duration-300 hover:scale-[1.02] shadow-lg"
         >
           {isLoading ? (
             <div className="flex items-center justify-center">
@@ -205,18 +253,6 @@ export function LoginForm() {
             >
               Đăng ký ngay
             </Link>
-          </p>
-        </div>
-
-        {/* Demo Account */}
-        <div className="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-100">
-          <p className="text-sm font-medium text-blue-800 mb-2">
-            Tài khoản demo:
-          </p>
-          <p className="text-xs text-blue-600">
-            Email: test@example.com
-            <br />
-            Password: 123456
           </p>
         </div>
       </form>

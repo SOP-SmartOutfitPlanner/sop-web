@@ -6,9 +6,9 @@ interface AuthContainerProps {
 
 export function AuthContainer({ children }: AuthContainerProps) {
   return (
-    <div className="w-full lg:w-3/5 xl:w-1/2 flex items-center justify-center p-6 lg:p-12 relative">
-      <div className="w-full max-w-md">
-        <div className="bg-white/80 backdrop-blur-[20px] rounded-[24px] shadow-[0_8px_32px_rgba(31,38,135,0.15)] p-8 lg:p-10 border border-white/30 relative overflow-hidden">
+    <div className="w-full lg:w-3/5 xl:w-1/2 flex items-center justify-center p-4 lg:p-8 relative overflow-y-auto">
+      <div className="w-full max-w-md my-auto">
+        <div className="bg-white/80 backdrop-blur-[20px] rounded-[24px] shadow-[0_8px_32px_rgba(31,38,135,0.15)] p-6 lg:p-8 border border-white/30 relative overflow-hidden">
           {/* Glass effect overlay */}
           <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-transparent pointer-events-none"></div>
           <div className="relative z-10">{children}</div>

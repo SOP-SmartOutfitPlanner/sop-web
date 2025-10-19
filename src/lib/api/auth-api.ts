@@ -9,6 +9,10 @@ import type {
   VerifyOtpRequest,
   ResendOtpRequest,
   ResendOtpResponse,
+  ForgotPasswordRequest,
+  VerifyOtpResetRequest,
+  VerifyOtpResetResponse,
+  ResetPasswordRequest,
 } from "@/lib/types";
 
 /**
@@ -179,14 +183,24 @@ class AuthAPI {
   // }
 
   /**
-   * Request password reset
-   * POST /auth/forgot-password
+   * Request password reset OTP
+   * POST /auth/password/forgot
    */
-  async forgotPassword(email: string): Promise<{ message: string }> {
+  async forgotPassword(
+    data: ForgotPasswordRequest
+  ): Promise<ApiResponse<null>> {
     try {
-      return await apiClient.post(`${this.BASE_PATH}/forgot-password`, {
-        email,
-      });
+      const response = await apiClient.post<ApiResponse<null>>(
+        `${this.BASE_PATH}/password/forgot`,
+        data
+      );
+      
+      // Store email for next step
+      if (response.statusCode === 200 && typeof window !== "undefined") {
+        sessionStorage.setItem("passwordResetEmail", data.email);
+      }
+      
+      return response;
     } catch (error) {
       console.error("Forgot password failed:", error);
       throw error;
@@ -194,18 +208,53 @@ class AuthAPI {
   }
 
   /**
+   * Verify OTP for password reset
+   * POST /auth/password/verify-otp
+   */
+  async verifyOtpReset(
+    data: VerifyOtpResetRequest
+  ): Promise<ApiResponse<VerifyOtpResetResponse>> {
+    try {
+      const response = await apiClient.post<
+        ApiResponse<VerifyOtpResetResponse>
+      >(`${this.BASE_PATH}/password/verify-otp`, data);
+
+      // Store reset token for next step
+      if (
+        response.statusCode === 200 &&
+        response.data.resetToken &&
+        typeof window !== "undefined"
+      ) {
+        sessionStorage.setItem("passwordResetToken", response.data.resetToken);
+      }
+
+      return response;
+    } catch (error) {
+      console.error("OTP verification for password reset failed:", error);
+      throw error;
+    }
+  }
+
+  /**
    * Reset password with token
-   * POST /auth/reset-password
+   * POST /auth/password/reset
    */
   async resetPassword(
-    token: string,
-    password: string
-  ): Promise<{ message: string }> {
+    data: ResetPasswordRequest
+  ): Promise<ApiResponse<null>> {
     try {
-      return await apiClient.post(`${this.BASE_PATH}/reset-password`, {
-        token,
-        password,
-      });
+      const response = await apiClient.post<ApiResponse<null>>(
+        `${this.BASE_PATH}/password/reset`,
+        data
+      );
+
+      // Clear stored data after successful reset
+      if (response.statusCode === 200 && typeof window !== "undefined") {
+        sessionStorage.removeItem("passwordResetEmail");
+        sessionStorage.removeItem("passwordResetToken");
+      }
+
+      return response;
     } catch (error) {
       console.error("Reset password failed:", error);
       throw error;

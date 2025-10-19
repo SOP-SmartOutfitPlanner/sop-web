@@ -18,7 +18,7 @@ import {
 } from "recharts";
 import { useWardrobeStats } from "@/hooks/useWardrobeStats";
 import { TypeKind } from "@/types";
-import { FillGoal } from "./fill-goal";
+// import { FillGoal } from "./fill-goal";
 import { cn } from "@/lib/utils";
 
 const typeColors: Record<TypeKind, string> = {
@@ -69,18 +69,10 @@ export function SidebarStats({ className }: SidebarStatsProps) {
     color: item.color,
   }));
 
-  // Calculate items by category for FillGoal
-  const itemsByCategory = Object.entries(counts)
-    .filter(([key]) => key !== "total")
-    .reduce((acc, [type, count]) => {
-      acc[type] = count;
-      return acc;
-    }, {} as Record<string, number>);
-
   return (
     <aside className={cn("w-full space-y-6", className)}>
       {/* Fill Goal Component */}
-      <FillGoal totalItems={counts.total} itemsByCategory={itemsByCategory} />
+      {/* <FillGoal totalItems={counts.total} itemsByCategory={itemsByCategory} /> */}
 
       {/* Wardrobe Overview */}
       <motion.div

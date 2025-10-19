@@ -14,6 +14,7 @@ import {
 import { useAuthStore } from "@/store/auth-store";
 import { useWardrobeStore } from "@/store/wardrobe-store";
 import { useRouter } from "next/navigation";
+import { Logo } from "@/components/ui/logo";
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -46,8 +47,15 @@ export function Header({ onMenuClick }: HeaderProps) {
             <Menu className="h-5 w-5" />
           </Button>
 
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold">SOP Wardrobe</h1>
+          <div className="flex items-center gap-3" suppressHydrationWarning>
+            <div className="transform transition-transform hover:scale-105">
+              <Logo 
+                variant="rectangle" 
+                width={85} 
+                height={42}
+                className="drop-shadow-md"
+              />
+            </div>
           </div>
         </div>
 

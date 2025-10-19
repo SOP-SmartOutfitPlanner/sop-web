@@ -17,19 +17,18 @@ export const WardrobeHeader = memo(function WardrobeHeader({
   return (
     <div className="flex items-center justify-between mb-8">
       <div>
-        <h1 className="text-3xl font-bold text-blue-600 mb-2">My Wardrobe</h1>
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent mb-2">
+          My Wardrobe
+        </h1>
         <p className="text-gray-600">
           Manage your clothing collection with smart organization
         </p>
       </div>
       <div className="flex gap-3">
-        <motion.div
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
+        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
           <Button
             onClick={onAddItem}
-            className="bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-700 hover:to-violet-700 shadow-lg transition-all duration-300"
+            className="from-primary transition-all duration-300"
             disabled={isLoading}
           >
             <motion.div

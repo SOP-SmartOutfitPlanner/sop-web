@@ -34,6 +34,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuthStore } from "@/store/auth-store";
+import { Logo } from "@/components/ui/logo";
 
 const mainNavigationItems = [
   { path: "/wardrobe", label: "Wardrobe", icon: Shirt, enabled: true },
@@ -115,17 +116,25 @@ export function Navbar() {
 
   return (
     <TooltipProvider>
-      <nav className="sticky top-0 z-50 backdrop-blur-xl bg-white/80 border-b border-gray-200/50 shadow-sm">
+      <nav className="sticky top-0 z-50 backdrop-blur-xl bg-white/90 border-b border-gray-200/50 shadow-md">
         <div className="container mx-auto px-6">
-          <div className="flex items-center justify-between h-14">
+          <div className="flex items-center justify-between h-16">
             {/* Logo - Left */}
             <Link
               href="/wardrobe"
-              className="flex items-center space-x-3 group"
+              className="flex items-center space-x-3 group relative py-2"
+              suppressHydrationWarning
             >
-              <div className="text-2xl font-bold tracking-tight">
-                <span className="text-blue-600">So</span>
-                <span className="text-orange-500">P</span>
+              <div
+                className="transform transition-all duration-300 group-hover:scale-110 group-hover:rotate-3"
+                suppressHydrationWarning
+              >
+                <Logo
+                  variant="rectangle"
+                  width={85}
+                  height={48}
+                  className="filter drop-shadow-md group-hover:drop-shadow-lg"
+                />
               </div>
             </Link>
 
@@ -145,59 +154,88 @@ export function Navbar() {
                 ))}
               </div>
 
-              {/* Inbox */}
-              <Tooltip>
-                <TooltipTrigger asChild>
+              {/* Inbox - Only show when logged in */}
+              {user && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="relative hover:bg-blue-50 hover:text-blue-600 transition-all duration-300 cursor-not-allowed text-gray-400"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Đang hoàn thiện</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+
+              {/* User Menu - Show when logged in */}
+              {user ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className="relative h-8 w-8 rounded-full p-0"
+                    >
+                      <Avatar className="h-8 w-8  text-black text-sm">
+                        <AvatarImage
+                          src={user?.avatar}
+                          alt={user?.displayName}
+                        />
+                        <AvatarFallback>
+                          {user?.displayName?.charAt(0)?.toUpperCase() || "U"}
+                        </AvatarFallback>
+                      </Avatar>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-46" align="center">
+                    <div className="flex items-center justify-start gap-2 p-2">
+                      <div className="flex flex-col space-y-1 leading-none">
+                        {user?.displayName && (
+                          <p className="font-medium">{user.displayName}</p>
+                        )}
+                        {/* {user?.email && (
+                          <p className="w-[200px] truncate text-sm text-muted-foreground">
+                            {user.email}
+                          </p>
+                        )} */}
+                      </div>
+                    </div>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => router.push("/profile")}>
+                      <User className="mr-2 h-4 w-4" />
+                      Profile
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleLogout}>
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Log out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                /* Login/Register buttons - Show when not logged in */
+                <div className="flex items-center gap-2">
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="relative hover:bg-blue-50 hover:text-blue-600 transition-all duration-300 cursor-not-allowed text-gray-400"
+                    onClick={() => router.push("/login")}
+                    className="font-medium hover:bg-blue-50 hover:text-blue-600 transition-all duration-300"
                   >
-                    <MessageSquare className="w-4 h-4" />
+                    Đăng nhập
                   </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Đang hoàn thiện</p>
-                </TooltipContent>
-              </Tooltip>
-
-              {/* User Menu */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-8 w-8 rounded-full p-0">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={user?.avatar} alt={user?.displayName} />
-                      <AvatarFallback className="bg-blue-600 text-white text-sm">
-                        {user?.displayName?.charAt(0)?.toUpperCase() || "U"}
-                      </AvatarFallback>
-                    </Avatar>
+                  <Button
+                    size="sm"
+                    onClick={() => router.push("/register")}
+                    className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-md hover:shadow-lg transition-all duration-300"
+                  >
+                    Đăng ký
                   </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end">
-                  <div className="flex items-center justify-start gap-2 p-2">
-                    <div className="flex flex-col space-y-1 leading-none">
-                      {user?.displayName && (
-                        <p className="font-medium">{user.displayName}</p>
-                      )}
-                      {user?.email && (
-                        <p className="w-[200px] truncate text-sm text-muted-foreground">
-                          {user.email}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => router.push("/profile")}>
-                    <User className="mr-2 h-4 w-4" />
-                    Profile
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Log out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                </div>
+              )}
             </div>
           </div>
         </div>

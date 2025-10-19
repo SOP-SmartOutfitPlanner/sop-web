@@ -462,6 +462,7 @@ const apiItemToWardrobeItem = (apiItem: ApiWardrobeItem): WardrobeItem => {
     seasons: seasons,
     occasions: occasions,
     status: "active", // Default status
+    frequencyWorn: apiItem.frequencyWorn || "",
     // Additional fields for ItemCard compatibility
     category: type,
     color: apiItem.color,
