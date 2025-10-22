@@ -37,6 +37,8 @@ interface WardrobeStore {
   // Selection mode
   toggleSelectionMode: () => void;
   setSelectionMode: (mode: boolean) => void;
+  // Reset
+  resetStore: () => void;
 }
 
 // Fuse.js configuration for filtering
@@ -416,6 +418,22 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
       });
       throw error;
     }
+  },
+
+  // Reset store to initial state (for logout)
+  resetStore: () => {
+    set({
+      items: [],
+      filters: {},
+      isLoading: false,
+      filteredItems: [],
+      error: null,
+      sortBy: "newest",
+      selectedItems: [],
+      isSelectionMode: false,
+      hasInitialFetch: false,
+      searchQuery: "",
+    });
   },
 }));
 

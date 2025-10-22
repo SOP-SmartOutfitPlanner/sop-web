@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { authAPI, ApiError } from "@/lib/api";
 import { extractUserFromToken } from "@/lib/utils/jwt";
+import { queryClient } from "@/lib/query-client";
 import type {
   User,
   LoginRequest,
@@ -293,6 +294,16 @@ export const useAuthStore = create<AuthStore>((set) => ({
         localStorage.removeItem('refreshToken');
         sessionStorage.removeItem('pendingVerificationEmail');
         sessionStorage.removeItem('googleCredential');
+      }
+      
+      // Clear React Query cache
+      queryClient.clear();
+      
+      // Clear wardrobe store - using dynamic import to avoid circular dependency
+      if (typeof window !== 'undefined') {
+        import('@/store/wardrobe-store').then(({ useWardrobeStore }) => {
+          useWardrobeStore.getState().resetStore();
+        });
       }
       
       set({
