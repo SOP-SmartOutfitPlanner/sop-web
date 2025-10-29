@@ -1,6 +1,6 @@
 import { create } from "zustand";
-import { authAPI, ApiError } from "@/lib/api";
-import { extractUserFromToken } from "@/lib/utils/jwt";
+import { authAPI, ApiError, apiClient } from "@/lib/api";
+import { extractUserFromToken, isAdminUser } from "@/lib/utils/jwt";
 import { queryClient } from "@/lib/query-client";
 import type {
   User,
@@ -55,6 +55,20 @@ export const useAuthStore = create<AuthStore>((set) => ({
       // Login successful - tokens are saved automatically by authAPI
       // Extract user info from JWT token
       const accessToken = (response.data as { accessToken: string }).accessToken;
+      
+      // CHECK IF USER IS ADMIN - REJECT ADMIN LOGIN FROM USER PORTAL
+      if (isAdminUser(accessToken)) {
+        // Admin user trying to login from user portal - reject
+        // Assuming apiClient is defined elsewhere or needs to be imported
+        // For now, we'll just set an error message
+        set({
+          isLoading: false,
+          error: "Admin accounts must use the admin login portal at /admin/login",
+          successMessage: null,
+        });
+        return false;
+      }
+      
       const userInfo = extractUserFromToken(accessToken);
       
       if (!userInfo) {
@@ -135,6 +149,24 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
       // Case 2: Existing user - login successfully (200)
       const accessToken = response.data.accessToken;
+      
+      // CHECK IF USER IS ADMIN - REJECT ADMIN LOGIN FROM USER PORTAL
+      if (isAdminUser(accessToken)) {
+        // Admin user trying to login from user portal - reject
+        apiClient.clearTokens();
+        set({
+          isLoading: false,
+          error: "Admin accounts must use the admin login portal at /admin/login",
+          successMessage: null,
+        });
+        
+        return {
+          success: false,
+          requiresVerification: false,
+          message: "Admin accounts must use the admin login portal at /admin/login",
+        };
+      }
+
       const userInfo = extractUserFromToken(accessToken);
 
       if (!userInfo) {

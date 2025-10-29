@@ -35,7 +35,7 @@ export function StepCategorize({ formData, updateFormData }: StepCategorizeProps
       return;
     }
     
-    const colorName = prompt('Nhập tên màu:');
+    const colorName = prompt('Enter color name:');
     if (!colorName) return;
 
     const newColor: ColorOption = { name: colorName, hex: customColor };
@@ -67,7 +67,7 @@ export function StepCategorize({ formData, updateFormData }: StepCategorizeProps
     <div className="space-y-6 max-w-2xl mx-auto">
       {/* Colors */}
       <div>
-        <Label>Màu sắc (tối đa 3)</Label>
+        <Label>Color (maximum 3)</Label>
         <div className="flex flex-wrap gap-2 mt-2">
           {DEFAULT_COLORS.map(color => {
             const isSelected = formData.colors.some(c => c.hex === color.hex);
@@ -98,7 +98,7 @@ export function StepCategorize({ formData, updateFormData }: StepCategorizeProps
             </PopoverTrigger>
             <PopoverContent className="w-64">
               <div className="space-y-3">
-                <Label>Màu tùy chỉnh</Label>
+                <Label>Custom color</Label>
                 <Input
                   type="color"
                   value={customColor}
@@ -106,7 +106,7 @@ export function StepCategorize({ formData, updateFormData }: StepCategorizeProps
                   className="h-12"
                 />
                 <Button onClick={addCustomColor} className="w-full" size="sm">
-                  Thêm màu
+                  Add color
                 </Button>
               </div>
             </PopoverContent>
@@ -129,7 +129,7 @@ export function StepCategorize({ formData, updateFormData }: StepCategorizeProps
 
       {/* Seasons/Weather */}
       <div>
-        <Label>Mùa / Thời tiết</Label>
+        <Label>Season / Weather</Label>
         <div className="flex flex-wrap gap-2 mt-2">
           {SEASONS.map(season => {
             const isSelected = formData.seasons.includes(season.name);
@@ -155,7 +155,7 @@ export function StepCategorize({ formData, updateFormData }: StepCategorizeProps
 
       {/* Pattern */}
       <div>
-        <Label>Họa tiết</Label>
+        <Label>Pattern</Label>
         <div className="flex flex-wrap gap-2 mt-2">
           {PATTERNS.map(pattern => (
             <button
@@ -177,10 +177,10 @@ export function StepCategorize({ formData, updateFormData }: StepCategorizeProps
 
       {/* Fabric */}
       <div>
-        <Label htmlFor="fabric">Chất liệu</Label>
+        <Label htmlFor="fabric">Fabric</Label>
         <Select value={formData.fabric} onValueChange={(value) => updateFormData({ fabric: value })}>
           <SelectTrigger className="mt-2">
-            <SelectValue placeholder="Chọn chất liệu..." />
+            <SelectValue placeholder="Select fabric..." />
           </SelectTrigger>
           <SelectContent>
             {FABRICS.map(fabric => (
@@ -194,7 +194,7 @@ export function StepCategorize({ formData, updateFormData }: StepCategorizeProps
 
       {/* Condition */}
       <div>
-        <Label>Tình trạng</Label>
+        <Label>Condition</Label>
         <RadioGroup value={formData.condition} onValueChange={(value) => updateFormData({ condition: value })} className="mt-2">
           <div className="flex gap-4">
             {CONDITIONS.map(condition => (
@@ -212,7 +212,7 @@ export function StepCategorize({ formData, updateFormData }: StepCategorizeProps
         <Label>Tags</Label>
         <div className="flex gap-2 mt-2">
           <Input
-            placeholder="Thêm tag..."
+            placeholder="Add tag..."
             value={tagInput}
             onChange={(e) => setTagInput(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
@@ -256,10 +256,10 @@ export function StepCategorize({ formData, updateFormData }: StepCategorizeProps
       <div className="flex items-center justify-between p-4 rounded-lg border">
         <div>
           <Label htmlFor="wornToday" className="cursor-pointer">
-            Đánh dấu đã mặc hôm nay
+            Mark as worn today
           </Label>
           <p className="text-xs text-muted-foreground mt-1">
-            Sẽ tăng số lần mặc lên 1
+            Will increase worn count by 1
           </p>
         </div>
         <Switch

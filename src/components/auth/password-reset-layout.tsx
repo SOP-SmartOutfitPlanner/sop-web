@@ -59,9 +59,9 @@ export function PasswordResetLayout({
               href="/login"
               className="text-sm text-login-gray hover:text-login-navy transition-colors"
             >
-              Nhớ mật khẩu?{" "}
+              Forgot password?{" "}
               <span className="font-semibold text-login-blue hover:text-login-navy transition-colors">
-                Đăng nhập ngay
+                Login now
               </span>
             </Link>
           </div>

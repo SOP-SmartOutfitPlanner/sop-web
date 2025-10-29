@@ -48,10 +48,10 @@ export function RegisterForm() {
         </Link>
         <div>
           <h1 className="text-xl font-bold text-gray-900 mb-0.5">
-            Tạo tài khoản mới
+            Create new account
           </h1>
           <p className="text-xs text-gray-500">
-            Bắt đầu hành trình thời trang của bạn
+            Start your fashion journey
           </p>
         </div>
       </div>
@@ -61,14 +61,14 @@ export function RegisterForm() {
         {/* Name Field */}
         <div className="space-y-1.5">
           <Label htmlFor="displayName" className="text-xs font-medium text-gray-700">
-            Họ và tên
+            Full name
           </Label>
           <div className="relative">
             <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <Input
               id="displayName"
               type="text"
-              placeholder="Nguyễn Văn A"
+              placeholder="John Doe"
               className="pl-9 h-10 text-sm bg-gray-50 border-gray-200 focus:bg-white focus:border-blue-500 rounded-xl"
               {...register("displayName")}
             />
@@ -81,7 +81,7 @@ export function RegisterForm() {
         {/* Email Field */}
         <div className="space-y-1.5">
           <Label htmlFor="email" className="text-xs font-medium text-gray-700">
-            Email address
+            Email
           </Label>
           <div className="relative">
             <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -104,7 +104,7 @@ export function RegisterForm() {
             htmlFor="password"
             className="text-xs font-medium text-gray-700"
           >
-            Mật khẩu
+            Password
           </Label>
           <div className="relative">
             <Input
@@ -137,7 +137,7 @@ export function RegisterForm() {
             htmlFor="confirmPassword"
             className="text-xs font-medium text-gray-700"
           >
-            Xác nhận mật khẩu
+            Confirm password
           </Label>
           <div className="relative">
             <Input
@@ -173,13 +173,13 @@ export function RegisterForm() {
             required
           />
           <label htmlFor="terms" className="text-xs text-gray-600 leading-tight">
-            Tôi đồng ý với{" "}
+            I agree to the{" "}
             <Link href="/terms" className="text-blue-600 hover:text-blue-500">
-              Điều khoản sử dụng
+              Terms of service
             </Link>{" "}
-            và{" "}
+            and{" "}
             <Link href="/privacy" className="text-blue-600 hover:text-blue-500">
-              Chính sách bảo mật
+              Privacy policy
             </Link>
           </label>
         </div>
@@ -193,10 +193,10 @@ export function RegisterForm() {
           {isLoading ? (
             <div className="flex items-center justify-center">
               <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-              Đang tạo tài khoản...
+              <span>Creating account...</span>
             </div>
           ) : (
-            "Tạo tài khoản"
+            "Create account"
           )}
         </Button>
 
@@ -206,12 +206,12 @@ export function RegisterForm() {
             <div className="w-full border-t border-gray-200" />
           </div>
           <div className="relative flex justify-center text-xs">
-            <span className="px-3 bg-white text-gray-500">hoặc</span>
+            <span className="px-3 bg-white text-gray-500">or</span>
           </div>
         </div>
 
         {/* Google Register */}
-        <SocialLoginButton
+        {/* <SocialLoginButton
           icon={
             <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
               <path
@@ -232,19 +232,19 @@ export function RegisterForm() {
               />
             </svg>
           }
-          label="Đăng ký với Google"
+          label="Register with Google"
           onClick={handleGoogleRegister}
-        />
+        /> */}
 
         {/* Login Link */}
         <div className="text-center pt-2">
           <p className="text-xs text-gray-600">
-            Đã có tài khoản?{" "}
+            Already have an account?{" "}
             <Link
               href="/login"
               className="text-blue-600 hover:text-blue-500 font-medium"
             >
-              Đăng nhập ngay
+              Login now
             </Link>
           </p>
         </div>

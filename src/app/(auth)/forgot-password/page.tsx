@@ -30,13 +30,13 @@ export default function ForgotPasswordPage() {
     setIsLoading(true);
     try {
       const response = await authAPI.forgotPassword(data);
-      toast.success(response.message || "Mã OTP đã được gửi đến email của bạn");
+      toast.success(response.message || "OTP has been sent to your email");
       setTimeout(() => router.push("/verify-otp-reset"), 1000);
     } catch (error) {
       toast.error(
         error instanceof ApiError
           ? error.message
-          : "Không thể gửi yêu cầu đặt lại mật khẩu"
+          : "Cannot send password reset request"
       );
     } finally {
       setIsLoading(false);
@@ -45,8 +45,8 @@ export default function ForgotPasswordPage() {
 
   return (
     <PasswordResetLayout
-      title="Quên mật khẩu? 🔐"
-      description="Nhập email của bạn để nhận mã OTP khôi phục mật khẩu"
+      title="Forgot password? 🔐"
+      description="Enter your email to receive OTP for password reset"
       icon={Mail}
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -72,17 +72,17 @@ export default function ForgotPasswordPage() {
           className="w-full h-12 bg-gradient-to-r from-login-navy to-login-blue hover:from-login-navy/90 hover:to-login-blue/90 text-white font-semibold rounded-xl transition-all duration-300 hover:scale-[1.02] shadow-lg"
         >
           {isLoading ? (
-            "Đang gửi..."
+            "Sending..."
           ) : (
             <span className="flex items-center justify-center gap-2">
               <Send className="w-4 h-4" />
-              Gửi mã OTP
+              Send OTP
             </span>
           )}
         </Button>
       </form>
 
-      <HelpText text="Mã OTP sẽ có hiệu lực trong 15 phút" />
+      <HelpText text="OTP will be valid for 15 minutes" />
     </PasswordResetLayout>
   );
 }

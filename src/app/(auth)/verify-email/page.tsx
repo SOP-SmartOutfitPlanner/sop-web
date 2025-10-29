@@ -40,7 +40,7 @@ export default function VerifyEmailPage() {
   const handleVerify = async (otp: string) => {
     try {
       const response = await authAPI.verifyOtp({ email, otp });
-      toast.success(response.message || "Xác thực thành công!");
+      toast.success(response.message || "Email verification successful!");
 
       // Clear verification state
       useAuthStore.setState({
@@ -52,7 +52,7 @@ export default function VerifyEmailPage() {
       const googleCredential = sessionStorage.getItem("googleCredential");
 
       if (googleCredential) {
-        toast.loading("Đang đăng nhập...", { duration: 1000 });
+        toast.loading("Logging in...", { duration: 1000 });
         const { loginWithGoogle } = useAuthStore.getState();
 
         setTimeout(async () => {
@@ -61,7 +61,7 @@ export default function VerifyEmailPage() {
             sessionStorage.removeItem("googleCredential");
 
             if (result.success && !result.requiresVerification) {
-              toast.success("Đăng nhập thành công!");
+              toast.success("Login successful!");
               router.push("/wardrobe");
             } else {
               router.push("/login?verified=true");
@@ -76,7 +76,7 @@ export default function VerifyEmailPage() {
       }
     } catch (error) {
       toast.error(
-        error instanceof ApiError ? error.message : "Xác thực thất bại"
+        error instanceof ApiError ? error.message : "Email verification failed"
       );
       throw error;
     }
@@ -88,7 +88,7 @@ export default function VerifyEmailPage() {
 
       if (response.statusCode === 200 && response.data) {
         setOtpInfo(response.data);
-        toast.success(response.message || "Mã OTP mới đã được gửi");
+        toast.success(response.message || "New OTP has been sent");
       }
     } catch (error) {
       if (error instanceof ApiError) {
@@ -96,7 +96,7 @@ export default function VerifyEmailPage() {
           duration: error.statusCode === 400 ? 5000 : 3000,
         });
       } else {
-        toast.error("Không thể gửi lại OTP");
+        toast.error("Cannot send new OTP");
       }
       throw error;
     }
@@ -117,8 +117,8 @@ export default function VerifyEmailPage() {
 
   return (
     <PasswordResetLayout
-      title="Xác thực email ✉️"
-      description="Nhập mã OTP gồm 6 số đã được gửi đến email của bạn"
+      title="Email verification ✉️"
+      description="Enter the 6-digit OTP sent to your email"
       icon={Mail}
       email={email}
     >
@@ -127,12 +127,12 @@ export default function VerifyEmailPage() {
         <div className="bg-login-light-gray/50 border border-gray-200/50 rounded-lg p-3 mb-4">
           <div className="flex items-center justify-between text-xs">
             <div className="flex items-center text-login-navy">
-              <span className="font-medium">⏱️ Thời hạn:</span>
-              <span className="ml-1">{otpInfo.expiryMinutes} phút</span>
+              <span className="font-medium">⏱️ Expiry:</span>
+              <span className="ml-1">{otpInfo.expiryMinutes} minutes</span>
             </div>
             <div className="flex items-center text-login-navy">
-              <span className="font-medium">🔄 Lượt gửi lại:</span>
-              <span className="ml-1">{otpInfo.remainingAttempts} lần</span>
+              <span className="font-medium">🔄 Resend attempts:</span>
+              <span className="ml-1">{otpInfo.remainingAttempts} times</span>
             </div>
           </div>
         </div>
@@ -157,12 +157,12 @@ export default function VerifyEmailPage() {
         {isVerifying && (
           <div className="flex items-center justify-center text-sm text-blue-600">
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            Đang xác thực...
+            Verifying...
           </div>
         )}
       </div>
 
-      <HelpText text="Hệ thống sẽ tự động xác thực khi bạn nhập đủ 6 số" />
+      <HelpText text="The system will automatically verify when you enter 6 digits" />
 
       <Button
         onClick={verify}
@@ -172,10 +172,10 @@ export default function VerifyEmailPage() {
         {isVerifying ? (
           <>
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            Đang xác thực...
+            Verifying...
           </>
         ) : (
-          "Xác thực OTP"
+          "Verify OTP"
         )}
       </Button>
 
@@ -188,16 +188,16 @@ export default function VerifyEmailPage() {
         {isResending ? (
           <>
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            Đang gửi...
+            Sending...
           </>
         ) : countdown > 0 ? (
           countdown > 300 ? (
-            `Gửi lại sau ${Math.floor(countdown / 60)} phút ${countdown % 60}s`
+            `Resend after ${Math.floor(countdown / 60)} minutes ${countdown % 60}s`
           ) : (
-            `Gửi lại sau ${countdown}s`
+            `Resend after ${countdown}s`
           )
         ) : (
-          "Gửi lại mã OTP"
+          "Resend OTP"
         )}
       </Button>
 
@@ -205,7 +205,7 @@ export default function VerifyEmailPage() {
       {countdown > 300 && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
           <p className="text-xs text-red-900 text-center">
-            ⚠️ Vui lòng đợi {Math.floor(countdown / 60)} phút trước khi thử lại
+            ⚠️ Please wait {Math.floor(countdown / 60)} minutes before trying again
           </p>
         </div>
       )}
@@ -213,7 +213,7 @@ export default function VerifyEmailPage() {
       {/* Success Info */}
       {/* <div className="bg-green-50/50 border border-green-200/50 rounded-lg p-3">
         <p className="text-xs text-green-900 text-center">
-          ✅ Sau xác thực thành công, bạn sẽ được chuyển đến trang đăng nhập
+          ✅ After successful verification, you will be redirected to the login page
         </p>
       </div> */}
     </PasswordResetLayout>

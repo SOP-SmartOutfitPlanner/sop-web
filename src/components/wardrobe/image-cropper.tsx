@@ -4,7 +4,13 @@ import { useState, useCallback } from "react";
 import Cropper from "react-easy-crop";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { ZoomIn, ZoomOut, RotateCw, Check, X } from "lucide-react";
 
 interface ImageCropperProps {
@@ -21,11 +27,17 @@ interface CroppedArea {
   height: number;
 }
 
-export function ImageCropper({ image, onCropComplete, onCancel, open }: ImageCropperProps) {
+export function ImageCropper({
+  image,
+  onCropComplete,
+  onCancel,
+  open,
+}: ImageCropperProps) {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState<CroppedArea | null>(null);
+  const [croppedAreaPixels, setCroppedAreaPixels] =
+    useState<CroppedArea | null>(null);
 
   const onCropChange = (location: { x: number; y: number }) => {
     setCrop(location);
@@ -65,7 +77,7 @@ export function ImageCropper({ image, onCropComplete, onCancel, open }: ImageCro
     <Dialog open={open} onOpenChange={onCancel}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden">
         <DialogHeader>
-          <DialogTitle>Chỉnh sửa ảnh</DialogTitle>
+          <DialogTitle>Edit image</DialogTitle>
         </DialogHeader>
 
         {/* Cropper Area */}
@@ -92,9 +104,11 @@ export function ImageCropper({ image, onCropComplete, onCancel, open }: ImageCro
             <div className="flex items-center justify-between text-sm">
               <span className="flex items-center gap-2">
                 <ZoomOut className="w-4 h-4" />
-                Phóng to/Thu nhỏ
+                Zoom in/Zoom out
               </span>
-              <span className="text-muted-foreground">{Math.round(zoom * 100)}%</span>
+              <span className="text-muted-foreground">
+                {Math.round(zoom * 100)}%
+              </span>
             </div>
             <div className="flex items-center gap-3">
               <Slider
@@ -111,7 +125,7 @@ export function ImageCropper({ image, onCropComplete, onCancel, open }: ImageCro
 
           {/* Rotation Control */}
           <div className="flex items-center justify-between">
-            <span className="text-sm">Xoay ảnh</span>
+            <span className="text-sm">Rotate image</span>
             <Button
               type="button"
               variant="outline"
@@ -127,20 +141,16 @@ export function ImageCropper({ image, onCropComplete, onCancel, open }: ImageCro
         {/* Help Text */}
         <div className="bg-blue-50/50 border border-blue-200/50 rounded-lg p-3">
           <p className="text-xs text-blue-900">
-            💡 <span className="font-medium">Hướng dẫn:</span> Kéo để di chuyển, 
-            cuộn chuột để phóng to/thu nhỏ. Ảnh sẽ được cắt theo tỷ lệ 1:1 (vuông)
+            💡 <span className="font-medium">Guide:</span> Drag to move, scroll
+            to zoom in/out. The image will be cropped to a 1:1 ratio (square)
           </p>
         </div>
 
         {/* Footer Buttons */}
         <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onCancel}
-          >
+          <Button type="button" variant="outline" onClick={onCancel}>
             <X className="w-4 h-4 mr-2" />
-            Hủy
+            Cancel
           </Button>
           <Button
             type="button"
@@ -148,7 +158,7 @@ export function ImageCropper({ image, onCropComplete, onCancel, open }: ImageCro
             className="bg-gradient-to-r from-login-navy to-login-blue hover:from-login-navy/90 hover:to-login-blue/90"
           >
             <Check className="w-4 h-4 mr-2" />
-            Xác nhận
+            Confirm
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -209,4 +219,3 @@ function createImage(url: string): Promise<HTMLImageElement> {
     image.src = url;
   });
 }
-

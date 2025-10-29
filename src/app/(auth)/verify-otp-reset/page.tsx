@@ -68,8 +68,8 @@ export default function VerifyOtpResetPage() {
 
   return (
     <PasswordResetLayout
-      title="Xác thực OTP 🔑"
-      description="Nhập mã OTP gồm 6 số đã được gửi đến email của bạn"
+      title="OTP verification 🔑"
+      description="Enter the 6-digit OTP sent to your email"
       icon={KeyRound}
       backHref="/forgot-password"
       email={email}
@@ -93,18 +93,18 @@ export default function VerifyOtpResetPage() {
         {isVerifying && (
           <div className="flex items-center justify-center text-sm text-blue-600">
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            Đang xác thực...
+            Verifying...
           </div>
         )}
 
         {/* {otp.length === 6 && !isVerifying && (
           <p className="text-center text-sm text-green-600">
-            ✓ Đã nhập đủ mã OTP
+            ✓ Entered all 6 digits
           </p>
         )} */}
       </div>
 
-      <HelpText text="Hệ thống sẽ tự động xác thực khi bạn nhập đủ 6 số" />
+      <HelpText text="The system will automatically verify when you enter 6 digits" />
 
       <Button
         onClick={verify}
@@ -114,10 +114,10 @@ export default function VerifyOtpResetPage() {
         {isVerifying ? (
           <>
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            Đang xác thực...
+            Verifying...
           </>
         ) : (
-          "Xác thực OTP"
+          "Verify OTP"
         )}
       </Button>
 
@@ -130,12 +130,12 @@ export default function VerifyOtpResetPage() {
         {isResending ? (
           <>
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            Đang gửi...
+            Sending...
           </>
         ) : countdown > 0 ? (
-          `Gửi lại sau ${countdown}s`
+          `Resend after ${countdown}s`
         ) : (
-          "Gửi lại mã OTP"
+          "Resend OTP"
         )}
       </Button>
     </PasswordResetLayout>

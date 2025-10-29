@@ -1,35 +1,35 @@
 import * as z from "zod";
 
 export const loginSchema = z.object({
-  email: z.string().email({ message: "Email không hợp lệ" }),
-  password: z.string().min(6, { message: "Mật khẩu phải có ít nhất 6 ký tự" }),
+  email: z.string().email({ message: "Invalid email" }),
+  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
 });
 
 export const registerSchema = z.object({
-  displayName: z.string().min(2, { message: "Tên phải có ít nhất 2 ký tự" }),
-  email: z.string().email({ message: "Email không hợp lệ" }),
-  password: z.string().min(6, { message: "Mật khẩu phải có ít nhất 6 ký tự" }),
-  confirmPassword: z.string().min(6, { message: "Mật khẩu xác nhận phải có ít nhất 6 ký tự" }),
+  displayName: z.string().min(2, { message: "Name must be at least 2 characters" }),
+  email: z.string().email({ message: "Invalid email" }),
+  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
+  confirmPassword: z.string().min(6, { message: "Confirm password must be at least 6 characters" }),
 }).refine((data) => data.password === data.confirmPassword, {
-  message: "Mật khẩu xác nhận không khớp",
+  message: "Confirm password does not match",
   path: ["confirmPassword"],
 });
 
 export const forgotPasswordSchema = z.object({
-  email: z.string().email({ message: "Email không hợp lệ" }),
+  email: z.string().email({ message: "Invalid email" }),
 });
 
 export const verifyOtpResetSchema = z.object({
-  email: z.string().email({ message: "Email không hợp lệ" }),
-  otp: z.string().length(6, { message: "Mã OTP phải có 6 ký tự" }),
+  email: z.string().email({ message: "Invalid email" }),
+  otp: z.string().length(6, { message: "OTP must be 6 characters" }),
 });
 
 export const resetPasswordSchema = z.object({
-  email: z.string().email({ message: "Email không hợp lệ" }),
-  resetToken: z.string().min(1, { message: "Reset token không hợp lệ" }),
-  newPassword: z.string().min(6, { message: "Mật khẩu mới phải có ít nhất 6 ký tự" }),
-  confirmPassword: z.string().min(6, { message: "Mật khẩu xác nhận phải có ít nhất 6 ký tự" }),
+  email: z.string().email({ message: "Invalid email" }),
+  resetToken: z.string().min(1, { message: "Invalid reset token" }),
+  newPassword: z.string().min(6, { message: "New password must be at least 6 characters" }),
+  confirmPassword: z.string().min(6, { message: "Confirm password must be at least 6 characters" }),
 }).refine((data) => data.newPassword === data.confirmPassword, {
-  message: "Mật khẩu xác nhận không khớp",
+  message: "Confirm password does not match",
   path: ["confirmPassword"],
 });

@@ -1,5 +1,5 @@
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/auth-store";
 import { AUTH_MESSAGES, AUTH_ROUTES } from "@/lib/constants/auth";
@@ -10,7 +10,7 @@ export function useAuth() {
   const router = useRouter();
   const { login, register } = useAuthStore();
 
-  const handleLogin = async (values: LoginFormValues) => {
+  const handleLogin = useCallback(async (values: LoginFormValues, onAdminDetected?: (error: string) => void) => {
     setIsLoading(true);
     try {
       const success = await login(values.email, values.password);
@@ -18,7 +18,16 @@ export function useAuth() {
         toast.success(AUTH_MESSAGES.LOGIN_SUCCESS);
         router.push(AUTH_ROUTES.DASHBOARD);
       } else {
-        toast.error(AUTH_MESSAGES.LOGIN_ERROR);
+        // Check if error is admin login attempt
+        const { error } = useAuthStore.getState();
+        if (error?.includes("admin login portal")) {
+          if (onAdminDetected) {
+            onAdminDetected(error);
+          }
+          toast.error("Admin accounts must use the admin login portal");
+        } else {
+          toast.error(error || AUTH_MESSAGES.LOGIN_ERROR);
+        }
       }
     } catch (error) {
       console.error(error);
@@ -26,7 +35,7 @@ export function useAuth() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [login, router]);
 
   const handleRegister = async (values: RegisterFormValues) => {
     setIsLoading(true);

@@ -85,3 +85,39 @@ export function isTokenExpired(token: string): boolean {
   return decoded.exp * 1000 < Date.now();
 }
 
+/**
+ * Check if token user is ADMIN role
+ * @param token JWT token
+ * @returns true if user is ADMIN, false otherwise
+ */
+export function isAdminUser(token: string): boolean {
+  const decoded = decodeJWT(token);
+  
+  if (!decoded) {
+    return false;
+  }
+
+  // Check for role claim
+  const role = (decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] as string | undefined) || decoded.role;
+  
+  return role === "ADMIN" || role === "SuperAdmin";
+}
+
+/**
+ * Get user role from token
+ * @param token JWT token
+ * @returns User role (ADMIN, STYLIST, USER) or undefined
+ */
+export function getUserRoleFromToken(token: string): string | undefined {
+  const decoded = decodeJWT(token);
+  
+  if (!decoded) {
+    return undefined;
+  }
+
+  // Check for role claim
+  const role = (decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] as string | undefined) || decoded.role;
+  
+  return role;
+}
+

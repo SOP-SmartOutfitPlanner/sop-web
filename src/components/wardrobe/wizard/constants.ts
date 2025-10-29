@@ -89,13 +89,13 @@ export const FABRICS = [
 ];
 
 /**
- * Condition options (Vietnamese)
+ * Condition options
  */
 export const CONDITIONS = [
-  'Mới',
-  'Như mới',
-  'Tốt',
-  'Đã dùng'
+  'New',
+  'Like new',
+  'Good',
+  'Used'
 ];
 
 /**

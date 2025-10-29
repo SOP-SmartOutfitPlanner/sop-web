@@ -19,14 +19,14 @@ export function WizardFooter({
   return (
     <div className="sticky bottom-0 px-6 py-4 border-t bg-background flex items-center justify-between gap-3">
       <Button variant="outline" onClick={onCancel}>
-        Hủy
+        Cancel
       </Button>
 
       <div className="flex items-center gap-2">
         {currentStep > 1 && (
           <Button variant="outline" onClick={onBack}>
             <ChevronLeft className="w-4 h-4 mr-1" />
-            Quay lại
+            Back
           </Button>
         )}
 
@@ -34,11 +34,11 @@ export function WizardFooter({
           {currentStep === 3 ? (
             <>
               <Check className="w-4 h-4 mr-1" />
-              Hoàn tất
+              Finish
             </>
           ) : (
             <>
-              Tiếp theo
+              Next
               <ChevronRight className="w-4 h-4 ml-1" />
             </>
           )}

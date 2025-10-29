@@ -18,6 +18,8 @@ export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showVerifiedBanner, setShowVerifiedBanner] = useState(false);
   const [showResetBanner, setShowResetBanner] = useState(false);
+  const [showErrorBanner, setShowErrorBanner] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const { isLoading, handleLogin } = useAuth();
   const searchParams = useSearchParams();
 
@@ -58,7 +60,15 @@ export function LoginForm() {
   });
 
   const onSubmit = async (data: LoginFormValues) => {
-    await handleLogin(data);
+    await handleLogin(data, (error: string) => {
+      setErrorMessage(error);
+      setShowErrorBanner(true);
+      // Auto-hide after 10 seconds
+      const timer = setTimeout(() => {
+        setShowErrorBanner(false);
+      }, 10000);
+      return () => clearTimeout(timer);
+    });
   };
 
   return (
@@ -73,7 +83,7 @@ export function LoginForm() {
             Welcome Back 👋
           </h1>
           <p className="text-sm text-gray-500">
-            Đăng nhập để tiếp tục hành trình thời trang
+            Login to continue your fashion journey
           </p>
         </div>
       </div>
@@ -85,11 +95,10 @@ export function LoginForm() {
             <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 mr-3 flex-shrink-0" />
             <div>
               <h3 className="text-sm font-semibold text-green-900 mb-1">
-                ✅ Email đã được xác thực thành công!
+                ✅ Email has been verified successfully!
               </h3>
               <p className="text-xs text-green-800">
-                Tài khoản của bạn đã được kích hoạt. Vui lòng đăng nhập để tiếp
-                tục.
+                Your account has been activated. Please login to continue.
               </p>
             </div>
             <button
@@ -121,15 +130,52 @@ export function LoginForm() {
             <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 mr-3 flex-shrink-0" />
             <div>
               <h3 className="text-sm font-semibold text-green-900 mb-1">
-                ✅ Mật khẩu đã được đặt lại thành công!
+                ✅ Password has been reset successfully!
               </h3>
               <p className="text-xs text-green-800">
-                Vui lòng đăng nhập bằng mật khẩu mới của bạn.
+                Please login with your new password.
               </p>
             </div>
             <button
               onClick={() => setShowResetBanner(false)}
               className="ml-auto text-green-600 hover:text-green-800"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Error Banner - Admin Login Attempt */}
+      {showErrorBanner && (
+        <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4 animate-in slide-in-from-top duration-300">
+          <div className="flex items-start">
+            <svg className="w-5 h-5 text-red-600 mt-0.5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
+            <div>
+              <h3 className="text-sm font-semibold text-red-900 mb-1">
+                ⚠️ Admin Account Detected
+              </h3>
+              <p className="text-xs text-red-800">
+                {errorMessage || "Admin accounts must use the admin login portal at /admin/login"}
+              </p>
+            </div>
+            <button
+              onClick={() => setShowErrorBanner(false)}
+              className="ml-auto text-red-600 hover:text-red-800"
             >
               <svg
                 className="w-4 h-4"
@@ -177,7 +223,7 @@ export function LoginForm() {
             htmlFor="password"
             className="text-sm font-medium text-gray-700"
           >
-            Mật khẩu
+            Password
           </Label>
           <div className="relative">
             <Input
@@ -210,7 +256,7 @@ export function LoginForm() {
             href="/forgot-password"
             className="text-sm text-blue-600 hover:text-blue-500 font-medium"
           >
-            Quên mật khẩu?
+            Forgot password?
           </Link>
         </div>
 
@@ -223,10 +269,10 @@ export function LoginForm() {
           {isLoading ? (
             <div className="flex items-center justify-center">
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-              Đang đăng nhập...
+              Logging in...
             </div>
           ) : (
-            "Đăng nhập"
+            "Login"
           )}
         </Button>
 
@@ -236,7 +282,7 @@ export function LoginForm() {
             <span className="w-full border-t border-gray-200" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white px-2 text-gray-500">Hoặc</span>
+            <span className="bg-white px-2 text-gray-500">Or</span>
           </div>
         </div>
 
@@ -246,12 +292,12 @@ export function LoginForm() {
         {/* Register Link */}
         <div className="text-center pt-4">
           <p className="text-sm text-gray-600">
-            Chưa có tài khoản?{" "}
+            Don't have an account?{" "}
             <Link
               href="/register"
               className="text-blue-600 hover:text-blue-500 font-medium"
             >
-              Đăng ký ngay
+              Register now
             </Link>
           </p>
         </div>

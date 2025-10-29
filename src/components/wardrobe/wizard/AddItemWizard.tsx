@@ -96,13 +96,13 @@ export function AddItemWizard({ open, onOpenChange }: AddItemWizardProps) {
       await wardrobeAPI.createItem(payload);
       await fetchItems();
 
-      toast.success("Đã thêm món đồ thành công!");
+      toast.success("Item added successfully!");
       resetAndClose();
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
-          : "Không thể thêm món đồ. Vui lòng thử lại."
+          : "Cannot add item. Please try again."
       );
     } finally {
       setIsSubmitting(false);
@@ -113,7 +113,7 @@ export function AddItemWizard({ open, onOpenChange }: AddItemWizardProps) {
   const handleNext = useCallback(() => {
     if (currentStep === 1) {
       if (!formData.imageRemBgURL) {
-        toast.warning('⚠️ Chưa phân tích AI! Click "Phân tích AI" để có kết quả tốt nhất.');
+        toast.warning('⚠️ AI analysis not completed! Click "Analyze with AI" to get the best result.');
       }
       setCurrentStep(2);
     } else if (currentStep === 2) {
@@ -164,11 +164,11 @@ export function AddItemWizard({ open, onOpenChange }: AddItemWizardProps) {
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b">
             <div>
-              <DialogTitle className="text-xl font-semibold">Thêm món đồ mới</DialogTitle>
+              <DialogTitle className="text-xl font-semibold">Add new item</DialogTitle>
               <p className="text-sm text-muted-foreground mt-1">
-                {currentStep === 1 && "Upload ảnh và phân tích bằng AI"}
-                {currentStep === 2 && "Nhập thông tin cơ bản"}
-                {currentStep === 3 && "Phân loại và thêm chi tiết"}
+                {currentStep === 1 && "Upload image and analyze with AI"}
+                {currentStep === 2 && "Enter basic information"}
+                {currentStep === 3 && "Classify and add details"}
               </p>
             </div>
           </div>
@@ -178,9 +178,9 @@ export function AddItemWizard({ open, onOpenChange }: AddItemWizardProps) {
             <div className="max-w-lg mx-auto">
               <div className="flex items-start justify-between relative">
                 {[
-                  { step: 1, label: "Ảnh & AI" },
-                  { step: 2, label: "Thông tin" },
-                  { step: 3, label: "Chi tiết" }
+                  { step: 1, label: "Image Analysis" },
+                  { step: 2, label: "Basic Information" },
+                  { step: 3, label: "Details" }
                 ].map((item) => (
                   <div key={item.step} className="flex flex-col items-center relative z-10" style={{ width: '33.333%' }}>
                     {/* Step Circle */}
@@ -270,15 +270,15 @@ export function AddItemWizard({ open, onOpenChange }: AddItemWizardProps) {
       <AlertDialog open={showConfirmClose} onOpenChange={setShowConfirmClose}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Hủy thay đổi?</AlertDialogTitle>
+            <AlertDialogTitle>Cancel changes?</AlertDialogTitle>
             <AlertDialogDescription>
-              Bạn có thay đổi chưa được lưu. Bạn có chắc muốn đóng?
+              You have unsaved changes. Are you sure you want to close?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Tiếp tục chỉnh sửa</AlertDialogCancel>
+            <AlertDialogCancel>Continue editing</AlertDialogCancel>
             <AlertDialogAction onClick={resetAndClose}>
-              Hủy bỏ
+              Cancel
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

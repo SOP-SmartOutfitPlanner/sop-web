@@ -117,7 +117,7 @@ export function validateWizardFormData(formData: WizardFormData): string[] {
 
   // Must have imageRemBgURL from AI (backend requirement)
   if (!formData.imageRemBgURL?.trim()) {
-    errors.push('Please analyze the image with AI first (click "Phân tích AI")');
+    errors.push('Please analyze the image with AI first (click "Analyze with AI")');
   }
 
   return errors;

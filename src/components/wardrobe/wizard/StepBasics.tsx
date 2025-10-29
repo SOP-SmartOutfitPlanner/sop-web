@@ -52,7 +52,7 @@ export function StepBasics({ formData, updateFormData, aiSuggestions }: StepBasi
       {/* Name */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <Label htmlFor="name">Tên món đồ *</Label>
+          <Label htmlFor="name">Item name *</Label>
           {aiSuggestions && formData.colors.length > 0 && (
             <Button
               type="button"
@@ -62,30 +62,30 @@ export function StepBasics({ formData, updateFormData, aiSuggestions }: StepBasi
               className="h-7 text-xs"
             >
               <Sparkles className="w-3 h-3 mr-1" />
-              Gợi ý tên
+              Suggest name
             </Button>
           )}
         </div>
         <Input
           id="name"
-          placeholder="vd: Áo thun trắng Uniqlo"
+          placeholder="e.g: White Uniqlo T-shirt"
           value={formData.name}
           onChange={(e) => handleNameChange(e.target.value)}
           className={cn(hasError('name-or-photo') && 'border-destructive')}
         />
         {hasError('name-or-photo') && (
           <p className="text-xs text-destructive mt-1">
-            Cần có tên hoặc ảnh
+            Name or photo is required
           </p>
         )}
       </div>
 
       {/* Category/Type */}
       <div>
-        <Label htmlFor="category">Loại / Danh mục *</Label>
+        <Label htmlFor="category">Type / Category *</Label>
         <Select value={formData.categoryName} onValueChange={handleCategoryChange}>
           <SelectTrigger className={cn(hasError('type') && 'border-destructive', 'mt-2')}>
-            <SelectValue placeholder="Chọn loại..." />
+            <SelectValue placeholder="Select type..." />
           </SelectTrigger>
           <SelectContent>
             {CATEGORY_OPTIONS.map(category => (
@@ -97,14 +97,14 @@ export function StepBasics({ formData, updateFormData, aiSuggestions }: StepBasi
         </Select>
         {hasError('type') && (
           <p className="text-xs text-destructive mt-1">
-            Danh mục là bắt buộc
+            Category is required
           </p>
         )}
       </div>
 
       {/* Brand - Hybrid: Select từ list phổ biến hoặc tự nhập */}
       <div>
-        <Label>Thương hiệu</Label>
+        <Label>Brand</Label>
         <Popover open={openBrand} onOpenChange={setOpenBrand}>
           <PopoverTrigger asChild>
             <Button
@@ -113,14 +113,14 @@ export function StepBasics({ formData, updateFormData, aiSuggestions }: StepBasi
               aria-expanded={openBrand}
               className="w-full justify-between mt-2"
             >
-              {formData.brand || "Chọn hoặc nhập thương hiệu..."}
+              {formData.brand || "Select or enter brand..."}
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-full p-0" align="start">
             <Command>
               <CommandInput 
-                placeholder="Tìm hoặc nhập thương hiệu mới..." 
+                placeholder="Search or enter new brand..." 
                 value={formData.brand}
                 onValueChange={(value) => updateFormData({ brand: value })}
               />
@@ -128,7 +128,7 @@ export function StepBasics({ formData, updateFormData, aiSuggestions }: StepBasi
                 <CommandEmpty>
                   <div className="p-2 text-center">
                     <p className="text-sm text-muted-foreground mb-2">
-                      Không tìm thấy trong danh sách
+                      Not found in list
                     </p>
                     <Button
                       type="button"
@@ -141,7 +141,7 @@ export function StepBasics({ formData, updateFormData, aiSuggestions }: StepBasi
                       }}
                     >
                       <Check className="w-4 h-4 mr-2" />
-                      Dùng &ldquo;{formData.brand}&rdquo;
+                      Use &ldquo;{formData.brand}&rdquo;
                     </Button>
                   </div>
                 </CommandEmpty>
@@ -172,17 +172,17 @@ export function StepBasics({ formData, updateFormData, aiSuggestions }: StepBasi
         {formData.brand && !BRAND_OPTIONS.includes(formData.brand) && (
           <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
             <span className="inline-block w-2 h-2 rounded-full bg-blue-500"></span>
-            Thương hiệu tùy chỉnh: &ldquo;{formData.brand}&rdquo;
+            Custom brand: &ldquo;{formData.brand}&rdquo;
           </p>
         )}
       </div>
 
       {/* Notes/Description */}
       {/* <div>
-        <Label htmlFor="notes">Ghi chú / Mô tả</Label>
+        <Label htmlFor="notes">Note / Description</Label>
         <Textarea
           id="notes"
-          placeholder="Thêm mô tả chi tiết về món đồ..."
+          placeholder="Add detailed description of the item..."
           value={formData.notes}
           onChange={(e) => updateFormData({ notes: e.target.value })}
           rows={3}
@@ -197,14 +197,14 @@ export function StepBasics({ formData, updateFormData, aiSuggestions }: StepBasi
             className="mt-2 h-7 text-xs"
           >
             <Check className="w-3 h-3 mr-1" />
-            Dùng mô tả từ AI
+            Use description from AI
           </Button>
         )}
       </div> */}
 
       <div className="pt-4 border-t">
         <p className="text-sm text-muted-foreground">
-          * Trường bắt buộc. Cần có tên hoặc ảnh.
+          * Required field. Name or photo is required.
         </p>
       </div>
     </div>

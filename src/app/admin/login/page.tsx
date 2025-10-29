@@ -39,10 +39,16 @@ export default function AdminLoginPage() {
       } else {
         // Not an admin - logout and show error
         useAuthStore.getState().logout();
-        toast.error("Bạn không có quyền truy cập trang Admin!");
+        toast.error(`Only ADMIN accounts can access this portal! Your role: ${currentUser?.role || "USER"}`);
       }
     } else {
-      toast.error("Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.");
+      // Check for specific error message
+      const { error } = useAuthStore.getState();
+      if (error?.includes("admin login portal")) {
+        toast.error("This account is not authorized for admin access");
+      } else {
+        toast.error("Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.");
+      }
     }
   };
 
