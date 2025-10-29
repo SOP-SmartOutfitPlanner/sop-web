@@ -49,8 +49,10 @@ const GlassCard: React.FC<GlassCardProps> = ({
   const positionRef = useRef<Position>({ x: 0, y: 0 });
 
   useEffect(() => {
-    if (draggable && cardRef.current) {
-      interact(cardRef.current).draggable({
+    const currentCard = cardRef.current;
+    
+    if (draggable && currentCard) {
+      interact(currentCard).draggable({
         listeners: {
           move(event: Interact.DragEvent) {
             positionRef.current.x += event.dx;
@@ -65,8 +67,8 @@ const GlassCard: React.FC<GlassCardProps> = ({
     }
 
     return () => {
-      if (cardRef.current) {
-        interact(cardRef.current).unset();
+      if (currentCard) {
+        interact(currentCard).unset();
       }
     };
   }, [draggable]);

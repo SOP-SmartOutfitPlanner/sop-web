@@ -10,7 +10,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { registerSchema } from "@/lib/validations/auth";
-import { SocialLoginButton } from "./auth-container";
 import type { RegisterFormValues } from "@/lib/types";
 
 export function RegisterForm() {
@@ -35,9 +34,9 @@ export function RegisterForm() {
     await handleRegister(data);
   };
 
-  const handleGoogleRegister = () => {
-    console.log("Google register");
-  };
+  // const handleGoogleRegister = () => {
+  //   console.log("Google register");
+  // };
 
   return (
     <div className="w-full">

@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import Image from "next/image";
 import { Upload, Sparkles, Check, X, Crop } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -166,11 +167,12 @@ export function StepPhotoAI({
                 </Button>
               </div>
             ) : (
-              <div className="relative">
-                <img
+              <div className="relative w-full h-64">
+                <Image
                   src={formData.uploadedImageURL}
                   alt="Uploaded item"
-                  className="w-full h-64 object-contain rounded-lg"
+                  fill
+                  className="object-contain rounded-lg"
                 />
                 <div className="absolute top-2 right-2 flex gap-2">
                   <Button
@@ -226,11 +228,12 @@ export function StepPhotoAI({
           {formData.uploadedImageURL && (
             <Card className="p-4">
               <h4 className="font-medium mb-3">Preview</h4>
-              <div className="aspect-square rounded-lg overflow-hidden bg-muted">
-                <img
+              <div className="aspect-square rounded-lg overflow-hidden bg-muted relative">
+                <Image
                   src={formData.uploadedImageURL}
                   alt="Preview"
-                  className="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
+                  fill
+                  className="object-cover hover:scale-110 transition-transform duration-300"
                 />
               </div>
             </Card>
