@@ -5,7 +5,6 @@ import { AuthProvider } from "@/components/providers/auth-provider";
 import { GoogleAuthProvider } from "@/components/providers/google-oauth-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { StagewiseProvider } from "@/components/providers/stagewise-provider";
-import "./globals.css";
 
 
 const geistSans = Geist({

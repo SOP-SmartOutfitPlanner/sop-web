@@ -9,8 +9,6 @@ export default function MainLayout({
 }>) {
   return (
     <>
-      <LoadingPreloader />
-      <GlassCursor />
       <ConditionalNavbar />
       {children}
     </>
