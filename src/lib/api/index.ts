@@ -10,6 +10,9 @@ export type {
 // Export Auth API
 export { authAPI } from "./auth-api";
 
+// Export User API
+export { userAPI } from "./user-api";
+
 // Export Wardrobe API
 export { wardrobeAPI } from "./wardrobe-api";
 export type { ApiWardrobeItem, CreateWardrobeItemRequest } from "./wardrobe-api";

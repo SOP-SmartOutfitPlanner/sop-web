@@ -6,12 +6,12 @@ export enum Gender {
 }
 
 export interface OnboardingRequest {
-  preferedColor: string;
-  avoidedColor: string;
+  preferedColor: string[];
+  avoidedColor: string[];
   gender: number;
   location: string;
   jobId: number;
-  dob: string; 
+  dob: string;
   bio: string;
   styleIds: number[];
 }
@@ -49,6 +49,8 @@ export interface Job {
   id: number;
   name: string;
   description: string;
+  createdDate?: string;
+  updatedDate?: string | null;
 }
 
 export interface StyleOption {
@@ -62,4 +64,32 @@ export interface PurposeOption {
   title: string;
   description: string;
   icon: string;
+}
+
+export interface UserProfileResponse {
+  id: number;
+  email: string;
+  displayName: string;
+  avtUrl: string | null;
+  dob: string;
+  gender: number;
+  preferedColor: string[];
+  avoidedColor: string[];
+  location: string;
+  bio: string;
+  isVerifiedEmail: boolean;
+  isStylist: boolean;
+  isPremium: boolean;
+  isLoginWithGoogle: boolean;
+  isFirstTime: boolean;
+  role: number;
+  jobId: number;
+  jobName: string;
+  jobDescription: string;
+  userStyles: {
+    id: number;
+    styleId: number;
+    styleName: string;
+    styleDescription: string;
+  }[];
 }

@@ -26,13 +26,19 @@ export function GoogleLoginButton() {
           if (typeof window !== "undefined") {
             sessionStorage.setItem("googleCredential", credentialResponse.credential);
           }
-          
+
           toast.success(result.message);
           router.push("/verify-email");
         } else {
           // Existing user - login success
           toast.success("Đăng nhập thành công!");
-          router.push("/wardrobe");
+
+          // Check if user is first time and redirect to onboarding
+          if (result.isFirstTime) {
+            router.push("/onboarding");
+          } else {
+            router.push("/wardrobe");
+          }
         }
       } else {
         // Handle error from result

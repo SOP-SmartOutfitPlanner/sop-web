@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { authAPI, ApiError, apiClient } from "@/lib/api";
+import { authAPI, ApiError, apiClient, userAPI } from "@/lib/api";
 import { extractUserFromToken, isAdminUser } from "@/lib/utils/jwt";
 import { queryClient } from "@/lib/query-client";
 import type {
@@ -47,34 +47,32 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
   login: async (email: string, password: string) => {
     set({ isLoading: true, error: null, successMessage: null });
-    
+
     try {
       const loginData: LoginRequest = { email, password };
       const response = await authAPI.login(loginData);
-      
+
       // Login successful - tokens are saved automatically by authAPI
       // Extract user info from JWT token
       const accessToken = (response.data as { accessToken: string }).accessToken;
-      
+
       // CHECK IF USER IS ADMIN - REJECT ADMIN LOGIN FROM USER PORTAL
       if (isAdminUser(accessToken)) {
         // Admin user trying to login from user portal - reject
-        // Assuming apiClient is defined elsewhere or needs to be imported
-        // For now, we'll just set an error message
         set({
           isLoading: false,
           error: "Admin accounts must use the admin login portal at /admin/login",
           successMessage: null,
         });
-        return false;
+        return { success: false, isFirstTime: false };
       }
-      
+
       const userInfo = extractUserFromToken(accessToken);
-      
+
       if (!userInfo) {
         throw new Error("Failed to extract user info from token");
       }
-      
+
       // Create user object
       const user: User = {
         id: userInfo.id,
@@ -85,13 +83,13 @@ export const useAuthStore = create<AuthStore>((set) => ({
         createdAt: undefined,
         updatedAt: undefined,
       };
-      
+
       // Save user to localStorage
       if (typeof window !== "undefined") {
         localStorage.setItem("user", JSON.stringify(user));
         sessionStorage.removeItem("pendingVerificationEmail");
       }
-      
+
       set({
         user,
         isAuthenticated: true,
@@ -101,20 +99,30 @@ export const useAuthStore = create<AuthStore>((set) => ({
         requiresVerification: false,
         pendingVerificationEmail: null,
       });
-      
-      return true;
+
+      // Fetch user profile to check isFirstTime
+      try {
+        const profileResponse = await userAPI.getUserProfile();
+        const isFirstTime = profileResponse.data.isFirstTime;
+
+        return { success: true, isFirstTime };
+      } catch (profileError) {
+        console.error("Failed to fetch user profile:", profileError);
+        // Continue with login success even if profile fetch fails
+        return { success: true, isFirstTime: false };
+      }
     } catch (error: unknown) {
-      const errorMessage = error instanceof ApiError 
-        ? error.message 
+      const errorMessage = error instanceof ApiError
+        ? error.message
         : "Đăng nhập thất bại. Vui lòng thử lại.";
-      
+
       set({
         isLoading: false,
         error: errorMessage,
         successMessage: null,
       });
-      
-      return false;
+
+      return { success: false, isFirstTime: false };
     }
   },
 
@@ -144,6 +152,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
           success: true,
           requiresVerification: true,
           message: response.message,
+          isFirstTime: false,
         };
       }
 
@@ -164,6 +173,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
           success: false,
           requiresVerification: false,
           message: "Admin accounts must use the admin login portal at /admin/login",
+          isFirstTime: false,
         };
       }
 
@@ -198,11 +208,26 @@ export const useAuthStore = create<AuthStore>((set) => ({
         pendingVerificationEmail: null,
       });
 
-      return {
-        success: true,
-        requiresVerification: false,
-        message: response.message,
-      };
+      // Fetch user profile to check isFirstTime
+      try {
+        const profileResponse = await userAPI.getUserProfile();
+        const isFirstTime = profileResponse.data.isFirstTime;
+
+        return {
+          success: true,
+          requiresVerification: false,
+          message: response.message,
+          isFirstTime,
+        };
+      } catch (profileError) {
+        console.error("Failed to fetch user profile:", profileError);
+        return {
+          success: true,
+          requiresVerification: false,
+          message: response.message,
+          isFirstTime: false,
+        };
+      }
     } catch (error: unknown) {
       const errorMessage =
         error instanceof ApiError
@@ -219,6 +244,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
         success: false,
         requiresVerification: false,
         message: errorMessage,
+        isFirstTime: false,
       };
     }
   },

@@ -127,11 +127,15 @@ export interface AuthState {
 
 export interface AuthStore extends AuthState {
   // Actions
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<{
+    success: boolean;
+    isFirstTime: boolean;
+  }>;
   loginWithGoogle: (credential: string) => Promise<{
     success: boolean;
     requiresVerification: boolean;
     message: string;
+    isFirstTime: boolean;
   }>;
   register: (credentials: RegisterRequest) => Promise<{
     success: boolean;
