@@ -29,7 +29,6 @@ export default function WardrobePage() {
   const router = useRouter();
   const [isAddItemOpen, setIsAddItemOpen] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-  const [isLoadingEdit, setIsLoadingEdit] = useState(false);
   
   // Edit mode state
   const [editItem, setEditItem] = useState<ApiWardrobeItem | null>(null);
@@ -62,8 +61,6 @@ export default function WardrobePage() {
 
   const handleEditItem = async (item: WardrobeItem) => {
     try {
-      setIsLoadingEdit(true);
-      
       // Get raw API item from store (includes styles & occasions)
       const rawItem = getRawItemById(parseInt(item.id));
       
@@ -83,28 +80,22 @@ export default function WardrobePage() {
       // Small delay to ensure state is updated
       setTimeout(() => {
         setIsAddItemOpen(true);
-        setIsLoadingEdit(false);
       }, 100);
     } catch (error) {
       console.error("❌ Failed to fetch item for edit:", error);
       toast.error("Failed to load item details. Please try again.");
-      setIsLoadingEdit(false);
     }
   };
 
   // Handle edit after auto-save (from toast action)
   const handleEditAfterSave = async (itemId: number) => {
-    console.log("🟢 handleEditAfterSave called with itemId:", itemId);
     try {
       // Get raw API item from store
       const rawItem = getRawItemById(itemId);
-      console.log("🔍 Raw item from store:", rawItem);
       
       if (!rawItem) {
-        console.warn("⚠️ Item not in store, fetching from API...");
         // Fallback: fetch from API if not in store
         const response = await wardrobeAPI.getItem(itemId);
-        console.log("✅ Fetched from API:", response);
         
         if (!response) {
           throw new Error("Item not found");
@@ -112,12 +103,10 @@ export default function WardrobePage() {
         
         setEditItem(response);
       } else {
-        console.log("✅ Using item from store");
         setEditItem(rawItem);
       }
       
       // Open wizard in edit mode
-      console.log("📂 Opening wizard in edit mode...");
       setTimeout(() => {
         setIsAddItemOpen(true);
       }, 100);

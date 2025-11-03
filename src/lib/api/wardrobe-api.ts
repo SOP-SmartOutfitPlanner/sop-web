@@ -169,9 +169,6 @@ class WardrobeAPI {
    */
   async createItem(item: CreateWardrobeItemRequest): Promise<ApiWardrobeItem> {
     const response = await apiClient.post("/items", item);
-    console.log("🔧 API createItem raw response:", response);
-    console.log("🔧 response.data:", response.data);
-    // API returns item directly in response.data, not response.data.data
     return response.data;
   }
 

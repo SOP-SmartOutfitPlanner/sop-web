@@ -71,8 +71,6 @@ export function AddItemWizard({
   const [previewUrl, setPreviewUrl] = useState("");
   const [retryCount, setRetryCount] = useState(0);
   const [isRetrying, setIsRetrying] = useState(false);
-  const [savedItemId, setSavedItemId] = useState<number | null>(null); // Store saved item ID for edit
-  const [autoCloseTimeoutId, setAutoCloseTimeoutId] = useState<NodeJS.Timeout | null>(null); // Track auto-close timeout
 
   const { user } = useAuthStore();
   const { fetchItems } = useWardrobeStore();
@@ -101,7 +99,6 @@ export function AddItemWizard({
       setStatus(STATUS.IDLE);
       setFormData(INITIAL_FORM_DATA);
       setAiSuggestions(null);
-      setSavedItemId(null);
       setSelectedFile(null);
       setPreviewUrl("");
       setAnalysisProgress(0);
@@ -132,20 +129,8 @@ export function AddItemWizard({
           throw new Error("Failed to create item - no response from API");
         }
 
-        // Store the created item ID (try different possible locations)
-        let createdItemId: number | undefined;
-        if (response?.id) {
-          createdItemId = response.id;
-          setSavedItemId(response.id);
-        } else if (typeof response === 'object' && response !== null) {
-          // Try to find id in response
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const anyResponse = response as any;
-          createdItemId = anyResponse.id || anyResponse.itemId || anyResponse.data?.id;
-          if (createdItemId) {
-            setSavedItemId(createdItemId);
-          }
-        }
+        // Store the created item ID
+        const createdItemId = response?.id;
 
         // Set to SAVED to hide AnalysisToast
         setStatus(STATUS.SAVED);
@@ -297,11 +282,6 @@ export function AddItemWizard({
 
   // Reset form to initial state
   const resetAndClose = useCallback(() => {
-    // Clear auto-close timeout if exists
-    if (autoCloseTimeoutId) {
-      clearTimeout(autoCloseTimeoutId);
-      setAutoCloseTimeoutId(null);
-    }
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl);
     }
@@ -314,9 +294,8 @@ export function AddItemWizard({
     setShowConfirmClose(false);
     setIsSubmitting(false);
     setAnalysisProgress(0);
-    setSavedItemId(null); // Clear saved item ID
     onOpenChange(false);
-  }, [onOpenChange, previewUrl, autoCloseTimeoutId]);
+  }, [onOpenChange, previewUrl]);
 
   // Clear selected file
   const handleClearFile = useCallback(() => {
@@ -473,15 +452,6 @@ export function AddItemWizard({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open, handleClose]);
-
-  // Cleanup auto-close timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (autoCloseTimeoutId) {
-        clearTimeout(autoCloseTimeoutId);
-      }
-    };
-  }, [autoCloseTimeoutId]);
 
   // Simulate progress when analyzing
   useEffect(() => {
