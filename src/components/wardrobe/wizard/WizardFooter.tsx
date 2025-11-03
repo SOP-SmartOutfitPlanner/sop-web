@@ -1,48 +1,94 @@
-import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
+/**
+ * WizardFooter Component
+ * Footer with action buttons for the wizard
+ */
+
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, ArrowRight, Save } from "lucide-react";
+import { StatusType } from "./wizard-config";
 
 interface WizardFooterProps {
-  currentStep: number;
-  onBack: () => void;
-  onNext: () => void;
-  onCancel: () => void;
-  isNextDisabled?: boolean;
+  status: StatusType;
+  onBack?: () => void;
+  onNext?: () => void;
+  onSave?: () => void;
+  onCancel?: () => void;
+  isSubmitting?: boolean;
+  showBackButton?: boolean;
+  showNextButton?: boolean;
+  showSaveButton?: boolean;
+  showCancelButton?: boolean;
+  nextButtonText?: string;
+  nextButtonDisabled?: boolean;
 }
 
 export function WizardFooter({
-  currentStep,
+  status,
   onBack,
   onNext,
+  onSave,
   onCancel,
-  isNextDisabled,
+  isSubmitting = false,
+  showBackButton = false,
+  showNextButton = false,
+  showSaveButton = false,
+  showCancelButton = false,
+  nextButtonText = "Next",
+  nextButtonDisabled = false,
 }: WizardFooterProps) {
-  return (
-    <div className="sticky bottom-0 px-6 py-4 border-t bg-background flex items-center justify-between gap-3">
-      <Button variant="outline" onClick={onCancel}>
-        Cancel
-      </Button>
+  // Don't show footer during analysis or when saved
+  if (status === "analyzing" || status === "saved") {
+    return null;
+  }
 
-      <div className="flex items-center gap-2">
-        {currentStep > 1 && (
-          <Button variant="outline" onClick={onBack}>
-            <ChevronLeft className="w-4 h-4 mr-1" />
+  return (
+    <div className="flex items-center justify-between border-t border-white/10 bg-gradient-to-r from-blue-500/5 to-purple-500/5 px-6 py-4">
+      {/* Left Side - Back/Cancel */}
+      <div className="flex gap-2">
+        {showBackButton && onBack && (
+          <Button
+            variant="outline"
+            onClick={onBack}
+            disabled={isSubmitting}
+            className="gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
             Back
           </Button>
         )}
+        {showCancelButton && onCancel && (
+          <Button
+            variant="outline"
+            onClick={onCancel}
+            disabled={isSubmitting}
+          >
+            Cancel
+          </Button>
+        )}
+      </div>
 
-        <Button onClick={onNext} disabled={isNextDisabled}>
-          {currentStep === 3 ? (
-            <>
-              <Check className="w-4 h-4 mr-1" />
-              Finish
-            </>
-          ) : (
-            <>
-              Next
-              <ChevronRight className="w-4 h-4 ml-1" />
-            </>
-          )}
-        </Button>
+      {/* Right Side - Next/Save */}
+      <div className="flex gap-2">
+        {showNextButton && onNext && (
+          <Button
+            onClick={onNext}
+            disabled={nextButtonDisabled || isSubmitting}
+            className="gap-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+          >
+            {nextButtonText}
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+        )}
+        {showSaveButton && onSave && (
+          <Button
+            onClick={onSave}
+            disabled={isSubmitting}
+            className="gap-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
+          >
+            <Save className="h-4 w-4" />
+            {isSubmitting ? "Saving..." : "Save Item"}
+          </Button>
+        )}
       </div>
     </div>
   );

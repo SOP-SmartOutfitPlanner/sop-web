@@ -5,8 +5,6 @@
 
 export { AddItemWizard } from './AddItemWizard';
 export { StepPhotoAI } from './StepPhotoAI';
-export { StepBasics } from './StepBasics';
-export { StepCategorize } from './StepCategorize';
 export { WizardFooter } from './WizardFooter';
 export { ItemFormContent } from './ItemFormContent';
 export { default as ImageCropper } from './ImageCropper';

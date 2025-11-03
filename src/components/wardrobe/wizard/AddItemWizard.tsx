@@ -28,6 +28,8 @@ import { StepPhotoAI } from "./StepPhotoAI";
 import { ItemFormContent } from "./ItemFormContent";
 import ImageCropper from "./ImageCropper";
 import { AnalysisToast } from "./AnalysisToast";
+import { STATUS, INITIAL_FORM_DATA, AI_ANALYSIS_CONFIG } from "./wizard-config";
+import type { StatusType } from "./wizard-config";
 import type { WizardFormData, AISuggestions } from "./types";
 
 interface AddItemWizardProps {
@@ -37,36 +39,6 @@ interface AddItemWizardProps {
   autoAnalyze?: boolean; // Auto-trigger analysis when initialFile is provided (default: true)
   skipCrop?: boolean; // Skip cropping step (default: false)
 }
-
-// Status flow
-const STATUS = {
-  IDLE: "idle",
-  PREVIEW: "preview",
-  CROPPING: "cropping",
-  ANALYZING: "analyzing",
-  FORM: "form",
-  SAVED: "saved",
-} as const;
-
-type StatusType = (typeof STATUS)[keyof typeof STATUS];
-
-// Initial form state
-const INITIAL_FORM_DATA: WizardFormData = {
-  uploadedImageURL: "",
-  imageRemBgURL: "",
-  name: "",
-  categoryId: 0,
-  categoryName: "",
-  brand: "",
-  notes: "",
-  colors: [],
-  seasons: [],
-  pattern: "",
-  fabric: "",
-  condition: "New",
-  tags: [],
-  wornToday: false,
-};
 
 export function AddItemWizard({
   open,
@@ -94,9 +66,6 @@ export function AddItemWizard({
 
   // Fetch available options from API
   const { categories, styles, seasons, occasions } = useWardrobeOptions();
-
-  const MAX_RETRIES = 5;
-  const RETRY_DELAY = 30000; // 30 seconds
 
   // AI Analysis with retry logic
   const analyzeImage = useCallback(
@@ -148,19 +117,19 @@ export function AddItemWizard({
         }, 300);
       } catch (error) {
         console.error(
-          `Analysis failed (attempt ${attempt}/${MAX_RETRIES}):`,
+          `Analysis failed (attempt ${attempt}/${AI_ANALYSIS_CONFIG.MAX_RETRIES}):`,
           error
         );
 
-        if (attempt < MAX_RETRIES) {
+        if (attempt < AI_ANALYSIS_CONFIG.MAX_RETRIES) {
           setIsRetrying(true);
-          toast.error(
-            `Analysis failed. Retrying in 30s... (${attempt}/${MAX_RETRIES})`
-          );
+          // toast.error(
+          //   `Analysis failed. Retrying in 30s... (${attempt}/${AI_ANALYSIS_CONFIG.MAX_RETRIES})`
+          // );
 
           setTimeout(() => {
             analyzeImage(file, url, attempt + 1);
-          }, RETRY_DELAY);
+          }, AI_ANALYSIS_CONFIG.RETRY_DELAY);
         } else {
           setIsRetrying(false);
           toast.error(
@@ -295,7 +264,7 @@ export function AddItemWizard({
       const userId = await getUserIdFromAuth(user);
       const payload = transformWizardDataToAPI(formData, userId);
 
-      const response = await wardrobeAPI.createItem(payload);
+      await wardrobeAPI.createItem(payload);
 
       // Show saved state
       setStatus(STATUS.SAVED);
