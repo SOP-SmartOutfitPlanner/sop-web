@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   ChevronRight,
@@ -12,21 +12,48 @@ import {
   ShoppingBag,
   Camera,
   Sparkles,
+  AlertCircle,
+  Plus,
+  X,
 } from "lucide-react";
-import GlassCard from "@/components/ui/glass-card";
-import GlassButton from "@/components/ui/glass-button";
 import { toast } from "sonner";
-import { Gender, OnboardingRequest } from "@/types/user";
+import { OnboardingRequest, Job, StyleOption } from "@/types/user";
 import { userAPI } from "@/lib/api/user-api";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 export default function OnboardingPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
-  const [styleSearchQuery, setStyleSearchQuery] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Jobs state
+  const [jobOptions, setJobOptions] = useState<Job[]>([]);
+  const [isLoadingJobs, setIsLoadingJobs] = useState(true);
+  const [jobSearchQuery, setJobSearchQuery] = useState("");
+  const [newJobName, setNewJobName] = useState("");
+  const [newJobDescription, setNewJobDescription] = useState("");
+  const [showAddJob, setShowAddJob] = useState(false);
+
+  // Styles state
+  const [styleOptions, setStyleOptions] = useState<StyleOption[]>([]);
+  const [isLoadingStyles, setIsLoadingStyles] = useState(true);
+  const [styleSearchQuery, setStyleSearchQuery] = useState("");
+  const [newStyleName, setNewStyleName] = useState("");
+  const [newStyleDescription, setNewStyleDescription] = useState("");
+  const [showAddStyle, setShowAddStyle] = useState(false);
+
+  // Color state
+  const [preferredColors, setPreferredColors] = useState<string[]>(["#3b82f6"]);
+  const [avoidedColors, setAvoidedColors] = useState<string[]>(["#ef4444"]);
+  const [newPreferredColor, setNewPreferredColor] = useState("#3b82f6");
+  const [newAvoidedColor, setNewAvoidedColor] = useState("#ef4444");
+
   const [formData, setFormData] = useState<OnboardingRequest>({
-    preferedColor: "#3b82f6",
-    avoidedColor: "#ef4444",
+    preferedColor: ["#3b82f6"],
+    avoidedColor: ["#ef4444"],
     gender: 0,
     location: "",
     jobId: 0,
@@ -35,42 +62,81 @@ export default function OnboardingPage() {
     styleIds: [],
   });
 
-  // Mock data - replace with API calls
-  const jobOptions = [
-    { id: 1, name: "Software Developer" },
-    { id: 2, name: "Designer" },
-    { id: 3, name: "Marketing" },
-    { id: 4, name: "Sales" },
-    { id: 5, name: "Teacher" },
-    { id: 6, name: "Healthcare" },
-    { id: 7, name: "Finance" },
-    { id: 8, name: "Student" },
-    { id: 9, name: "Entrepreneur" },
-    { id: 10, name: "Other" },
-  ];
+  // Fetch jobs from API
+  useEffect(() => {
+    const fetchJobs = async () => {
+      try {
+        setIsLoadingJobs(true);
+        const response = await userAPI.getJobs({ "take-all": true });
 
-  const styleOptions = [
-    { id: 1, name: "Casual", description: "Relaxed and comfortable everyday wear" },
-    { id: 2, name: "Formal", description: "Professional and elegant attire" },
-    { id: 3, name: "Sporty", description: "Athletic and active wear" },
-    { id: 4, name: "Bohemian", description: "Free-spirited and artistic" },
-    { id: 5, name: "Minimalist", description: "Clean, simple, and modern" },
-    { id: 6, name: "Vintage", description: "Classic and retro-inspired" },
-    { id: 7, name: "Streetwear", description: "Urban and trendy fashion" },
-    { id: 8, name: "Preppy", description: "Classic collegiate style" },
-    { id: 9, name: "Elegant", description: "Sophisticated and refined" },
-    { id: 10, name: "Edgy", description: "Bold and unconventional" },
-    { id: 11, name: "Romantic", description: "Soft and feminine" },
-    { id: 12, name: "Athleisure", description: "Sporty meets casual" },
-    { id: 13, name: "Grunge", description: "Alternative and rebellious" },
-    { id: 14, name: "Chic", description: "Stylish and fashionable" },
-    { id: 15, name: "Boho Chic", description: "Bohemian with modern twist" },
-    { id: 16, name: "Classic", description: "Timeless and traditional" },
-  ];
+        if (response.statusCode === 200) {
+          const responseData = response.data as Job[] | { data: Job[] };
+          const jobs = (responseData && typeof responseData === 'object' && 'data' in responseData)
+            ? responseData.data
+            : responseData;
+
+          if (Array.isArray(jobs)) {
+            setJobOptions(jobs);
+          } else {
+            setJobOptions([]);
+          }
+        } else {
+          setJobOptions([]);
+        }
+      } catch (error) {
+        console.error("Failed to fetch jobs:", error);
+        toast.error("Failed to load job options");
+        setJobOptions([]);
+      } finally {
+        setIsLoadingJobs(false);
+      }
+    };
+
+    fetchJobs();
+  }, []);
+
+  // Fetch styles from API
+  useEffect(() => {
+    const fetchStyles = async () => {
+      try {
+        setIsLoadingStyles(true);
+        const response = await userAPI.getStyles({ "take-all": true });
+
+        // Handle paginated response structure: response.data.data
+        if (response.statusCode === 200) {
+          // Check if response has pagination structure
+          const responseData = response.data as StyleOption[] | { data: StyleOption[] };
+          const styles = (responseData && typeof responseData === 'object' && 'data' in responseData)
+            ? responseData.data
+            : responseData;
+
+          if (Array.isArray(styles)) {
+            setStyleOptions(styles);
+          } else {
+            setStyleOptions([]);
+          }
+        } else {
+          setStyleOptions([]);
+        }
+      } catch (error) {
+        console.error("Failed to fetch styles:", error);
+        toast.error("Failed to load style options");
+        setStyleOptions([]);
+      } finally {
+        setIsLoadingStyles(false);
+      }
+    };
+
+    fetchStyles();
+  }, []);
+
+  const filteredJobOptions = jobOptions.filter((job) =>
+    job.name.toLowerCase().includes(jobSearchQuery.toLowerCase())
+  );
 
   const filteredStyleOptions = styleOptions.filter((style) =>
     style.name.toLowerCase().includes(styleSearchQuery.toLowerCase()) ||
-    style.description.toLowerCase().includes(styleSearchQuery.toLowerCase())
+    style.description?.toLowerCase().includes(styleSearchQuery.toLowerCase())
   );
 
   const purposeOptions = [
@@ -102,7 +168,7 @@ export default function OnboardingPage() {
 
   const [selectedPurpose, setSelectedPurpose] = useState<string>("");
 
-  const updateFormData = (field: keyof OnboardingRequest, value: string | number) => {
+  const updateFormData = (field: keyof OnboardingRequest, value: string | number | string[]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -116,20 +182,107 @@ export default function OnboardingPage() {
     });
   };
 
+  const addPreferredColor = () => {
+    if (newPreferredColor && !preferredColors.includes(newPreferredColor)) {
+      const updated = [...preferredColors, newPreferredColor];
+      setPreferredColors(updated);
+      updateFormData("preferedColor", updated);
+    }
+  };
+
+  const removePreferredColor = (color: string) => {
+    const updated = preferredColors.filter(c => c !== color);
+    setPreferredColors(updated);
+    updateFormData("preferedColor", updated);
+  };
+
+  const addAvoidedColor = () => {
+    if (newAvoidedColor && !avoidedColors.includes(newAvoidedColor)) {
+      const updated = [...avoidedColors, newAvoidedColor];
+      setAvoidedColors(updated);
+      updateFormData("avoidedColor", updated);
+    }
+  };
+
+  const removeAvoidedColor = (color: string) => {
+    const updated = avoidedColors.filter(c => c !== color);
+    setAvoidedColors(updated);
+    updateFormData("avoidedColor", updated);
+  };
+
+  const validateAge = (dob: string): boolean => {
+    if (!dob) return false;
+    const birthDate = new Date(dob);
+    const today = new Date();
+    const age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      return age - 1 >= 18;
+    }
+    return age >= 18;
+  };
+
   const handleSubmit = async () => {
+    // Validate age
+    if (!validateAge(formData.dob)) {
+      toast.error("You must be at least 18 years old to use this service");
+      return;
+    }
+
     try {
       setIsSubmitting(true);
 
+      // Create new job if user entered one
+      if (newJobName.trim() && !jobOptions.find(j => j.name.toLowerCase() === newJobName.toLowerCase())) {
+        try {
+          const jobResponse = await userAPI.createJob({
+            name: newJobName,
+            description: newJobDescription || `${newJobName} position`
+          });
+          if (jobResponse.statusCode === 200 || jobResponse.statusCode === 201) {
+            formData.jobId = jobResponse.data.id;
+            toast.success(`Job "${newJobName}" created successfully`);
+          }
+        } catch (error) {
+          console.error("Failed to create job:", error);
+          toast.error("Failed to create job");
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
+      // Create new styles if user entered any
+      const newStyles = styleOptions.filter(s =>
+        formData.styleIds.includes(s.id) && s.id < 0 // Temporary IDs are negative
+      );
+
+      for (const style of newStyles) {
+        try {
+          const styleResponse = await userAPI.createStyle({
+            name: style.name,
+            description: style.description
+          });
+          if (styleResponse.statusCode === 200 || styleResponse.statusCode === 201) {
+            // Replace temporary ID with real ID
+            const index = formData.styleIds.indexOf(style.id);
+            formData.styleIds[index] = styleResponse.data.id;
+          }
+        } catch (error) {
+          console.error(`Failed to create style "${style.name}":`, error);
+        }
+      }
+
+      // Submit onboarding
       const response = await userAPI.submitOnboarding(formData);
 
       if (response.statusCode === 200) {
         toast.success("Onboarding completed successfully!");
-        
         router.push("/wardrobe");
       }
     } catch (error) {
       console.error("Error submitting onboarding:", error);
-      
+
       if (error instanceof Error) {
         toast.error(error.message);
       } else {
@@ -140,51 +293,62 @@ export default function OnboardingPage() {
     }
   };
 
+  const handleAddCustomStyle = () => {
+    if (newStyleName.trim()) {
+      // Add with temporary negative ID
+      const tempId = -(styleOptions.length + 1);
+      const newStyle: StyleOption = {
+        id: tempId,
+        name: newStyleName,
+        description: newStyleDescription || `Custom ${newStyleName} style`
+      };
+      setStyleOptions([...styleOptions, newStyle]);
+      toggleStyle(tempId);
+      setNewStyleName("");
+      setNewStyleDescription("");
+      setShowAddStyle(false);
+      toast.success(`Style "${newStyleName}" will be created`);
+    }
+  };
+
   const steps = [
     {
       title: "What brings you here?",
       component: (
         <div className="space-y-6">
-          <h2 className="font-bricolage text-3xl font-bold text-white text-center mb-8">
-            How will you use SOP?
-          </h2>
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-dela-gothic text-gray-900 mb-3">
+              How will you use SOP?
+            </h2>
+            <p className="text-gray-600 font-bricolage">
+              Choose the option that best describes your needs
+            </p>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {purposeOptions.map((purpose) => {
               const Icon = purpose.icon;
               return (
-                <GlassCard
+                <button
                   key={purpose.id}
-                  padding="1.5rem"
-                  blur="2px"
-                  brightness={1.1}
-                  glowColor={
-                    selectedPurpose === purpose.id
-                      ? "rgba(59, 130, 246, 0.8)"
-                      : "rgba(255, 255, 255, 0.4)"
-                  }
-                  glowIntensity={8}
-                  borderColor={
-                    selectedPurpose === purpose.id
-                      ? "rgba(59, 130, 246, 0.6)"
-                      : "rgba(255, 255, 255, 0.3)"
-                  }
-                  borderWidth="2px"
-                  displacementScale={30}
-                  className={`cursor-pointer transition-all hover:scale-105 ${
-                    selectedPurpose === purpose.id ? "bg-blue-500/60" : "bg-white/10"
-                  }`}
                   onClick={() => setSelectedPurpose(purpose.id)}
+                  className={`p-6 rounded-2xl border-2 transition-all text-left hover:scale-105 ${
+                    selectedPurpose === purpose.id
+                      ? "border-blue-500 bg-blue-50 shadow-lg shadow-blue-200"
+                      : "border-gray-200 bg-white hover:border-blue-300 hover:shadow-md"
+                  }`}
                 >
-                  <div className="text-center space-y-3">
-                    <Icon className="w-12 h-12 text-white mx-auto" />
-                    <h3 className="font-bricolage text-lg font-semibold text-white">
+                  <div className="space-y-3">
+                    <Icon className={`w-10 h-10 ${
+                      selectedPurpose === purpose.id ? "text-blue-600" : "text-gray-600"
+                    }`} />
+                    <h3 className="text-lg font-bricolage font-semibold text-gray-900">
                       {purpose.title}
                     </h3>
-                    <p className="font-bricolage text-sm text-white/70">
+                    <p className="text-sm font-bricolage text-gray-600">
                       {purpose.description}
                     </p>
                   </div>
-                </GlassCard>
+                </button>
               );
             })}
           </div>
@@ -195,102 +359,189 @@ export default function OnboardingPage() {
       title: "Tell us about yourself",
       component: (
         <div className="space-y-6">
-          <h2 className="font-bricolage text-3xl font-bold text-white text-center mb-8">
-            Personal Information
-          </h2>
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-dela-gothic text-gray-900 mb-3">
+              Personal Information
+            </h2>
+            <p className="text-gray-600 font-bricolage">
+              Help us personalize your experience
+            </p>
+          </div>
           <div className="space-y-4 max-w-md mx-auto">
             {/* Gender */}
             <div>
-              <label className="font-bricolage text-white text-sm mb-2 block">
-                Gender
-              </label>
+              <Label htmlFor="gender" className="font-bricolage mb-2">Gender</Label>
               <div className="grid grid-cols-2 gap-3">
                 {[
                   { value: 0, label: "Male" },
                   { value: 1, label: "Female" },
                 ].map((option) => (
-                  <GlassButton
+                  <button
                     key={option.value}
-                    variant={formData.gender === option.value ? "primary" : "ghost"}
                     onClick={() => updateFormData("gender", option.value)}
-                    borderRadius="12px"
-                    blur="2px"
-                    brightness={1.1}
-                    backgroundColor={
+                    className={`p-3 rounded-xl border-2 font-bricolage font-semibold transition-all ${
                       formData.gender === option.value
-                        ? "rgba(60, 16, 255, 1)"
-                        : "rgba(255, 255, 255, 0.1)"
-                    }
-                    className="font-bricolage font-semibold"
+                        ? "border-blue-500 bg-blue-500 text-white"
+                        : "border-gray-300 bg-white text-gray-700 hover:border-blue-300"
+                    }`}
                   >
                     {option.label}
-                  </GlassButton>
+                  </button>
                 ))}
               </div>
             </div>
 
             {/* Job */}
             <div>
-              <label className="font-bricolage text-white text-sm mb-2 block">
-                Job
-              </label>
-              <select
-                value={formData.jobId}
-                onChange={(e) => updateFormData("jobId", Number(e.target.value))}
-                className="w-full px-4 py-3 rounded-xl bg-white/10 backdrop-blur-sm border-2 border-white/20 text-white font-bricolage focus:outline-none focus:border-white/40 transition-all cursor-pointer appearance-none"
-                style={{
-                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='white' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
-                  backgroundRepeat: "no-repeat",
-                  backgroundPosition: "right 1rem center",
-                }}
-              >
-                <option value={0} disabled>Select your job</option>
-                {jobOptions.map((job) => (
-                  <option key={job.id} value={job.id} className="bg-gray-800">
-                    {job.name}
-                  </option>
-                ))}
-              </select>
+              <Label htmlFor="job" className="font-bricolage mb-2">Job</Label>
+              {isLoadingJobs ? (
+                <div className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 bg-gray-50 text-gray-500 font-bricolage">
+                  Loading jobs...
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Input
+                    type="text"
+                    placeholder="Search jobs..."
+                    value={jobSearchQuery}
+                    onChange={(e) => setJobSearchQuery(e.target.value)}
+                    className="font-bricolage"
+                  />
+                  <select
+                    id="job"
+                    value={formData.jobId}
+                    onChange={(e) => {
+                      updateFormData("jobId", Number(e.target.value));
+                      const selected = jobOptions.find(j => j.id === Number(e.target.value));
+                      if (selected) {
+                        setJobSearchQuery(selected.name);
+                        setNewJobName("");
+                        setNewJobDescription("");
+                        setShowAddJob(false);
+                      }
+                    }}
+                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 bg-white text-gray-700 font-bricolage focus:outline-none focus:border-blue-500 transition-all cursor-pointer max-h-40"
+                  >
+                    <option value={0} disabled>Select your job</option>
+                    {filteredJobOptions.map((job) => (
+                      <option key={job.id} value={job.id}>
+                        {job.name}
+                      </option>
+                    ))}
+                  </select>
+
+                  {!showAddJob ? (
+                    <Button
+                      onClick={() => setShowAddJob(true)}
+                      variant="outline"
+                      className="w-full font-bricolage"
+                      type="button"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Custom Job
+                    </Button>
+                  ) : (
+                    <div className="p-4 border-2 border-blue-300 rounded-xl bg-blue-50 space-y-3">
+                      <Input
+                        type="text"
+                        placeholder="Job title"
+                        value={newJobName}
+                        onChange={(e) => setNewJobName(e.target.value)}
+                        className="font-bricolage"
+                      />
+                      <Input
+                        type="text"
+                        placeholder="Job description (optional)"
+                        value={newJobDescription}
+                        onChange={(e) => setNewJobDescription(e.target.value)}
+                        className="font-bricolage"
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => {
+                            if (newJobName.trim()) {
+                              updateFormData("jobId", 0);
+                              toast.success(`Job "${newJobName}" will be created`);
+                            }
+                          }}
+                          size="sm"
+                          className="font-bricolage flex-1"
+                          type="button"
+                        >
+                          Confirm
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            setShowAddJob(false);
+                            setNewJobName("");
+                            setNewJobDescription("");
+                          }}
+                          variant="outline"
+                          size="sm"
+                          className="font-bricolage"
+                          type="button"
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {newJobName && !jobOptions.find(j => j.name.toLowerCase() === newJobName.toLowerCase()) && (
+                    <p className="text-sm text-blue-600 font-bricolage">
+                      New job &quot;{newJobName}&quot; will be created
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Date of Birth */}
             <div>
-              <label className="font-bricolage text-white text-sm mb-2 block">
-                Date of Birth
-              </label>
-              <input
+              <Label htmlFor="dob" className="font-bricolage mb-2">
+                Date of Birth <span className="text-red-500">*</span>
+                <span className="text-xs text-gray-500 ml-2">(Must be 18+)</span>
+              </Label>
+              <Input
+                id="dob"
                 type="date"
                 value={formData.dob}
                 onChange={(e) => updateFormData("dob", e.target.value)}
-                className="w-full px-4 py-3 rounded-xl bg-white/10 backdrop-blur-sm border-2 border-white/20 text-white font-bricolage focus:outline-none focus:border-white/40 transition-all"
+                className="font-bricolage"
+                max={new Date().toISOString().split('T')[0]}
               />
+              {formData.dob && !validateAge(formData.dob) && (
+                <p className="text-sm text-red-600 font-bricolage mt-1">
+                  You must be at least 18 years old
+                </p>
+              )}
             </div>
 
             {/* Location */}
             <div>
-              <label className="font-bricolage text-white text-sm mb-2 block">
-                Location
-              </label>
-              <input
+              <Label htmlFor="location" className="font-bricolage mb-2">
+                Location <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="location"
                 type="text"
                 placeholder="e.g., New York, USA"
                 value={formData.location}
                 onChange={(e) => updateFormData("location", e.target.value)}
-                className="w-full px-4 py-3 rounded-xl bg-white/10 backdrop-blur-sm border-2 border-white/20 text-white placeholder-white/40 font-bricolage focus:outline-none focus:border-white/40 transition-all"
+                className="font-bricolage"
               />
             </div>
 
             {/* Bio */}
             <div>
-              <label className="font-bricolage text-white text-sm mb-2 block">
-                Bio
-              </label>
-              <textarea
+              <Label htmlFor="bio" className="font-bricolage mb-2">Bio (Optional)</Label>
+              <Textarea
+                id="bio"
                 placeholder="Tell us a bit about yourself..."
                 value={formData.bio}
                 onChange={(e) => updateFormData("bio", e.target.value)}
                 rows={3}
-                className="w-full px-4 py-3 rounded-xl bg-white/10 backdrop-blur-sm border-2 border-white/20 text-white placeholder-white/40 font-bricolage focus:outline-none focus:border-white/40 transition-all resize-none"
+                className="font-bricolage resize-none"
               />
             </div>
           </div>
@@ -301,82 +552,115 @@ export default function OnboardingPage() {
       title: "Color Preferences",
       component: (
         <div className="space-y-6">
-          <h2 className="font-bricolage text-3xl font-bold text-white text-center mb-8">
-            What colors do you love?
-          </h2>
-          <div className="space-y-8 max-w-md mx-auto">
-            {/* Preferred Color */}
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-dela-gothic text-gray-900 mb-3">
+              What colors do you love?
+            </h2>
+            <p className="text-gray-600 font-bricolage">
+              Add multiple colors you prefer and want to avoid
+            </p>
+          </div>
+          <div className="space-y-8 max-w-2xl mx-auto">
+            {/* Preferred Colors */}
             <div>
-              <label className="font-bricolage text-white text-sm mb-3 block flex items-center gap-2">
-                <Heart className="w-4 h-4" />
-                Preferred Color
-              </label>
-              <div className="flex items-center gap-4">
-                <div className="relative">
+              <Label className="font-bricolage mb-3 flex items-center gap-2">
+                <Heart className="w-4 h-4 text-blue-600" />
+                Preferred Colors
+              </Label>
+              <div className="space-y-3">
+                <div className="flex flex-wrap gap-2 p-3 border-2 border-gray-200 rounded-xl min-h-[60px]">
+                  {preferredColors.map((color, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg border-2 border-gray-300 bg-white"
+                    >
+                      <div
+                        className="w-6 h-6 rounded-md border border-gray-300"
+                        style={{ backgroundColor: color }}
+                      />
+                      <span className="text-sm font-bricolage">{color}</span>
+                      <button
+                        onClick={() => removePreferredColor(color)}
+                        className="text-gray-500 hover:text-red-600"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-2">
                   <input
                     type="color"
-                    value={formData.preferedColor}
-                    onChange={(e) => updateFormData("preferedColor", e.target.value)}
-                    className="w-20 h-20 rounded-xl cursor-pointer border-2 border-white/30 bg-transparent"
-                    style={{
-                      WebkitAppearance: "none",
-                      appearance: "none",
-                    }}
+                    value={newPreferredColor}
+                    onChange={(e) => setNewPreferredColor(e.target.value)}
+                    className="w-12 h-12 rounded-lg cursor-pointer border-2 border-gray-300"
                   />
-                  <div
-                    className="absolute inset-0 rounded-xl pointer-events-none"
-                    style={{
-                      backgroundColor: formData.preferedColor,
-                      boxShadow: `0 0 20px ${formData.preferedColor}40`,
-                    }}
-                  />
-                </div>
-                <div className="flex-1">
-                  <input
+                  <Input
                     type="text"
-                    placeholder="Pick a color or enter hex"
-                    value={formData.preferedColor}
-                    onChange={(e) => updateFormData("preferedColor", e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl bg-white/10 backdrop-blur-sm border-2 border-white/20 text-white placeholder-white/40 font-bricolage focus:outline-none focus:border-white/40 transition-all"
+                    placeholder="Enter hex code"
+                    value={newPreferredColor}
+                    onChange={(e) => setNewPreferredColor(e.target.value)}
+                    className="font-bricolage flex-1"
                   />
+                  <Button
+                    onClick={addPreferredColor}
+                    variant="outline"
+                    size="icon"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
                 </div>
               </div>
             </div>
 
-            {/* Avoided Color */}
+            {/* Avoided Colors */}
             <div>
-              <label className="font-bricolage text-white text-sm mb-3 block flex items-center gap-2">
-                <Sparkles className="w-4 h-4" />
-                Color to Avoid (Optional)
-              </label>
-              <div className="flex items-center gap-4">
-                <div className="relative">
+              <Label className="font-bricolage mb-3 flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-blue-600" />
+                Colors to Avoid
+              </Label>
+              <div className="space-y-3">
+                <div className="flex flex-wrap gap-2 p-3 border-2 border-gray-200 rounded-xl min-h-[60px]">
+                  {avoidedColors.map((color, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg border-2 border-gray-300 bg-white"
+                    >
+                      <div
+                        className="w-6 h-6 rounded-md border border-gray-300"
+                        style={{ backgroundColor: color }}
+                      />
+                      <span className="text-sm font-bricolage">{color}</span>
+                      <button
+                        onClick={() => removeAvoidedColor(color)}
+                        className="text-gray-500 hover:text-red-600"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-2">
                   <input
                     type="color"
-                    value={formData.avoidedColor}
-                    onChange={(e) => updateFormData("avoidedColor", e.target.value)}
-                    className="w-20 h-20 rounded-xl cursor-pointer border-2 border-white/30 bg-transparent"
-                    style={{
-                      WebkitAppearance: "none",
-                      appearance: "none",
-                    }}
+                    value={newAvoidedColor}
+                    onChange={(e) => setNewAvoidedColor(e.target.value)}
+                    className="w-12 h-12 rounded-lg cursor-pointer border-2 border-gray-300"
                   />
-                  <div
-                    className="absolute inset-0 rounded-xl pointer-events-none"
-                    style={{
-                      backgroundColor: formData.avoidedColor,
-                      boxShadow: `0 0 20px ${formData.avoidedColor}40`,
-                    }}
-                  />
-                </div>
-                <div className="flex-1">
-                  <input
+                  <Input
                     type="text"
-                    placeholder="Pick a color or enter hex"
-                    value={formData.avoidedColor}
-                    onChange={(e) => updateFormData("avoidedColor", e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl bg-white/10 backdrop-blur-sm border-2 border-white/20 text-white placeholder-white/40 font-bricolage focus:outline-none focus:border-white/40 transition-all"
+                    placeholder="Enter hex code"
+                    value={newAvoidedColor}
+                    onChange={(e) => setNewAvoidedColor(e.target.value)}
+                    className="font-bricolage flex-1"
                   />
+                  <Button
+                    onClick={addAvoidedColor}
+                    variant="outline"
+                    size="icon"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
                 </div>
               </div>
             </div>
@@ -388,71 +672,126 @@ export default function OnboardingPage() {
       title: "Style Preferences",
       component: (
         <div className="space-y-6">
-          <h2 className="font-bricolage text-3xl font-bold text-white text-center mb-4">
-            Choose Your Styles
-          </h2>
-          <p className="font-bricolage text-white/70 text-center mb-4">
-            Select all that match your style (you can choose multiple)
-          </p>
+          <div className="text-center mb-6">
+            <h2 className="text-3xl font-dela-gothic text-gray-900 mb-3">
+              Choose Your Styles
+            </h2>
+            <p className="text-gray-600 font-bricolage">
+              Select existing styles or create your own
+            </p>
+          </div>
 
-          {/* Search Bar */}
-          <div className="max-w-md mx-auto mb-6">
-            <input
+          {/* Search and Add */}
+          <div className="max-w-md mx-auto space-y-3">
+            <Input
               type="text"
               placeholder="Search styles..."
               value={styleSearchQuery}
               onChange={(e) => setStyleSearchQuery(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-white/10 backdrop-blur-sm border-2 border-white/20 text-white placeholder-white/40 font-bricolage focus:outline-none focus:border-white/40 transition-all"
+              className="font-bricolage"
             />
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-3xl mx-auto max-h-[300px] overflow-y-auto pr-2">
-            {filteredStyleOptions.length > 0 ? (
-              filteredStyleOptions.map((style) => {
-                const isSelected = formData.styleIds.includes(style.id);
-                return (
-                  <GlassCard
-                    key={style.id}
-                    padding="1rem"
-                    blur="2px"
-                    brightness={1.1}
-                    glowColor={
-                      isSelected
-                        ? "rgba(59, 130, 246, 0.8)"
-                        : "rgba(255, 255, 255, 0.4)"
-                    }
-                    glowIntensity={6}
-                    borderColor={
-                      isSelected
-                        ? "rgba(59, 130, 246, 0.6)"
-                        : "rgba(255, 255, 255, 0.3)"
-                    }
-                    borderWidth="2px"
-                    displacementScale={20}
-                    className={`cursor-pointer transition-all hover:scale-105 ${
-                      isSelected ? "bg-blue-500/60" : "bg-white/10"
-                    }`}
-                    onClick={() => toggleStyle(style.id)}
-                  >
-                    <div className="text-center space-y-2">
-                      <Palette className="w-8 h-8 text-white mx-auto" />
-                      <h3 className="font-bricolage text-sm font-semibold text-white">
-                        {style.name}
-                      </h3>
-                      <p className="font-bricolage text-xs text-white/60">
-                        {style.description}
-                      </p>
-                    </div>
-                  </GlassCard>
-                );
-              })
+            {!showAddStyle ? (
+              <Button
+                onClick={() => setShowAddStyle(true)}
+                variant="outline"
+                className="w-full font-bricolage"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Custom Style
+              </Button>
             ) : (
-              <div className="col-span-full text-center py-8">
-                <p className="font-bricolage text-white/50">No styles found</p>
+              <div className="p-4 border-2 border-blue-300 rounded-xl bg-blue-50 space-y-3">
+                <Input
+                  type="text"
+                  placeholder="Style name"
+                  value={newStyleName}
+                  onChange={(e) => setNewStyleName(e.target.value)}
+                  className="font-bricolage"
+                />
+                <Input
+                  type="text"
+                  placeholder="Description (optional)"
+                  value={newStyleDescription}
+                  onChange={(e) => setNewStyleDescription(e.target.value)}
+                  className="font-bricolage"
+                />
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleAddCustomStyle}
+                    size="sm"
+                    className="font-bricolage flex-1"
+                  >
+                    Add
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setShowAddStyle(false);
+                      setNewStyleName("");
+                      setNewStyleDescription("");
+                    }}
+                    variant="outline"
+                    size="sm"
+                    className="font-bricolage"
+                  >
+                    Cancel
+                  </Button>
+                </div>
               </div>
             )}
           </div>
-          <p className="font-bricolage text-sm text-white/50 text-center mt-4">
+
+          {isLoadingStyles ? (
+            <div className="text-center py-8">
+              <p className="font-bricolage text-gray-500">Loading styles...</p>
+            </div>
+          ) : (
+            <div className="max-w-2xl mx-auto max-h-[400px] overflow-y-auto pr-2 space-y-2">
+              {filteredStyleOptions.length > 0 ? (
+                filteredStyleOptions.map((style) => {
+                  const isSelected = formData.styleIds.includes(style.id);
+                  return (
+                    <button
+                      key={style.id}
+                      onClick={() => toggleStyle(style.id)}
+                      className={`w-full p-4 rounded-xl border-2 transition-all flex items-center gap-4 ${
+                        isSelected
+                          ? "border-blue-500 bg-blue-50 shadow-md"
+                          : "border-gray-200 bg-white hover:border-blue-300"
+                      }`}
+                    >
+                      <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center ${
+                        isSelected ? "bg-blue-100" : "bg-gray-100"
+                      }`}>
+                        <Palette className={`w-6 h-6 ${
+                          isSelected ? "text-blue-600" : "text-gray-600"
+                        }`} />
+                      </div>
+                      <div className="flex-1 text-left">
+                        <h3 className="font-bricolage text-base font-semibold text-gray-900">
+                          {style.name}
+                        </h3>
+                        <p className="font-bricolage text-sm text-gray-600 mt-1">
+                          {style.description}
+                        </p>
+                      </div>
+                      {isSelected && (
+                        <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center">
+                          <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      )}
+                    </button>
+                  );
+                })
+              ) : (
+                <div className="text-center py-8">
+                  <p className="font-bricolage text-gray-500">No styles found</p>
+                </div>
+              )}
+            </div>
+          )}
+          <p className="font-bricolage text-sm text-gray-500 text-center mt-4">
             {formData.styleIds.length} style(s) selected
           </p>
         </div>
@@ -474,97 +813,84 @@ export default function OnboardingPage() {
     }
   };
 
-  const handleSkip = () => {
-    router.push("/wardrobe");
-  };
-
   const canProceed = () => {
     if (currentStep === 0) return !!selectedPurpose;
-    return true; // Other steps are optional
+    if (currentStep === 1) {
+      return (formData.jobId > 0 || newJobName.trim()) &&
+             formData.dob &&
+             validateAge(formData.dob) &&
+             formData.location;
+    }
+    return true;
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-[#5490ff]">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       <div className="w-full max-w-4xl">
-        <GlassCard
-          blur="4px"
-          brightness={1.15}
-          glowColor="rgba(255, 255, 255, 0.6)"
-          glowIntensity={10}
-          borderColor="rgba(255, 255, 255, 0.3)"
-          borderWidth="2px"
-          displacementScale={50}
-          padding="0"
-          className="bg-white/10"
-        >
-          <div className="w-full p-12 flex flex-col min-h-[600px]">
-            {/* Progress Indicator - Top of Card */}
+        {/* Alert Message */}
+        <div className="mb-6 bg-blue-50 border-l-4 border-blue-500 rounded-lg p-4">
+          <div className="flex items-start">
+            <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" />
+            <div>
+              <h3 className="text-sm font-semibold font-bricolage text-blue-900 mb-1">
+                Complete Your Profile to Continue
+              </h3>
+              <p className="text-xs font-bricolage text-blue-800">
+                Please complete this onboarding form to start using SOP and access all features.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-3xl shadow-2xl shadow-blue-200/50 border border-gray-100">
+          <div className="w-full p-8 md:p-12 flex flex-col min-h-[600px]">
+            {/* Progress Indicator */}
             <div className="flex justify-center gap-2 mb-8">
               {steps.map((_, index) => (
                 <div
                   key={index}
                   className={`h-2 rounded-full transition-all duration-300 ${
                     index === currentStep
-                      ? "w-12 bg-blue-500"
+                      ? "w-12 bg-blue-600"
                       : index < currentStep
                       ? "w-8 bg-blue-400"
-                      : "w-8 bg-white/20"
+                      : "w-8 bg-gray-200"
                   }`}
                 />
               ))}
             </div>
 
-            {/* Step Content - Flexible Space */}
+            {/* Step Content */}
             <div className="flex-1 flex flex-col justify-center">
               {steps[currentStep].component}
             </div>
 
-            {/* Navigation Buttons - Bottom of Card */}
-            <div className="flex justify-end gap-5 items-center mt-8">
-              <GlassButton
-                variant="ghost"
-                onClick={currentStep === 0 ? handleSkip : handleBack}
-                disabled={isSubmitting}
-                borderRadius="100px"
-                blur="2px"
-                brightness={1.1}
-                glowColor="rgba(255, 255, 255, 0.3)"
-                glowIntensity={6}
-                borderColor="rgba(255, 255, 255, 0.2)"
-                borderWidth="2px"
-                className="font-bricolage font-semibold"
-              >
-                {currentStep === 0 ? (
-                  "Skip"
-                ) : (
-                  <>
-                    <ChevronLeft className="w-4 h-4 mr-1" />
-                    Back
-                  </>
-                )}
-              </GlassButton>
+            {/* Navigation Buttons */}
+            <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
+              {currentStep > 0 ? (
+                <Button
+                  variant="outline"
+                  onClick={handleBack}
+                  disabled={isSubmitting}
+                  className="font-bricolage font-semibold"
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  Back
+                </Button>
+              ) : (
+                <div></div>
+              )}
 
-              <GlassButton
-                variant="primary"
+              <Button
                 onClick={handleNext}
                 disabled={!canProceed() || isSubmitting}
-                borderRadius="100px"
-                blur="2px"
-                brightness={1.2}
-                glowColor="rgba(0, 183, 255, 0.5)"
-                glowIntensity={8}
-                borderColor="rgba(255, 255, 255, 0.3)"
-                borderWidth="2px"
-                backgroundColor={
-                  canProceed() && !isSubmitting 
-                    ? "rgba(60, 16, 255, 1)" 
-                    : "rgba(100, 100, 100, 0.5)"
-                }
-                displacementScale={10}
-                className="font-bricolage font-semibold"
+                className="font-bricolage font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
               >
                 {isSubmitting ? (
-                  "Submitting..."
+                  <div className="flex items-center">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    Submitting...
+                  </div>
                 ) : currentStep === steps.length - 1 ? (
                   "Complete Setup"
                 ) : (
@@ -573,10 +899,10 @@ export default function OnboardingPage() {
                     <ChevronRight className="w-4 h-4 ml-1" />
                   </>
                 )}
-              </GlassButton>
+              </Button>
             </div>
           </div>
-        </GlassCard>
+        </div>
       </div>
     </div>
   );

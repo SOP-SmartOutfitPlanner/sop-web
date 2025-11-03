@@ -1,9 +1,102 @@
 import { ApiResponse } from "@/types";
-import { OnboardingRequest, UserResponse } from "@/types/user";
+import { OnboardingRequest, UserResponse, UserProfileResponse, Job, StyleOption } from "@/types/user";
 import { apiClient } from "./client";
+
+export interface GetJobsParams {
+  "page-index"?: number;
+  "page-size"?: number;
+  "take-all"?: boolean;
+  search?: string;
+}
+
+export interface GetStylesParams {
+  "page-index"?: number;
+  "page-size"?: number;
+  "take-all"?: boolean;
+  search?: string;
+}
+
+export interface CreateJobRequest {
+  name: string;
+  description: string;
+}
+
+export interface CreateStyleRequest {
+  name: string;
+  description: string;
+}
 
 class UserAPI {
   private readonly BASE_PATH = "/user";
+
+  async getUserProfile(): Promise<ApiResponse<UserProfileResponse>> {
+    try {
+      const response = await apiClient.get<ApiResponse<UserProfileResponse>>(
+        `${this.BASE_PATH}/profile`
+      );
+
+      return response;
+    } catch (error) {
+      console.error("Failed to fetch user profile:", error);
+      throw error;
+    }
+  }
+
+  async getJobs(params?: GetJobsParams): Promise<ApiResponse<Job[]>> {
+    try {
+      const response = await apiClient.get<ApiResponse<Job[]>>(
+        "/jobs",
+        { params }
+      );
+
+      return response;
+    } catch (error) {
+      console.error("Failed to fetch jobs:", error);
+      throw error;
+    }
+  }
+
+  async createJob(data: CreateJobRequest): Promise<ApiResponse<Job>> {
+    try {
+      const response = await apiClient.post<ApiResponse<Job>>(
+        "/jobs",
+        data
+      );
+
+      return response;
+    } catch (error) {
+      console.error("Failed to create job:", error);
+      throw error;
+    }
+  }
+
+  async getStyles(params?: GetStylesParams): Promise<ApiResponse<StyleOption[]>> {
+    try {
+      const response = await apiClient.get<ApiResponse<StyleOption[]>>(
+        "/styles",
+        { params }
+      );
+
+      return response;
+    } catch (error) {
+      console.error("Failed to fetch styles:", error);
+      throw error;
+    }
+  }
+
+  async createStyle(data: CreateStyleRequest): Promise<ApiResponse<StyleOption>> {
+    try {
+      const response = await apiClient.post<ApiResponse<StyleOption>>(
+        "/styles",
+        data
+      );
+
+      return response;
+    } catch (error) {
+      console.error("Failed to create style:", error);
+      throw error;
+    }
+  }
 
   async submitOnboarding(
     data: OnboardingRequest

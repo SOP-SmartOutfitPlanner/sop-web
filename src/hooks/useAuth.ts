@@ -13,10 +13,16 @@ export function useAuth() {
   const handleLogin = useCallback(async (values: LoginFormValues, onAdminDetected?: (error: string) => void) => {
     setIsLoading(true);
     try {
-      const success = await login(values.email, values.password);
-      if (success) {
+      const result = await login(values.email, values.password);
+      if (result.success) {
         toast.success(AUTH_MESSAGES.LOGIN_SUCCESS);
-        router.push(AUTH_ROUTES.DASHBOARD);
+
+        // Check if user is first time and redirect to onboarding
+        if (result.isFirstTime) {
+          router.push('/onboarding');
+        } else {
+          router.push(AUTH_ROUTES.DASHBOARD);
+        }
       } else {
         // Check if error is admin login attempt
         const { error } = useAuthStore.getState();

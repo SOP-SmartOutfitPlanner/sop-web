@@ -19,6 +19,7 @@ interface GlassCardProps {
   glowIntensity?: number;
   borderColor?: string;
   borderWidth?: string;
+  backgroundColor?: string;
   className?: string;
   displacementScale?: number;
   width?: string;
@@ -39,6 +40,7 @@ const GlassCard: React.FC<GlassCardProps> = ({
   glowIntensity = 6,
   borderColor,
   borderWidth = '1px',
+  backgroundColor,
   className = '',
   displacementScale = 200,
   width = 'auto',
@@ -82,6 +84,7 @@ const GlassCard: React.FC<GlassCardProps> = ({
     backdropFilter: `brightness(${brightness}) blur(${blur}) url(#displacementFilter)`,
     cursor: draggable ? 'move' : 'default',
     touchAction: draggable ? 'none' : 'auto',
+    ...(backgroundColor && { backgroundColor }),
   };
 
   const beforeStyle: React.CSSProperties = {
