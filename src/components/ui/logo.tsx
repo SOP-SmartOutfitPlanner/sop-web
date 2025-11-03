@@ -85,7 +85,7 @@ export function Logo({
         )}
         <div className="relative z-10" suppressHydrationWarning>
           <Image
-            src="/sop-logo-retangle.png"
+            src="/SOP-logo (2).png"
             alt="Smart Outfit Planner"
             width={width || 145}
             height={height || 48}
