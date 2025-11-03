@@ -4,7 +4,7 @@
  * Helpers to convert Vietnamese AI response to wizard form data
  */
 
-import type { ImageSummaryResponse } from '@/lib/api/wardrobe-api';
+import type { AISuggestions } from '@/components/wardrobe/wizard/types';
 
 export interface ColorOption {
   name: string;
@@ -121,27 +121,41 @@ export async function base64ToFile(base64: string, filename: string): Promise<Fi
 /**
  * Parse AI response to wizard form updates
  * 
- * @param aiResponse - Response from /items/summary API
+ * @param aiResponse - Response from AI analysis (AISuggestions type)
  * @returns Partial wizard form data to update
  */
-export function parseAIResponseToFormData(aiResponse: ImageSummaryResponse['data']) {
+export function parseAIResponseToFormData(aiResponse: AISuggestions) {
   return {
     // AI description as notes
     notes: aiResponse.aiDescription || '',
     
-    // Parse colors
-    colors: parseColors(aiResponse.color),
+    // Parse colors - already in correct format
+    colors: aiResponse.colors || [],
     
-    // Parse seasons
-    seasons: parseSeasons(aiResponse.weatherSuitable),
+    // Parse seasons - extract names from array
+    seasons: aiResponse.seasons?.map(s => s.name) || [],
     
     // Direct mappings
     pattern: aiResponse.pattern || '',
     fabric: aiResponse.fabric || '',
-    condition: aiResponse.condition || 'Mới',
+    condition: aiResponse.condition || 'New',
     
     // Image with background removed
     imageRemBgURL: aiResponse.imageRemBgURL || '',
+    
+    // Extract category
+    categoryId: aiResponse.category?.id || 0,
+    categoryName: aiResponse.category?.name || '',
+    
+    // Extract IDs for relational data
+    styleIds: aiResponse.styles?.map(s => s.id) || [],
+    occasionIds: aiResponse.occasions?.map(o => o.id) || [],
+    
+    // Item name from AI
+    name: aiResponse.name || aiResponse.aiDescription || '',
+    
+    // Weather suitable
+    weatherSuitable: aiResponse.weatherSuitable || '',
   };
 }
 
@@ -183,11 +197,11 @@ export function suggestItemName(options: {
 /**
  * Validate AI response data
  */
-export function validateAIResponse(response: ImageSummaryResponse): boolean {
-  if (!response?.data) return false;
+export function validateAIResponse(response: AISuggestions | null): boolean {
+  if (!response) return false;
   
   // Must have at least image URL
-  if (!response.data.imageRemBgURL) return false;
+  if (!response.imageRemBgURL) return false;
   
   return true;
 }

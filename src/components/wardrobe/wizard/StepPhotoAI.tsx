@@ -31,6 +31,7 @@ export function StepPhotoAI({
   setAiSuggestions,
   onFileSelect,
   onClearFile,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   selectedFile: _selectedFile,
   previewUrl,
 }: StepPhotoAIProps) {
@@ -287,7 +288,7 @@ export function StepPhotoAI({
                 {/* Color */}
                 <SuggestionRow
                   label="Color"
-                  value={aiSuggestions.color}
+                  value={aiSuggestions.colors?.map(c => c.name).join(', ') || 'Unknown'}
                   onApply={() => {
                     const formUpdates =
                       parseAIResponseToFormData(aiSuggestions);
