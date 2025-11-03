@@ -17,6 +17,11 @@ interface StepPhotoAIProps {
   updateFormData: (updates: Partial<WizardFormData>) => void;
   aiSuggestions: AISuggestions | null;
   setAiSuggestions: (suggestions: AISuggestions | null) => void;
+  // New props for external file handling
+  onFileSelect?: (file: File) => void;
+  onClearFile?: () => void;
+  selectedFile?: File | null;
+  previewUrl?: string;
 }
 
 export function StepPhotoAI({
@@ -24,6 +29,10 @@ export function StepPhotoAI({
   updateFormData,
   aiSuggestions,
   setAiSuggestions,
+  onFileSelect,
+  onClearFile,
+  selectedFile: _selectedFile,
+  previewUrl,
 }: StepPhotoAIProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -37,6 +46,13 @@ export function StepPhotoAI({
       return;
     }
 
+    // Use external handler if provided (new flow)
+    if (onFileSelect) {
+      onFileSelect(file);
+      return;
+    }
+
+    // Otherwise use old flow with cropper
     const reader = new FileReader();
     reader.onload = (e) => {
       const imageUrl = e.target?.result as string;
@@ -78,6 +94,9 @@ export function StepPhotoAI({
   };
 
   const handleAIAnalyze = async () => {
+    // In new flow, this button is not used (analysis is triggered externally)
+    if (onFileSelect) return;
+
     if (!formData.uploadedImageURL) return;
 
     setIsAnalyzing(true);
@@ -99,6 +118,18 @@ export function StepPhotoAI({
     } finally {
       setIsAnalyzing(false);
     }
+  };
+
+  const handleClearImage = () => {
+    // Use external handler if provided (new flow)
+    if (onClearFile) {
+      onClearFile();
+      return;
+    }
+
+    // Otherwise use old flow
+    updateFormData({ uploadedImageURL: "", imageRemBgURL: "" });
+    setAiSuggestions(null);
   };
 
   const applyAllSuggestions = () => {
@@ -148,7 +179,7 @@ export function StepPhotoAI({
               }
             />
 
-            {!formData.uploadedImageURL ? (
+            {!(previewUrl || formData.uploadedImageURL) ? (
               <div className="space-y-4">
                 <div className="w-16 h-16 mx-auto rounded-full bg-muted flex items-center justify-center">
                   <Upload className="w-8 h-8 text-muted-foreground" />
@@ -169,31 +200,28 @@ export function StepPhotoAI({
             ) : (
               <div className="relative w-full h-64">
                 <Image
-                  src={formData.uploadedImageURL}
+                  src={previewUrl || formData.uploadedImageURL}
                   alt="Uploaded item"
                   fill
                   className="object-contain rounded-lg"
                 />
                 <div className="absolute top-2 right-2 flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => {
-                      setTempImage(formData.uploadedImageURL);
-                      setShowCropper(true);
-                    }}
-                  >
-                    <Crop className="w-4 h-4" />
-                  </Button>
+                  {!previewUrl && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => {
+                        setTempImage(formData.uploadedImageURL);
+                        setShowCropper(true);
+                      }}
+                    >
+                      <Crop className="w-4 h-4" />
+                    </Button>
+                  )}
                   <Button
                     size="sm"
                     variant="destructive"
-                    onClick={() =>
-                      updateFormData({
-                        uploadedImageURL: "",
-                        imageRemBgURL: "",
-                      })
-                    }
+                    onClick={handleClearImage}
                   >
                     <X className="w-4 h-4" />
                   </Button>

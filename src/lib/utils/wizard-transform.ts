@@ -49,10 +49,10 @@ export function transformWizardDataToAPI(
     ? formData.colors.map(c => c.name).join(', ')
     : 'Unknown';
 
-  // Join seasons
+  // Join seasons - MUST NOT BE EMPTY (backend constraint)
   const weatherString = formData.seasons.length > 0
     ? formData.seasons.join(', ')
-    : '';
+    : 'All Season'; // Fallback instead of empty string
 
   // Process tags (occasions field removed as it's not supported by API)
   const tagString = formData.tags.length > 0 
@@ -61,34 +61,68 @@ export function transformWizardDataToAPI(
 
   // Handle worn today
   const frequencyWorn = formData.wornToday ? "1" : "0";
-  const lastWornAt = formData.wornToday ? new Date().toISOString() : undefined;
+  // Always include lastWornAt to match Swagger format
+  const lastWornAt = formData.wornToday ? new Date().toISOString() : new Date().toISOString();
 
   // IMPORTANT: Backend only accepts URL from AI, NOT base64
   // Use removed background image from AI (required)
   const imgUrl = formData.imageRemBgURL || '';
 
   // Generate AI description from notes or auto-generate
-  const aiDescription = formData.notes?.trim() 
+  let aiDescription = formData.notes?.trim() 
     || `${formData.brand} ${formData.name}`.trim()
     || formData.name;
+  
+  // Truncate long fields to prevent DB constraint violations
+  const truncate = (str: string, maxLength: number) => {
+    return str.length > maxLength ? str.substring(0, maxLength - 3) + '...' : str;
+  };
 
-  return {
+  // Ensure name is reasonable length (DB might have VARCHAR(200) constraint)
+  const safeName = truncate(formData.name || 'Untitled Item', 200);
+  
+  // Ensure aiDescription fits DB constraint (often VARCHAR(500) or VARCHAR(1000))
+  aiDescription = truncate(aiDescription, 500);
+
+  // Build payload matching Swagger format exactly
+  const payload = {
     userId,
-    name: formData.name,
+    name: safeName,
     categoryId: formData.categoryId,
-    categoryName: formData.categoryName,
+    categoryName: formData.categoryName || 'General',
     color: colorString,
     aiDescription,
     brand: formData.brand || undefined,
     frequencyWorn,
-    lastWornAt,
+    lastWornAt, // Always include to match Swagger
     imgUrl,
     weatherSuitable: weatherString,
-    condition: formData.condition || 'Mới',
-    pattern: formData.pattern || 'Solid',
-    fabric: formData.fabric || 'Cotton',
+    condition: formData.condition || 'New',
+    pattern: truncate(formData.pattern || 'Solid', 100),
+    fabric: truncate(formData.fabric || 'Cotton', 100),
     tag: tagString,
-  };
+  } as CreateWardrobeItemRequest;
+
+  // Debug logging
+  console.log('🔍 Transform Input:', {
+    colors: formData.colors,
+    seasons: formData.seasons,
+    condition: formData.condition,
+    imageRemBgURL: formData.imageRemBgURL,
+    originalNameLength: formData.name.length,
+    originalAiDescLength: (formData.notes || `${formData.brand} ${formData.name}`).length,
+  });
+  console.log('🔍 Field Lengths:', {
+    name: payload.name.length,
+    aiDescription: payload.aiDescription.length,
+    color: payload.color.length,
+    pattern: payload.pattern.length,
+    fabric: payload.fabric.length,
+    brand: payload.brand?.length || 0,
+  });
+  console.log('🔍 Payload to API:', JSON.stringify(payload, null, 2));
+
+  return payload;
 }
 
 /**

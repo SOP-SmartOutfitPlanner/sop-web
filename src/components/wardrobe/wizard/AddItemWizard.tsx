@@ -1,4 +1,7 @@
+"use client";
+
 import { useState, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -10,6 +13,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Sparkles, X } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/auth-store";
 import { useWardrobeStore } from "@/store/wardrobe-store";
@@ -20,15 +24,28 @@ import {
   getUserIdFromAuth,
 } from "@/lib/utils/wizard-transform";
 import { StepPhotoAI } from "./StepPhotoAI";
-import { StepBasics } from "./StepBasics";
-import { StepCategorize } from "./StepCategorize";
-import { WizardFooter } from "./WizardFooter";
+import { AnalysisOverlay } from "./AnalysisOverlay";
+import { AnalyzingPanel } from "./AnalyzingPanel";
+import { ItemFormContent } from "./ItemFormContent";
+import ImageCropper from "./ImageCropper";
 import type { WizardFormData, AISuggestions } from "./types";
 
 interface AddItemWizardProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
+
+// Status flow
+const STATUS = {
+  IDLE: "idle",
+  PREVIEW: "preview",
+  CROPPING: "cropping",
+  ANALYZING: "analyzing",
+  FORM: "form",
+  SAVED: "saved",
+} as const;
+
+type StatusType = typeof STATUS[keyof typeof STATUS];
 
 // Initial form state
 const INITIAL_FORM_DATA: WizardFormData = {
@@ -43,103 +60,244 @@ const INITIAL_FORM_DATA: WizardFormData = {
   seasons: [],
   pattern: "",
   fabric: "",
-  condition: "Mới",
+  condition: "New",
   tags: [],
   wornToday: false,
 };
 
 export function AddItemWizard({ open, onOpenChange }: AddItemWizardProps) {
-  const [currentStep, setCurrentStep] = useState(1);
+  const [status, setStatus] = useState<StatusType>(STATUS.IDLE);
   const [showConfirmClose, setShowConfirmClose] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<WizardFormData>(INITIAL_FORM_DATA);
   const [aiSuggestions, setAiSuggestions] = useState<AISuggestions | null>(null);
+  const [analysisProgress, setAnalysisProgress] = useState(0);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState("");
 
   const { user } = useAuthStore();
   const { fetchItems } = useWardrobeStore();
 
   // Reset form to initial state
   const resetAndClose = useCallback(() => {
-    setCurrentStep(1);
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setStatus(STATUS.IDLE);
+    setSelectedFile(null);
+    setPreviewUrl("");
     setFormData(INITIAL_FORM_DATA);
     setAiSuggestions(null);
     setHasChanges(false);
     setShowConfirmClose(false);
     setIsSubmitting(false);
+    setAnalysisProgress(0);
     onOpenChange(false);
-  }, [onOpenChange]);
+  }, [onOpenChange, previewUrl]);
+
+  // Clear selected file
+  const handleClearFile = useCallback(() => {
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setSelectedFile(null);
+    setPreviewUrl("");
+    setStatus(STATUS.IDLE);
+    setAiSuggestions(null);
+    setAnalysisProgress(0);
+  }, [previewUrl]);
+
+  // Handle file selection - go to cropping
+  const handleFileSelect = useCallback((file: File) => {
+    setSelectedFile(file);
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+    setStatus(STATUS.CROPPING); // Changed from PREVIEW to CROPPING
+    setHasChanges(true);
+  }, []);
+
+  // Handle crop complete
+  const handleCropComplete = useCallback((croppedFile: File) => {
+    // Replace the selected file with cropped version
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    
+    setSelectedFile(croppedFile);
+    const newUrl = URL.createObjectURL(croppedFile);
+    setPreviewUrl(newUrl);
+    setStatus(STATUS.PREVIEW);
+  }, [previewUrl]);
+
+  // Handle crop cancel - go back to idle
+  const handleCropCancel = useCallback(() => {
+    handleClearFile();
+  }, [handleClearFile]);
 
   // Handle dialog close with unsaved changes confirmation
   const handleClose = useCallback(() => {
-    if (hasChanges) {
+    if (hasChanges && status !== STATUS.SAVED) {
       setShowConfirmClose(true);
     } else {
       resetAndClose();
     }
-  }, [hasChanges, resetAndClose]);
+  }, [hasChanges, status, resetAndClose]);
+
+  // Helper: Parse color string to ColorOption array
+  const parseColorString = (colorStr: string): { name: string; hex: string }[] => {
+    if (!colorStr) return [];
+    
+    // Simple color name to hex mapping
+    const colorMap: Record<string, string> = {
+      black: "#000000",
+      white: "#FFFFFF",
+      red: "#FF0000",
+      blue: "#0000FF",
+      green: "#00FF00",
+      yellow: "#FFFF00",
+      purple: "#800080",
+      pink: "#FFC0CB",
+      orange: "#FFA500",
+      brown: "#A52A2A",
+      gray: "#808080",
+      grey: "#808080",
+      navy: "#000080",
+      beige: "#F5F5DC",
+      // Vietnamese colors
+      đen: "#000000",
+      trắng: "#FFFFFF",
+      đỏ: "#FF0000",
+      xanh: "#0000FF",
+      vàng: "#FFFF00",
+      hồng: "#FFC0CB",
+      cam: "#FFA500",
+      nâu: "#A52A2A",
+      xám: "#808080",
+      tím: "#800080",
+    };
+
+    // Split by comma and map to ColorOption
+    return colorStr.split(/[,;]/).map((c) => {
+      const name = c.trim();
+      const nameLower = name.toLowerCase();
+      const hex = colorMap[nameLower] || "#808080"; // Default gray
+      return { name, hex };
+    });
+  };
+
+  // Handle analyze button
+  const handleAnalyze = useCallback(async () => {
+    if (!selectedFile) return;
+
+    setStatus(STATUS.ANALYZING);
+    setAnalysisProgress(0);
+
+    try {
+      // Call AI analysis API
+      const result = await wardrobeAPI.getImageSummary(selectedFile);
+      
+      console.log('🎯 AI Analysis Result:', result);
+      
+      // Update form data with AI suggestions
+      setAiSuggestions(result);
+      setFormData((prev) => ({
+        ...prev,
+        uploadedImageURL: previewUrl,
+        imageRemBgURL: result.imageRemBgURL || previewUrl,
+        // Color is now an object { name, hex }
+        colors: result.color ? [result.color] : [],
+        pattern: result.pattern,
+        fabric: result.fabric,
+        condition: result.condition,
+        name: result.aiDescription || "",
+        // Season is now an object { id, name }
+        seasons: result.season ? [result.season.name] : [],
+        notes: result.aiDescription || "",
+      }));
+
+      // Transition to form after a brief delay
+      setTimeout(() => {
+        setStatus(STATUS.FORM);
+      }, 300);
+    } catch (error) {
+      console.error("Analysis failed:", error);
+      toast.error("Failed to analyze image. Please try again.");
+      setStatus(STATUS.PREVIEW);
+    }
+  }, [selectedFile, previewUrl]);
 
   // Submit form to API
-  const handleSubmit = useCallback(async () => {
+  const handleSave = useCallback(async () => {
     setIsSubmitting(true);
 
     try {
       const errors = validateWizardFormData(formData);
       if (errors.length > 0) {
         errors.forEach((error) => toast.error(error));
+        setIsSubmitting(false);
         return;
       }
 
       const userId = await getUserIdFromAuth(user);
       const payload = transformWizardDataToAPI(formData, userId);
 
-      await wardrobeAPI.createItem(payload);
-      await fetchItems();
+      console.log('📤 Submitting payload:', payload);
 
+      const response = await wardrobeAPI.createItem(payload);
+      
+      console.log('✅ API Response:', response);
+
+      // Show saved state
+      setStatus(STATUS.SAVED);
       toast.success("Item added successfully!");
-      resetAndClose();
+
+      // Refresh items in background
+      fetchItems();
+
+      // Auto-close after showing success
+      setTimeout(() => {
+        resetAndClose();
+      }, 2000);
     } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Cannot add item. Please try again."
-      );
-    } finally {
+      console.error('❌ API Error:', error);
+      
+      // Enhanced error message
+      let errorMessage = "Cannot add item. Please try again.";
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      // Check for specific error responses
+      if (typeof error === 'object' && error !== null) {
+        const err = error as any;
+        if (err.response?.data?.message) {
+          errorMessage = err.response.data.message;
+        } else if (err.message) {
+          errorMessage = err.message;
+        }
+      }
+      
+      toast.error(errorMessage);
       setIsSubmitting(false);
     }
   }, [formData, user, fetchItems, resetAndClose]);
 
-  // Navigate to next step or submit
-  const handleNext = useCallback(() => {
-    if (currentStep === 1) {
-      if (!formData.imageRemBgURL) {
-        toast.warning('⚠️ AI analysis not completed! Click "Analyze with AI" to get the best result.');
-      }
-      setCurrentStep(2);
-    } else if (currentStep === 2) {
-      const errors = validateWizardFormData(formData);
-      if (errors.length > 0) {
-        errors.forEach((error) => toast.error(error));
-        return;
-      }
-      setCurrentStep(3);
-    } else if (currentStep === 3) {
-      handleSubmit();
-    }
-  }, [currentStep, formData, handleSubmit]);
-
-  // Navigate to previous step
-  const handleBack = useCallback(() => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-    }
-  }, [currentStep]);
-
-  // Update form data and mark as changed
+  // Update form data
   const updateFormData = useCallback((updates: Partial<WizardFormData>) => {
     setFormData((prev) => ({ ...prev, ...updates }));
     setHasChanges(true);
   }, []);
+
+  // Handle cancel
+  const handleCancel = useCallback(() => {
+    if (status === STATUS.IDLE || !hasChanges) {
+      resetAndClose();
+    } else {
+      setShowConfirmClose(true);
+    }
+  }, [status, hasChanges, resetAndClose]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -148,121 +306,221 @@ export function AddItemWizard({ open, onOpenChange }: AddItemWizardProps) {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         handleClose();
-      } else if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && !isSubmitting) {
-        handleNext();
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [open, handleClose, handleNext, isSubmitting]);
+  }, [open, handleClose]);
 
   return (
     <>
       <Dialog open={open} onOpenChange={(open) => !open && handleClose()}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[760px] p-0 gap-0 h-[90vh] flex flex-col overflow-hidden" showCloseButton={false}>
+        <DialogContent className="max-w-[95vw] sm:max-w-7xl p-0 gap-0 max-h-[95vh] flex flex-col overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-white/10" showCloseButton={false}>
+          {/* Accessible title (hidden visually but available to screen readers) */}
+          <DialogTitle className="sr-only">Add Item by Image</DialogTitle>
+
+          {/* Background gradients */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(59,130,246,0.15),transparent_50%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(147,51,234,0.1),transparent_50%)]" />
+          <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent,rgba(0,0,0,0.3))]" />
+
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b">
-            <div>
-              <DialogTitle className="text-xl font-semibold">Add new item</DialogTitle>
-              <p className="text-sm text-muted-foreground mt-1">
-                {currentStep === 1 && "Upload image and analyze with AI"}
-                {currentStep === 2 && "Enter basic information"}
-                {currentStep === 3 && "Classify and add details"}
-              </p>
-            </div>
-          </div>
-
-          {/* Stepper */}
-          <div className="px-6 py-4 border-b">
-            <div className="max-w-lg mx-auto">
-              <div className="flex items-start justify-between relative">
-                {[
-                  { step: 1, label: "Image Analysis" },
-                  { step: 2, label: "Basic Information" },
-                  { step: 3, label: "Details" }
-                ].map((item) => (
-                  <div key={item.step} className="flex flex-col items-center relative z-10" style={{ width: '33.333%' }}>
-                    {/* Step Circle */}
-                    <div
-                      className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-200 ${
-                        item.step === currentStep
-                          ? "bg-gradient-to-r from-login-navy to-login-blue text-white ring-4 ring-login-blue/20 scale-110"
-                          : item.step < currentStep
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted text-muted-foreground"
-                      }`}
-                    >
-                      {item.step}
-                    </div>
-                    <span className={`text-xs mt-2 text-center font-medium transition-colors ${
-                      item.step === currentStep ? "text-login-navy" : "text-muted-foreground"
-                    }`}>
-                      {item.label}
-                    </span>
-                  </div>
-                ))}
-
-                {/* Connector Lines - Absolute positioned */}
-                <div className="absolute top-5 left-0 right-0 flex justify-between px-[16.666%] z-0">
-                  <div 
-                    className="h-0.5 transition-colors duration-200" 
-                    style={{
-                      width: '33.333%',
-                      background: currentStep > 1 
-                        ? "linear-gradient(to right, hsl(var(--login-navy)), hsl(var(--login-blue)))"
-                        : "hsl(var(--muted))"
-                    }}
-                  />
-                  <div 
-                    className="h-0.5 transition-colors duration-200" 
-                    style={{
-                      width: '33.333%',
-                      background: currentStep > 2
-                        ? "linear-gradient(to right, hsl(var(--login-navy)), hsl(var(--login-blue)))"
-                        : "hsl(var(--muted))"
-                    }}
-                  />
+          <div className="relative border-b border-white/10 bg-gradient-to-r from-black/40 via-black/30 to-black/40 backdrop-blur-xl px-6 sm:px-8 py-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <motion.div
+                  initial={{ rotate: -180, scale: 0 }}
+                  animate={{ rotate: 0, scale: 1 }}
+                  transition={{ type: "spring", duration: 0.6 }}
+                  className="p-2.5 rounded-xl bg-gradient-to-br from-blue-500/30 to-blue-600/30 ring-1 ring-blue-400/40 shadow-lg"
+                >
+                  <Sparkles className="w-5 h-5 text-blue-300" />
+                </motion.div>
+                <div>
+                  <motion.h2
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="text-xl sm:text-2xl font-bold text-white"
+                  >
+                    Add Item by Image
+                  </motion.h2>
+                  <motion.p
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="text-sm text-white/50"
+                  >
+                    AI-powered wardrobe analysis
+                  </motion.p>
                 </div>
               </div>
+
+              {/* Close button */}
+              <motion.button
+                onClick={handleClose}
+                whileHover={{ scale: 1.1, backgroundColor: "rgba(255,255,255,0.15)" }}
+                whileTap={{ scale: 0.9 }}
+                className="p-2.5 hover:bg-white/10 rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/70"
+                aria-label="Close modal"
+              >
+                <X className="w-5 h-5 text-white/90" />
+              </motion.button>
             </div>
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto px-6 py-6">
-            <div className="animate-fade-in">
-              {currentStep === 1 && (
-                <StepPhotoAI
-                  formData={formData}
-                  updateFormData={updateFormData}
-                  aiSuggestions={aiSuggestions}
-                  setAiSuggestions={setAiSuggestions}
-                />
-              )}
-              {currentStep === 2 && (
-                <StepBasics
-                  formData={formData}
-                  updateFormData={updateFormData}
-                  aiSuggestions={aiSuggestions}
-                />
-              )}
-              {currentStep === 3 && (
-                <StepCategorize
-                  formData={formData}
-                  updateFormData={updateFormData}
-                />
-              )}
-            </div>
-          </div>
+          <div className="relative px-6 sm:px-8 py-8 max-h-[calc(95vh-6rem)] overflow-y-auto custom-scrollbar">
+            <AnimatePresence mode="wait">
+              {/* IDLE & PREVIEW State */}
+              {(status === STATUS.IDLE || status === STATUS.PREVIEW) && (
+                <motion.div
+                  key="upload"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="space-y-6"
+                >
+                  <StepPhotoAI
+                    formData={formData}
+                    updateFormData={updateFormData}
+                    aiSuggestions={aiSuggestions}
+                    setAiSuggestions={setAiSuggestions}
+                    onFileSelect={handleFileSelect}
+                    onClearFile={handleClearFile}
+                    selectedFile={selectedFile}
+                    previewUrl={previewUrl}
+                  />
 
-          {/* Footer */}
-          <WizardFooter
-            currentStep={currentStep}
-            onBack={handleBack}
-            onNext={handleNext}
-            onCancel={handleClose}
-            isNextDisabled={isSubmitting}
-          />
+                  {status === STATUS.PREVIEW && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                      className="flex justify-center gap-3"
+                    >
+                      <motion.button
+                        onClick={handleCancel}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="px-6 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/70"
+                      >
+                        Cancel
+                      </motion.button>
+                      <motion.button
+                        onClick={handleAnalyze}
+                        whileHover={{ scale: 1.05, y: -2 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="px-8 py-3.5 rounded-xl bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 hover:from-blue-500 hover:via-blue-400 hover:to-blue-500 text-white font-semibold shadow-2xl shadow-blue-500/40 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/70 flex items-center gap-2"
+                      >
+                        <Sparkles className="w-5 h-5" />
+                        Upload & Analyze
+                      </motion.button>
+                    </motion.div>
+                  )}
+                </motion.div>
+              )}
+
+              {/* CROPPING State */}
+              {status === STATUS.CROPPING && (
+                <ImageCropper
+                  imageUrl={previewUrl}
+                  onCropComplete={handleCropComplete}
+                  onCancel={handleCropCancel}
+                />
+              )}
+
+              {/* ANALYZING State */}
+              {status === STATUS.ANALYZING && (
+                <motion.div
+                  key="analyzing"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="grid lg:grid-cols-2 gap-8 items-center"
+                >
+                  {/* Image with overlay */}
+                  <div className="relative w-full max-w-xs mx-auto lg:mx-0">
+                    <motion.div
+                      initial={{ scale: 0.95 }}
+                      animate={{ scale: 1.02 }}
+                      className="relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden shadow-2xl"
+                    >
+                      <div className="aspect-square max-w-[280px] mx-auto">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={previewUrl}
+                          alt="Analyzing"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <AnalysisOverlay progress={analysisProgress} />
+                    </motion.div>
+                  </div>
+
+                  {/* Progress panel */}
+                  <AnalyzingPanel onProgressUpdate={setAnalysisProgress} />
+                </motion.div>
+              )}
+
+              {/* FORM State */}
+              {status === STATUS.FORM && (
+                <motion.div
+                  key="form"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.4 }}
+                >
+                  <ItemFormContent
+                    previewUrl={previewUrl}
+                    formData={formData}
+                    aiSuggestions={aiSuggestions}
+                    onFormDataChange={updateFormData}
+                    onSave={handleSave}
+                    onCancel={handleCancel}
+                    isSaving={isSubmitting}
+                  />
+                </motion.div>
+              )}
+
+              {/* SAVED State */}
+              {status === STATUS.SAVED && (
+                <motion.div
+                  key="saved"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="flex flex-col items-center justify-center min-h-[400px] text-center"
+                >
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                    className="w-20 h-20 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center mb-6 shadow-2xl shadow-green-500/30"
+                  >
+                    <motion.svg
+                      initial={{ pathLength: 0 }}
+                      animate={{ pathLength: 1 }}
+                      transition={{ delay: 0.4, duration: 0.5, ease: "easeInOut" }}
+                      className="w-10 h-10 text-white"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <motion.path d="M20 6L9 17l-5-5" />
+                    </motion.svg>
+                  </motion.div>
+                  <h2 className="text-3xl font-bold text-white mb-2">Item Saved!</h2>
+                  <p className="text-white/60">Added to your wardrobe</p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </DialogContent>
       </Dialog>
 

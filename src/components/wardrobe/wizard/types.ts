@@ -39,21 +39,20 @@ export interface WizardFormData {
 }
 
 /**
- * AI Suggestions from /items/summary API
- * Response is in Vietnamese
+ * AI Suggestions from /items/analysis API
+ * Updated to match new response structure
  */
 export interface AISuggestions {
-  color: string;                  // Vietnamese: "Đen", "Trắng"...
-  aiDescription: string;          // Vietnamese description
-  weatherSuitable: string;        // Vietnamese: "Mùa hè, Thời tiết mát mẻ"
-  condition: string;              // Vietnamese: "Mới", "Như mới"...
-  pattern: string;                // Vietnamese: "Logo, Chuyển màu"...
-  fabric: string;                 // Vietnamese: "Cotton"...
-  imageRemBgURL: string;          // URL of image with background removed
-  
-  // Parsed fields (for UI convenience)
-  colors?: ColorOption[];         // Parsed from color string
-  seasons?: string[];             // Parsed from weatherSuitable
+  color: { name: string; hex: string };  // Now returns object
+  aiDescription: string;
+  weatherSuitable: string;
+  condition: string;
+  pattern: string;
+  fabric: string;
+  imageRemBgURL: string;
+  style: { id: number; name: string };
+  occasion: { id: number; name: string };
+  season: { id: number; name: string };
 }
 
 /**

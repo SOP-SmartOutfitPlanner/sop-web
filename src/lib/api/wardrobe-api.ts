@@ -186,13 +186,16 @@ class WardrobeAPI {
    * Get AI summary of clothing item from image
    */
   async getImageSummary(file: File): Promise<{
-    color: string;
+    color: { name: string; hex: string };
     aiDescription: string;
     weatherSuitable: string;
     condition: string;
     pattern: string;
     fabric: string;
     imageRemBgURL: string;
+    style: { id: number; name: string };
+    occasion: { id: number; name: string };
+    season: { id: number; name: string };
   }> {
     const formData = new FormData();
     formData.append("file", file, file.name);
