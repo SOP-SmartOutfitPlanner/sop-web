@@ -48,8 +48,8 @@ export function HeroSection() {
 
           {/* Description */}
           <p className="text-lg text-gray-600 leading-relaxed animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-300">
-            Khám phá phong cách cá nhân với AI thông minh. Tạo ra những outfit
-            hoàn hảo cho mọi dịp.
+            Discover your personal style with smart AI. Create outfits
+            perfect for every occasion.
           </p>
 
           {/* Features Grid */}
@@ -58,28 +58,28 @@ export function HeroSection() {
               <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mx-auto mb-2">
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
-              <p className="text-sm font-medium text-gray-700">AI Gợi ý</p>
+              <p className="text-sm font-medium text-gray-700">AI Suggestion</p>
             </div>
 
             <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
               <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center mx-auto mb-2">
                 <Shirt className="w-5 h-5 text-white" />
               </div>
-              <p className="text-sm font-medium text-gray-700">Quản lý tủ đồ</p>
+              <p className="text-sm font-medium text-gray-700">Wardrobe management</p>
             </div>
 
             <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
               <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-xl flex items-center justify-center mx-auto mb-2">
                 <Calendar className="w-5 h-5 text-white" />
               </div>
-              <p className="text-sm font-medium text-gray-700">Lên lịch</p>
+              <p className="text-sm font-medium text-gray-700">Schedule</p>
             </div>
 
             <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
               <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-blue-500 rounded-xl flex items-center justify-center mx-auto mb-2">
                 <Heart className="w-5 h-5 text-white" />
               </div>
-              <p className="text-sm font-medium text-gray-700">Yêu thích</p>
+              <p className="text-sm font-medium text-gray-700">Favourite</p>
             </div>
           </div>
         </div>

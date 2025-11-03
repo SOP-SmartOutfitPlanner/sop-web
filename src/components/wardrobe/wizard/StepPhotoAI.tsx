@@ -154,7 +154,7 @@ export function StepPhotoAI({
         />
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div>
         {/* Dropzone */}
         <div className="space-y-4">
           <div
@@ -265,98 +265,6 @@ export function StepPhotoAI({
                   className="object-cover hover:scale-110 transition-transform duration-300"
                 />
               </div>
-            </Card>
-          )}
-
-          {aiSuggestions && (
-            <Card className="p-4 border-emerald-200 bg-emerald-50/50">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="font-medium flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-emerald-600" />
-                  AI Analysis Result
-                </h4>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={applyAllSuggestions}
-                >
-                  Apply all
-                </Button>
-              </div>
-
-              <div className="space-y-2 text-sm">
-                {/* Color */}
-                <SuggestionRow
-                  label="Color"
-                  value={aiSuggestions.colors?.map(c => c.name).join(', ') || 'Unknown'}
-                  onApply={() => {
-                    const formUpdates =
-                      parseAIResponseToFormData(aiSuggestions);
-                    updateFormData({ colors: formUpdates.colors });
-                  }}
-                />
-
-                {/* Weather */}
-                <SuggestionRow
-                  label="Weather"
-                  value={aiSuggestions.weatherSuitable}
-                  onApply={() => {
-                    const formUpdates =
-                      parseAIResponseToFormData(aiSuggestions);
-                    updateFormData({ seasons: formUpdates.seasons });
-                  }}
-                />
-
-                {/* Fabric */}
-                <SuggestionRow
-                  label="Fabric"
-                  value={aiSuggestions.fabric}
-                  onApply={() =>
-                    updateFormData({ fabric: aiSuggestions.fabric })
-                  }
-                />
-
-                {/* Pattern */}
-                <SuggestionRow
-                  label="Pattern"
-                  value={aiSuggestions.pattern}
-                  onApply={() =>
-                    updateFormData({ pattern: aiSuggestions.pattern })
-                  }
-                />
-
-                {/* Condition */}
-                <SuggestionRow
-                  label="Condition"
-                  value={aiSuggestions.condition}
-                  onApply={() =>
-                    updateFormData({ condition: aiSuggestions.condition })
-                  }
-                />
-
-                {/* Description */}
-                <div className="p-2 rounded bg-background border">
-                  <span className="text-xs font-medium text-muted-foreground block mb-1">
-                    Description:
-                  </span>
-                  <p className="text-sm line-clamp-3">
-                    {aiSuggestions.aiDescription}
-                  </p>
-                  {/* <Button 
-                  size="sm" 
-                  variant="ghost" 
-                  className="mt-2 h-7"
-                  onClick={() => updateFormData({ notes: aiSuggestions.aiDescription })}
-                >
-                  <Check className="w-3 h-3 mr-1" />
-                  Use this description
-                </Button> */}
-                </div>
-              </div>
-
-              <p className="text-xs text-muted-foreground mt-3">
-                💡 You can edit this information in the next step.
-              </p>
             </Card>
           )}
         </div>

@@ -4,10 +4,27 @@ import { useQuery } from "@tanstack/react-query";
 import { wardrobeAPI } from "@/lib/api/wardrobe-api";
 
 /**
- * Hook to fetch all wardrobe options (styles, seasons, occasions)
+ * Hook to fetch all wardrobe options (categories, styles, seasons, occasions)
  * Used in Add Item wizard to populate selection options
  */
 export function useWardrobeOptions() {
+  // Fetch categories
+  const {
+    data: categories = [],
+    isLoading: isLoadingCategories,
+    error: categoriesError,
+  } = useQuery({
+    queryKey: ["wardrobe", "categories"],
+    queryFn: async () => {
+      const result = await wardrobeAPI.getCategories();
+      return result || [];
+    },
+    staleTime: 0, // Always fresh
+    retry: 2,
+    enabled: true,
+    refetchOnMount: true,
+  });
+
   // Fetch styles
   const {
     data: styles = [],
@@ -19,8 +36,10 @@ export function useWardrobeOptions() {
       const result = await wardrobeAPI.getStyles();
       return result || [];
     },
-    staleTime: 1000 * 60 * 30, // Cache for 30 minutes
+    staleTime: 0, // Always fresh
     retry: 2,
+    enabled: true,
+    refetchOnMount: true,
   });
 
   // Fetch seasons
@@ -49,15 +68,22 @@ export function useWardrobeOptions() {
       const result = await wardrobeAPI.getOccasions();
       return result || [];
     },
-    staleTime: 1000 * 60 * 30,
+    staleTime: 0, // Always fresh
     retry: 2,
+    enabled: true,
+    refetchOnMount: true,
   });
 
   return {
+    categories,
     styles,
     seasons,
     occasions,
-    isLoading: isLoadingStyles || isLoadingSeasons || isLoadingOccasions,
-    error: stylesError || seasonsError || occasionsError,
+    isLoading:
+      isLoadingCategories ||
+      isLoadingStyles ||
+      isLoadingSeasons ||
+      isLoadingOccasions,
+    error: categoriesError || stylesError || seasonsError || occasionsError,
   };
 }

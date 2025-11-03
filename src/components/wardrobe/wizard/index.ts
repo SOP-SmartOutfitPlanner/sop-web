@@ -8,8 +8,6 @@ export { StepPhotoAI } from './StepPhotoAI';
 export { StepBasics } from './StepBasics';
 export { StepCategorize } from './StepCategorize';
 export { WizardFooter } from './WizardFooter';
-export { AnalysisOverlay } from './AnalysisOverlay';
-export { AnalyzingPanel } from './AnalyzingPanel';
 export { ItemFormContent } from './ItemFormContent';
 export { default as ImageCropper } from './ImageCropper';
 

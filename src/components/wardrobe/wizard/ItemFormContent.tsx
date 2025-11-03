@@ -8,18 +8,27 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { WizardFormData, AISuggestions } from "./types";
 
-const CATEGORIES = [
-  { id: 1, name: "Top" },
-  { id: 2, name: "Bottom" },
-  { id: 3, name: "Shoes" },
-  { id: 4, name: "Outerwear" },
-  { id: 5, name: "Accessory" },
-];
-
 const SEASONS = ["Spring", "Summer", "Fall", "Winter"];
 const CONDITIONS = ["New", "Like New", "Good", "Fair"];
-const PATTERNS = ["Solid", "Striped", "Checkered", "Floral", "Geometric", "Printed", "Other"];
-const FABRICS = ["Cotton", "Polyester", "Silk", "Wool", "Denim", "Leather", "Linen", "Blend"];
+const PATTERNS = [
+  "Solid",
+  "Striped",
+  "Checkered",
+  "Floral",
+  "Geometric",
+  "Printed",
+  "Other",
+];
+const FABRICS = [
+  "Cotton",
+  "Polyester",
+  "Silk",
+  "Wool",
+  "Denim",
+  "Leather",
+  "Linen",
+  "Blend",
+];
 const WEATHER_TYPES = ["Hot", "Warm", "Mild", "Cool", "Cold", "All Season"];
 
 const containerVariants = {
@@ -56,6 +65,7 @@ interface ItemFormContentProps {
   onCancel: () => void;
   isSaving?: boolean;
   // API-fetched options for user selection
+  availableCategories?: { id: number; name: string }[];
   availableStyles?: { id: number; name: string; description?: string }[];
   availableOccasions?: { id: number; name: string }[];
   availableSeasons?: { id: number; name: string }[];
@@ -69,9 +79,11 @@ export function ItemFormContent({
   onSave,
   onCancel,
   isSaving = false,
+  availableCategories = [],
   availableStyles = [],
   availableOccasions = [],
-  availableSeasons = [],
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  availableSeasons = [], // Reserved for future use, currently using hardcoded SEASONS
 }: ItemFormContentProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [favorite, setFavorite] = useState(false);
@@ -227,13 +239,15 @@ export function ItemFormContent({
                     <Label className="text-sm font-semibold text-white/90 mb-2">
                       Category *
                     </Label>
-                    
+
                     {/* Show AI-detected category */}
                     {formData.categoryId > 0 && formData.categoryName && (
                       <div className="mb-3">
                         <div className="flex items-center gap-2">
                           <Sparkles className="w-4 h-4 text-blue-400" />
-                          <span className="text-xs text-white/60">AI Detected:</span>
+                          <span className="text-xs text-white/60">
+                            AI Detected:
+                          </span>
                           <span className="px-3 py-1.5 text-sm bg-blue-500/20 border border-blue-400/30 rounded-lg text-blue-300 font-medium">
                             {formData.categoryName}
                           </span>
@@ -243,7 +257,7 @@ export function ItemFormContent({
 
                     {/* Manual category selection (fallback) */}
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                      {CATEGORIES.map((cat) => (
+                      {availableCategories.map((cat) => (
                         <motion.button
                           key={cat.id}
                           type="button"
@@ -266,6 +280,11 @@ export function ItemFormContent({
                         </motion.button>
                       ))}
                     </div>
+                    {availableCategories.length === 0 && (
+                      <p className="text-sm text-white/50 text-center py-4">
+                        Loading categories...
+                      </p>
+                    )}
                     {errors.category && (
                       <p className="mt-1.5 text-xs text-red-400 font-medium">
                         {errors.category}
@@ -376,15 +395,17 @@ export function ItemFormContent({
                   <div>
                     <Label className="text-sm font-semibold text-white/90 mb-2">
                       Styles
-                      {aiSuggestions?.styles && aiSuggestions.styles.length > 0 && (
-                        <span className="ml-2 text-xs text-blue-400 font-normal">
-                          (AI auto-selected)
-                        </span>
-                      )}
+                      {aiSuggestions?.styles &&
+                        aiSuggestions.styles.length > 0 && (
+                          <span className="ml-2 text-xs text-blue-400 font-normal">
+                            (AI auto-selected)
+                          </span>
+                        )}
                     </Label>
                     <div className="flex flex-wrap gap-2">
                       {availableStyles.map((style) => {
-                        const isSelected = formData.styleIds?.includes(style.id) || false;
+                        const isSelected =
+                          formData.styleIds?.includes(style.id) || false;
                         return (
                           <motion.button
                             key={style.id}
@@ -412,15 +433,17 @@ export function ItemFormContent({
                   <div>
                     <Label className="text-sm font-semibold text-white/90 mb-2">
                       Occasions
-                      {aiSuggestions?.occasions && aiSuggestions.occasions.length > 0 && (
-                        <span className="ml-2 text-xs text-green-400 font-normal">
-                          (AI auto-selected)
-                        </span>
-                      )}
+                      {aiSuggestions?.occasions &&
+                        aiSuggestions.occasions.length > 0 && (
+                          <span className="ml-2 text-xs text-green-400 font-normal">
+                            (AI auto-selected)
+                          </span>
+                        )}
                     </Label>
                     <div className="flex flex-wrap gap-2">
                       {availableOccasions.map((occasion) => {
-                        const isSelected = formData.occasionIds?.includes(occasion.id) || false;
+                        const isSelected =
+                          formData.occasionIds?.includes(occasion.id) || false;
                         return (
                           <motion.button
                             key={occasion.id}
@@ -443,11 +466,12 @@ export function ItemFormContent({
                 )}
 
                 {/* Show message if no API data */}
-                {availableStyles.length === 0 && availableOccasions.length === 0 && (
-                  <p className="text-sm text-white/50 text-center py-4">
-                    Loading styles and occasions...
-                  </p>
-                )}
+                {availableStyles.length === 0 &&
+                  availableOccasions.length === 0 && (
+                    <p className="text-sm text-white/50 text-center py-4">
+                      Loading styles and occasions...
+                    </p>
+                  )}
               </div>
             </div>
           </motion.div>
@@ -501,7 +525,9 @@ export function ItemFormContent({
                       <motion.button
                         key={weather}
                         type="button"
-                        onClick={() => onFormDataChange({ weatherSuitable: weather })}
+                        onClick={() =>
+                          onFormDataChange({ weatherSuitable: weather })
+                        }
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
@@ -529,9 +555,7 @@ export function ItemFormContent({
                       <motion.button
                         key={cond}
                         type="button"
-                        onClick={() =>
-                          onFormDataChange({ condition: cond })
-                        }
+                        onClick={() => onFormDataChange({ condition: cond })}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
@@ -563,7 +587,7 @@ export function ItemFormContent({
                     htmlFor="brand"
                     className="text-sm font-semibold text-white/90 mb-2"
                   >
-                    Brand (optional)
+                    Brand
                   </Label>
                   <Input
                     type="text"
@@ -578,7 +602,7 @@ export function ItemFormContent({
                 </div>
 
                 {/* Tags */}
-                <div>
+                {/* <div>
                   <Label className="text-sm font-semibold text-white/90 mb-2">
                     Tags (optional)
                   </Label>
@@ -610,7 +634,7 @@ export function ItemFormContent({
                       ))}
                     </div>
                   )}
-                </div>
+                </div> */}
 
                 {/* Notes */}
                 <div>
@@ -682,4 +706,3 @@ export function ItemFormContent({
     </motion.div>
   );
 }
-

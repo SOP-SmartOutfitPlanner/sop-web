@@ -1,9 +1,11 @@
 # GitHub Copilot Instructions - SOP Web Project
 
 ## 🎯 Project Overview
+
 **Smart Outfit Planner (SOP)** - Digital Wardrobe Management System
 
 ### Tech Stack
+
 - **Framework**: Next.js 15.5.3 (App Router) + React 19.1.0
 - **Language**: TypeScript 5 (strict mode)
 - **Build Tool**: Turbopack
@@ -14,6 +16,7 @@
 - **Style**: Glass morphism design system
 
 ### Key Features
+
 - **Wardrobe Management**: CRUD items with AI analysis
 - **AI-Powered**: Auto-detect color, pattern, fabric, weather from images
 - **Smart Search**: Fuse.js fuzzy search + filters (season, color, category, occasion)
@@ -23,32 +26,37 @@
 ## 📋 Coding Standards
 
 ### TypeScript
+
 - **Strict mode enabled** - no implicit any
 - Use `interface` for objects, `type` for unions
 - Define all props with proper types
 - Never use `any` - use `unknown` if type is truly unknown
 
 ### React Components
+
 - Use `"use client"` directive for client components
 - Functional components with hooks only
 - Prefer `useCallback` and `useMemo` for optimization
 - Files: PascalCase for components (`ComponentName.tsx`)
 
 ### Naming Conventions
+
 - **Files**: kebab-case (`auth-store.ts`, `wardrobe-api.ts`)
 - **Components**: PascalCase (`AddItemWizard.tsx`)
 - **Folders**: By feature (auth, wardrobe, admin) + shared (ui, layout)
 - **Import alias**: `@/*` maps to `./src/*`
 
 ### Styling
+
 - **Tailwind utility classes** - no inline styles
 - **Glass components**: Use `GlassCard`, `GlassButton` from ui library
-- **Fonts**: 
+- **Fonts**:
   - `font-bricolage` (Bricolage Grotesque) for headings
   - `font-poppins` (Poppins) for body text
 - **Animations**: framer-motion for interactions, GSAP for advanced
 
 ### File Structure
+
 ```
 src/
 ├── app/                    # Next.js App Router
@@ -83,6 +91,7 @@ src/
 ## 🎨 Design System
 
 ### Glass Morphism Components
+
 Always use custom glass components for containers and buttons:
 
 ```tsx
@@ -111,6 +120,7 @@ Always use custom glass components for containers and buttons:
 ```
 
 ### Design Tokens
+
 - **Primary Colors**: Blue (`#3B82F6`, `#2563EB`)
 - **Success**: Green (`#10B981`)
 - **Error**: Red (`#EF4444`)
@@ -118,11 +128,13 @@ Always use custom glass components for containers and buttons:
 - **Backgrounds**: Glass morphism with blur + transparency
 
 ### Typography
+
 - **Headings**: `font-bricolage` (Bricolage Grotesque) - Bold, expressive
 - **Body**: `font-poppins` (Poppins) - Clean, readable
 - **Monospace**: System font stack
 
 ### Animations & Motion
+
 ```tsx
 // Use framer-motion for component animations
 <motion.div
@@ -144,15 +156,18 @@ Always use custom glass components for containers and buttons:
 ## 🔄 Current Feature: Multi-Item Upload Flow
 
 ### Context & Goal
+
 Implementing a simplified wardrobe item upload flow similar to mobile gallery apps:
 
 **Desired Flow:**
+
 1. User selects **1 image** from gallery/camera
 2. **Auto-trigger AI analysis** (no manual button click)
 3. Show form to edit AI-detected details
 4. Save item and close
 
 **Key Changes from Current:**
+
 - ❌ Remove manual "Upload & Analyze" button → ✅ Auto-analyze on file select
 - ❌ Remove/make optional cropping step → ✅ Direct to analysis
 - ⚠️ Keep single image flow (not multiple images at once)
@@ -160,23 +175,26 @@ Implementing a simplified wardrobe item upload flow similar to mobile gallery ap
 ### Existing Components to Reuse
 
 **Core Wizard:**
+
 - `src/components/wardrobe/wizard/AddItemWizard.tsx` - Main wizard flow
   - Status: `IDLE → CROPPING → PREVIEW → ANALYZING → FORM → SAVED`
   - Handlers: `handleFileSelect`, `handleAnalyze`, `handleSave`
   - Can be extended with `initialFile` prop
 
 **Form & UI:**
+
 - `ItemFormContent.tsx` - Form for editing item details
 - `AnalyzingPanel.tsx` - AI analysis progress animation
-- `AnalysisOverlay.tsx` - Progress overlay on image preview
 - `ImageCropper.tsx` - Optional crop tool (can skip)
 
 **New Wrapper:**
+
 - `GalleryPickerFlow.tsx` - Gallery selection UI → Opens AddItemWizard
 
 ### API Endpoints
 
 **AI Analysis:**
+
 ```typescript
 POST /api/v1/items/analysis
 Content-Type: multipart/form-data
@@ -203,6 +221,7 @@ Response: {
 ```
 
 **Create Item:**
+
 ```typescript
 POST /api/v1/items
 Content-Type: application/json
@@ -231,6 +250,7 @@ Response: {
 ```
 
 **API Utilities:**
+
 - `wardrobeAPI.getImageSummary(file: File)` - AI analysis
 - `wardrobeAPI.createItem(payload)` - Create item
 - `transformWizardDataToAPI()` - Convert form data to API format
@@ -239,11 +259,13 @@ Response: {
 ## ✅ Code Quality Rules
 
 ### Before Creating New Components
+
 1. Check if similar component exists in `src/components/`
 2. Reuse existing UI components from `src/components/ui/`
 3. Use existing utilities from `src/lib/utils/`
 
 ### Error Handling
+
 ```typescript
 try {
   const result = await apiCall();
@@ -255,7 +277,9 @@ try {
 ```
 
 ### Loading States
+
 Always show loading UI:
+
 ```typescript
 const [isLoading, setIsLoading] = useState(false);
 
@@ -265,6 +289,7 @@ if (isLoading) {
 ```
 
 ### Form Validation
+
 Use existing validators in `src/lib/validations/`
 
 ## 🚫 What NOT to Do
@@ -279,6 +304,7 @@ Use existing validators in `src/lib/validations/`
 ## 📚 Read These Files First
 
 When working on specific features:
+
 - Multi-image upload: `docs/FLOW_ANALYSIS.md`
 - Wizard flow: `src/components/wardrobe/wizard/AddItemWizard.tsx`
 - API structure: `src/lib/api/wardrobe-api.ts`
@@ -287,12 +313,14 @@ When working on specific features:
 ## 🎯 Current Task Context
 
 Reference `docs/FLOW_ANALYSIS.md` for detailed analysis of:
+
 - Current flow vs desired flow
 - Components that can be reused
 - Changes needed for multi-item upload
 - Implementation options (A vs B)
 
 When implementing, prefer:
+
 - **Option A**: Extend existing AddItemWizard (less code duplication)
 - Auto-trigger AI analysis (no manual button click)
 - Skip/Optional cropping step

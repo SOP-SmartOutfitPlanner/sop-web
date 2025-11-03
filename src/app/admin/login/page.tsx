@@ -34,7 +34,7 @@ export default function AdminLoginPage() {
       const currentUser = useAuthStore.getState().user;
       
       if (currentUser?.role === "ADMIN" || currentUser?.role === "SuperAdmin") {
-        toast.success("Đăng nhập thành công!");
+        toast.success("Login successfully!");
         router.push("/admin/dashboard");
       } else {
         // Not an admin - logout and show error

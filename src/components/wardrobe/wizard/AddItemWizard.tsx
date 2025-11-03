@@ -25,10 +25,9 @@ import {
   getUserIdFromAuth,
 } from "@/lib/utils/wizard-transform";
 import { StepPhotoAI } from "./StepPhotoAI";
-import { AnalysisOverlay } from "./AnalysisOverlay";
-import { AnalyzingPanel } from "./AnalyzingPanel";
 import { ItemFormContent } from "./ItemFormContent";
 import ImageCropper from "./ImageCropper";
+import { AnalysisToast } from "./AnalysisToast";
 import type { WizardFormData, AISuggestions } from "./types";
 
 interface AddItemWizardProps {
@@ -69,8 +68,8 @@ const INITIAL_FORM_DATA: WizardFormData = {
   wornToday: false,
 };
 
-export function AddItemWizard({ 
-  open, 
+export function AddItemWizard({
+  open,
   onOpenChange,
   initialFile,
   autoAnalyze = true,
@@ -87,12 +86,92 @@ export function AddItemWizard({
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState("");
+  const [retryCount, setRetryCount] = useState(0);
+  const [isRetrying, setIsRetrying] = useState(false);
 
   const { user } = useAuthStore();
   const { fetchItems } = useWardrobeStore();
-  
+
   // Fetch available options from API
-  const { styles, seasons, occasions, isLoading: isLoadingOptions } = useWardrobeOptions();
+  const { categories, styles, seasons, occasions } = useWardrobeOptions();
+
+  const MAX_RETRIES = 5;
+  const RETRY_DELAY = 30000; // 30 seconds
+
+  // AI Analysis with retry logic
+  const analyzeImage = useCallback(
+    async (file: File, url: string, attempt = 1) => {
+      try {
+        setRetryCount(attempt - 1);
+        const result = await wardrobeAPI.getImageSummary(file);
+
+        setAiSuggestions(result);
+
+        setFormData((prev) => {
+          const newFormData = {
+            ...prev,
+            uploadedImageURL: url,
+            imageRemBgURL: result.imageRemBgURL || url,
+            name: result.name || result.aiDescription || "",
+            colors: result.colors || [],
+            pattern: result.pattern || "",
+            fabric: result.fabric || "",
+            condition: result.condition || "New",
+            weatherSuitable: result.weatherSuitable || "",
+            notes: result.aiDescription || "",
+            categoryId: result.category?.id || 0,
+            categoryName: result.category?.name || "",
+            seasons:
+              result.seasons?.map(
+                (s: { id: number; name: string }) => s.name
+              ) || [],
+            styleIds:
+              result.styles?.map(
+                (style: { id: number; name: string }) => style.id
+              ) || [],
+            occasionIds:
+              result.occasions?.map(
+                (occ: { id: number; name: string }) => occ.id
+              ) || [],
+            tags: [],
+          };
+
+          return newFormData;
+        });
+
+        setRetryCount(0);
+        setIsRetrying(false);
+        setAnalysisProgress(100); // Set to 100% when complete
+
+        setTimeout(() => {
+          setStatus(STATUS.FORM);
+        }, 300);
+      } catch (error) {
+        console.error(
+          `Analysis failed (attempt ${attempt}/${MAX_RETRIES}):`,
+          error
+        );
+
+        if (attempt < MAX_RETRIES) {
+          setIsRetrying(true);
+          toast.error(
+            `Analysis failed. Retrying in 30s... (${attempt}/${MAX_RETRIES})`
+          );
+
+          setTimeout(() => {
+            analyzeImage(file, url, attempt + 1);
+          }, RETRY_DELAY);
+        } else {
+          setIsRetrying(false);
+          toast.error(
+            "Failed to analyze image after 5 attempts. Please try again."
+          );
+          setStatus(STATUS.PREVIEW);
+        }
+      }
+    },
+    []
+  );
 
   // Handle initialFile from GalleryPickerFlow
   useEffect(() => {
@@ -107,47 +186,10 @@ export function AddItemWizard({
         // Skip crop and go directly to analyzing
         setStatus(STATUS.ANALYZING);
         setAnalysisProgress(0);
-        
-        // Trigger analysis immediately
-        setTimeout(async () => {
-          try {
-            const result = await wardrobeAPI.getImageSummary(initialFile);
-            
-            console.log("🎯 AI Analysis Result (Auto):", result);
 
-            setAiSuggestions(result);
-            setFormData((prev) => ({
-              ...prev,
-              uploadedImageURL: url,
-              imageRemBgURL: result.imageRemBgURL || url,
-              // Map AI response to form data
-              name: result.name || result.aiDescription || "",
-              colors: result.colors || [],
-              pattern: result.pattern || "",
-              fabric: result.fabric || "",
-              condition: result.condition || "New",
-              weatherSuitable: result.weatherSuitable || "",
-              notes: result.aiDescription || "",
-              // Map category
-              categoryId: result.category?.id || 0,
-              categoryName: result.category?.name || "",
-              // Map seasons array to string array
-              seasons: result.seasons?.map((s: { id: number; name: string }) => s.name) || [],
-              // Extract IDs for relational data
-              styleIds: result.styles?.map((style: { id: number; name: string }) => style.id) || [],
-              occasionIds: result.occasions?.map((occ: { id: number; name: string }) => occ.id) || [],
-              // Tags can be derived from styles/occasions if needed
-              tags: [],
-            }));
-
-            setTimeout(() => {
-              setStatus(STATUS.FORM);
-            }, 300);
-          } catch (error) {
-            console.error("Analysis failed:", error);
-            toast.error("Failed to analyze image. Please try again.");
-            setStatus(STATUS.IDLE);
-          }
+        // Trigger analysis with retry logic
+        setTimeout(() => {
+          analyzeImage(initialFile, url);
         }, 500);
       } else if (skipCrop) {
         // Skip crop, show preview with analyze button
@@ -157,8 +199,7 @@ export function AddItemWizard({
         setStatus(STATUS.CROPPING);
       }
     }
-  }, [initialFile, open, autoAnalyze, skipCrop]);
-
+  }, [initialFile, open, autoAnalyze, skipCrop, analyzeImage]);
 
   // Reset form to initial state
   const resetAndClose = useCallback(() => {
@@ -230,52 +271,14 @@ export function AddItemWizard({
 
   // Handle analyze button
   const handleAnalyze = useCallback(async () => {
-    if (!selectedFile) return;
+    if (!selectedFile || !previewUrl) return;
 
     setStatus(STATUS.ANALYZING);
     setAnalysisProgress(0);
 
-    try {
-      // Call AI analysis API
-      const result = await wardrobeAPI.getImageSummary(selectedFile);
-
-      console.log("🎯 AI Analysis Result:", result);
-
-      // Update form data with AI suggestions
-      setAiSuggestions(result);
-      setFormData((prev) => ({
-        ...prev,
-        uploadedImageURL: previewUrl,
-        imageRemBgURL: result.imageRemBgURL || previewUrl,
-        // Map AI response to form data
-        name: result.name || result.aiDescription || "",
-        colors: result.colors || [],
-        pattern: result.pattern || "",
-        fabric: result.fabric || "",
-        condition: result.condition || "New",
-        weatherSuitable: result.weatherSuitable || "",
-        notes: result.aiDescription || "",
-        // Map category
-        categoryId: result.category?.id || 0,
-        categoryName: result.category?.name || "",
-        // Map seasons array to string array
-        seasons: result.seasons?.map((s: { id: number; name: string }) => s.name) || [],
-        // Extract IDs for relational data
-        styleIds: result.styles?.map((style: { id: number; name: string }) => style.id) || [],
-        occasionIds: result.occasions?.map((occ: { id: number; name: string }) => occ.id) || [],
-        tags: [],
-      }));
-
-      // Transition to form after a brief delay
-      setTimeout(() => {
-        setStatus(STATUS.FORM);
-      }, 300);
-    } catch (error) {
-      console.error("Analysis failed:", error);
-      toast.error("Failed to analyze image. Please try again.");
-      setStatus(STATUS.PREVIEW);
-    }
-  }, [selectedFile, previewUrl]);
+    // Use retry logic
+    analyzeImage(selectedFile, previewUrl);
+  }, [selectedFile, previewUrl, analyzeImage]);
 
   // Submit form to API
   const handleSave = useCallback(async () => {
@@ -292,11 +295,7 @@ export function AddItemWizard({
       const userId = await getUserIdFromAuth(user);
       const payload = transformWizardDataToAPI(formData, userId);
 
-      console.log("📤 Submitting payload:", payload);
-
       const response = await wardrobeAPI.createItem(payload);
-
-      console.log("✅ API Response:", response);
 
       // Show saved state
       setStatus(STATUS.SAVED);
@@ -321,7 +320,10 @@ export function AddItemWizard({
 
       // Check for specific error responses
       if (typeof error === "object" && error !== null) {
-        const err = error as { response?: { data?: { message?: string } }; message?: string };
+        const err = error as {
+          response?: { data?: { message?: string } };
+          message?: string;
+        };
         if (err.response?.data?.message) {
           errorMessage = err.response.data.message;
         } else if (err.message) {
@@ -363,11 +365,43 @@ export function AddItemWizard({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open, handleClose]);
 
+  // Simulate progress when analyzing
+  useEffect(() => {
+    if (status !== STATUS.ANALYZING) {
+      setAnalysisProgress(0);
+      return;
+    }
+
+    // Simulate smooth progress
+    let currentProgress = 0;
+    const interval = setInterval(() => {
+      currentProgress += Math.random() * 15;
+      if (currentProgress >= 95) {
+        currentProgress = 95; // Stop at 95% until real completion
+        clearInterval(interval);
+      }
+      setAnalysisProgress(currentProgress);
+    }, 500);
+
+    return () => clearInterval(interval);
+  }, [status]);
+
   return (
     <>
-      <Dialog open={open} onOpenChange={(open) => !open && handleClose()}>
+      {/* Global Analyzing Toast - renders outside modal */}
+      <AnalysisToast
+        isVisible={status === STATUS.ANALYZING}
+        progress={analysisProgress}
+        retryCount={retryCount}
+        isRetrying={isRetrying}
+      />
+
+      <Dialog
+        open={open && status !== STATUS.ANALYZING}
+        onOpenChange={(open) => !open && handleClose()}
+      >
         <DialogContent
-          className="max-w-[95vw] sm:max-w-7xl p-0 gap-0 max-h-[95vh] flex flex-col overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-white/10"
+          className="max-w-[95vw] sm:max-w-xl p-0 gap-0 max-h-[95vh] flex flex-col overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-white/10"
           showCloseButton={false}
         >
           {/* Accessible title (hidden visually but available to screen readers) */}
@@ -487,39 +521,6 @@ export function AddItemWizard({
                 />
               )}
 
-              {/* ANALYZING State */}
-              {status === STATUS.ANALYZING && (
-                <motion.div
-                  key="analyzing"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="grid lg:grid-cols-2 gap-8 items-center"
-                >
-                  {/* Image with overlay */}
-                  <div className="relative w-full max-w-xs mx-auto lg:mx-0">
-                    <motion.div
-                      initial={{ scale: 0.95 }}
-                      animate={{ scale: 1.02 }}
-                      className="relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden shadow-2xl"
-                    >
-                      <div className="aspect-square max-w-[280px] mx-auto">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={previewUrl}
-                          alt="Analyzing"
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <AnalysisOverlay progress={analysisProgress} />
-                    </motion.div>
-                  </div>
-
-                  {/* Progress panel */}
-                  <AnalyzingPanel onProgressUpdate={setAnalysisProgress} />
-                </motion.div>
-              )}
-
               {/* FORM State */}
               {status === STATUS.FORM && (
                 <motion.div
@@ -537,6 +538,7 @@ export function AddItemWizard({
                     onSave={handleSave}
                     onCancel={handleCancel}
                     isSaving={isSubmitting}
+                    availableCategories={categories}
                     availableStyles={styles}
                     availableOccasions={occasions}
                     availableSeasons={seasons}

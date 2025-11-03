@@ -215,24 +215,31 @@ class WardrobeAPI {
     // API returns { statusCode, message, data: { actualData } }
     const apiResponse = response.data;
 
+    let result;
     if (apiResponse.data) {
-      return apiResponse.data;
+      result = apiResponse.data;
     } else {
       // Fallback: Direct data { name, colors, ... }
-      return apiResponse;
+      result = apiResponse;
     }
+
+    return result;
   }
 
   /**
    * Get all available styles
    */
-  async getStyles(): Promise<{ id: number; name: string; description?: string }[]> {
+  async getStyles(): Promise<
+    { id: number; name: string; description?: string }[]
+  > {
     try {
       const response = await apiClient.get("/styles");
-      // Response structure: { statusCode, message, data: { data: [], metaData } }
-      return response.data?.data?.data || [];
+
+      // API returns { data: [...], metaData: {...} } directly
+      const styles = response.data?.data || [];
+      return styles;
     } catch (error) {
-      console.error("Failed to fetch styles:", error);
+      console.error("❌ Failed to fetch styles:", error);
       return [];
     }
   }
@@ -243,9 +250,12 @@ class WardrobeAPI {
   async getSeasons(): Promise<{ id: number; name: string }[]> {
     try {
       const response = await apiClient.get("/seasons");
-      return response.data?.data?.data || [];
+
+      // API returns { data: [...], metaData: {...} } directly
+      const seasons = response.data?.data || [];
+      return seasons;
     } catch (error) {
-      console.error("Failed to fetch seasons:", error);
+      console.error("❌ Failed to fetch seasons:", error);
       return [];
     }
   }
@@ -256,9 +266,28 @@ class WardrobeAPI {
   async getOccasions(): Promise<{ id: number; name: string }[]> {
     try {
       const response = await apiClient.get("/occasions");
-      return response.data?.data?.data || [];
+
+      // API returns { data: [...], metaData: {...} } directly
+      const occasions = response.data?.data || [];
+      return occasions;
     } catch (error) {
-      console.error("Failed to fetch occasions:", error);
+      console.error("❌ Failed to fetch occasions:", error);
+      return [];
+    }
+  }
+
+  /**
+   * Get all available categories
+   */
+  async getCategories(): Promise<{ id: number; name: string }[]> {
+    try {
+      const response = await apiClient.get("/categories/root");
+
+      // API returns { data: [...], metaData: {...} } directly
+      const categories = response.data?.data || [];
+      return categories;
+    } catch (error) {
+      console.error("❌ Failed to fetch categories:", error);
       return [];
     }
   }
