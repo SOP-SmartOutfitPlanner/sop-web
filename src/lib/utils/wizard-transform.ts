@@ -26,6 +26,10 @@ export interface WizardFormData {
   condition: string;
   tags: string[];
   wornToday: boolean;
+  weatherSuitable?: string;
+  // IDs for relational data
+  styleIds?: number[];
+  occasionIds?: number[];
 }
 
 export interface ColorOption {
@@ -101,6 +105,10 @@ export function transformWizardDataToAPI(
     pattern: truncate(formData.pattern || 'Solid', 100),
     fabric: truncate(formData.fabric || 'Cotton', 100),
     tag: tagString,
+    // Include relational IDs if available
+    styleIds: formData.styleIds || undefined,
+    occasionIds: formData.occasionIds || undefined,
+    seasonIds: undefined, // Seasons are passed as weatherSuitable string, not IDs
   } as CreateWardrobeItemRequest;
 
   // Debug logging

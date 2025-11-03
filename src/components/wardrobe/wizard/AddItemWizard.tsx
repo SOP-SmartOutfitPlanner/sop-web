@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { useAuthStore } from "@/store/auth-store";
 import { useWardrobeStore } from "@/store/wardrobe-store";
 import { wardrobeAPI } from "@/lib/api/wardrobe-api";
+import { useWardrobeOptions } from "@/hooks/useWardrobeOptions";
 import {
   transformWizardDataToAPI,
   validateWizardFormData,
@@ -33,6 +34,9 @@ import type { WizardFormData, AISuggestions } from "./types";
 interface AddItemWizardProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialFile?: File; // Optional: pre-selected file from gallery
+  autoAnalyze?: boolean; // Auto-trigger analysis when initialFile is provided (default: true)
+  skipCrop?: boolean; // Skip cropping step (default: false)
 }
 
 // Status flow
@@ -65,7 +69,13 @@ const INITIAL_FORM_DATA: WizardFormData = {
   wornToday: false,
 };
 
-export function AddItemWizard({ open, onOpenChange }: AddItemWizardProps) {
+export function AddItemWizard({ 
+  open, 
+  onOpenChange,
+  initialFile,
+  autoAnalyze = true,
+  skipCrop = false,
+}: AddItemWizardProps) {
   const [status, setStatus] = useState<StatusType>(STATUS.IDLE);
   const [showConfirmClose, setShowConfirmClose] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -80,6 +90,75 @@ export function AddItemWizard({ open, onOpenChange }: AddItemWizardProps) {
 
   const { user } = useAuthStore();
   const { fetchItems } = useWardrobeStore();
+  
+  // Fetch available options from API
+  const { styles, seasons, occasions, isLoading: isLoadingOptions } = useWardrobeOptions();
+
+  // Handle initialFile from GalleryPickerFlow
+  useEffect(() => {
+    if (initialFile && open) {
+      setSelectedFile(initialFile);
+      const url = URL.createObjectURL(initialFile);
+      setPreviewUrl(url);
+      setHasChanges(true);
+
+      // Auto-analyze or show preview based on settings
+      if (autoAnalyze && skipCrop) {
+        // Skip crop and go directly to analyzing
+        setStatus(STATUS.ANALYZING);
+        setAnalysisProgress(0);
+        
+        // Trigger analysis immediately
+        setTimeout(async () => {
+          try {
+            const result = await wardrobeAPI.getImageSummary(initialFile);
+            
+            console.log("🎯 AI Analysis Result (Auto):", result);
+
+            setAiSuggestions(result);
+            setFormData((prev) => ({
+              ...prev,
+              uploadedImageURL: url,
+              imageRemBgURL: result.imageRemBgURL || url,
+              // Map AI response to form data
+              name: result.name || result.aiDescription || "",
+              colors: result.colors || [],
+              pattern: result.pattern || "",
+              fabric: result.fabric || "",
+              condition: result.condition || "New",
+              weatherSuitable: result.weatherSuitable || "",
+              notes: result.aiDescription || "",
+              // Map category
+              categoryId: result.category?.id || 0,
+              categoryName: result.category?.name || "",
+              // Map seasons array to string array
+              seasons: result.seasons?.map((s: { id: number; name: string }) => s.name) || [],
+              // Extract IDs for relational data
+              styleIds: result.styles?.map((style: { id: number; name: string }) => style.id) || [],
+              occasionIds: result.occasions?.map((occ: { id: number; name: string }) => occ.id) || [],
+              // Tags can be derived from styles/occasions if needed
+              tags: [],
+            }));
+
+            setTimeout(() => {
+              setStatus(STATUS.FORM);
+            }, 300);
+          } catch (error) {
+            console.error("Analysis failed:", error);
+            toast.error("Failed to analyze image. Please try again.");
+            setStatus(STATUS.IDLE);
+          }
+        }, 500);
+      } else if (skipCrop) {
+        // Skip crop, show preview with analyze button
+        setStatus(STATUS.PREVIEW);
+      } else {
+        // Show cropper
+        setStatus(STATUS.CROPPING);
+      }
+    }
+  }, [initialFile, open, autoAnalyze, skipCrop]);
+
 
   // Reset form to initial state
   const resetAndClose = useCallback(() => {
@@ -149,50 +228,6 @@ export function AddItemWizard({ open, onOpenChange }: AddItemWizardProps) {
     }
   }, [hasChanges, status, resetAndClose]);
 
-  // Helper: Parse color string to ColorOption array
-  const parseColorString = (
-    colorStr: string
-  ): { name: string; hex: string }[] => {
-    if (!colorStr) return [];
-
-    // Simple color name to hex mapping
-    const colorMap: Record<string, string> = {
-      black: "#000000",
-      white: "#FFFFFF",
-      red: "#FF0000",
-      blue: "#0000FF",
-      green: "#00FF00",
-      yellow: "#FFFF00",
-      purple: "#800080",
-      pink: "#FFC0CB",
-      orange: "#FFA500",
-      brown: "#A52A2A",
-      gray: "#808080",
-      grey: "#808080",
-      navy: "#000080",
-      beige: "#F5F5DC",
-      // Vietnamese colors
-      đen: "#000000",
-      trắng: "#FFFFFF",
-      đỏ: "#FF0000",
-      xanh: "#0000FF",
-      vàng: "#FFFF00",
-      hồng: "#FFC0CB",
-      cam: "#FFA500",
-      nâu: "#A52A2A",
-      xám: "#808080",
-      tím: "#800080",
-    };
-
-    // Split by comma and map to ColorOption
-    return colorStr.split(/[,;]/).map((c) => {
-      const name = c.trim();
-      const nameLower = name.toLowerCase();
-      const hex = colorMap[nameLower] || "#808080"; // Default gray
-      return { name, hex };
-    });
-  };
-
   // Handle analyze button
   const handleAnalyze = useCallback(async () => {
     if (!selectedFile) return;
@@ -212,15 +247,23 @@ export function AddItemWizard({ open, onOpenChange }: AddItemWizardProps) {
         ...prev,
         uploadedImageURL: previewUrl,
         imageRemBgURL: result.imageRemBgURL || previewUrl,
-        // Color is now an object { name, hex }
-        colors: result.color ? [result.color] : [],
-        pattern: result.pattern,
-        fabric: result.fabric,
-        condition: result.condition,
-        name: result.aiDescription || "",
-        // Season is now an object { id, name }
-        seasons: result.season ? [result.season.name] : [],
+        // Map AI response to form data
+        name: result.name || result.aiDescription || "",
+        colors: result.colors || [],
+        pattern: result.pattern || "",
+        fabric: result.fabric || "",
+        condition: result.condition || "New",
+        weatherSuitable: result.weatherSuitable || "",
         notes: result.aiDescription || "",
+        // Map category
+        categoryId: result.category?.id || 0,
+        categoryName: result.category?.name || "",
+        // Map seasons array to string array
+        seasons: result.seasons?.map((s: { id: number; name: string }) => s.name) || [],
+        // Extract IDs for relational data
+        styleIds: result.styles?.map((style: { id: number; name: string }) => style.id) || [],
+        occasionIds: result.occasions?.map((occ: { id: number; name: string }) => occ.id) || [],
+        tags: [],
       }));
 
       // Transition to form after a brief delay
@@ -278,7 +321,7 @@ export function AddItemWizard({ open, onOpenChange }: AddItemWizardProps) {
 
       // Check for specific error responses
       if (typeof error === "object" && error !== null) {
-        const err = error as any;
+        const err = error as { response?: { data?: { message?: string } }; message?: string };
         if (err.response?.data?.message) {
           errorMessage = err.response.data.message;
         } else if (err.message) {
@@ -494,6 +537,9 @@ export function AddItemWizard({ open, onOpenChange }: AddItemWizardProps) {
                     onSave={handleSave}
                     onCancel={handleCancel}
                     isSaving={isSubmitting}
+                    availableStyles={styles}
+                    availableOccasions={occasions}
+                    availableSeasons={seasons}
                   />
                 </motion.div>
               )}

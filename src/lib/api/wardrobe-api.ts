@@ -87,6 +87,10 @@ export interface CreateWardrobeItemRequest {
   pattern: string;
   fabric: string;
   tag?: string;
+  // Relational IDs
+  styleIds?: number[];
+  occasionIds?: number[];
+  seasonIds?: number[];
 }
 
 class WardrobeAPI {
@@ -186,16 +190,18 @@ class WardrobeAPI {
    * Get AI summary of clothing item from image
    */
   async getImageSummary(file: File): Promise<{
-    color: { name: string; hex: string };
+    name: string;
+    colors: { name: string; hex: string }[];
     aiDescription: string;
     weatherSuitable: string;
     condition: string;
     pattern: string;
     fabric: string;
     imageRemBgURL: string;
-    style: { id: number; name: string };
-    occasion: { id: number; name: string };
-    season: { id: number; name: string };
+    category: { id: number; name: string };
+    styles: { id: number; name: string }[];
+    occasions: { id: number; name: string }[];
+    seasons: { id: number; name: string }[];
   }> {
     const formData = new FormData();
     formData.append("file", file, file.name);
@@ -206,17 +212,54 @@ class WardrobeAPI {
       },
     });
 
-    // Based on the logs, the API returns the data directly in response.data
-    // But looking at the curl example, it should be response.data.data
-    // Let's check both cases
+    // API returns { statusCode, message, data: { actualData } }
     const apiResponse = response.data;
 
     if (apiResponse.data) {
-      // Case 1: { statusCode, message, data: { actualData } }
       return apiResponse.data;
     } else {
-      // Case 2: Direct data { color, aiDescription, ... }
+      // Fallback: Direct data { name, colors, ... }
       return apiResponse;
+    }
+  }
+
+  /**
+   * Get all available styles
+   */
+  async getStyles(): Promise<{ id: number; name: string; description?: string }[]> {
+    try {
+      const response = await apiClient.get("/styles");
+      // Response structure: { statusCode, message, data: { data: [], metaData } }
+      return response.data?.data?.data || [];
+    } catch (error) {
+      console.error("Failed to fetch styles:", error);
+      return [];
+    }
+  }
+
+  /**
+   * Get all available seasons
+   */
+  async getSeasons(): Promise<{ id: number; name: string }[]> {
+    try {
+      const response = await apiClient.get("/seasons");
+      return response.data?.data?.data || [];
+    } catch (error) {
+      console.error("Failed to fetch seasons:", error);
+      return [];
+    }
+  }
+
+  /**
+   * Get all available occasions
+   */
+  async getOccasions(): Promise<{ id: number; name: string }[]> {
+    try {
+      const response = await apiClient.get("/occasions");
+      return response.data?.data?.data || [];
+    } catch (error) {
+      console.error("Failed to fetch occasions:", error);
+      return [];
     }
   }
 }

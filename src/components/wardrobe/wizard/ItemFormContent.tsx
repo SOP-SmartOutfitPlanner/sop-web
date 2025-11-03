@@ -18,6 +18,9 @@ const CATEGORIES = [
 
 const SEASONS = ["Spring", "Summer", "Fall", "Winter"];
 const CONDITIONS = ["New", "Like New", "Good", "Fair"];
+const PATTERNS = ["Solid", "Striped", "Checkered", "Floral", "Geometric", "Printed", "Other"];
+const FABRICS = ["Cotton", "Polyester", "Silk", "Wool", "Denim", "Leather", "Linen", "Blend"];
+const WEATHER_TYPES = ["Hot", "Warm", "Mild", "Cool", "Cold", "All Season"];
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -52,16 +55,23 @@ interface ItemFormContentProps {
   onSave: () => void;
   onCancel: () => void;
   isSaving?: boolean;
+  // API-fetched options for user selection
+  availableStyles?: { id: number; name: string; description?: string }[];
+  availableOccasions?: { id: number; name: string }[];
+  availableSeasons?: { id: number; name: string }[];
 }
 
 export function ItemFormContent({
   previewUrl,
   formData,
-  aiSuggestions: _aiSuggestions,
+  aiSuggestions,
   onFormDataChange,
   onSave,
   onCancel,
   isSaving = false,
+  availableStyles = [],
+  availableOccasions = [],
+  availableSeasons = [],
 }: ItemFormContentProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [favorite, setFavorite] = useState(false);
@@ -72,6 +82,24 @@ export function ItemFormContent({
       ? current.filter((item) => item !== value)
       : [...current, value];
     onFormDataChange({ [field]: updated });
+  };
+
+  // Toggle style ID selection
+  const toggleStyleId = (styleId: number) => {
+    const current = formData.styleIds || [];
+    const updated = current.includes(styleId)
+      ? current.filter((id) => id !== styleId)
+      : [...current, styleId];
+    onFormDataChange({ styleIds: updated });
+  };
+
+  // Toggle occasion ID selection
+  const toggleOccasionId = (occasionId: number) => {
+    const current = formData.occasionIds || [];
+    const updated = current.includes(occasionId)
+      ? current.filter((id) => id !== occasionId)
+      : [...current, occasionId];
+    onFormDataChange({ occasionIds: updated });
   };
 
   const validateAndSave = () => {
@@ -199,6 +227,21 @@ export function ItemFormContent({
                     <Label className="text-sm font-semibold text-white/90 mb-2">
                       Category *
                     </Label>
+                    
+                    {/* Show AI-detected category */}
+                    {formData.categoryId > 0 && formData.categoryName && (
+                      <div className="mb-3">
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="w-4 h-4 text-blue-400" />
+                          <span className="text-xs text-white/60">AI Detected:</span>
+                          <span className="px-3 py-1.5 text-sm bg-blue-500/20 border border-blue-400/30 rounded-lg text-blue-300 font-medium">
+                            {formData.categoryName}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Manual category selection (fallback) */}
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                       {CATEGORIES.map((cat) => (
                         <motion.button
@@ -262,7 +305,149 @@ export function ItemFormContent({
                       </div>
                     </div>
                   )}
+
+                  {/* Pattern */}
+                  <div>
+                    <Label className="text-sm font-semibold text-white/90 mb-2">
+                      Pattern
+                    </Label>
+                    <div className="flex flex-wrap gap-2">
+                      {PATTERNS.map((pattern) => (
+                        <motion.button
+                          key={pattern}
+                          type="button"
+                          onClick={() => onFormDataChange({ pattern })}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                            formData.pattern === pattern
+                              ? "bg-gradient-to-br from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/25 border border-blue-400/50"
+                              : "bg-white/5 text-white/70 hover:bg-white/10 hover:text-white border border-white/10 hover:border-white/20"
+                          }`}
+                        >
+                          {pattern}
+                        </motion.button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Fabric */}
+                  <div>
+                    <Label className="text-sm font-semibold text-white/90 mb-2">
+                      Fabric
+                    </Label>
+                    <div className="flex flex-wrap gap-2">
+                      {FABRICS.map((fabric) => (
+                        <motion.button
+                          key={fabric}
+                          type="button"
+                          onClick={() => onFormDataChange({ fabric })}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                            formData.fabric === fabric
+                              ? "bg-gradient-to-br from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/25 border border-blue-400/50"
+                              : "bg-white/5 text-white/70 hover:bg-white/10 hover:text-white border border-white/10 hover:border-white/20"
+                          }`}
+                        >
+                          {fabric}
+                        </motion.button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Styles & Occasions (AI Suggestions) */}
+          <motion.div variants={itemVariants}>
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl">
+              <div className="flex items-center gap-2 mb-4">
+                <Sparkles className="w-5 h-5 text-blue-400" />
+                <h3 className="text-lg font-semibold text-white">
+                  Style & Occasions
+                </h3>
+              </div>
+
+              <div className="space-y-5">
+                {/* Styles - User can select/deselect */}
+                {availableStyles.length > 0 && (
+                  <div>
+                    <Label className="text-sm font-semibold text-white/90 mb-2">
+                      Styles
+                      {aiSuggestions?.styles && aiSuggestions.styles.length > 0 && (
+                        <span className="ml-2 text-xs text-blue-400 font-normal">
+                          (AI auto-selected)
+                        </span>
+                      )}
+                    </Label>
+                    <div className="flex flex-wrap gap-2">
+                      {availableStyles.map((style) => {
+                        const isSelected = formData.styleIds?.includes(style.id) || false;
+                        return (
+                          <motion.button
+                            key={style.id}
+                            type="button"
+                            onClick={() => toggleStyleId(style.id)}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-all ${
+                              isSelected
+                                ? "bg-purple-500/30 border border-purple-400/50 text-purple-200"
+                                : "bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 hover:text-white/80"
+                            }`}
+                            title={style.description}
+                          >
+                            {style.name}
+                          </motion.button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Occasions - User can select/deselect */}
+                {availableOccasions.length > 0 && (
+                  <div>
+                    <Label className="text-sm font-semibold text-white/90 mb-2">
+                      Occasions
+                      {aiSuggestions?.occasions && aiSuggestions.occasions.length > 0 && (
+                        <span className="ml-2 text-xs text-green-400 font-normal">
+                          (AI auto-selected)
+                        </span>
+                      )}
+                    </Label>
+                    <div className="flex flex-wrap gap-2">
+                      {availableOccasions.map((occasion) => {
+                        const isSelected = formData.occasionIds?.includes(occasion.id) || false;
+                        return (
+                          <motion.button
+                            key={occasion.id}
+                            type="button"
+                            onClick={() => toggleOccasionId(occasion.id)}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-all ${
+                              isSelected
+                                ? "bg-green-500/30 border border-green-400/50 text-green-200"
+                                : "bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 hover:text-white/80"
+                            }`}
+                          >
+                            {occasion.name}
+                          </motion.button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Show message if no API data */}
+                {availableStyles.length === 0 && availableOccasions.length === 0 && (
+                  <p className="text-sm text-white/50 text-center py-4">
+                    Loading styles and occasions...
+                  </p>
+                )}
               </div>
             </div>
           </motion.div>
@@ -304,6 +489,31 @@ export function ItemFormContent({
                       {errors.seasons}
                     </p>
                   )}
+                </div>
+
+                {/* Weather Suitable */}
+                <div>
+                  <Label className="text-sm font-semibold text-white/90 mb-2">
+                    Weather Type
+                  </Label>
+                  <div className="flex flex-wrap gap-2">
+                    {WEATHER_TYPES.map((weather) => (
+                      <motion.button
+                        key={weather}
+                        type="button"
+                        onClick={() => onFormDataChange({ weatherSuitable: weather })}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                          formData.weatherSuitable === weather
+                            ? "bg-gradient-to-br from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/25 border border-blue-400/50"
+                            : "bg-white/5 text-white/70 hover:bg-white/10 hover:text-white border border-white/10 hover:border-white/20"
+                        }`}
+                      >
+                        {weather}
+                      </motion.button>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Condition */}
