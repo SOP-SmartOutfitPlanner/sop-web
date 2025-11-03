@@ -45,7 +45,7 @@ const STATUS = {
   SAVED: "saved",
 } as const;
 
-type StatusType = typeof STATUS[keyof typeof STATUS];
+type StatusType = (typeof STATUS)[keyof typeof STATUS];
 
 // Initial form state
 const INITIAL_FORM_DATA: WizardFormData = {
@@ -71,7 +71,9 @@ export function AddItemWizard({ open, onOpenChange }: AddItemWizardProps) {
   const [hasChanges, setHasChanges] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<WizardFormData>(INITIAL_FORM_DATA);
-  const [aiSuggestions, setAiSuggestions] = useState<AISuggestions | null>(null);
+  const [aiSuggestions, setAiSuggestions] = useState<AISuggestions | null>(
+    null
+  );
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState("");
@@ -118,17 +120,20 @@ export function AddItemWizard({ open, onOpenChange }: AddItemWizardProps) {
   }, []);
 
   // Handle crop complete
-  const handleCropComplete = useCallback((croppedFile: File) => {
-    // Replace the selected file with cropped version
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl);
-    }
-    
-    setSelectedFile(croppedFile);
-    const newUrl = URL.createObjectURL(croppedFile);
-    setPreviewUrl(newUrl);
-    setStatus(STATUS.PREVIEW);
-  }, [previewUrl]);
+  const handleCropComplete = useCallback(
+    (croppedFile: File) => {
+      // Replace the selected file with cropped version
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+
+      setSelectedFile(croppedFile);
+      const newUrl = URL.createObjectURL(croppedFile);
+      setPreviewUrl(newUrl);
+      setStatus(STATUS.PREVIEW);
+    },
+    [previewUrl]
+  );
 
   // Handle crop cancel - go back to idle
   const handleCropCancel = useCallback(() => {
@@ -145,9 +150,11 @@ export function AddItemWizard({ open, onOpenChange }: AddItemWizardProps) {
   }, [hasChanges, status, resetAndClose]);
 
   // Helper: Parse color string to ColorOption array
-  const parseColorString = (colorStr: string): { name: string; hex: string }[] => {
+  const parseColorString = (
+    colorStr: string
+  ): { name: string; hex: string }[] => {
     if (!colorStr) return [];
-    
+
     // Simple color name to hex mapping
     const colorMap: Record<string, string> = {
       black: "#000000",
@@ -196,9 +203,9 @@ export function AddItemWizard({ open, onOpenChange }: AddItemWizardProps) {
     try {
       // Call AI analysis API
       const result = await wardrobeAPI.getImageSummary(selectedFile);
-      
-      console.log('🎯 AI Analysis Result:', result);
-      
+
+      console.log("🎯 AI Analysis Result:", result);
+
       // Update form data with AI suggestions
       setAiSuggestions(result);
       setFormData((prev) => ({
@@ -242,11 +249,11 @@ export function AddItemWizard({ open, onOpenChange }: AddItemWizardProps) {
       const userId = await getUserIdFromAuth(user);
       const payload = transformWizardDataToAPI(formData, userId);
 
-      console.log('📤 Submitting payload:', payload);
+      console.log("📤 Submitting payload:", payload);
 
       const response = await wardrobeAPI.createItem(payload);
-      
-      console.log('✅ API Response:', response);
+
+      console.log("✅ API Response:", response);
 
       // Show saved state
       setStatus(STATUS.SAVED);
@@ -260,17 +267,17 @@ export function AddItemWizard({ open, onOpenChange }: AddItemWizardProps) {
         resetAndClose();
       }, 2000);
     } catch (error) {
-      console.error('❌ API Error:', error);
-      
+      console.error("❌ API Error:", error);
+
       // Enhanced error message
       let errorMessage = "Cannot add item. Please try again.";
-      
+
       if (error instanceof Error) {
         errorMessage = error.message;
       }
-      
+
       // Check for specific error responses
-      if (typeof error === 'object' && error !== null) {
+      if (typeof error === "object" && error !== null) {
         const err = error as any;
         if (err.response?.data?.message) {
           errorMessage = err.response.data.message;
@@ -278,7 +285,7 @@ export function AddItemWizard({ open, onOpenChange }: AddItemWizardProps) {
           errorMessage = err.message;
         }
       }
-      
+
       toast.error(errorMessage);
       setIsSubmitting(false);
     }
@@ -316,7 +323,10 @@ export function AddItemWizard({ open, onOpenChange }: AddItemWizardProps) {
   return (
     <>
       <Dialog open={open} onOpenChange={(open) => !open && handleClose()}>
-        <DialogContent className="max-w-[95vw] sm:max-w-7xl p-0 gap-0 max-h-[95vh] flex flex-col overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-white/10" showCloseButton={false}>
+        <DialogContent
+          className="max-w-[95vw] sm:max-w-7xl p-0 gap-0 max-h-[95vh] flex flex-col overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-white/10"
+          showCloseButton={false}
+        >
           {/* Accessible title (hidden visually but available to screen readers) */}
           <DialogTitle className="sr-only">Add Item by Image</DialogTitle>
 
@@ -360,7 +370,10 @@ export function AddItemWizard({ open, onOpenChange }: AddItemWizardProps) {
               {/* Close button */}
               <motion.button
                 onClick={handleClose}
-                whileHover={{ scale: 1.1, backgroundColor: "rgba(255,255,255,0.15)" }}
+                whileHover={{
+                  scale: 1.1,
+                  backgroundColor: "rgba(255,255,255,0.15)",
+                }}
                 whileTap={{ scale: 0.9 }}
                 className="p-2.5 hover:bg-white/10 rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/70"
                 aria-label="Close modal"
@@ -503,7 +516,11 @@ export function AddItemWizard({ open, onOpenChange }: AddItemWizardProps) {
                     <motion.svg
                       initial={{ pathLength: 0 }}
                       animate={{ pathLength: 1 }}
-                      transition={{ delay: 0.4, duration: 0.5, ease: "easeInOut" }}
+                      transition={{
+                        delay: 0.4,
+                        duration: 0.5,
+                        ease: "easeInOut",
+                      }}
                       className="w-10 h-10 text-white"
                       viewBox="0 0 24 24"
                       fill="none"
@@ -515,7 +532,9 @@ export function AddItemWizard({ open, onOpenChange }: AddItemWizardProps) {
                       <motion.path d="M20 6L9 17l-5-5" />
                     </motion.svg>
                   </motion.div>
-                  <h2 className="text-3xl font-bold text-white mb-2">Item Saved!</h2>
+                  <h2 className="text-3xl font-bold text-white mb-2">
+                    Item Saved!
+                  </h2>
                   <p className="text-white/60">Added to your wardrobe</p>
                 </motion.div>
               )}

@@ -1,16 +1,28 @@
-import { useState } from 'react';
-import { ImageIcon, Smile, MapPin, Users, MoreHorizontal, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { useState } from "react";
+import {
+  ImageIcon,
+  Smile,
+  MapPin,
+  Users,
+  MoreHorizontal,
+  X,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import Image from "next/image";
 
 interface NewPostDialogProps {
-  onCreatePost: (data: { caption: string; tags: string[]; image?: string }) => void;
+  onCreatePost: (data: {
+    caption: string;
+    tags: string[];
+    image?: string;
+  }) => void;
 }
 
 export function NewPostDialog({ onCreatePost }: NewPostDialogProps) {
-  const [caption, setCaption] = useState('');
+  const [caption, setCaption] = useState("");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -18,15 +30,15 @@ export function NewPostDialog({ onCreatePost }: NewPostDialogProps) {
     if (!caption.trim()) return;
 
     // Extract hashtags from caption
-    const hashtags = caption.match(/#\w+/g)?.map(tag => tag.slice(1)) || [];
+    const hashtags = caption.match(/#\w+/g)?.map((tag) => tag.slice(1)) || [];
 
     onCreatePost({
       caption: caption.trim(),
       tags: hashtags,
-      image: selectedImage || undefined
+      image: selectedImage || undefined,
     });
 
-    setCaption('');
+    setCaption("");
     setSelectedImage(null);
   };
 
@@ -48,7 +60,7 @@ export function NewPostDialog({ onCreatePost }: NewPostDialogProps) {
           Create Post
         </DialogTitle>
       </DialogHeader>
-      
+
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* User Info Header */}
         <div className="flex items-center gap-3">
@@ -68,17 +80,21 @@ export function NewPostDialog({ onCreatePost }: NewPostDialogProps) {
           onChange={(e) => setCaption(e.target.value)}
           placeholder="What's on your mind?"
           className="min-h-[120px] border-0 resize-none text-lg placeholder:text-muted-foreground focus-visible:ring-0 p-0"
-          style={{ fontSize: '16px' }}
+          style={{ fontSize: "16px" }}
         />
 
         {/* Selected Image Preview */}
         {selectedImage && (
           <div className="relative">
-            <img 
-              src={selectedImage} 
-              alt="Selected" 
-              className="w-full rounded-lg max-h-96 object-cover" 
-            />
+            <div className="relative w-full h-full">
+              <Image
+                src={selectedImage}
+                alt="Selected"
+                fill
+                className="object-cover group-hover:scale-105 transition-transform duration-300"
+              />
+            </div>
+
             <Button
               type="button"
               variant="secondary"
@@ -106,19 +122,19 @@ export function NewPostDialog({ onCreatePost }: NewPostDialogProps) {
                 <ImageIcon className="w-5 h-5 text-green-500" />
               </div>
             </label>
-            
+
             <div className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-muted transition-colors cursor-pointer">
               <Users className="w-5 h-5 text-blue-500" />
             </div>
-            
+
             <div className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-muted transition-colors cursor-pointer">
               <Smile className="w-5 h-5 text-yellow-500" />
             </div>
-            
+
             <div className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-muted transition-colors cursor-pointer">
               <MapPin className="w-5 h-5 text-red-500" />
             </div>
-            
+
             <div className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-muted transition-colors cursor-pointer">
               <MoreHorizontal className="w-5 h-5 text-muted-foreground" />
             </div>
@@ -126,15 +142,10 @@ export function NewPostDialog({ onCreatePost }: NewPostDialogProps) {
         </div>
 
         {/* Submit Button */}
-        <Button 
-          type="submit" 
-          className="w-full" 
-          disabled={!caption.trim()}
-        >
+        <Button type="submit" className="w-full" disabled={!caption.trim()}>
           Post
         </Button>
       </form>
     </div>
   );
 }
-

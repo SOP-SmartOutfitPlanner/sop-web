@@ -155,7 +155,7 @@ export default function Community() {
       toast.success("Post liked!", {
         description: "Your like has been added",
       });
-    } catch (error) {
+    } catch {
       // Revert on error
       setPosts(posts);
       toast.error("Failed to like post");

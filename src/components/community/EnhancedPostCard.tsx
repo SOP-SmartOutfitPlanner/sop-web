@@ -24,6 +24,7 @@ import { UserMini } from "@/types/chat";
 import { formatDistanceToNow } from "date-fns";
 import { QuickChatModal } from "@/components/chat/QuickChatModal";
 import CommentSection from "@/components/community/CommentSection";
+import Image from "next/image";
 
 interface EnhancedPostCardProps {
   post: Post;
@@ -175,11 +176,15 @@ export function EnhancedPostCard({
             className="relative mx-4 mb-4 aspect-[4/3] rounded-2xl overflow-hidden bg-gradient-to-br from-muted/30 to-background group cursor-pointer"
             onDoubleClick={handleDoubleClick}
           >
-            <img
-              src={post.image}
-              alt="Outfit post"
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-            />
+            <div className="relative w-full h-full">
+              <Image
+                src={post.image}
+                alt="Outfit post"
+                fill
+                className="object-cover group-hover:scale-105 transition-transform duration-300"
+              />
+            </div>
+
             {/* Like animation overlay */}
             {isLiked && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -261,8 +266,8 @@ export function EnhancedPostCard({
 
           {/* Comments Section */}
           <div className="pt-2">
-            <CommentSection 
-              postId={post.id} 
+            <CommentSection
+              postId={post.id}
               commentCount={commentCount}
               onCommentCountChange={setCommentCount}
             />
@@ -284,4 +289,3 @@ export function EnhancedPostCard({
     </>
   );
 }
-
