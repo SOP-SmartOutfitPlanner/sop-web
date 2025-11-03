@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
   Shirt,
@@ -15,8 +15,6 @@ import {
   Trophy,
   Image,
   MessageSquare,
-  User,
-  LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,23 +23,16 @@ import {
   TooltipTrigger,
   TooltipContent,
 } from "@/components/ui/tooltip";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { useAuthStore } from "@/store/auth-store";
 import { Logo } from "@/components/ui/logo";
+import { NavbarAuthSection } from "@/components/layout/navbar-auth-section";
 
 const mainNavigationItems = [
   { path: "/wardrobe", label: "Wardrobe", icon: Shirt, enabled: true },
   { path: "/suggest", label: "Suggest", icon: Sparkles, enabled: true },
   { path: "/daily", label: "Daily", icon: Calendar, enabled: false },
   { path: "/weekly", label: "Weekly", icon: CalendarDays, enabled: false },
-  { path: "/community", label: "Community", icon: Users, enabled: false },
+  { path: "/community", label: "Community", icon: Users, enabled: true },
   { path: "/challenges", label: "Challenges", icon: Trophy, enabled: false },
 ];
 
@@ -58,13 +49,9 @@ const personalNavigationItems = [
 
 export function Navbar() {
   const pathname = usePathname();
-  const router = useRouter();
-  const { user, logout } = useAuthStore();
+  const { user, isInitialized } = useAuthStore();
 
-  const handleLogout = () => {
-    logout();
-    router.push("/login");
-  };
+
 
   const NavItem = ({
     item,
@@ -155,7 +142,7 @@ export function Navbar() {
               </div>
 
               {/* Inbox - Only show when logged in */}
-              {user && (
+              {isInitialized && user && (
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
@@ -172,70 +159,10 @@ export function Navbar() {
                 </Tooltip>
               )}
 
-              {/* User Menu - Show when logged in */}
-              {user ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      className="relative h-8 w-8 rounded-full p-0"
-                    >
-                      <Avatar className="h-8 w-8  text-black text-sm">
-                        <AvatarImage
-                          src={user?.avatar}
-                          alt={user?.displayName}
-                        />
-                        <AvatarFallback>
-                          {user?.displayName?.charAt(0)?.toUpperCase() || "U"}
-                        </AvatarFallback>
-                      </Avatar>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-46" align="center">
-                    <div className="flex items-center justify-start gap-2 p-2">
-                      <div className="flex flex-col space-y-1 leading-none">
-                        {user?.displayName && (
-                          <p className="font-medium">{user.displayName}</p>
-                        )}
-                        {/* {user?.email && (
-                          <p className="w-[200px] truncate text-sm text-muted-foreground">
-                            {user.email}
-                          </p>
-                        )} */}
-                      </div>
-                    </div>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => router.push("/profile")}>
-                      <User className="mr-2 h-4 w-4" />
-                      Profile
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleLogout}>
-                      <LogOut className="mr-2 h-4 w-4" />
-                      Log out
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : (
-                /* Login/Register buttons - Show when not logged in */
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => router.push("/login")}
-                    className="font-medium hover:bg-blue-50 hover:text-blue-600 transition-all duration-300"
-                  >
-                    Đăng nhập
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={() => router.push("/register")}
-                    className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-md hover:shadow-lg transition-all duration-300"
-                  >
-                    Đăng ký
-                  </Button>
-                </div>
-              )}
+              {/* User Menu - Auth Section */}
+              <div suppressHydrationWarning>
+                <NavbarAuthSection />
+              </div>
             </div>
           </div>
         </div>

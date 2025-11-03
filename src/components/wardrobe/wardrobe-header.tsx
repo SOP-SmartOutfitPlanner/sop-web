@@ -1,6 +1,5 @@
 "use client";
 
-import { memo } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -10,7 +9,7 @@ interface WardrobeHeaderProps {
   isLoading?: boolean;
 }
 
-export const WardrobeHeader = memo(function WardrobeHeader({
+export function WardrobeHeader({
   onAddItem,
   isLoading = false,
 }: WardrobeHeaderProps) {
@@ -43,4 +42,4 @@ export const WardrobeHeader = memo(function WardrobeHeader({
       </div>
     </div>
   );
-});
+}

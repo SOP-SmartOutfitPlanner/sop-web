@@ -5,7 +5,7 @@
 
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useInView } from "react-intersection-observer";
 import { ItemCard } from "./item-card";
 import { WardrobeItem } from "@/types";
@@ -63,10 +63,7 @@ export function InfiniteItemGrid({
   }, [items.length, itemsPerPage]);
 
   // Currently displayed items
-  const displayedItems = useMemo(() => 
-    items.slice(0, displayCount), 
-    [items, displayCount]
-  );
+  const displayedItems = items.slice(0, displayCount);
 
   const hasMore = displayCount < items.length;
 

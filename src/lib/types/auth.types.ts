@@ -115,6 +115,7 @@ export interface AuthState {
 
   // Loading states
   isLoading: boolean;
+  isInitialized: boolean;
 
   // Messages
   error: string | null;

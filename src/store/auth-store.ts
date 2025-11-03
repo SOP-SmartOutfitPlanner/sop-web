@@ -13,6 +13,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
   user: null,
   isAuthenticated: false,
   isLoading: false,
+  isInitialized: false,
   error: null,
   successMessage: null,
   requiresVerification: false,
@@ -28,12 +29,15 @@ export const useAuthStore = create<AuthStore>((set) => ({
       if (userStr && accessToken) {
         try {
           const user = JSON.parse(userStr);
-          set({ user, isAuthenticated: true });
+          set({ user, isAuthenticated: true, isInitialized: true });
         } catch {
           localStorage.removeItem('user');
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
+          set({ isInitialized: true });
         }
+      } else {
+        set({ isInitialized: true });
       }
       
       if (pendingEmail) {

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import Cropper from "react-easy-crop";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import {
@@ -12,6 +11,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { ZoomIn, ZoomOut, RotateCw, Check, X } from "lucide-react";
+
+import Cropper from "react-easy-crop";
 
 interface ImageCropperProps {
   image: string;
