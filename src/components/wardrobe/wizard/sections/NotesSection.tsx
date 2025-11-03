@@ -24,7 +24,7 @@ export function NotesSection({ notes, onNotesChange }: NotesSectionProps) {
 
         <div className="space-y-4">
           {/* Notes */}
-          <div>
+          {/* <div>
             <Label
               htmlFor={FORM_FIELDS.NOTES.id}
               className="text-sm font-semibold text-white/90 mb-2"
@@ -39,7 +39,7 @@ export function NotesSection({ notes, onNotesChange }: NotesSectionProps) {
               className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 hover:border-white/30 focus:outline-none focus:ring-2 focus:ring-blue-400/70 focus:border-transparent focus:bg-white/15 transition-all resize-none"
               placeholder={FORM_FIELDS.NOTES.placeholder}
             />
-          </div>
+          </div> */}
         </div>
       </div>
     </motion.div>

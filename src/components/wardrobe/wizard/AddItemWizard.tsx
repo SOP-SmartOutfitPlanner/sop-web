@@ -17,12 +17,13 @@ import { Sparkles, X } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/auth-store";
 import { useWardrobeStore } from "@/store/wardrobe-store";
-import { wardrobeAPI } from "@/lib/api/wardrobe-api";
+import { wardrobeAPI, type ApiWardrobeItem } from "@/lib/api/wardrobe-api";
 import { useWardrobeOptions } from "@/hooks/useWardrobeOptions";
 import {
   transformWizardDataToAPI,
   validateWizardFormData,
   getUserIdFromAuth,
+  apiItemToFormData,
 } from "@/lib/utils/wizard-transform";
 import { StepPhotoAI } from "./StepPhotoAI";
 import { ItemFormContent } from "./ItemFormContent";
@@ -38,6 +39,12 @@ interface AddItemWizardProps {
   initialFile?: File; // Optional: pre-selected file from gallery
   autoAnalyze?: boolean; // Auto-trigger analysis when initialFile is provided (default: true)
   skipCrop?: boolean; // Skip cropping step (default: false)
+  // Edit mode props
+  editMode?: boolean; // Whether wizard is in edit mode
+  editItemId?: number; // ID of item being edited
+  editItem?: ApiWardrobeItem; // API item to edit (will be transformed to form data)
+  // Callback when user wants to edit after auto-save
+  onEditAfterSave?: (itemId: number) => void;
 }
 
 export function AddItemWizard({
@@ -46,6 +53,10 @@ export function AddItemWizard({
   initialFile,
   autoAnalyze = true,
   skipCrop = false,
+  editMode = false,
+  editItemId,
+  editItem,
+  onEditAfterSave,
 }: AddItemWizardProps) {
   const [status, setStatus] = useState<StatusType>(STATUS.IDLE);
   const [showConfirmClose, setShowConfirmClose] = useState(false);
@@ -60,12 +71,122 @@ export function AddItemWizard({
   const [previewUrl, setPreviewUrl] = useState("");
   const [retryCount, setRetryCount] = useState(0);
   const [isRetrying, setIsRetrying] = useState(false);
+  const [savedItemId, setSavedItemId] = useState<number | null>(null); // Store saved item ID for edit
+  const [autoCloseTimeoutId, setAutoCloseTimeoutId] = useState<NodeJS.Timeout | null>(null); // Track auto-close timeout
 
   const { user } = useAuthStore();
   const { fetchItems } = useWardrobeStore();
 
   // Fetch available options from API
   const { categories, styles, seasons, occasions } = useWardrobeOptions();
+
+  // Initialize form data in edit mode OR reset when switching modes
+  useEffect(() => {
+    if (editMode && editItem && open) {
+      const transformedData = apiItemToFormData(editItem);
+      const finalFormData = { ...INITIAL_FORM_DATA, ...transformedData };
+      setFormData(finalFormData);
+      setPreviewUrl(
+        transformedData.imageRemBgURL || transformedData.uploadedImageURL || ""
+      );
+      setStatus(STATUS.FORM); // Go directly to form in edit mode
+      setHasChanges(false);
+    }
+  }, [editMode, editItem, open]);
+
+  // Reset when opening fresh (not from edit mode)
+  useEffect(() => {
+    if (open && !editMode && !editItem) {
+      // Only reset if opening fresh in add mode
+      setStatus(STATUS.IDLE);
+      setFormData(INITIAL_FORM_DATA);
+      setAiSuggestions(null);
+      setSavedItemId(null);
+      setSelectedFile(null);
+      setPreviewUrl("");
+      setAnalysisProgress(0);
+    }
+  }, [open, editMode, editItem]);
+
+  // Auto-save after AI analysis
+  const autoSaveAfterAnalysis = useCallback(
+    async (data: WizardFormData) => {
+      try {
+        setIsSubmitting(true);
+
+        const errors = validateWizardFormData(data);
+        if (errors.length > 0) {
+          // If validation fails, show form for manual edit
+          setStatus(STATUS.FORM);
+          setIsSubmitting(false);
+          return;
+        }
+
+        const userId = await getUserIdFromAuth(user);
+        const payload = transformWizardDataToAPI(data, userId);
+
+        const response = await wardrobeAPI.createItem(payload);
+
+        if (!response) {
+          console.error("❌ API returned undefined response!");
+          throw new Error("Failed to create item - no response from API");
+        }
+
+        // Store the created item ID (try different possible locations)
+        let createdItemId: number | undefined;
+        if (response?.id) {
+          createdItemId = response.id;
+          setSavedItemId(response.id);
+        } else if (typeof response === 'object' && response !== null) {
+          // Try to find id in response
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const anyResponse = response as any;
+          createdItemId = anyResponse.id || anyResponse.itemId || anyResponse.data?.id;
+          if (createdItemId) {
+            setSavedItemId(createdItemId);
+          }
+        }
+
+        // Set to SAVED to hide AnalysisToast
+        setStatus(STATUS.SAVED);
+
+        // Close modal immediately after save
+        onOpenChange(false);
+
+        // Refresh items in background
+        fetchItems();
+
+        // Show toast with edit button
+        toast.success(
+          '✅ Item added successfully! Click "Edit Details" to customize.',
+          {
+            duration: 6000,
+            position: "bottom-right",
+            action: {
+              label: "Edit Details",
+              onClick: () => {
+                // Notify parent to open edit mode
+                if (createdItemId && onEditAfterSave) {
+                  onEditAfterSave(createdItemId);
+                } else {
+                  console.warn("❌ Cannot edit: no itemId or callback missing");
+                }
+              },
+            },
+          }
+        );
+      } catch (error) {
+        console.error("❌ Auto-save failed:", error);
+
+        // Show form for manual save if auto-save fails
+        setStatus(STATUS.FORM);
+        toast.error("Auto-save failed. Please review and save manually.");
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [user, fetchItems, onOpenChange, onEditAfterSave]
+  );
 
   // AI Analysis with retry logic
   const analyzeImage = useCallback(
@@ -76,45 +197,49 @@ export function AddItemWizard({
 
         setAiSuggestions(result);
 
-        setFormData((prev) => {
-          const newFormData = {
-            ...prev,
-            uploadedImageURL: url,
-            imageRemBgURL: result.imageRemBgURL || url,
-            name: result.name || result.aiDescription || "",
-            colors: result.colors || [],
-            pattern: result.pattern || "",
-            fabric: result.fabric || "",
-            condition: result.condition || "New",
-            weatherSuitable: result.weatherSuitable || "",
-            notes: result.aiDescription || "",
-            categoryId: result.category?.id || 0,
-            categoryName: result.category?.name || "",
-            seasons:
-              result.seasons?.map(
-                (s: { id: number; name: string }) => s.name
-              ) || [],
-            styleIds:
-              result.styles?.map(
-                (style: { id: number; name: string }) => style.id
-              ) || [],
-            occasionIds:
-              result.occasions?.map(
-                (occ: { id: number; name: string }) => occ.id
-              ) || [],
-            tags: [],
-          };
+        const newFormData = {
+          uploadedImageURL: url,
+          imageRemBgURL: result.imageRemBgURL || url,
+          name: result.name || result.aiDescription || "",
+          colors: result.colors || [],
+          pattern: result.pattern || "",
+          fabric: result.fabric || "",
+          condition: result.condition || "New",
+          weatherSuitable: result.weatherSuitable || "",
+          notes: result.aiDescription || "",
+          categoryId: result.category?.id || 0,
+          categoryName: result.category?.name || "",
+          brand: "default", // AI doesn't detect brand
+          seasons:
+            result.seasons?.map((s: { id: number; name: string }) => s.name) ||
+            [],
+          styleIds:
+            result.styles?.map(
+              (style: { id: number; name: string }) => style.id
+            ) || [],
+          occasionIds:
+            result.occasions?.map(
+              (occ: { id: number; name: string }) => occ.id
+            ) || [],
+          tags: [],
+          wornToday: false,
+        };
 
-          return newFormData;
-        });
+        setFormData(newFormData);
+
+        // ✅ Update preview to show removed background image
+        if (result.imageRemBgURL) {
+          setPreviewUrl(result.imageRemBgURL);
+        }
 
         setRetryCount(0);
         setIsRetrying(false);
         setAnalysisProgress(100); // Set to 100% when complete
 
-        setTimeout(() => {
-          setStatus(STATUS.FORM);
-        }, 300);
+        // 🎯 Auto-save after analysis completes
+        setTimeout(async () => {
+          await autoSaveAfterAnalysis(newFormData);
+        }, 500);
       } catch (error) {
         console.error(
           `Analysis failed (attempt ${attempt}/${AI_ANALYSIS_CONFIG.MAX_RETRIES}):`,
@@ -139,7 +264,7 @@ export function AddItemWizard({
         }
       }
     },
-    []
+    [autoSaveAfterAnalysis]
   );
 
   // Handle initialFile from GalleryPickerFlow
@@ -172,6 +297,11 @@ export function AddItemWizard({
 
   // Reset form to initial state
   const resetAndClose = useCallback(() => {
+    // Clear auto-close timeout if exists
+    if (autoCloseTimeoutId) {
+      clearTimeout(autoCloseTimeoutId);
+      setAutoCloseTimeoutId(null);
+    }
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl);
     }
@@ -184,8 +314,9 @@ export function AddItemWizard({
     setShowConfirmClose(false);
     setIsSubmitting(false);
     setAnalysisProgress(0);
+    setSavedItemId(null); // Clear saved item ID
     onOpenChange(false);
-  }, [onOpenChange, previewUrl]);
+  }, [onOpenChange, previewUrl, autoCloseTimeoutId]);
 
   // Clear selected file
   const handleClearFile = useCallback(() => {
@@ -264,11 +395,18 @@ export function AddItemWizard({
       const userId = await getUserIdFromAuth(user);
       const payload = transformWizardDataToAPI(formData, userId);
 
-      await wardrobeAPI.createItem(payload);
+      // Edit mode: update existing item
+      if (editMode && editItemId) {
+        await wardrobeAPI.updateItem(editItemId, payload);
+        toast.success("Item updated successfully!");
+      } else {
+        // Create mode: add new item
+        await wardrobeAPI.createItem(payload);
+        toast.success("Item added successfully!");
+      }
 
       // Show saved state
       setStatus(STATUS.SAVED);
-      toast.success("Item added successfully!");
 
       // Refresh items in background
       fetchItems();
@@ -281,7 +419,9 @@ export function AddItemWizard({
       console.error("❌ API Error:", error);
 
       // Enhanced error message
-      let errorMessage = "Cannot add item. Please try again.";
+      let errorMessage = editMode
+        ? "Cannot update item. Please try again."
+        : "Cannot add item. Please try again.";
 
       if (error instanceof Error) {
         errorMessage = error.message;
@@ -303,7 +443,7 @@ export function AddItemWizard({
       toast.error(errorMessage);
       setIsSubmitting(false);
     }
-  }, [formData, user, fetchItems, resetAndClose]);
+  }, [formData, user, fetchItems, resetAndClose, editMode, editItemId]);
 
   // Update form data
   const updateFormData = useCallback((updates: Partial<WizardFormData>) => {
@@ -333,6 +473,15 @@ export function AddItemWizard({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open, handleClose]);
+
+  // Cleanup auto-close timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (autoCloseTimeoutId) {
+        clearTimeout(autoCloseTimeoutId);
+      }
+    };
+  }, [autoCloseTimeoutId]);
 
   // Simulate progress when analyzing
   useEffect(() => {
@@ -374,7 +523,9 @@ export function AddItemWizard({
           showCloseButton={false}
         >
           {/* Accessible title (hidden visually but available to screen readers) */}
-          <DialogTitle className="sr-only">Add Item by Image</DialogTitle>
+          <DialogTitle className="sr-only">
+            {editMode ? "Edit Item" : "Add Item by Image"}
+          </DialogTitle>
 
           {/* Background gradients */}
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(59,130,246,0.15),transparent_50%)]" />
@@ -400,7 +551,7 @@ export function AddItemWizard({
                     transition={{ delay: 0.2 }}
                     className="text-xl sm:text-2xl font-bold text-white"
                   >
-                    Add Item by Image
+                    {editMode ? "Edit Item" : "Add Item by Image"}
                   </motion.h2>
                   <motion.p
                     initial={{ opacity: 0, x: -10 }}
@@ -408,7 +559,9 @@ export function AddItemWizard({
                     transition={{ delay: 0.3 }}
                     className="text-sm text-white/50"
                   >
-                    AI-powered wardrobe analysis
+                    {editMode
+                      ? "Update item details"
+                      : "AI-powered wardrobe analysis"}
                   </motion.p>
                 </div>
               </div>

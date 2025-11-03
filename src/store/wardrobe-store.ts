@@ -10,6 +10,7 @@ import {
 
 interface WardrobeStore {
   items: WardrobeItem[];
+  rawApiItems: ApiWardrobeItem[]; // Store raw API items for edit mode
   filters: WardrobeFilters;
   isLoading: boolean;
   filteredItems: WardrobeItem[];
@@ -18,6 +19,7 @@ interface WardrobeStore {
   selectedItems: string[];
   isSelectionMode: boolean;
   hasInitialFetch: boolean;
+  getRawItemById: (id: number) => ApiWardrobeItem | undefined; // Helper to get raw item
   addItem: (item: CreateWardrobeItemRequest) => Promise<void>;
   removeItem: (id: string) => void;
   updateItem: (id: string, item: Partial<WardrobeItem>) => Promise<void>;
@@ -149,6 +151,7 @@ const sortItems = (items: WardrobeItem[], sortBy: string): WardrobeItem[] => {
 
 export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
   items: [],
+  rawApiItems: [], // Store raw API items
   filters: {},
   isLoading: false,
   filteredItems: [],
@@ -157,6 +160,12 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
   selectedItems: [],
   isSelectionMode: false,
   hasInitialFetch: false,
+
+  // Helper to get raw API item by ID
+  getRawItemById: (id: number) => {
+    const state = get();
+    return state.rawApiItems.find((item) => item.id === id);
+  },
 
   // Fetch items from API
   fetchItems: async () => {
@@ -169,6 +178,7 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
       const sorted = sortItems(filtered, state.sortBy);
       set({
         items,
+        rawApiItems: apiItems, // Store raw API items
         isLoading: false,
         filteredItems: sorted,
         hasInitialFetch: true,

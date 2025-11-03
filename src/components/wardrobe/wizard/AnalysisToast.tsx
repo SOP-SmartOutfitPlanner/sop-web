@@ -34,22 +34,22 @@ export function AnalysisToast({
                 transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
                 className="p-3 rounded-xl bg-gradient-to-br from-blue-500/30 to-blue-600/30 ring-1 ring-blue-400/40"
               >
-                <Sparkles className="w-6 h-6 text-blue-300" />
+                <Sparkles className="w-4 h-4 text-blue-300" />
               </motion.div>
               <div className="flex-1">
                 <h3 className="text-lg font-bold text-white flex items-center gap-2">
                   Analyzing Image
-                  {isRetrying && (
+                  {/* {isRetrying && (
                     <Loader2 className="w-4 h-4 text-yellow-400 animate-spin" />
-                  )}
+                  )} */}
                 </h3>
-                <p className="text-sm text-white/60">
+                {/* <p className="text-sm text-white/60">
                   {isRetrying
                     ? `Retrying... (${retryCount}/5)`
                     : progress < 100
                     ? "Processing your image..."
                     : "Finalizing analysis"}
-                </p>
+                </p> */}
               </div>
             </div>
 
@@ -71,7 +71,7 @@ export function AnalysisToast({
             </div>
 
             {/* Progress percentage */}
-            <div className="mt-3 text-right">
+            {/* <div className="mt-3 text-right">
               <motion.span
                 key={progress}
                 initial={{ scale: 1.2, opacity: 0 }}
@@ -80,7 +80,7 @@ export function AnalysisToast({
               >
                 {Math.round(progress)}%
               </motion.span>
-            </div>
+            </div> */}
           </div>
         </motion.div>
       )}

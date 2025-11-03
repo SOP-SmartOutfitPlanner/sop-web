@@ -185,10 +185,10 @@ export function ItemFormContent({
           />
 
           {/* Additional Info (Brand & Notes) */}
-          <NotesSection
+          {/* <NotesSection
             notes={formData.notes || ""}
             onNotesChange={(value) => onFormDataChange({ notes: value })}
-          />
+          /> */}
 
           {/* Action Buttons */}
           <FormActionsSection

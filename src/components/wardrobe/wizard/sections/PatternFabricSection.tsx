@@ -1,11 +1,12 @@
 /**
  * PatternFabricSection Component
- * Pattern and Fabric selection buttons
+ * Pattern and Fabric input fields
  */
 
 import { motion } from "framer-motion";
 import { Label } from "@/components/ui/label";
-import { FORM_ANIMATIONS, PATTERNS, FABRICS } from "../form-config";
+import { Input } from "@/components/ui/input";
+import { FORM_ANIMATIONS } from "../form-config";
 
 interface PatternFabricSectionProps {
   pattern: string;
@@ -24,52 +25,32 @@ export function PatternFabricSection({
     <motion.div variants={FORM_ANIMATIONS.item} className="space-y-5">
       {/* Pattern */}
       <div>
-        <Label className="text-sm font-semibold text-white/90 mb-2">
+        <Label htmlFor="pattern" className="text-sm font-semibold text-white/90 mb-2">
           Pattern
         </Label>
-        <div className="flex flex-wrap gap-2">
-          {PATTERNS.map((p) => (
-            <motion.button
-              key={p}
-              type="button"
-              onClick={() => onPatternChange(p)}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                pattern === p
-                  ? "bg-gradient-to-br from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/25 border border-blue-400/50"
-                  : "bg-white/5 text-white/70 hover:bg-white/10 hover:text-white border border-white/10 hover:border-white/20"
-              }`}
-            >
-              {p}
-            </motion.button>
-          ))}
-        </div>
+        <Input
+          id="pattern"
+          type="text"
+          value={pattern}
+          onChange={(e) => onPatternChange(e.target.value)}
+          placeholder="e.g., Solid, Striped, Floral..."
+          className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-blue-400/50 focus:ring-blue-400/20"
+        />
       </div>
 
       {/* Fabric */}
       <div>
-        <Label className="text-sm font-semibold text-white/90 mb-2">
+        <Label htmlFor="fabric" className="text-sm font-semibold text-white/90 mb-2">
           Fabric
         </Label>
-        <div className="flex flex-wrap gap-2">
-          {FABRICS.map((f) => (
-            <motion.button
-              key={f}
-              type="button"
-              onClick={() => onFabricChange(f)}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                fabric === f
-                  ? "bg-gradient-to-br from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/25 border border-blue-400/50"
-                  : "bg-white/5 text-white/70 hover:bg-white/10 hover:text-white border border-white/10 hover:border-white/20"
-              }`}
-            >
-              {f}
-            </motion.button>
-          ))}
-        </div>
+        <Input
+          id="fabric"
+          type="text"
+          value={fabric}
+          onChange={(e) => onFabricChange(e.target.value)}
+          placeholder="e.g., Cotton, Polyester, Silk..."
+          className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-blue-400/50 focus:ring-blue-400/20"
+        />
       </div>
     </motion.div>
   );

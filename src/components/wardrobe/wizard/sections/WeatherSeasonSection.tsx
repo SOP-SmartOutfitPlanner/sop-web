@@ -1,11 +1,12 @@
 /**
  * WeatherSeasonSection Component
- * Season and Weather selection with Condition
+ * Season selection with Weather and Condition input fields
  */
 
 import { motion } from "framer-motion";
 import { Label } from "@/components/ui/label";
-import { FORM_ANIMATIONS, SEASONS, WEATHER_TYPES, CONDITIONS } from "../form-config";
+import { Input } from "@/components/ui/input";
+import { FORM_ANIMATIONS, SEASONS } from "../form-config";
 
 interface WeatherSeasonSectionProps {
   seasons: string[];
@@ -67,55 +68,32 @@ export function WeatherSeasonSection({
 
           {/* Weather Suitable */}
           <div>
-            <Label className="text-sm font-semibold text-white/90 mb-2">
+            <Label htmlFor="weatherSuitable" className="text-sm font-semibold text-white/90 mb-2">
               Weather Type
             </Label>
-            <div className="flex flex-wrap gap-2">
-              {WEATHER_TYPES.map((weather) => (
-                <motion.button
-                  key={weather}
-                  type="button"
-                  onClick={() => onWeatherChange(weather)}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                    weatherSuitable === weather
-                      ? "bg-gradient-to-br from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/25 border border-blue-400/50"
-                      : "bg-white/5 text-white/70 hover:bg-white/10 hover:text-white border border-white/10 hover:border-white/20"
-                  }`}
-                >
-                  {weather}
-                </motion.button>
-              ))}
-            </div>
+            <Input
+              id="weatherSuitable"
+              type="text"
+              value={weatherSuitable}
+              onChange={(e) => onWeatherChange(e.target.value)}
+              placeholder="e.g., Mild, Hot, Cold, Rainy..."
+              className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-blue-400/50 focus:ring-blue-400/20"
+            />
           </div>
 
           {/* Condition */}
           <div>
-            <Label
-              htmlFor="condition"
-              className="text-sm font-semibold text-white/90 mb-2"
-            >
+            <Label htmlFor="condition" className="text-sm font-semibold text-white/90 mb-2">
               Condition
             </Label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {CONDITIONS.map((cond) => (
-                <motion.button
-                  key={cond}
-                  type="button"
-                  onClick={() => onConditionChange(cond)}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                    condition === cond
-                      ? "bg-gradient-to-br from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/25 border border-blue-400/50"
-                      : "bg-white/5 text-white/70 hover:bg-white/10 hover:text-white border border-white/10 hover:border-white/20"
-                  }`}
-                >
-                  {cond}
-                </motion.button>
-              ))}
-            </div>
+            <Input
+              id="condition"
+              type="text"
+              value={condition}
+              onChange={(e) => onConditionChange(e.target.value)}
+              placeholder="e.g., New, Like New, Good, Fair..."
+              className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-blue-400/50 focus:ring-blue-400/20"
+            />
           </div>
         </div>
       </div>

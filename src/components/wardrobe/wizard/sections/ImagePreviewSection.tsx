@@ -19,12 +19,14 @@ export function ImagePreviewSection({ previewUrl }: ImagePreviewSectionProps) {
     <motion.div variants={FORM_ANIMATIONS.item} className="order-2 lg:order-1">
       <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden group sticky top-4">
         <div className="aspect-square relative max-w-[340px] mx-auto">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={previewUrl}
-            alt="Item preview"
-            className="w-full h-full object-cover"
-          />
+          {previewUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={previewUrl}
+              alt="Item preview"
+              className="w-full h-full object-cover"
+            />
+          )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
           {/* Favorite button */}

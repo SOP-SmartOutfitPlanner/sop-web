@@ -5,7 +5,7 @@
  * to the format expected by the backend API.
  */
 
-import type { CreateWardrobeItemRequest } from '@/lib/api/wardrobe-api';
+import type { CreateWardrobeItemRequest, ApiWardrobeItem } from '@/lib/api/wardrobe-api';
 
 /**
  * Wizard form data structure (from Lovable wizard)
@@ -190,6 +190,68 @@ export async function getUserIdFromAuth(user: { id?: string } | null): Promise<n
   }
 
   throw new Error('User ID not found');
+}
+
+/**
+ * Transform API wardrobe item to wizard form data
+ * 
+ * This is the reverse transformation for editing existing items.
+ * Converts ApiWardrobeItem (from GET /items) to WizardFormData (for wizard form).
+ * 
+ * @param apiItem - Item data from API
+ * @returns Form data structure for wizard
+ */
+export function apiItemToFormData(apiItem: ApiWardrobeItem): Partial<WizardFormData> {
+  // Parse colors from comma-separated string to ColorOption array
+  const colors: ColorOption[] = apiItem.color
+    ? apiItem.color.split(',').map((colorName: string) => ({
+        name: colorName.trim(),
+        hex: '#808080', // Default gray - actual hex would need color lookup
+      }))
+    : [];
+
+  // Parse seasons from comma-separated weatherSuitable string
+  const seasons: string[] = apiItem.weatherSuitable
+    ? apiItem.weatherSuitable.split(',').map((s: string) => s.trim())
+    : [];
+
+  // Parse tags from comma-separated tag string
+  const tags: string[] = apiItem.tag
+    ? apiItem.tag.split(',').map((t: string) => t.trim())
+    : [];
+
+  // Determine wornToday from frequencyWorn
+  const wornToday = apiItem.frequencyWorn === '1' || parseInt(apiItem.frequencyWorn || '0') > 0;
+
+  // Extract styleIds from styles array
+  const styleIds: number[] = apiItem.styles
+    ? apiItem.styles.map((style) => style.id)
+    : [];
+
+  // Extract occasionIds from occasions array
+  const occasionIds: number[] = apiItem.occasions
+    ? apiItem.occasions.map((occasion) => occasion.id)
+    : [];
+
+  return {
+    name: apiItem.name || '',
+    categoryId: apiItem.categoryId || 0,
+    categoryName: apiItem.categoryName || '',
+    brand: apiItem.brand || '',
+    notes: apiItem.aiDescription || '',
+    colors,
+    seasons,
+    pattern: apiItem.pattern || 'Solid',
+    fabric: apiItem.fabric || 'Cotton',
+    condition: apiItem.condition || 'New',
+    tags,
+    wornToday,
+    weatherSuitable: apiItem.weatherSuitable || '',
+    imageRemBgURL: apiItem.imgUrl || '',
+    uploadedImageURL: apiItem.imgUrl || '', // Use same image for both
+    styleIds,
+    occasionIds,
+  };
 }
 
 

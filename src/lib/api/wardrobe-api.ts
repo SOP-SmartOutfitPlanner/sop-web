@@ -56,6 +56,10 @@ export interface ApiWardrobeItem {
   id?: number; // Optional as it might not be present in all responses
   createdAt?: string;
   updatedAt?: string;
+  // Relational arrays
+  styles?: Array<{ id: number; name: string }>;
+  occasions?: Array<{ id: number; name: string }>;
+  seasons?: Array<{ id: number; name: string }>;
 }
 
 // API response with pagination
@@ -165,7 +169,10 @@ class WardrobeAPI {
    */
   async createItem(item: CreateWardrobeItemRequest): Promise<ApiWardrobeItem> {
     const response = await apiClient.post("/items", item);
-    return response.data.data;
+    console.log("🔧 API createItem raw response:", response);
+    console.log("🔧 response.data:", response.data);
+    // API returns item directly in response.data, not response.data.data
+    return response.data;
   }
 
   /**
@@ -281,7 +288,7 @@ class WardrobeAPI {
    */
   async getCategories(): Promise<{ id: number; name: string }[]> {
     try {
-      const response = await apiClient.get("/categories/root");
+      const response = await apiClient.get("/categories?take-all=true");
 
       // API returns { data: [...], metaData: {...} } directly
       const categories = response.data?.data || [];

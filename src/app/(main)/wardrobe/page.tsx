@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
+import { toast } from "sonner";
 import { WardrobeHeader } from "@/components/wardrobe/wardrobe-header";
 import { Toolbar } from "@/components/wardrobe/toolbar";
 import { WardrobeContent } from "@/components/wardrobe/wardrobe-content";
@@ -11,6 +12,8 @@ import { useWardrobeStore } from "@/store/wardrobe-store";
 import { useAuthStore } from "@/store/auth-store";
 import { getCollectionsWithCounts } from "@/lib/mock/collections";
 import { WardrobeFilters } from "@/types/wardrobe";
+import { WardrobeItem } from "@/types";
+import { ApiWardrobeItem, wardrobeAPI } from "@/lib/api/wardrobe-api";
 
 // Dynamic import for heavy wizard component
 const AddItemWizard = dynamic(() => import("@/components/wardrobe/wizard").then(mod => ({ default: mod.AddItemWizard })), {
@@ -26,6 +29,12 @@ export default function WardrobePage() {
   const router = useRouter();
   const [isAddItemOpen, setIsAddItemOpen] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [isLoadingEdit, setIsLoadingEdit] = useState(false);
+  
+  // Edit mode state
+  const [editItem, setEditItem] = useState<ApiWardrobeItem | null>(null);
+  const isEditMode = !!editItem;
+
   const { isAuthenticated, user } = useAuthStore();
 
   // Store hooks - MUST be called before any conditional returns
@@ -33,6 +42,7 @@ export default function WardrobePage() {
     isLoading,
     error,
     items,
+    getRawItemById, // Get raw API item helper
     isSelectionMode,
     toggleSelectionMode,
     selectedItems,
@@ -46,7 +56,75 @@ export default function WardrobePage() {
 
   // Handlers - ALL hooks must be called before conditional returns
   const handleAddItem = () => {
+    setEditItem(null); // Clear any edit state
     setIsAddItemOpen(true);
+  };
+
+  const handleEditItem = async (item: WardrobeItem) => {
+    try {
+      setIsLoadingEdit(true);
+      
+      // Get raw API item from store (includes styles & occasions)
+      const rawItem = getRawItemById(parseInt(item.id));
+      
+      if (!rawItem) {
+        // Fallback: fetch from API if not in store
+        const response = await wardrobeAPI.getItem(parseInt(item.id));
+        
+        if (!response) {
+          throw new Error("Item not found");
+        }
+        
+        setEditItem(response);
+      } else {
+        setEditItem(rawItem);
+      }
+      
+      // Small delay to ensure state is updated
+      setTimeout(() => {
+        setIsAddItemOpen(true);
+        setIsLoadingEdit(false);
+      }, 100);
+    } catch (error) {
+      console.error("❌ Failed to fetch item for edit:", error);
+      toast.error("Failed to load item details. Please try again.");
+      setIsLoadingEdit(false);
+    }
+  };
+
+  // Handle edit after auto-save (from toast action)
+  const handleEditAfterSave = async (itemId: number) => {
+    console.log("🟢 handleEditAfterSave called with itemId:", itemId);
+    try {
+      // Get raw API item from store
+      const rawItem = getRawItemById(itemId);
+      console.log("🔍 Raw item from store:", rawItem);
+      
+      if (!rawItem) {
+        console.warn("⚠️ Item not in store, fetching from API...");
+        // Fallback: fetch from API if not in store
+        const response = await wardrobeAPI.getItem(itemId);
+        console.log("✅ Fetched from API:", response);
+        
+        if (!response) {
+          throw new Error("Item not found");
+        }
+        
+        setEditItem(response);
+      } else {
+        console.log("✅ Using item from store");
+        setEditItem(rawItem);
+      }
+      
+      // Open wizard in edit mode
+      console.log("📂 Opening wizard in edit mode...");
+      setTimeout(() => {
+        setIsAddItemOpen(true);
+      }, 100);
+    } catch (error) {
+      console.error("❌ Failed to fetch item for edit:", error);
+      toast.error("Failed to load item details. Please try again.");
+    }
   };
 
   const handleFiltersChange = (newFilters: WardrobeFilters) => {
@@ -108,10 +186,25 @@ export default function WardrobePage() {
         />
 
         {/* Main Content */}
-        <WardrobeContent />
+        <WardrobeContent onEditItem={handleEditItem} />
 
         {/* Add Item Wizard */}
-        <AddItemWizard open={isAddItemOpen} onOpenChange={setIsAddItemOpen} />
+        <AddItemWizard 
+          open={isAddItemOpen} 
+          onOpenChange={(open) => {
+            setIsAddItemOpen(open);
+            if (!open) {
+              // Delay clearing edit state until after dialog close animation
+              setTimeout(() => {
+                setEditItem(null);
+              }, 300);
+            }
+          }}
+          editMode={isEditMode}
+          editItemId={editItem?.id}
+          editItem={editItem || undefined}
+          onEditAfterSave={handleEditAfterSave}
+        />
       </div>
     </div>
   );
