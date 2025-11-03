@@ -21,6 +21,15 @@ function decodeJWT(token: string) {
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Protect community routes - require authentication
+  if (pathname.startsWith("/community") || pathname.startsWith("/wardrobe")) {
+    const accessToken = request.cookies.get("accessToken")?.value;
+    
+    if (!accessToken) {
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+  }
+
   // Protect admin routes
   if (pathname.startsWith("/admin") && !pathname.startsWith("/admin/login")) {
     // Get access token from localStorage (stored in cookies for server-side access)
@@ -69,6 +78,8 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     "/admin/:path*",
+    "/community/:path*",
+    "/wardrobe/:path*",
   ],
 };
 

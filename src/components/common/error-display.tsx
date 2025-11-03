@@ -1,6 +1,5 @@
 "use client";
 
-import { memo } from "react";
 import { AlertCircle } from "lucide-react";
 
 interface ErrorDisplayProps {
@@ -8,7 +7,7 @@ interface ErrorDisplayProps {
   onDismiss?: () => void;
 }
 
-export const ErrorDisplay = memo(function ErrorDisplay({
+export function ErrorDisplay({
   error,
   onDismiss,
 }: ErrorDisplayProps) {
@@ -30,4 +29,4 @@ export const ErrorDisplay = memo(function ErrorDisplay({
       </div>
     </div>
   );
-});
+}

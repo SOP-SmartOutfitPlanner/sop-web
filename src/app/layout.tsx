@@ -4,7 +4,6 @@ import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/components/providers/auth-provider";
 import { GoogleAuthProvider } from "@/components/providers/google-oauth-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
-import { StagewiseProvider } from "@/components/providers/stagewise-provider";
 import "./globals.css";
 
 
@@ -46,16 +45,14 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${poppins.variable} ${bricolageGrotesque.variable} antialiased`}
         suppressHydrationWarning={true}
       >
-        <StagewiseProvider>
-          <AuthProvider>
-            <QueryProvider>
-              <GoogleAuthProvider>
-                {children}
-                <Toaster />
-              </GoogleAuthProvider>
-            </QueryProvider>
-          </AuthProvider>
-        </StagewiseProvider>
+        <AuthProvider>
+          <QueryProvider>
+            <GoogleAuthProvider>
+              {children}
+              <Toaster />
+            </GoogleAuthProvider>
+          </QueryProvider>
+        </AuthProvider>
       </body >
     </html >
   );

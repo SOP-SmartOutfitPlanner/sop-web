@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { AddItemWizard } from "@/components/wardrobe/wizard";
+import dynamic from "next/dynamic";
 import { WardrobeHeader } from "@/components/wardrobe/wardrobe-header";
 import { Toolbar } from "@/components/wardrobe/toolbar";
 import { WardrobeContent } from "@/components/wardrobe/wardrobe-content";
@@ -11,6 +11,16 @@ import { useWardrobeStore } from "@/store/wardrobe-store";
 import { useAuthStore } from "@/store/auth-store";
 import { getCollectionsWithCounts } from "@/lib/mock/collections";
 import { WardrobeFilters } from "@/types/wardrobe";
+
+// Dynamic import for heavy wizard component
+const AddItemWizard = dynamic(() => import("@/components/wardrobe/wizard").then(mod => ({ default: mod.AddItemWizard })), {
+  loading: () => (
+    <div className="flex items-center justify-center p-8">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <span className="ml-2 text-sm text-muted-foreground">Loading wizard...</span>
+    </div>
+  ),
+});
 
 export default function WardrobePage() {
   const router = useRouter();
@@ -34,27 +44,20 @@ export default function WardrobePage() {
   // Collections data - Pass actual items instead of just length
   const collections = useMemo(() => getCollectionsWithCounts(items), [items]);
 
-  // Memoized handlers - ALL hooks must be called before conditional returns
-  const handleAddItem = useCallback(() => {
+  // Handlers - ALL hooks must be called before conditional returns
+  const handleAddItem = () => {
     setIsAddItemOpen(true);
-  }, []);
+  };
 
+  const handleFiltersChange = (newFilters: WardrobeFilters) => {
+    setStoreFilters(newFilters);
+  };
 
-  const handleFiltersChange = useCallback(
-    (newFilters: WardrobeFilters) => {
-      setStoreFilters(newFilters);
-    },
-    [setStoreFilters]
-  );
-
-  const handleSelectMode = useCallback(
-    (enabled: boolean) => {
-      if (enabled !== isSelectionMode) {
-        toggleSelectionMode();
-      }
-    },
-    [isSelectionMode, toggleSelectionMode]
-  );
+  const handleSelectMode = (enabled: boolean) => {
+    if (enabled !== isSelectionMode) {
+      toggleSelectionMode();
+    }
+  };
 
   // Redirect to login if not authenticated (useEffect AFTER all other hooks)
   useEffect(() => {

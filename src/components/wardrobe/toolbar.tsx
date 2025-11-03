@@ -307,7 +307,7 @@ const SortSelect = memo(function SortSelect({
   );
 });
 
-const FilterButton = memo(function FilterButton({
+function FilterButton({
   activeCount,
   children,
 }: {
@@ -335,9 +335,9 @@ const FilterButton = memo(function FilterButton({
       </PopoverContent>
     </Popover>
   );
-});
+}
 
-const SelectModeButton = memo(function SelectModeButton({
+function SelectModeButton({
   isSelectMode,
   onToggle,
 }: {
@@ -353,7 +353,7 @@ const SelectModeButton = memo(function SelectModeButton({
       {isSelectMode ? "Cancel" : "Select"}
     </Button>
   );
-});
+}
 
 const SelectionBar = memo(function SelectionBar({
   selectedCount,

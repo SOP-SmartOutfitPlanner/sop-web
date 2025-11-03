@@ -32,42 +32,17 @@ export function StagewiseProvider({ children }: { children: React.ReactNode }) {
     toolbarRoot.id = 'stagewise-toolbar-root';
     document.body.appendChild(toolbarRoot);
 
-    // Load Stagewise toolbar styles
-    const toolbarStyle = document.createElement('link');
-    toolbarStyle.rel = 'stylesheet';
-    toolbarStyle.href = '/_stagewise/toolbar.css';
-    document.head.appendChild(toolbarStyle);
-
-    // Load Stagewise toolbar script
-    const toolbarScript = document.createElement('script');
-    toolbarScript.src = '/_stagewise/toolbar.js';
-    toolbarScript.type = 'module';
-    toolbarScript.async = true;
-    
-    toolbarScript.onload = () => {
-      console.log('✅ Stagewise toolbar loaded successfully');
-      console.log('💡 To use Stagewise:');
-      console.log('   1. Run "npm run stagewise" in another terminal');
-      console.log('   2. Select elements in the browser');
-      console.log('   3. Describe changes you want to make');
-    };
-
-    toolbarScript.onerror = () => {
-      console.warn('⚠️ Stagewise toolbar not detected.');
-      console.log('To enable Stagewise AI-powered editing:');
-      console.log('1. Open a new terminal window');
-      console.log('2. Run: npm run stagewise');
-      console.log('3. Follow the CLI prompts');
-      console.log('4. Refresh this page');
-    };
-
-    document.head.appendChild(toolbarScript);
+    // Stagewise toolbar will be loaded by the CLI when needed
+    console.log('🚀 Stagewise provider initialized');
+    console.log('💡 To use Stagewise:');
+    console.log('   1. Run "npm run stagewise" in another terminal');
+    console.log('   2. Select elements in the browser');
+    console.log('   3. Describe changes you want to make');
+    console.log('   4. Refresh this page');
 
     // Cleanup on unmount
     return () => {
       toolbarRoot.remove();
-      toolbarStyle.remove();
-      toolbarScript.remove();
     };
   }, []);
 
