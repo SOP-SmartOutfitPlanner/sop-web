@@ -6,6 +6,7 @@
 export { BasicInfoSection } from "./BasicInfoSection";
 export { CategorySection } from "./CategorySection";
 export { ColorSection } from "./ColorSection";
+export { EditableColorSection } from "./EditableColorSection";
 export { PatternFabricSection } from "./PatternFabricSection";
 export { StyleOccasionSection } from "./StyleOccasionSection";
 export { WeatherSeasonSection } from "./WeatherSeasonSection";

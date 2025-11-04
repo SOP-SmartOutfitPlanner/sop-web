@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import {
   BasicInfoSection,
   CategorySection,
-  ColorSection,
+  EditableColorSection,
   PatternFabricSection,
   StyleOccasionSection,
   WeatherSeasonSection,
@@ -103,37 +103,28 @@ export function ItemFormContent({
       animate="visible"
       className="w-full max-w-6xl mx-auto"
     >
-      <div className="grid lg:grid-cols-[340px,1fr] gap-6">
-        {/* Image Preview Section */}
+      {/* Image Preview at Top */}
+      <div className="mb-6">
         <ImagePreviewSection previewUrl={previewUrl} />
+      </div>
 
-        {/* Form Fields */}
-        <div className="order-1 lg:order-2 space-y-5">
-          {/* Basic Details Card */}
+      {/* Form Fields in 2x2 Grid */}
+      <div className="space-y-6">
+        <div className="grid lg:grid-cols-2 gap-6">
+          {/* Card 1: Basic Info */}
           <motion.div variants={FORM_ANIMATIONS.item}>
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl" />
+            <div className="bg-white/80 backdrop-blur-sm border border-gray-200 rounded-2xl p-6 shadow-lg relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-100/50 rounded-full blur-3xl" />
               <div className="relative">
-                <h2 className="text-2xl font-bold text-white mb-2">
-                  Item Details
-                </h2>
-                <p className="text-sm text-white/50 mb-6">
-                  Review and edit the AI-detected information
-                </p>
-
-                <div className="space-y-5">
-                  {/* Name Field */}
+                <h3 className="text-lg font-bold text-gray-900 mb-4">Basic Information</h3>
+                <div className="space-y-4">
                   <BasicInfoSection
                     name={formData.name}
                     brand={formData.brand || ""}
                     errors={errors}
                     onNameChange={(value) => onFormDataChange({ name: value })}
-                    onBrandChange={(value) =>
-                      onFormDataChange({ brand: value })
-                    }
+                    onBrandChange={(value) => onFormDataChange({ brand: value })}
                   />
-
-                  {/* Category Selection */}
                   <CategorySection
                     categoryId={formData.categoryId}
                     categoryName={formData.categoryName}
@@ -144,11 +135,22 @@ export function ItemFormContent({
                       onFormDataChange({ categoryId, categoryName })
                     }
                   />
+                </div>
+              </div>
+            </div>
+          </motion.div>
 
-                  {/* Color Display */}
-                  <ColorSection colors={formData.colors || []} />
-
-                  {/* Pattern & Fabric */}
+          {/* Card 2: Colors & Materials */}
+          <motion.div variants={FORM_ANIMATIONS.item}>
+            <div className="bg-white/80 backdrop-blur-sm border border-gray-200 rounded-2xl p-6 shadow-lg relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-purple-100/50 rounded-full blur-3xl" />
+              <div className="relative">
+                <h3 className="text-lg font-bold text-gray-900 mb-4">Colors & Materials</h3>
+                <div className="space-y-4">
+                  <EditableColorSection 
+                    colors={formData.colors || []}
+                    onColorsChange={(colors) => onFormDataChange({ colors })}
+                  />
                   <PatternFabricSection
                     pattern={formData.pattern || ""}
                     fabric={formData.fabric || ""}
@@ -160,43 +162,53 @@ export function ItemFormContent({
             </div>
           </motion.div>
 
-          {/* Styles & Occasions */}
-          <StyleOccasionSection
-            styleIds={formData.styleIds || []}
-            occasionIds={formData.occasionIds || []}
-            availableStyles={availableStyles}
-            availableOccasions={availableOccasions}
-            aiSuggestions={aiSuggestions}
-            onToggleStyle={toggleStyleId}
-            onToggleOccasion={toggleOccasionId}
-          />
+          {/* Card 3: Style & Occasions */}
+          <motion.div variants={FORM_ANIMATIONS.item}>
+            <div className="bg-white/80 backdrop-blur-sm border border-gray-200 rounded-2xl p-6 shadow-lg relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-green-100/50 rounded-full blur-3xl" />
+              <div className="relative">
+                <h3 className="text-lg font-bold text-gray-900 mb-4">Style & Occasions</h3>
+                <StyleOccasionSection
+                  styleIds={formData.styleIds || []}
+                  occasionIds={formData.occasionIds || []}
+                  availableStyles={availableStyles}
+                  availableOccasions={availableOccasions}
+                  aiSuggestions={aiSuggestions}
+                  onToggleStyle={toggleStyleId}
+                  onToggleOccasion={toggleOccasionId}
+                />
+              </div>
+            </div>
+          </motion.div>
 
-          {/* Weather, Season & Condition */}
-          <WeatherSeasonSection
-            seasons={formData.seasons || []}
-            weatherSuitable={formData.weatherSuitable || ""}
-            condition={formData.condition || "New"}
-            errors={errors}
-            onToggleSeason={(season) => toggleArrayItem("seasons", season)}
-            onWeatherChange={(weather) =>
-              onFormDataChange({ weatherSuitable: weather })
-            }
-            onConditionChange={(condition) => onFormDataChange({ condition })}
-          />
-
-          {/* Additional Info (Brand & Notes) */}
-          {/* <NotesSection
-            notes={formData.notes || ""}
-            onNotesChange={(value) => onFormDataChange({ notes: value })}
-          /> */}
-
-          {/* Action Buttons */}
-          <FormActionsSection
-            isSaving={isSaving}
-            onCancel={onCancel}
-            onSave={validateAndSave}
-          />
+          {/* Card 4: Weather & Season */}
+          <motion.div variants={FORM_ANIMATIONS.item}>
+            <div className="bg-white/80 backdrop-blur-sm border border-gray-200 rounded-2xl p-6 shadow-lg relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-amber-100/50 rounded-full blur-3xl" />
+              <div className="relative">
+                <h3 className="text-lg font-bold text-gray-900 mb-4">Weather & Season</h3>
+                <WeatherSeasonSection
+                  seasons={formData.seasons || []}
+                  weatherSuitable={formData.weatherSuitable || ""}
+                  condition={formData.condition || "New"}
+                  errors={errors}
+                  onToggleSeason={(season) => toggleArrayItem("seasons", season)}
+                  onWeatherChange={(weather) =>
+                    onFormDataChange({ weatherSuitable: weather })
+                  }
+                  onConditionChange={(condition) => onFormDataChange({ condition })}
+                />
+              </div>
+            </div>
+          </motion.div>
         </div>
+
+        {/* Action Buttons */}
+        <FormActionsSection
+          isSaving={isSaving}
+          onCancel={onCancel}
+          onSave={validateAndSave}
+        />
       </div>
     </motion.div>
   );

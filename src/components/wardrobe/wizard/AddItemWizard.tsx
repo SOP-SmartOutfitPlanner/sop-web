@@ -284,7 +284,7 @@ export function AddItemWizard({
         }
       }
     },
-    [autoSaveAfterAnalysis]
+    [autoSaveAfterAnalysis, hasNullCriticalFields]
   );
 
   // Handle initialFile from GalleryPickerFlow
@@ -525,7 +525,7 @@ export function AddItemWizard({
         onOpenChange={(open) => !open && handleClose()}
       >
         <DialogContent
-          className="max-w-[95vw] sm:max-w-xl p-0 gap-0 max-h-[95vh] flex flex-col overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-white/10"
+          className="max-w-[95vw] sm:max-w-xl p-0 gap-0 max-h-[95vh] flex flex-col overflow-hidden bg-white border-gray-200"
           showCloseButton={false}
         >
           {/* Accessible title (hidden visually but available to screen readers) */}
@@ -534,28 +534,26 @@ export function AddItemWizard({
           </DialogTitle>
 
           {/* Background gradients */}
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(59,130,246,0.15),transparent_50%)]" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(147,51,234,0.1),transparent_50%)]" />
-          <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent,rgba(0,0,0,0.3))]" />
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 via-white to-gray-50/30" />
 
           {/* Header */}
-          <div className="relative border-b border-white/10 bg-gradient-to-r from-black/40 via-black/30 to-black/40 backdrop-blur-xl px-6 sm:px-8 py-5">
+          <div className="relative border-b border-gray-200 bg-white/80 backdrop-blur-xl px-6 sm:px-8 py-5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <motion.div
                   initial={{ rotate: -180, scale: 0 }}
                   animate={{ rotate: 0, scale: 1 }}
                   transition={{ type: "spring", duration: 0.6 }}
-                  className="p-2.5 rounded-xl bg-gradient-to-br from-blue-500/30 to-blue-600/30 ring-1 ring-blue-400/40 shadow-lg"
+                  className="p-2.5 rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-600/10 ring-1 ring-blue-400/20 shadow-lg"
                 >
-                  <Sparkles className="w-5 h-5 text-blue-300" />
+                  <Sparkles className="w-5 h-5 text-blue-600" />
                 </motion.div>
                 <div>
                   <motion.h2
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="text-xl sm:text-2xl font-bold text-white"
+                    className="text-xl sm:text-2xl font-bold text-gray-900"
                   >
                     {editMode ? "Edit Item" : "Add Item by Image"}
                   </motion.h2>
@@ -563,7 +561,7 @@ export function AddItemWizard({
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.3 }}
-                    className="text-sm text-white/50"
+                    className="text-sm text-gray-600"
                   >
                     {editMode
                       ? "Update item details"
@@ -577,13 +575,13 @@ export function AddItemWizard({
                 onClick={handleClose}
                 whileHover={{
                   scale: 1.1,
-                  backgroundColor: "rgba(255,255,255,0.15)",
+                  backgroundColor: "rgba(0,0,0,0.05)",
                 }}
                 whileTap={{ scale: 0.9 }}
-                className="p-2.5 hover:bg-white/10 rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/70"
+                className="p-2.5 hover:bg-gray-100 rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/70"
                 aria-label="Close modal"
               >
-                <X className="w-5 h-5 text-white/90" />
+                <X className="w-5 h-5 text-gray-600" />
               </motion.button>
             </div>
           </div>
