@@ -48,10 +48,10 @@ export function transformWizardDataToAPI(
   formData: WizardFormData,
   userId: number
 ): CreateWardrobeItemRequest {
-  // Join color names
+  // Store colors as JSON string array (preserves hex codes from AI)
   const colorString = formData.colors.length > 0
-    ? formData.colors.map(c => c.name).join(', ')
-    : 'Unknown';
+    ? JSON.stringify(formData.colors)
+    : JSON.stringify([{ name: 'Unknown', hex: '#808080' }]);
 
   // Join seasons - MUST NOT BE EMPTY (backend constraint)
   const weatherString = formData.seasons.length > 0
@@ -114,6 +114,7 @@ export function transformWizardDataToAPI(
   // Debug logging
   console.log('🔍 Transform Input:', {
     colors: formData.colors,
+    colorStringOutput: colorString,
     seasons: formData.seasons,
     condition: formData.condition,
     imageRemBgURL: formData.imageRemBgURL,
@@ -202,13 +203,29 @@ export async function getUserIdFromAuth(user: { id?: string } | null): Promise<n
  * @returns Form data structure for wizard
  */
 export function apiItemToFormData(apiItem: ApiWardrobeItem): Partial<WizardFormData> {
-  // Parse colors from comma-separated string to ColorOption array
-  const colors: ColorOption[] = apiItem.color
-    ? apiItem.color.split(',').map((colorName: string) => ({
+  // Parse colors - supports both JSON array format and legacy comma-separated
+  let colors: ColorOption[] = [];
+  
+  if (apiItem.color) {
+    try {
+      // Try parse as JSON array first (new format from AI)
+      const parsed = JSON.parse(apiItem.color);
+      if (Array.isArray(parsed)) {
+        colors = parsed.map((c: { name?: string; hex?: string }) => ({
+          name: c.name || 'Unknown',
+          hex: c.hex || '#808080',
+        }));
+      }
+    } catch {
+      // Fallback: legacy comma-separated string (e.g., "White, Dark Green")
+      colors = apiItem.color.split(',').map((colorName: string) => ({
         name: colorName.trim(),
-        hex: '#808080', // Default gray - actual hex would need color lookup
-      }))
-    : [];
+        hex: '#808080', // Gray placeholder for legacy data
+      }));
+    }
+  }
+
+  console.log('🔍 apiItemToFormData - Parsed colors:', colors);
 
   // Parse seasons from comma-separated weatherSuitable string
   const seasons: string[] = apiItem.weatherSuitable

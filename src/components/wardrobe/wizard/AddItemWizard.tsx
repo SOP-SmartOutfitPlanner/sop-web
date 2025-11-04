@@ -80,7 +80,7 @@ export function AddItemWizard({
 
   // Initialize form data in edit mode OR reset when switching modes
   useEffect(() => {
-    if (editMode && editItem && open) {
+    if (editMode && editItem && open && status === STATUS.IDLE) {
       const transformedData = apiItemToFormData(editItem);
       const finalFormData = { ...INITIAL_FORM_DATA, ...transformedData };
       setFormData(finalFormData);
@@ -90,11 +90,11 @@ export function AddItemWizard({
       setStatus(STATUS.FORM); // Go directly to form in edit mode
       setHasChanges(false);
     }
-  }, [editMode, editItem, open]);
+  }, [editMode, editItem, open, status]);
 
   // Reset when opening fresh (not from edit mode)
   useEffect(() => {
-    if (open && !editMode && !editItem) {
+    if (open && !editMode && !editItem && status === STATUS.IDLE) {
       // Only reset if opening fresh in add mode
       setStatus(STATUS.IDLE);
       setFormData(INITIAL_FORM_DATA);
@@ -103,7 +103,24 @@ export function AddItemWizard({
       setPreviewUrl("");
       setAnalysisProgress(0);
     }
-  }, [open, editMode, editItem]);
+  }, [open, editMode, editItem, status]);
+
+  // Reset form to initial state
+  const resetAndClose = useCallback(() => {
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setStatus(STATUS.IDLE);
+    setSelectedFile(null);
+    setPreviewUrl("");
+    setFormData(INITIAL_FORM_DATA);
+    setAiSuggestions(null);
+    setHasChanges(false);
+    setShowConfirmClose(false);
+    setIsSubmitting(false);
+    setAnalysisProgress(0);
+    onOpenChange(false);
+  }, [onOpenChange, previewUrl]);
 
   // Auto-save after AI analysis
   const autoSaveAfterAnalysis = useCallback(
@@ -134,12 +151,10 @@ export function AddItemWizard({
 
         // Set to SAVED to hide AnalysisToast
         setStatus(STATUS.SAVED);
-
-        // Close modal immediately after save
-        onOpenChange(false);
+        setHasChanges(false);
 
         // Refresh items in background
-        fetchItems();
+        await fetchItems();
 
         // Show toast with edit button
         toast.success(
@@ -160,6 +175,11 @@ export function AddItemWizard({
             },
           }
         );
+
+        // Close modal safely via resetAndClose
+        setTimeout(() => {
+          resetAndClose();
+        }, 1500);
       } catch (error) {
         console.error("❌ Auto-save failed:", error);
 
@@ -170,7 +190,7 @@ export function AddItemWizard({
         setIsSubmitting(false);
       }
     },
-    [user, fetchItems, onOpenChange, onEditAfterSave]
+    [user, fetchItems, onEditAfterSave, resetAndClose]
   );
 
   // AI Analysis with retry logic
@@ -233,9 +253,12 @@ export function AddItemWizard({
 
         if (attempt < AI_ANALYSIS_CONFIG.MAX_RETRIES) {
           setIsRetrying(true);
-          // toast.error(
-          //   `Analysis failed. Retrying in 30s... (${attempt}/${AI_ANALYSIS_CONFIG.MAX_RETRIES})`
-          // );
+          // Reset progress for retries
+          if (attempt === 1) {
+            setAnalysisProgress(0);
+          } else {
+            setAnalysisProgress(10);
+          }
 
           setTimeout(() => {
             analyzeImage(file, url, attempt + 1);
@@ -246,6 +269,7 @@ export function AddItemWizard({
             "Failed to analyze image after 5 attempts. Please try again."
           );
           setStatus(STATUS.PREVIEW);
+          setAnalysisProgress(0);
         }
       }
     },
@@ -280,23 +304,6 @@ export function AddItemWizard({
     }
   }, [initialFile, open, autoAnalyze, skipCrop, analyzeImage]);
 
-  // Reset form to initial state
-  const resetAndClose = useCallback(() => {
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl);
-    }
-    setStatus(STATUS.IDLE);
-    setSelectedFile(null);
-    setPreviewUrl("");
-    setFormData(INITIAL_FORM_DATA);
-    setAiSuggestions(null);
-    setHasChanges(false);
-    setShowConfirmClose(false);
-    setIsSubmitting(false);
-    setAnalysisProgress(0);
-    onOpenChange(false);
-  }, [onOpenChange, previewUrl]);
-
   // Clear selected file
   const handleClearFile = useCallback(() => {
     if (previewUrl) {
@@ -311,12 +318,16 @@ export function AddItemWizard({
 
   // Handle file selection - go to cropping
   const handleFileSelect = useCallback((file: File) => {
+    // Revoke old URL to prevent memory leak
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
     setSelectedFile(file);
     const url = URL.createObjectURL(file);
     setPreviewUrl(url);
     setStatus(STATUS.CROPPING); // Changed from PREVIEW to CROPPING
     setHasChanges(true);
-  }, []);
+  }, [previewUrl]);
 
   // Handle crop complete
   const handleCropComplete = useCallback(
@@ -341,7 +352,13 @@ export function AddItemWizard({
 
   // Handle dialog close with unsaved changes confirmation
   const handleClose = useCallback(() => {
-    if (hasChanges && status !== STATUS.SAVED) {
+    // If just saved, close immediately without confirmation
+    if (status === STATUS.SAVED) {
+      resetAndClose();
+      return;
+    }
+    
+    if (hasChanges) {
       setShowConfirmClose(true);
     } else {
       resetAndClose();

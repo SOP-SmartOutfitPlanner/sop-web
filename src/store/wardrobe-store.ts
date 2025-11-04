@@ -46,13 +46,13 @@ interface WardrobeStore {
 // Fuse.js configuration for filtering
 const fuseOptions = {
   keys: [
-    { name: 'name', weight: 0.4 },
-    { name: 'brand', weight: 0.3 },
-    { name: 'colors', weight: 0.2 },
-    { name: 'tags', weight: 0.1 },
-    { name: 'type', weight: 0.1 },
-    { name: 'seasons', weight: 0.05 },
-    { name: 'occasions', weight: 0.05 },
+    { name: "name", weight: 0.4 },
+    { name: "brand", weight: 0.3 },
+    { name: "colors", weight: 0.2 },
+    { name: "tags", weight: 0.1 },
+    { name: "type", weight: 0.1 },
+    { name: "seasons", weight: 0.05 },
+    { name: "occasions", weight: 0.05 },
   ],
   threshold: 0.4, // More lenient for filtering
   location: 0,
@@ -74,10 +74,10 @@ const filterItems = (
   if (searchQuery && searchQuery.length >= 2) {
     const fuse = new Fuse(items, fuseOptions);
     const fuseResults = fuse.search(searchQuery);
-    
+
     // Extract items from Fuse results
-    const searchMatchIds = new Set(fuseResults.map(result => result.item.id));
-    filteredItems = items.filter(item => searchMatchIds.has(item.id));
+    const searchMatchIds = new Set(fuseResults.map((result) => result.item.id));
+    filteredItems = items.filter((item) => searchMatchIds.has(item.id));
   }
 
   // Apply additional filters to the search results
@@ -85,15 +85,26 @@ const filterItems = (
     // Occasion filtering
     if (
       filters.occasions?.length &&
-      !filters.occasions.some((o) => item.occasions?.includes(o as "casual" | "smart" | "formal" | "sport" | "travel"))
+      !filters.occasions.some((o) =>
+        item.occasions?.includes(
+          o as "casual" | "smart" | "formal" | "sport" | "travel"
+        )
+      )
     )
       return false;
 
     // Collection filter - based on occasions or tags
     if (filters.collectionId && filters.collectionId !== "all") {
-      const hasOccasion = item.occasions?.includes(filters.collectionId as "casual" | "smart" | "formal" | "sport" | "travel");
+      const hasOccasion = item.occasions?.includes(
+        filters.collectionId as
+          | "casual"
+          | "smart"
+          | "formal"
+          | "sport"
+          | "travel"
+      );
       const hasTag = item.tags?.includes(filters.collectionId);
-      
+
       if (!hasOccasion && !hasTag) {
         return false;
       }
@@ -104,7 +115,9 @@ const filterItems = (
       return false;
     if (
       filters.seasons?.length &&
-      !filters.seasons.some((s) => item.seasons?.includes(s as "spring" | "summer" | "fall" | "winter"))
+      !filters.seasons.some((s) =>
+        item.seasons?.includes(s as "spring" | "summer" | "fall" | "winter")
+      )
     )
       return false;
     if (
@@ -117,7 +130,7 @@ const filterItems = (
 
     return true;
   });
-  
+
   return result;
 };
 
@@ -239,8 +252,8 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
     try {
       // Convert string id to number for API call
       const numericId = parseInt(id);
-      
-      // Convert WardrobeItem fields to API format  
+
+      // Convert WardrobeItem fields to API format
       const apiUpdateData: Partial<CreateWardrobeItemRequest> = {
         name: updatedData.name,
         color: updatedData.color || updatedData.colors?.[0],
@@ -248,7 +261,7 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
         imgUrl: updatedData.imageUrl,
         // Add other necessary fields as needed
       };
-      
+
       const updatedApiItem = await wardrobeAPI.updateItem(
         numericId,
         apiUpdateData
@@ -400,7 +413,9 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       // Delete all items from API
-      const deletePromises = ids.map((id) => wardrobeAPI.deleteItem(parseInt(id)));
+      const deletePromises = ids.map((id) =>
+        wardrobeAPI.deleteItem(parseInt(id))
+      );
       await Promise.all(deletePromises);
 
       // Update local state
@@ -450,28 +465,84 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
 // Helper function to convert API item to WardrobeItem
 const apiItemToWardrobeItem = (apiItem: ApiWardrobeItem): WardrobeItem => {
   // Map categoryName to type for compatibility
-  const getTypeFromCategory = (categoryName: string): "top" | "bottom" | "shoes" | "outer" | "accessory" => {
-    const category = categoryName.toLowerCase();
-    if (category.includes('top') || category.includes('shirt') || category.includes('áo')) return 'top';
-    if (category.includes('bottom') || category.includes('pants') || category.includes('quần')) return 'bottom';
-    if (category.includes('shoes') || category.includes('giày')) return 'shoes';
-    if (category.includes('outer') || category.includes('jacket') || category.includes('coat')) return 'outer';
-    return 'accessory';
+  const getTypeFromCategory = (
+    categoryName: string
+  ): "top" | "bottom" | "shoes" | "outer" | "accessory" => {
+    const c = categoryName.toLowerCase();
+    // Tops
+    if (
+      c.includes("top") ||
+      c.includes("shirt") ||
+      c.includes("tee") ||
+      c.includes("t-shirt") ||
+      c.includes("sweater") ||
+      c.includes("hoodie") ||
+      c.includes("áo")
+    ) {
+      return "top";
+    }
+    // Bottoms
+    if (
+      c.includes("bottom") ||
+      c.includes("pants") ||
+      c.includes("trouser") ||
+      c.includes("trousers") ||
+      c.includes("shorts") ||
+      c.includes("jeans") ||
+      c.includes("chino") ||
+      c.includes("quần")
+    ) {
+      return "bottom";
+    }
+    // Shoes
+    if (c.includes("shoes") || c.includes("sneaker") || c.includes("giày")) {
+      return "shoes";
+    }
+    // Outerwear
+    if (
+      c.includes("outer") ||
+      c.includes("jacket") ||
+      c.includes("coat") ||
+      c.includes("blazer") ||
+      c.includes("cardigan")
+    ) {
+      return "outer";
+    }
+    // Default to accessory
+    return "accessory";
   };
 
   // Parse weather suitable for seasons
-  const parseSeasons = (weatherSuitable: string): ("spring" | "summer" | "fall" | "winter")[] => {
+  const parseSeasons = (
+    weatherSuitable: string
+  ): ("spring" | "summer" | "fall" | "winter")[] => {
     const weather = weatherSuitable.toLowerCase();
     const seasons: ("spring" | "summer" | "fall" | "winter")[] = [];
-    
-    if (weather.includes('mùa hè') || weather.includes('summer') || weather.includes('nóng')) seasons.push('summer');
-    if (weather.includes('mùa đông') || weather.includes('winter') || weather.includes('lạnh')) seasons.push('winter');
-    if (weather.includes('mùa xuân') || weather.includes('spring')) seasons.push('spring');
-    if (weather.includes('mùa thu') || weather.includes('fall') || weather.includes('mát')) seasons.push('fall');
-    
+
+    if (
+      weather.includes("mùa hè") ||
+      weather.includes("summer") ||
+      weather.includes("nóng")
+    )
+      seasons.push("summer");
+    if (
+      weather.includes("mùa đông") ||
+      weather.includes("winter") ||
+      weather.includes("lạnh")
+    )
+      seasons.push("winter");
+    if (weather.includes("mùa xuân") || weather.includes("spring"))
+      seasons.push("spring");
+    if (
+      weather.includes("mùa thu") ||
+      weather.includes("fall") ||
+      weather.includes("mát")
+    )
+      seasons.push("fall");
+
     // Default to summer if no specific season found
-    if (seasons.length === 0) seasons.push('summer');
-    
+    if (seasons.length === 0) seasons.push("summer");
+
     return seasons;
   };
 
@@ -492,10 +563,12 @@ const apiItemToWardrobeItem = (apiItem: ApiWardrobeItem): WardrobeItem => {
     status: "active", // Default status
     frequencyWorn: apiItem.frequencyWorn || "",
     // Additional fields for ItemCard compatibility
-    category: type,
+    category: {
+      id: apiItem.categoryId,
+      name: apiItem.categoryName,
+    },
     color: apiItem.color,
     season: seasons[0],
-    tags: apiItem.tag ? [apiItem.tag] : [],
     createdAt: apiItem.createdAt || new Date().toISOString(),
     updatedAt: apiItem.updatedAt || new Date().toISOString(),
   };

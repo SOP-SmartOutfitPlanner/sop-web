@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useWardrobeStore } from '@/store/wardrobe-store';
 import { WardrobeItem } from '@/types';
+import { validateHexColor } from '@/lib/utils/color-mapping';
 
 interface WardrobeStats {
   counts: {
@@ -58,25 +59,48 @@ export function useWardrobeStats(): WardrobeStats {
       }
     );
 
-    // Calculate color distribution
-    const colorCounts: Record<string, number> = {};
-    items.forEach(item => {
-      if (item.colors && item.colors.length > 0) {
-        item.colors.forEach(color => {
-          const colorName = color.toLowerCase();
-          colorCounts[colorName] = (colorCounts[colorName] || 0) + 1;
+    // Calculate color distribution (supports JSON string in item.color)
+    const colorAgg: Record<string, { name: string; hex: string; count: number }> = {};
+    items.forEach((item) => {
+      // Prefer item.color (API JSON string). Fall back to item.colors (legacy)
+      if (item.color) {
+        try {
+          const parsed = JSON.parse(item.color as unknown as string);
+          if (Array.isArray(parsed)) {
+            parsed.forEach((c: { name?: string; hex?: string }) => {
+              const name = (c?.name || 'Unknown').toLowerCase();
+              const hex = validateHexColor(c?.hex || '#808080');
+              const key = `${name}|${hex}`;
+              if (!colorAgg[key]) colorAgg[key] = { name, hex, count: 0 };
+              colorAgg[key].count += 1;
+            });
+            return;
+          }
+        } catch {
+          // not JSON, fall through
+        }
+        // Legacy: single name string
+        const name = String(item.color).toLowerCase();
+        const hex = colorMap[name] || '#6B7280';
+        const key = `${name}|${hex}`;
+        if (!colorAgg[key]) colorAgg[key] = { name, hex, count: 0 };
+        colorAgg[key].count += 1;
+      } else if (item.colors && item.colors.length > 0) {
+        item.colors.forEach((nameStr) => {
+          const name = String(nameStr).toLowerCase();
+          const hex = colorMap[name] || '#6B7280';
+          const key = `${name}|${hex}`;
+          if (!colorAgg[key]) colorAgg[key] = { name, hex, count: 0 };
+          colorAgg[key].count += 1;
         });
-      } else if (item.color) {
-        const colorName = item.color.toLowerCase();
-        colorCounts[colorName] = (colorCounts[colorName] || 0) + 1;
       }
     });
 
-    const byColor = Object.entries(colorCounts)
-      .map(([name, count]) => ({
+    const byColor = Object.values(colorAgg)
+      .map(({ name, hex, count }) => ({
         name: name.charAt(0).toUpperCase() + name.slice(1),
         count,
-        color: colorMap[name] || '#6B7280',
+        color: hex,
       }))
       .sort((a, b) => b.count - a.count);
 

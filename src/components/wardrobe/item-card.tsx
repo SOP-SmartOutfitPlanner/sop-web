@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/tooltip";
 import { WardrobeItem } from "@/types";
 import { cn } from "@/lib/utils";
-import { getColorHex } from "@/lib/utils/color-mapper";
+import { validateHexColor, parseColorString } from "@/lib/utils/color-mapping";
 import { formatDistanceToNow } from "date-fns";
 
 interface ItemCardProps {
@@ -184,9 +184,27 @@ export function ItemCard({
             {/* Header - Updated typography */}
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 flex-1">
-                <h3 className="font-semibold text-base truncate text-gray-900 font-[Inter,Poppins] tracking-tight">
+                {/* <h3 className="font-semibold text-base truncate text-gray-900 font-[Inter,Poppins] tracking-tight">
                   {item.name}
-                </h3>
+                </h3> */}
+                <TooltipProvider delayDuration={150}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <h3 className="block min-w-0 truncate font-semibold text-base tracking-tight">
+                        {item.name}
+                      </h3>
+                    </TooltipTrigger>
+                    <TooltipContent
+                      side="top"
+                      align="start"
+                      sideOffset={8}
+                      collisionPadding={12}
+                      className="max-w-[260px]"
+                    >
+                      <p className="capitalize">{item.name}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
                 {item.brand && (
                   <p className="text-sm text-gray-500 truncate font-medium">
                     {item.brand}
@@ -197,28 +215,55 @@ export function ItemCard({
                 variant="outline"
                 className="shrink-0 text-xs font-medium bg-gray-50 border-gray-200"
               >
-                {item.type}
+                {item.category?.name}
               </Badge>
             </div>
 
-            {/* Color Swatches */}
+            {/* Color Swatches (supports JSON array or legacy comma-separated string) */}
             {item.color && (
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">Color:</span>
                 <div className="flex gap-1">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <div
-                          className="w-5 h-5 rounded-full border-2 border-white shadow-md ring-1 ring-gray-200"
-                          style={{ backgroundColor: getColorHex(item.color) }}
-                        />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="font-medium">{item.color}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                  {(() => {
+                    let colors: { name: string; hex: string }[] = [];
+                    try {
+                      const parsed = JSON.parse(
+                        item.color as unknown as string
+                      );
+                      if (Array.isArray(parsed)) {
+                        colors = parsed.map(
+                          (c: { name?: string; hex?: string }) => ({
+                            name: c?.name || "Unknown",
+                            hex: validateHexColor(c?.hex || "#808080"),
+                          })
+                        );
+                      }
+                    } catch {
+                      // Legacy: comma separated names
+                      colors = parseColorString(String(item.color));
+                    }
+
+                    if (colors.length === 0) return null;
+
+                    return colors.slice(0, 3).map((c) => (
+                      <TooltipProvider key={`${c.name}-${c.hex}`}>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <div
+                              className="w-5 h-5 rounded-full border-2 border-white shadow-md ring-1 ring-gray-200"
+                              style={{ backgroundColor: c.hex }}
+                            />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="font-medium">{c.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {c.hex}
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    ));
+                  })()}
                 </div>
               </div>
             )}
