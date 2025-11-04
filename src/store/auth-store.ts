@@ -118,7 +118,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
     } catch (error: unknown) {
       const errorMessage = error instanceof ApiError
         ? error.message
-        : "Đăng nhập thất bại. Vui lòng thử lại.";
+        : "An error occurred during login";
 
       set({
         isLoading: false,
@@ -127,6 +127,75 @@ export const useAuthStore = create<AuthStore>((set) => ({
       });
 
       return { success: false, isFirstTime: false };
+    }
+  },
+
+  // Admin login - allows admin users
+  adminLogin: async (email: string, password: string) => {
+    set({ isLoading: true, error: null, successMessage: null });
+
+    try {
+      const loginData: LoginRequest = { email, password };
+      const response = await authAPI.login(loginData);
+
+      // Login successful - tokens are saved automatically by authAPI
+      // Extract user info from JWT token
+      const accessToken = (response.data as { accessToken: string }).accessToken;
+      const userInfo = extractUserFromToken(accessToken);
+
+      if (!userInfo) {
+        throw new Error("Failed to extract user info from token");
+      }
+
+      // Check if user is actually an admin
+      if (userInfo.role !== "ADMIN" && userInfo.role !== "SuperAdmin") {
+        // Not an admin - reject
+        apiClient.clearTokens();
+        set({
+          isLoading: false,
+          error: "Only ADMIN accounts can access this portal",
+          successMessage: null,
+        });
+        return false;
+      }
+
+      // Create user object
+      const user: User = {
+        id: userInfo.id,
+        displayName: userInfo.displayName,
+        email: userInfo.email,
+        role: userInfo.role,
+        avatar: undefined,
+        createdAt: undefined,
+        updatedAt: undefined,
+      };
+
+      // Save user to localStorage
+      if (typeof window !== "undefined") {
+        localStorage.setItem("user", JSON.stringify(user));
+      }
+
+      set({
+        user,
+        isAuthenticated: true,
+        isLoading: false,
+        error: null,
+        successMessage: "Admin login successful",
+      });
+
+      return true;
+    } catch (error: unknown) {
+      const errorMessage = error instanceof ApiError
+        ? error.message
+        : "Admin login failed. Please try again.";
+
+      set({
+        isLoading: false,
+        error: errorMessage,
+        successMessage: null,
+      });
+
+      return false;
     }
   },
 

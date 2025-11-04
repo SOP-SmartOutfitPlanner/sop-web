@@ -21,13 +21,13 @@ export default function AdminLayout({
       return;
     }
 
-    if (user.role !== "Admin" && user.role !== "SuperAdmin") {
+    if (user.role !== "ADMIN" && user.role !== "SuperAdmin") {
       router.push("/admin/login");
     }
   }, [isAuthenticated, user, router]);
 
   // Show loading while checking auth
-  if (!isAuthenticated || !user || (user.role !== "Admin" && user.role !== "SuperAdmin")) {
+  if (!isAuthenticated || !user || (user.role !== "ADMIN" && user.role !== "SuperAdmin")) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <div className="text-center">
