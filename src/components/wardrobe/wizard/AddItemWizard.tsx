@@ -181,16 +181,17 @@ export function AddItemWizard({
           taskId // Debug: check if taskId exists
         });
 
-        // Update task: success IMMEDIATELY
+        // Update task: success IMMEDIATELY with cached item data
         if (taskId) {
           console.log("🔄 [SAVE] Updating upload task to success...", { taskId });
           updateTask(taskId, {
             progress: 100,
             status: "success",
             createdItemId: createdItemId,
+            createdItemData: response, // Cache the full item data
           });
           console.log("📊 [SAVE] Progress: 100% - Upload complete!");
-          console.log("🎉 [SUCCESS] Upload task marked as success");
+          console.log("🎉 [SUCCESS] Upload task marked as success with cached data");
         } else {
           console.error("❌ [ERROR] taskId is null! Cannot update task to success");
         }
@@ -243,28 +244,31 @@ export function AddItemWizard({
   // AI Analysis with retry logic
   const analyzeImage = useCallback(
     async (file: File, url: string, attempt = 1) => {
-      let currentTaskId = uploadTaskId; // Use existing taskId or create new one
+      let currentTaskId = uploadTaskId; // Start with existing taskId from state
       
       try {
         console.log("🚀 [UPLOAD] Step 1: Starting analysis", { 
           fileName: file.name, 
           attempt,
           timestamp: new Date().toISOString(),
-          currentTaskId
+          currentTaskId,
+          uploadTaskIdState: uploadTaskId
         });
 
-        // Create upload task on first attempt
-        if (attempt === 1) {
+        // Create upload task if it doesn't exist yet
+        if (!currentTaskId) {
           const taskId = addTask({
             fileName: file.name,
             progress: 10,
             status: "analyzing",
-            retryCount: 0,
-            isRetrying: false,
+            retryCount: attempt - 1,
+            isRetrying: attempt > 1,
           });
           currentTaskId = taskId; // Update currentTaskId
           setUploadTaskId(taskId);
-          console.log("✅ [UPLOAD] Upload task created", { taskId });
+          console.log("✅ [UPLOAD] Upload task created", { taskId, attempt });
+        } else {
+          console.log("♻️ [UPLOAD] Reusing existing upload task", { taskId: currentTaskId, attempt });
         }
 
         console.log("📊 [ANALYSIS] Step 2: Sending to AI API...");

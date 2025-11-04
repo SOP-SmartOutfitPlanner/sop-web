@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import type { ApiWardrobeItem } from "@/lib/api/wardrobe-api";
 
 export interface UploadTask {
   id: string;
@@ -9,6 +10,7 @@ export interface UploadTask {
   isRetrying?: boolean;
   errorMessage?: string;
   createdItemId?: number;
+  createdItemData?: ApiWardrobeItem; // Cache item data to avoid fetch issues
 }
 
 interface UploadStore {

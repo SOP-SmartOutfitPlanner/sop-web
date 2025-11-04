@@ -4,11 +4,13 @@ import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, Loader2 } from "lucide-react";
 import { useUploadStore } from "@/store/upload-store";
+import { useGlobalEditModal } from "@/hooks/useGlobalEditModal";
 import { toast } from "sonner";
 
 export function GlobalUploadToast() {
   const { tasks, activeTaskId, removeTask } = useUploadStore();
   const activeTask = tasks.find((task) => task.id === activeTaskId);
+  const { openEditModal } = useGlobalEditModal();
 
   // Debug: Log active task changes
   useEffect(() => {
@@ -31,10 +33,15 @@ export function GlobalUploadToast() {
         position: "bottom-right",
         action: activeTask.createdItemId
           ? {
-              label: "View",
+              label: "Edit",
               onClick: () => {
-                // Navigate to wardrobe (could be enhanced with routing)
-                window.location.href = "/wardrobe";
+                if (activeTask.createdItemId) {
+                  console.log("✏️ [TOAST] User clicked Edit button", {
+                    itemId: activeTask.createdItemId,
+                  });
+                  // Open edit modal globally (works from any page)
+                  openEditModal(activeTask.createdItemId);
+                }
               },
             }
           : undefined,
@@ -54,7 +61,7 @@ export function GlobalUploadToast() {
         clearTimeout(timer);
       };
     }
-  }, [activeTask?.status, activeTask?.fileName, activeTask?.createdItemId, activeTaskId, removeTask]);
+  }, [activeTask?.status, activeTask?.fileName, activeTask?.createdItemId, activeTaskId, removeTask, openEditModal]);
 
   // Only show toast for uploading/analyzing states
   const isVisible =

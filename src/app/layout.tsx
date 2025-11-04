@@ -10,6 +10,7 @@ import { AuthProvider } from "@/components/providers/auth-provider";
 import { GoogleAuthProvider } from "@/components/providers/google-oauth-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { GlobalUploadToast } from "@/components/upload/GlobalUploadToast";
+import { GlobalEditModal } from "@/components/modals/GlobalEditModal";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -56,6 +57,7 @@ export default function RootLayout({
               {children}
               <Toaster />
               <GlobalUploadToast />
+              <GlobalEditModal />
             </GoogleAuthProvider>
           </QueryProvider>
         </AuthProvider>
