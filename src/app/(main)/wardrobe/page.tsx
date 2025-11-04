@@ -14,6 +14,8 @@ import { getCollectionsWithCounts } from "@/lib/mock/collections";
 import { WardrobeFilters } from "@/types/wardrobe";
 import { WardrobeItem } from "@/types";
 import { ApiWardrobeItem, wardrobeAPI } from "@/lib/api/wardrobe-api";
+import { OnboardingDialog } from "@/components/wardrobe/onboarding-dialog";
+import { userAPI } from "@/lib/api/user-api";
 
 // Dynamic import for heavy wizard component
 const AddItemWizard = dynamic(() => import("@/components/wardrobe/wizard").then(mod => ({ default: mod.AddItemWizard })), {
@@ -29,7 +31,9 @@ export default function WardrobePage() {
   const router = useRouter();
   const [isAddItemOpen, setIsAddItemOpen] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-  
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
+  const [isCheckingOnboarding, setIsCheckingOnboarding] = useState(true);
+
   // Edit mode state
   const [editItem, setEditItem] = useState<ApiWardrobeItem | null>(null);
   const isEditMode = !!editItem;
@@ -140,6 +144,28 @@ export default function WardrobePage() {
     return () => clearTimeout(timer);
   }, [isAuthenticated, user, router]);
 
+  // Check if user needs onboarding
+  useEffect(() => {
+    if (!isAuthenticated || !user || isCheckingAuth) return;
+
+    const checkOnboarding = async () => {
+      try {
+        const profileResponse = await userAPI.getUserProfile();
+        const isFirstTime = profileResponse.data.isFirstTime;
+
+        if (isFirstTime) {
+          setIsOnboardingOpen(true);
+        }
+      } catch (error) {
+        console.error("Failed to check onboarding status:", error);
+      } finally {
+        setIsCheckingOnboarding(false);
+      }
+    };
+
+    checkOnboarding();
+  }, [isAuthenticated, user, isCheckingAuth]);
+
   // Show loading while checking auth (conditional return AFTER all hooks)
   if (isCheckingAuth) {
     return (
@@ -178,8 +204,8 @@ export default function WardrobePage() {
         <WardrobeContent onEditItem={handleEditItem} />
 
         {/* Add Item Wizard */}
-        <AddItemWizard 
-          open={isAddItemOpen} 
+        <AddItemWizard
+          open={isAddItemOpen}
           onOpenChange={(open) => {
             setIsAddItemOpen(open);
             if (!open) {
@@ -193,6 +219,12 @@ export default function WardrobePage() {
           editItemId={editItem?.id}
           editItem={editItem || undefined}
           onEditAfterSave={handleEditAfterSave}
+        />
+
+        {/* Onboarding Dialog */}
+        <OnboardingDialog
+          open={isOnboardingOpen}
+          onOpenChange={setIsOnboardingOpen}
         />
       </div>
     </div>

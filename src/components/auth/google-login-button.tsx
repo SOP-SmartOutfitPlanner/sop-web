@@ -33,12 +33,8 @@ export function GoogleLoginButton() {
           // Existing user - login success
           toast.success("Đăng nhập thành công!");
 
-          // Check if user is first time and redirect to onboarding
-          if (result.isFirstTime) {
-            router.push("/onboarding");
-          } else {
-            router.push("/wardrobe");
-          }
+          // Always redirect to wardrobe - onboarding dialog will show if needed
+          router.push("/wardrobe");
         }
       } else {
         // Handle error from result

@@ -49,6 +49,7 @@ export interface Job {
   id: number;
   name: string;
   description: string;
+  createdBy?: string;
   createdDate?: string;
   updatedDate?: string | null;
 }
