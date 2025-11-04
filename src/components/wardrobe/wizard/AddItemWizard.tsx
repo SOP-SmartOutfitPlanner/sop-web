@@ -525,7 +525,7 @@ export function AddItemWizard({
         onOpenChange={(open) => !open && handleClose()}
       >
         <DialogContent
-          className="max-w-[95vw] sm:max-w-xl p-0 gap-0 max-h-[95vh] flex flex-col overflow-hidden bg-white border-gray-200"
+          className="max-w-[95vw] sm:max-w-[1200px] lg:max-w-[1300px] p-0 gap-0 max-h-[90vh] flex flex-col overflow-hidden bg-white border-gray-200 shadow-2xl rounded-2xl"
           showCloseButton={false}
         >
           {/* Accessible title (hidden visually but available to screen readers) */}
@@ -587,7 +587,7 @@ export function AddItemWizard({
           </div>
 
           {/* Content */}
-          <div className="relative px-6 sm:px-8 py-8 max-h-[calc(95vh-6rem)] overflow-y-auto custom-scrollbar">
+          <div className="relative px-6 sm:px-8 py-6 flex-1 overflow-hidden">
             <AnimatePresence mode="wait">
               {/* IDLE & PREVIEW State */}
               {(status === STATUS.IDLE || status === STATUS.PREVIEW) && (
