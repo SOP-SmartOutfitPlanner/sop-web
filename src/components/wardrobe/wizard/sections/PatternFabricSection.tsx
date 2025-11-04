@@ -25,7 +25,7 @@ export function PatternFabricSection({
     <motion.div variants={FORM_ANIMATIONS.item} className="space-y-5">
       {/* Pattern */}
       <div>
-        <Label htmlFor="pattern" className="text-sm font-semibold text-white/90 mb-2">
+        <Label htmlFor="pattern" className="text-sm font-semibold text-gray-700 mb-2">
           Pattern
         </Label>
         <Input
@@ -34,13 +34,13 @@ export function PatternFabricSection({
           value={pattern}
           onChange={(e) => onPatternChange(e.target.value)}
           placeholder="e.g., Solid, Striped, Floral..."
-          className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-blue-400/50 focus:ring-blue-400/20"
+          className="bg-white border-gray-200 text-gray-900 placeholder:text-gray-400 focus:border-blue-400 focus:ring-blue-400/20"
         />
       </div>
 
       {/* Fabric */}
       <div>
-        <Label htmlFor="fabric" className="text-sm font-semibold text-white/90 mb-2">
+        <Label htmlFor="fabric" className="text-sm font-semibold text-gray-700 mb-2">
           Fabric
         </Label>
         <Input
@@ -49,7 +49,7 @@ export function PatternFabricSection({
           value={fabric}
           onChange={(e) => onFabricChange(e.target.value)}
           placeholder="e.g., Cotton, Polyester, Silk..."
-          className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-blue-400/50 focus:ring-blue-400/20"
+          className="bg-white border-gray-200 text-gray-900 placeholder:text-gray-400 focus:border-blue-400 focus:ring-blue-400/20"
         />
       </div>
     </motion.div>

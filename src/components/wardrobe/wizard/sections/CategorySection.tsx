@@ -99,16 +99,16 @@ export function CategorySection({
 
   return (
     <motion.div variants={FORM_ANIMATIONS.item}>
-      <Label className="text-sm font-semibold text-white/90 mb-2">
+      <Label className="text-sm font-semibold text-gray-700 mb-2">
         Category *
       </Label>
 
       {/* AI Suggestion Badge */}
       {aiSuggestions?.category && (
-        <div className="mb-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-500/10 border border-blue-400/20">
-          <Sparkles className="w-4 h-4 text-blue-400 flex-shrink-0" />
-          <span className="text-xs text-white/60">AI Detected:</span>
-          <span className="text-sm text-blue-300 font-medium">
+        <div className="mb-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 border border-blue-200">
+          <Sparkles className="w-4 h-4 text-blue-600 flex-shrink-0" />
+          <span className="text-xs text-gray-600">AI Detected:</span>
+          <span className="text-sm text-blue-700 font-medium">
             {aiSuggestions.category.name}
           </span>
         </div>
@@ -122,8 +122,8 @@ export function CategorySection({
             role="combobox"
             aria-expanded={open}
             className={cn(
-              "w-full justify-between bg-white/5 border-white/10 text-white hover:bg-white/10 hover:text-white",
-              !categoryName && "text-white/50"
+              "w-full justify-between bg-white border-gray-200 text-gray-900 hover:bg-gray-50 hover:text-gray-900",
+              !categoryName && "text-gray-500"
             )}
           >
             {categoryName
@@ -132,14 +132,14 @@ export function CategorySection({
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[400px] p-0 bg-slate-900 border-white/10">
+        <PopoverContent className="w-[400px] p-0 bg-white border-gray-200">
           <Command className="bg-transparent">
             <CommandInput
               placeholder="Search categories..."
-              className="text-white placeholder:text-white/40"
+              className="text-gray-900 placeholder:text-gray-400"
             />
             <CommandList className="max-h-[350px]">
-              <CommandEmpty className="text-white/50 text-sm py-6 text-center">
+              <CommandEmpty className="text-gray-500 text-sm py-6 text-center">
                 No category found.
               </CommandEmpty>
 
@@ -147,7 +147,7 @@ export function CategorySection({
               {aiSuggestions?.category && (
                 <CommandGroup
                   heading="✨ AI Suggested"
-                  className="text-blue-400 font-semibold"
+                  className="text-blue-600 font-semibold"
                 >
                   <CommandItem
                     value={aiSuggestions.category.name}
@@ -158,17 +158,17 @@ export function CategorySection({
                       );
                       setOpen(false);
                     }}
-                    className="text-white hover:bg-blue-500/20 cursor-pointer"
+                    className="text-gray-900 hover:bg-blue-50 cursor-pointer"
                   >
                     <div className="flex items-center gap-2 flex-1">
-                      <Sparkles className="w-4 h-4 text-blue-400" />
+                      <Sparkles className="w-4 h-4 text-blue-600" />
                       <span>{aiSuggestions.category.name}</span>
                     </div>
                     <Check
                       className={cn(
                         "ml-auto h-4 w-4",
                         categoryId === aiSuggestions.category.id
-                          ? "opacity-100 text-blue-400"
+                          ? "opacity-100 text-blue-600"
                           : "opacity-0"
                       )}
                     />
@@ -182,7 +182,7 @@ export function CategorySection({
                   <CommandGroup
                     key={parentName}
                     heading={parentName}
-                    className="text-white/70 font-semibold"
+                    className="text-gray-600 font-semibold"
                   >
                     {children.map((cat) => {
                       // Skip if already in AI suggested
@@ -196,14 +196,14 @@ export function CategorySection({
                             onCategoryChange(cat.id, cat.name);
                             setOpen(false);
                           }}
-                          className="text-white/80 hover:bg-white/10 cursor-pointer pl-6"
+                          className="text-gray-700 hover:bg-gray-100 cursor-pointer pl-6"
                         >
                           <span className="flex-1">{cat.name}</span>
                           <Check
                             className={cn(
                               "ml-auto h-4 w-4",
                               categoryId === cat.id
-                                ? "opacity-100 text-white"
+                                ? "opacity-100 text-gray-900"
                                 : "opacity-0"
                             )}
                           />
@@ -219,7 +219,7 @@ export function CategorySection({
       </Popover>
 
       {errors.category && (
-        <p className="mt-2 text-xs text-red-400 font-medium">
+        <p className="mt-2 text-xs text-red-500 font-medium">
           {errors.category}
         </p>
       )}

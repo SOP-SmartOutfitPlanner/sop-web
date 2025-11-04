@@ -18,7 +18,7 @@ export function ColorSection({ colors }: ColorSectionProps) {
 
   return (
     <motion.div variants={FORM_ANIMATIONS.item}>
-      <Label className="text-sm font-semibold text-white/90 mb-3">
+      <Label className="text-sm font-semibold text-gray-700 mb-3">
         Detected Colors
       </Label>
       <div className="flex gap-3 flex-wrap">
@@ -35,11 +35,11 @@ export function ColorSection({ colors }: ColorSectionProps) {
             className="relative group"
           >
             <div
-              className="w-14 h-14 rounded-xl border-2 border-white/30 shadow-lg transition-all group-hover:shadow-xl group-hover:border-white/50 cursor-pointer"
+              className="w-14 h-14 rounded-xl border-2 border-gray-300 shadow-lg transition-all group-hover:shadow-xl group-hover:border-gray-400 cursor-pointer"
               style={{ backgroundColor: color.hex }}
               title={color.name}
             />
-            <div className="absolute -bottom-7 left-1/2 -translate-x-1/2 text-[10px] text-white/60 font-mono opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+            <div className="absolute -bottom-7 left-1/2 -translate-x-1/2 text-[10px] text-gray-600 font-mono opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
               {color.name}
             </div>
           </motion.div>

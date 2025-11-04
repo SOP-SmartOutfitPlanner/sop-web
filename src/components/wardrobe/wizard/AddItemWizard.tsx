@@ -489,7 +489,7 @@ export function AddItemWizard({
         onOpenChange={(open) => !open && handleClose()}
       >
         <DialogContent
-          className="max-w-[95vw] sm:max-w-xl p-0 gap-0 max-h-[95vh] flex flex-col overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-white/10"
+          className="max-w-[95vw] sm:max-w-xl p-0 gap-0 max-h-[95vh] flex flex-col overflow-hidden bg-gradient-to-br from-white via-blue-50/30 to-white border-gray-200"
           showCloseButton={false}
         >
           {/* Accessible title (hidden visually but available to screen readers) */}
@@ -498,28 +498,28 @@ export function AddItemWizard({
           </DialogTitle>
 
           {/* Background gradients */}
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(59,130,246,0.15),transparent_50%)]" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(147,51,234,0.1),transparent_50%)]" />
-          <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent,rgba(0,0,0,0.3))]" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(59,130,246,0.08),transparent_50%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(147,51,234,0.05),transparent_50%)]" />
+          <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent,rgba(255,255,255,0.5))]" />
 
           {/* Header */}
-          <div className="relative border-b border-white/10 bg-gradient-to-r from-black/40 via-black/30 to-black/40 backdrop-blur-xl px-6 sm:px-8 py-5">
+          <div className="relative border-b border-gray-200 bg-gradient-to-r from-white/80 via-blue-50/40 to-white/80 backdrop-blur-xl px-6 sm:px-8 py-5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <motion.div
                   initial={{ rotate: -180, scale: 0 }}
                   animate={{ rotate: 0, scale: 1 }}
                   transition={{ type: "spring", duration: 0.6 }}
-                  className="p-2.5 rounded-xl bg-gradient-to-br from-blue-500/30 to-blue-600/30 ring-1 ring-blue-400/40 shadow-lg"
+                  className="p-2.5 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 ring-1 ring-blue-400/50 shadow-lg"
                 >
-                  <Sparkles className="w-5 h-5 text-blue-300" />
+                  <Sparkles className="w-5 h-5 text-white" />
                 </motion.div>
                 <div>
                   <motion.h2
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="text-xl sm:text-2xl font-bold text-white"
+                    className="text-xl sm:text-2xl font-bold text-gray-900"
                   >
                     {editMode ? "Edit Item" : "Add Item by Image"}
                   </motion.h2>
@@ -527,7 +527,7 @@ export function AddItemWizard({
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.3 }}
-                    className="text-sm text-white/50"
+                    className="text-sm text-gray-600"
                   >
                     {editMode
                       ? "Update item details"
@@ -541,13 +541,13 @@ export function AddItemWizard({
                 onClick={handleClose}
                 whileHover={{
                   scale: 1.1,
-                  backgroundColor: "rgba(255,255,255,0.15)",
+                  backgroundColor: "rgba(59,130,246,0.1)",
                 }}
                 whileTap={{ scale: 0.9 }}
-                className="p-2.5 hover:bg-white/10 rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/70"
+                className="p-2.5 hover:bg-blue-50 rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
                 aria-label="Close modal"
               >
-                <X className="w-5 h-5 text-white/90" />
+                <X className="w-5 h-5 text-gray-700" />
               </motion.button>
             </div>
           </div>
@@ -586,7 +586,7 @@ export function AddItemWizard({
                         onClick={handleCancel}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
-                        className="px-6 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/70"
+                        className="px-6 py-3 rounded-xl bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 text-gray-700 font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 shadow-sm"
                       >
                         Cancel
                       </motion.button>
@@ -594,7 +594,7 @@ export function AddItemWizard({
                         onClick={handleAnalyze}
                         whileHover={{ scale: 1.05, y: -2 }}
                         whileTap={{ scale: 0.95 }}
-                        className="px-8 py-3.5 rounded-xl bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 hover:from-blue-500 hover:via-blue-400 hover:to-blue-500 text-white font-semibold shadow-2xl shadow-blue-500/40 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/70 flex items-center gap-2"
+                        className="px-8 py-3.5 rounded-xl bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 hover:from-blue-700 hover:via-blue-600 hover:to-blue-700 text-white font-semibold shadow-xl shadow-blue-500/30 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 flex items-center gap-2"
                       >
                         <Sparkles className="w-5 h-5" />
                         Upload & Analyze
@@ -651,7 +651,7 @@ export function AddItemWizard({
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-                    className="w-20 h-20 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center mb-6 shadow-2xl shadow-green-500/30"
+                    className="w-20 h-20 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center mb-6 shadow-xl shadow-green-500/20"
                   >
                     <motion.svg
                       initial={{ pathLength: 0 }}
@@ -672,10 +672,10 @@ export function AddItemWizard({
                       <motion.path d="M20 6L9 17l-5-5" />
                     </motion.svg>
                   </motion.div>
-                  <h2 className="text-3xl font-bold text-white mb-2">
+                  <h2 className="text-3xl font-bold text-gray-900 mb-2">
                     Item Saved!
                   </h2>
-                  <p className="text-white/60">Added to your wardrobe</p>
+                  <p className="text-gray-600">Added to your wardrobe</p>
                 </motion.div>
               )}
             </AnimatePresence>

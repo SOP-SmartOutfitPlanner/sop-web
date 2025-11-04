@@ -29,7 +29,7 @@ export function BasicInfoSection({
       <div>
         <Label
           htmlFor={FORM_FIELDS.NAME.id}
-          className="text-sm font-semibold text-white/90 mb-2"
+          className="text-sm font-semibold text-gray-700 mb-2"
         >
           {FORM_FIELDS.NAME.label} *
         </Label>
@@ -38,15 +38,15 @@ export function BasicInfoSection({
           id={FORM_FIELDS.NAME.id}
           value={name}
           onChange={(e) => onNameChange(e.target.value)}
-          className={`w-full px-4 py-3 bg-white/10 border ${
+          className={`w-full px-4 py-3 bg-white border ${
             errors.name
-              ? "border-red-500/50 bg-red-500/5"
-              : "border-white/20 hover:border-white/30"
-          } rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-blue-400/70 focus:border-transparent focus:bg-white/15 transition-all`}
+              ? "border-red-500 bg-red-50"
+              : "border-gray-200 hover:border-gray-300"
+          } rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all`}
           placeholder={FORM_FIELDS.NAME.placeholder}
         />
         {errors.name && (
-          <p className="mt-1.5 text-xs text-red-400 font-medium">
+          <p className="mt-1.5 text-xs text-red-500 font-medium">
             {errors.name}
           </p>
         )}
@@ -56,7 +56,7 @@ export function BasicInfoSection({
       <div>
         <Label
           htmlFor={FORM_FIELDS.BRAND.id}
-          className="text-sm font-semibold text-white/90 mb-2"
+          className="text-sm font-semibold text-gray-700 mb-2"
         >
           {FORM_FIELDS.BRAND.label}  *
         </Label>
@@ -65,7 +65,7 @@ export function BasicInfoSection({
           id={FORM_FIELDS.BRAND.id}
           value={brand}
           onChange={(e) => onBrandChange(e.target.value)}
-          className="w-full px-4 py-3 bg-white/10 border border-white/20 hover:border-white/30 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-blue-400/70 focus:border-transparent focus:bg-white/15 transition-all"
+          className="w-full px-4 py-3 bg-white border border-gray-200 hover:border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all"
           placeholder={FORM_FIELDS.BRAND.placeholder}
         />
       </div>

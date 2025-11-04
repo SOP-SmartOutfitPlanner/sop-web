@@ -17,7 +17,7 @@ export function ImagePreviewSection({ previewUrl }: ImagePreviewSectionProps) {
 
   return (
     <motion.div variants={FORM_ANIMATIONS.item} className="order-2 lg:order-1">
-      <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden group sticky top-4">
+      <div className="bg-white backdrop-blur-xl border border-gray-200 rounded-2xl shadow-xl overflow-hidden group sticky top-4">
         <div className="aspect-square relative max-w-[340px] mx-auto">
           {previewUrl && (
             // eslint-disable-next-line @next/next/no-img-element
@@ -27,7 +27,7 @@ export function ImagePreviewSection({ previewUrl }: ImagePreviewSectionProps) {
               className="w-full h-full object-cover"
             />
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
           {/* Favorite button */}
           <motion.button
@@ -35,28 +35,28 @@ export function ImagePreviewSection({ previewUrl }: ImagePreviewSectionProps) {
             onClick={() => setFavorite(!favorite)}
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
-            className="absolute top-4 right-4 p-3 rounded-full bg-black/40 backdrop-blur-sm hover:bg-black/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/70 shadow-lg"
+            className="absolute top-4 right-4 p-3 rounded-full bg-white/90 backdrop-blur-sm hover:bg-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 shadow-lg"
             aria-label="Toggle favorite"
           >
             <Heart
               className={`w-5 h-5 transition-all duration-300 ${
                 favorite
                   ? "fill-red-500 text-red-500 scale-110"
-                  : "text-white"
+                  : "text-gray-700"
               }`}
             />
           </motion.button>
 
           {/* AI Badge */}
-          <div className="absolute top-4 left-4 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-sm flex items-center gap-2">
-            <Sparkles className="w-3.5 h-3.5 text-blue-400" />
-            <span className="text-xs text-white/90 font-medium">
+          <div className="absolute top-4 left-4 px-3 py-1.5 rounded-full bg-white/90 backdrop-blur-sm flex items-center gap-2 shadow-lg">
+            <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+            <span className="text-xs text-gray-900 font-medium">
               AI Analyzed
             </span>
           </div>
         </div>
-        <div className="p-4 bg-gradient-to-t from-black/20 to-transparent">
-          <p className="text-sm text-white/60 text-center">
+        <div className="p-4 bg-gradient-to-t from-blue-50/50 to-transparent border-t border-gray-100">
+          <p className="text-sm text-gray-600 text-center">
             Review and edit details
           </p>
         </div>

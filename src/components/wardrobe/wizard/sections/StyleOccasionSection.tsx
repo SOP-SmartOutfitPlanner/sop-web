@@ -30,10 +30,10 @@ export function StyleOccasionSection({
 }: StyleOccasionSectionProps) {
   return (
     <motion.div variants={FORM_ANIMATIONS.item}>
-      <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl">
+      <div className="bg-white backdrop-blur-xl border border-gray-200 rounded-2xl p-6 shadow-xl">
         <div className="flex items-center gap-2 mb-4">
-          <Sparkles className="w-5 h-5 text-blue-400" />
-          <h3 className="text-lg font-semibold text-white">
+          <Sparkles className="w-5 h-5 text-blue-600" />
+          <h3 className="text-lg font-semibold text-gray-900">
             Style & Occasions
           </h3>
         </div>
@@ -42,10 +42,10 @@ export function StyleOccasionSection({
           {/* Styles */}
           {availableStyles.length > 0 && (
             <div>
-              <Label className="text-sm font-semibold text-white/90 mb-2">
+              <Label className="text-sm font-semibold text-gray-700 mb-2">
                 Styles
                 {aiSuggestions?.styles && aiSuggestions.styles.length > 0 && (
-                  <span className="ml-2 text-xs text-blue-400 font-normal">
+                  <span className="ml-2 text-xs text-blue-600 font-normal">
                     (AI auto-selected)
                   </span>
                 )}
@@ -62,8 +62,8 @@ export function StyleOccasionSection({
                       whileTap={{ scale: 0.95 }}
                       className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-all ${
                         isSelected
-                          ? "bg-purple-500/30 border border-purple-400/50 text-purple-200"
-                          : "bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 hover:text-white/80"
+                          ? "bg-purple-100 border border-purple-300 text-purple-700"
+                          : "bg-gray-50 border border-gray-200 text-gray-700 hover:bg-gray-100 hover:text-gray-900"
                       }`}
                       title={style.description}
                     >
@@ -78,11 +78,11 @@ export function StyleOccasionSection({
           {/* Occasions */}
           {availableOccasions.length > 0 && (
             <div>
-              <Label className="text-sm font-semibold text-white/90 mb-2">
+              <Label className="text-sm font-semibold text-gray-700 mb-2">
                 Occasions
                 {aiSuggestions?.occasions &&
                   aiSuggestions.occasions.length > 0 && (
-                    <span className="ml-2 text-xs text-green-400 font-normal">
+                    <span className="ml-2 text-xs text-green-600 font-normal">
                       (AI auto-selected)
                     </span>
                   )}
@@ -100,8 +100,8 @@ export function StyleOccasionSection({
                       whileTap={{ scale: 0.95 }}
                       className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-all ${
                         isSelected
-                          ? "bg-green-500/30 border border-green-400/50 text-green-200"
-                          : "bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 hover:text-white/80"
+                          ? "bg-green-100 border border-green-300 text-green-700"
+                          : "bg-gray-50 border border-gray-200 text-gray-700 hover:bg-gray-100 hover:text-gray-900"
                       }`}
                     >
                       {occasion.name}
@@ -114,7 +114,7 @@ export function StyleOccasionSection({
 
           {/* Loading state */}
           {availableStyles.length === 0 && availableOccasions.length === 0 && (
-            <p className="text-sm text-white/50 text-center py-4">
+            <p className="text-sm text-gray-500 text-center py-4">
               Loading styles and occasions...
             </p>
           )}

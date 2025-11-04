@@ -9,7 +9,7 @@ import {
   PatternFabricSection,
   StyleOccasionSection,
   WeatherSeasonSection,
-  NotesSection,
+  // NotesSection,
   ImagePreviewSection,
   FormActionsSection,
 } from "./sections";
@@ -111,13 +111,13 @@ export function ItemFormContent({
         <div className="order-1 lg:order-2 space-y-5">
           {/* Basic Details Card */}
           <motion.div variants={FORM_ANIMATIONS.item}>
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl" />
+            <div className="bg-white backdrop-blur-xl border border-gray-200 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl" />
               <div className="relative">
-                <h2 className="text-2xl font-bold text-white mb-2">
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">
                   Item Details
                 </h2>
-                <p className="text-sm text-white/50 mb-6">
+                <p className="text-sm text-gray-600 mb-6">
                   Review and edit the AI-detected information
                 </p>
 
