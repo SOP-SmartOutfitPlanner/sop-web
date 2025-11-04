@@ -25,6 +25,7 @@ import {
   validateWizardFormData,
   getUserIdFromAuth,
   apiItemToFormData,
+  validateAIResponse,
 } from "@/lib/utils/wizard-transform";
 import { StepPhotoAI } from "./StepPhotoAI";
 import { ItemFormContent } from "./ItemFormContent";
@@ -36,13 +37,12 @@ import type { WizardFormData, AISuggestions } from "./types";
 interface AddItemWizardProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  initialFile?: File; // Optional: pre-selected file from gallery
-  autoAnalyze?: boolean; // Auto-trigger analysis when initialFile is provided (default: true)
-  skipCrop?: boolean; // Skip cropping step (default: false)
-  // Edit mode props
-  editMode?: boolean; // Whether wizard is in edit mode
-  editItemId?: number; // ID of item being edited
-  editItem?: ApiWardrobeItem; // API item to edit (will be transformed to form data)
+  initialFile?: File;
+  autoAnalyze?: boolean;
+  skipCrop?: boolean;
+  editMode?: boolean;
+  editItemId?: number;
+  editItem?: ApiWardrobeItem;
 }
 
 export function AddItemWizard({
@@ -69,11 +69,8 @@ export function AddItemWizard({
 
   const { user } = useAuthStore();
   const { addTask, updateTask, removeTask } = useUploadStore();
-
-  // Fetch available options from API
   const { categories, styles, seasons, occasions } = useWardrobeOptions();
 
-  // Initialize form data in edit mode OR reset when switching modes
   useEffect(() => {
     if (editMode && editItem && open && status === STATUS.IDLE) {
       const transformedData = apiItemToFormData(editItem);
@@ -82,15 +79,13 @@ export function AddItemWizard({
       setPreviewUrl(
         transformedData.imageRemBgURL || transformedData.uploadedImageURL || ""
       );
-      setStatus(STATUS.FORM); // Go directly to form in edit mode
+      setStatus(STATUS.FORM);
       setHasChanges(false);
     }
   }, [editMode, editItem, open, status]);
 
-  // Reset when opening fresh (not from edit mode)
   useEffect(() => {
     if (open && !editMode && !editItem && status === STATUS.IDLE) {
-      // Reset form data when opening in add mode
       setFormData(INITIAL_FORM_DATA);
       setAiSuggestions(null);
       setSelectedFile(null);
@@ -119,12 +114,18 @@ export function AddItemWizard({
   // Auto-save after AI analysis
   const autoSaveAfterAnalysis = useCallback(
     async (data: WizardFormData, taskId?: string | null) => {
+      console.log(`💾 [AUTO-SAVE] Starting...`);
+      console.log(`📋 [AUTO-SAVE] Task ID:`, taskId);
+      
       try {
         setIsSubmitting(true);
 
+        console.log(`✅ [AUTO-SAVE] Validating form data...`);
         const errors = validateWizardFormData(data);
         
         if (errors.length > 0) {
+          console.warn(`⚠️ [AUTO-SAVE] Validation failed:`, errors);
+          
           // Update task to show manual edit needed
           if (taskId) {
             updateTask(taskId, {
@@ -142,8 +143,21 @@ export function AddItemWizard({
           return;
         }
 
+        console.log(`✅ [AUTO-SAVE] Validation passed`);
+
         const userId = await getUserIdFromAuth(user);
+        console.log(`👤 [AUTO-SAVE] User ID:`, userId);
+        
         const payload = transformWizardDataToAPI(data, userId);
+        console.log(`📤 [AUTO-SAVE] API Payload:`, {
+          name: payload.name,
+          categoryId: payload.categoryId,
+          categoryName: payload.categoryName,
+          color: payload.color,
+          pattern: payload.pattern,
+          fabric: payload.fabric,
+          imgUrl: payload.imgUrl?.substring(0, 50) + '...',
+        });
 
         // Update task: saving
         if (taskId) {
@@ -153,11 +167,17 @@ export function AddItemWizard({
           });
         }
 
+        console.log(`🚀 [AUTO-SAVE] Calling API...`);
         const response = await wardrobeAPI.createItem(payload);
 
         if (!response) {
           throw new Error("Failed to create item - no response from API");
         }
+
+        console.log(`✅ [AUTO-SAVE] Item created successfully!`, {
+          id: response.id,
+          name: response.name,
+        });
 
         // Update task: success with cached item data
         if (taskId) {
@@ -167,23 +187,28 @@ export function AddItemWizard({
             createdItemId: response.id,
             createdItemData: response,
           });
+          console.log(`✅ [Upload Task] Updated to success`);
         }
 
         // Set to SAVED to hide modal
         setStatus(STATUS.SAVED);
         setHasChanges(false);
 
+        console.log(`⚡ [Optimistic Update] Adding item to local state...`);
         // ⚡ Optimistic update: Add item to local state immediately
         // No need to fetch all items again!
         const state = useWardrobeStore.getState();
         state.addItemOptimistic(response);
+        console.log(`✅ [Optimistic Update] Item added to local state`);
 
+        console.log(`🎉 [AUTO-SAVE] Complete! Closing modal in 500ms...`);
         // Close modal after short delay
         setTimeout(() => {
           resetAndClose();
         }, 500);
       } catch (error) {
         console.error("❌ [AUTO-SAVE] Error:", error);
+        console.error("❌ [AUTO-SAVE] Stack:", (error as Error)?.stack);
 
         // Update task: error
         if (taskId) {
@@ -213,6 +238,9 @@ export function AddItemWizard({
     async (file: File, url: string, attempt = 1) => {
       let currentTaskId = uploadTaskId;
 
+      console.log(`🔍 [AI Analysis] Attempt ${attempt}/${AI_ANALYSIS_CONFIG.MAX_RETRIES}`);
+      console.log(`📄 [AI Analysis] File:`, file.name, `Size: ${(file.size / 1024).toFixed(2)}KB`);
+
       try {
         // Create upload task if it doesn't exist yet
         if (!currentTaskId) {
@@ -225,6 +253,7 @@ export function AddItemWizard({
           });
           currentTaskId = taskId;
           setUploadTaskId(taskId);
+          console.log(`📋 [Upload Task] Created: ${taskId}`);
         }
 
         // Update progress: start analysis
@@ -237,7 +266,50 @@ export function AddItemWizard({
           });
         }
 
+        console.log(`⏳ [AI Analysis] Calling API...`);
         const result = await wardrobeAPI.getImageSummary(file);
+        console.log(`✅ [AI Analysis] API Response:`, result);
+
+        // ✨ VALIDATE AI RESPONSE
+        const validation = validateAIResponse(result);
+        console.log(`🔍 [AI Validation] Score: ${validation.score}/100`, validation.details);
+        
+        if (!validation.isValid) {
+          console.warn(`⚠️ [AI Validation] FAILED - Missing fields:`, validation.missingFields);
+          console.warn(`⚠️ [AI Validation] Details:`, {
+            hasName: validation.details.hasName,
+            hasCategory: validation.details.hasCategory,
+            hasImage: validation.details.hasImage,
+            hasColors: validation.details.hasColors,
+            hasPattern: validation.details.hasPattern,
+            hasFabric: validation.details.hasFabric,
+            hasWeather: validation.details.hasWeather,
+          });
+
+          // Retry if not at max attempts
+          if (attempt < AI_ANALYSIS_CONFIG.MAX_RETRIES) {
+            console.log(`🔄 [AI Analysis] Retrying due to insufficient data...`);
+            
+            if (currentTaskId) {
+              updateTask(currentTaskId, {
+                progress: 10,
+                status: "analyzing",
+                retryCount: attempt,
+                isRetrying: true,
+              });
+            }
+
+            setTimeout(() => {
+              analyzeImage(file, url, attempt + 1);
+            }, AI_ANALYSIS_CONFIG.RETRY_DELAY);
+            return;
+          } else {
+            console.error(`❌ [AI Validation] Max retries reached with insufficient data`);
+            throw new Error(`AI analysis incomplete after ${AI_ANALYSIS_CONFIG.MAX_RETRIES} attempts. Missing: ${validation.missingFields.join(', ')}`);
+          }
+        }
+
+        console.log(`✅ [AI Validation] PASSED - Score: ${validation.score}/100`);
 
         // Update progress: analysis complete
         if (currentTaskId) {
@@ -249,6 +321,7 @@ export function AddItemWizard({
 
         setAiSuggestions(result);
 
+        console.log(`🔄 [Form Data] Transforming AI result to form data...`);
         const newFormData = {
           uploadedImageURL: url,
           imageRemBgURL: result.imageRemBgURL || url,
@@ -277,11 +350,23 @@ export function AddItemWizard({
           wornToday: false,
         };
 
+        console.log(`✅ [Form Data] Transformed:`, {
+          name: newFormData.name,
+          category: `${newFormData.categoryName} (ID: ${newFormData.categoryId})`,
+          colors: newFormData.colors.length,
+          pattern: newFormData.pattern,
+          fabric: newFormData.fabric,
+          seasons: newFormData.seasons.length,
+          styles: newFormData.styleIds.length,
+          occasions: newFormData.occasionIds.length,
+        });
+
         setFormData(newFormData);
 
         // Update preview to show removed background image
         if (result.imageRemBgURL) {
           setPreviewUrl(result.imageRemBgURL);
+          console.log(`🖼️ [Preview] Updated to background-removed image`);
         }
 
         // Update progress: preparing to save
@@ -292,14 +377,17 @@ export function AddItemWizard({
           });
         }
 
+        console.log(`💾 [Auto-Save] Will trigger in 500ms...`);
         // Auto-save after analysis completes
         setTimeout(async () => {
           await autoSaveAfterAnalysis(newFormData, currentTaskId);
         }, 500);
       } catch (error) {
-        console.error("❌ [AI Analysis] Failed:", error);
+        console.error("❌ [AI Analysis] Exception caught:", error);
 
         if (attempt < AI_ANALYSIS_CONFIG.MAX_RETRIES) {
+          console.log(`🔄 [AI Analysis] Retry ${attempt}/${AI_ANALYSIS_CONFIG.MAX_RETRIES - 1} - Waiting ${AI_ANALYSIS_CONFIG.RETRY_DELAY}ms...`);
+          
           // Update task for retry
           if (currentTaskId) {
             updateTask(currentTaskId, {

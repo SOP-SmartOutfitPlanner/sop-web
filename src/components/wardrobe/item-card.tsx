@@ -83,7 +83,7 @@ export function ItemCard({
       >
         <CardContent className="p-0">
           {/* Image Container - Larger, more fashionable ratio */}
-          <div className="relative aspect-[3/4] overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
+          <div className="relative aspect-[4/5] overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
             <Image
               src={item.imageUrl}
               alt={item.name}

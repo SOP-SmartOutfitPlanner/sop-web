@@ -1,11 +1,5 @@
-/**
- * Configuration constants for AddItemWizard
- * Extracted from AddItemWizard.tsx for better maintainability
- */
-
 import type { WizardFormData } from "./types";
 
-// ==================== Status Flow ====================
 export const STATUS = {
   IDLE: "idle",
   PREVIEW: "preview",
@@ -17,16 +11,16 @@ export const STATUS = {
 
 export type StatusType = (typeof STATUS)[keyof typeof STATUS];
 
-// ==================== AI Analysis Settings ====================
 export const AI_ANALYSIS_CONFIG = {
   MAX_RETRIES: 5,
-  RETRY_DELAY: 30000, // 30 seconds
-  PROGRESS_INTERVAL: 100, // ms for progress bar animation
-  PROGRESS_INCREMENT: 0.5, // % per interval
-  SUCCESS_DISPLAY_DURATION: 1500, // ms before transitioning to form
+  RETRY_DELAY: 30000,
+  PROGRESS_INTERVAL: 100,
+  PROGRESS_INCREMENT: 0.5,
+  SUCCESS_DISPLAY_DURATION: 1500,
+  REQUIRED_FIELDS: ['name', 'category', 'imageRemBgURL'] as const,
+  IMPORTANT_FIELDS: ['colors', 'pattern', 'fabric', 'weatherSuitable'] as const,
 } as const;
 
-// ==================== Initial Form State ====================
 export const INITIAL_FORM_DATA: WizardFormData = {
   uploadedImageURL: "",
   imageRemBgURL: "",

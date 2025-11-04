@@ -84,15 +84,21 @@ export const adminAPI = {
     params: GetUsersParams = {}
   ): Promise<ApiResponse<UsersListResponse>> => {
     const queryParams = new URLSearchParams();
-    
-    if (params.page) queryParams.append("page", params.page.toString());
-    if (params.pageSize) queryParams.append("pageSize", params.pageSize.toString());
-    if (params.search) queryParams.append("search", params.search);
-    if (params.role !== undefined) queryParams.append("role", params.role.toString());
-    if (params.isVerified !== undefined) queryParams.append("isVerified", params.isVerified.toString());
-    if (params.isPremium !== undefined) queryParams.append("isPremium", params.isPremium.toString());
 
-    const url = `/user${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
+    if (params.page) queryParams.append("page", params.page.toString());
+    if (params.pageSize)
+      queryParams.append("pageSize", params.pageSize.toString());
+    if (params.search) queryParams.append("search", params.search);
+    if (params.role !== undefined)
+      queryParams.append("role", params.role.toString());
+    if (params.isVerified !== undefined)
+      queryParams.append("isVerified", params.isVerified.toString());
+    if (params.isPremium !== undefined)
+      queryParams.append("isPremium", params.isPremium.toString());
+
+    const url = `/user${
+      queryParams.toString() ? `?${queryParams.toString()}` : ""
+    }`;
     return apiClient.get<ApiResponse<UsersListResponse>>(url);
   },
 
@@ -148,7 +154,9 @@ export const adminAPI = {
     if (params?.pageSize)
       queryParams.append("page-size", params.pageSize.toString());
 
-    const url = `/categories${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
+    const url = `/categories${
+      queryParams.toString() ? `?${queryParams.toString()}` : ""
+    }`;
     return apiClient.get<ApiResponse<CategoriesListResponse>>(url);
   },
 
@@ -164,7 +172,9 @@ export const adminAPI = {
     if (params?.pageSize)
       queryParams.append("page-size", params.pageSize.toString());
 
-    const url = `/categories/parent/${parentId}${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
+    const url = `/categories/parent/${parentId}${
+      queryParams.toString() ? `?${queryParams.toString()}` : ""
+    }`;
     return apiClient.get<ApiResponse<CategoriesListResponse>>(url);
   },
 
@@ -185,7 +195,7 @@ export const adminAPI = {
     id: number,
     data: { name: string; parentId: number | null }
   ): Promise<ApiResponse<Category>> => {
-    return apiClient.put<ApiResponse<Category>>(`/categories/${id}`, data);
+    return apiClient.put<ApiResponse<Category>>(`/categories`, data);
   },
 
   /**
@@ -200,8 +210,12 @@ export const adminAPI = {
    */
   bulkDeleteCategories: async (ids: number[]): Promise<ApiResponse<void>> => {
     // If API doesn't support bulk delete, do sequential deletes
-    await Promise.all(ids.map(id => apiClient.delete(`/categories/${id}`)));
-    return { statusCode: 200, message: "Bulk delete successful", data: undefined } as ApiResponse<void>;
+    await Promise.all(ids.map((id) => apiClient.delete(`/categories/${id}`)));
+    return {
+      statusCode: 200,
+      message: "Bulk delete successful",
+      data: undefined,
+    } as ApiResponse<void>;
   },
 
   /**
@@ -211,7 +225,7 @@ export const adminAPI = {
     // Mock data - replace with real API when available
     // GET /categories/stats
     const categories = await adminAPI.getCategories({ pageSize: 100 });
-    const stats: CategoryStats[] = categories.data.data.map(cat => ({
+    const stats: CategoryStats[] = categories.data.data.map((cat) => ({
       categoryId: cat.id,
       categoryName: cat.name,
       parentId: cat.parentId,
@@ -221,4 +235,3 @@ export const adminAPI = {
     return { statusCode: 200, message: "Success", data: stats };
   },
 };
-

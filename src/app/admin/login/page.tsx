@@ -9,7 +9,6 @@ import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -23,7 +22,6 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState("");
   const { adminLogin, isLoading, user, isAuthenticated } = useAuthStore();
 
-  // Redirect if already logged in as admin
   useEffect(() => {
     if (
       isAuthenticated &&
@@ -45,12 +43,18 @@ export default function AdminLoginPage() {
     }
   };
 
+  if (
+    isAuthenticated &&
+    user &&
+    (user.role === "ADMIN" || user.role === "SuperAdmin")
+  ) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 flex items-center justify-center p-4">
       <Card className="w-full max-w-md bg-white/95 backdrop-blur-sm shadow-2xl border-0">
         <CardHeader className="space-y-4 text-center pb-4">
-          {/* Admin Badge */}
-          {/* Logo */}
           <div className="flex justify-center">
             <Logo variant="rectangle" width={120} height={40} />
           </div>
@@ -58,9 +62,6 @@ export default function AdminLoginPage() {
           <CardTitle className="text-2xl font-bold text-gray-900">
             Admin Portal
           </CardTitle>
-          <CardDescription className="text-gray-600">
-            Đăng nhập để quản lý hệ thống
-          </CardDescription>
         </CardHeader>
 
         <CardContent>
@@ -75,7 +76,6 @@ export default function AdminLoginPage() {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="admin@sop.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required

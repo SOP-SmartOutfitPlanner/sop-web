@@ -38,6 +38,24 @@ export interface ColorOption {
 }
 
 /**
+ * AI Analysis Response (from wardrobeAPI.getImageSummary)
+ */
+export interface AIAnalysisResponse {
+  name: string;
+  colors: { name: string; hex: string }[];
+  aiDescription: string;
+  weatherSuitable: string;
+  condition: string;
+  pattern: string;
+  fabric: string;
+  imageRemBgURL: string;
+  category: { id: number; name: string };
+  styles: { id: number; name: string }[];
+  occasions: { id: number; name: string }[];
+  seasons: { id: number; name: string }[];
+}
+
+/**
  * Transform wizard form data to API request format
  * 
  * @param formData - Data from the wizard form
@@ -249,4 +267,72 @@ export function apiItemToFormData(apiItem: ApiWardrobeItem): Partial<WizardFormD
   };
 }
 
+/**
+ * Validate AI analysis response to check if it has sufficient data
+ * 
+ * @param result - AI analysis response
+ * @returns { isValid: boolean, missingFields: string[], score: number }
+ */
+export function validateAIResponse(result: Partial<AIAnalysisResponse> | null | undefined): {
+  isValid: boolean;
+  missingFields: string[];
+  score: number;
+  details: {
+    hasName: boolean;
+    hasCategory: boolean;
+    hasImage: boolean;
+    hasColors: boolean;
+    hasPattern: boolean;
+    hasFabric: boolean;
+    hasWeather: boolean;
+  };
+} {
+  const missingFields: string[] = [];
+  const CRITICAL_POINTS = 20;
+  const IMPORTANT_POINTS = 10;
+  
+  const details = {
+    hasName: Boolean(result?.name || result?.aiDescription),
+    hasCategory: Boolean(result?.category?.id && result?.category?.name),
+    hasImage: Boolean(result?.imageRemBgURL),
+    hasColors: Boolean(result?.colors && result.colors.length > 0),
+    hasPattern: Boolean(result?.pattern),
+    hasFabric: Boolean(result?.fabric),
+    hasWeather: Boolean(result?.weatherSuitable),
+  };
 
+  let score = 0;
+
+  if (details.hasName) {
+    score += CRITICAL_POINTS;
+  } else {
+    missingFields.push('name');
+  }
+
+  if (details.hasCategory) {
+    score += CRITICAL_POINTS;
+  } else {
+    missingFields.push('category');
+  }
+
+  if (details.hasImage) {
+    score += CRITICAL_POINTS;
+  } else {
+    missingFields.push('imageRemBgURL');
+  }
+
+  if (details.hasColors) score += IMPORTANT_POINTS;
+  if (details.hasPattern) score += IMPORTANT_POINTS;
+  if (details.hasFabric) score += IMPORTANT_POINTS;
+  if (details.hasWeather) score += IMPORTANT_POINTS;
+
+  const PASSING_SCORE = 60;
+  const isValid = score >= PASSING_SCORE;
+
+  return {
+    isValid,
+    missingFields,
+    score,
+    details,
+  };
+}

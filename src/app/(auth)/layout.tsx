@@ -1,14 +1,28 @@
 "use client";
 
 import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/store/auth-store";
 
 export default function AuthLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const router = useRouter();
+  const { isAuthenticated, user } = useAuthStore();
+
   useEffect(() => {
-    // Disable scroll on mount
+    if (isAuthenticated && user) {
+      if (user.role === "ADMIN" || user.role === "SuperAdmin") {
+        router.replace("/admin/dashboard");
+      } else {
+        router.replace("/wardrobe");
+      }
+    }
+  }, [isAuthenticated, user, router]);
+
+  useEffect(() => {
     const html = document.documentElement;
     const body = document.body;
     
@@ -17,7 +31,6 @@ export default function AuthLayout({
     body.style.overflow = "hidden";
     body.style.height = "100vh";
     
-    // Re-enable on unmount
     return () => {
       html.style.overflow = "";
       html.style.height = "";
@@ -25,6 +38,10 @@ export default function AuthLayout({
       body.style.height = "";
     };
   }, []);
+
+  if (isAuthenticated && user) {
+    return null;
+  }
 
   return (
     <div className="fixed inset-0 overflow-hidden">
