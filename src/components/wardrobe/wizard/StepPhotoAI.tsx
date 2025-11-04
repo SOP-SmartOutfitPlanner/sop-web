@@ -27,11 +27,9 @@ interface StepPhotoAIProps {
 export function StepPhotoAI({
   formData,
   updateFormData,
-  aiSuggestions,
   setAiSuggestions,
   onFileSelect,
   onClearFile,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   selectedFile: _selectedFile,
   previewUrl,
 }: StepPhotoAIProps) {
@@ -131,15 +129,6 @@ export function StepPhotoAI({
     // Otherwise use old flow
     updateFormData({ uploadedImageURL: "", imageRemBgURL: "" });
     setAiSuggestions(null);
-  };
-
-  const applyAllSuggestions = () => {
-    if (!aiSuggestions) return;
-
-    const formUpdates = parseAIResponseToFormData(aiSuggestions);
-    updateFormData(formUpdates);
-
-    toast.success("All suggestions applied!");
   };
 
   return (
