@@ -17,6 +17,7 @@ import { Sparkles, X } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/auth-store";
 import { useWardrobeStore } from "@/store/wardrobe-store";
+import { useUploadStore } from "@/store/upload-store";
 import { wardrobeAPI, type ApiWardrobeItem } from "@/lib/api/wardrobe-api";
 import { useWardrobeOptions } from "@/hooks/useWardrobeOptions";
 import {
@@ -28,7 +29,6 @@ import {
 import { StepPhotoAI } from "./StepPhotoAI";
 import { ItemFormContent } from "./ItemFormContent";
 import ImageCropper from "./ImageCropper";
-import { AnalysisToast } from "./AnalysisToast";
 import { STATUS, INITIAL_FORM_DATA, AI_ANALYSIS_CONFIG } from "./wizard-config";
 import type { StatusType } from "./wizard-config";
 import type { WizardFormData, AISuggestions } from "./types";
@@ -43,8 +43,6 @@ interface AddItemWizardProps {
   editMode?: boolean; // Whether wizard is in edit mode
   editItemId?: number; // ID of item being edited
   editItem?: ApiWardrobeItem; // API item to edit (will be transformed to form data)
-  // Callback when user wants to edit after auto-save
-  onEditAfterSave?: (itemId: number) => void;
 }
 
 export function AddItemWizard({
@@ -56,7 +54,6 @@ export function AddItemWizard({
   editMode = false,
   editItemId,
   editItem,
-  onEditAfterSave,
 }: AddItemWizardProps) {
   const [status, setStatus] = useState<StatusType>(STATUS.IDLE);
   const [showConfirmClose, setShowConfirmClose] = useState(false);
@@ -66,17 +63,27 @@ export function AddItemWizard({
   const [aiSuggestions, setAiSuggestions] = useState<AISuggestions | null>(
     null
   );
-  const [analysisProgress, setAnalysisProgress] = useState(0);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState("");
-  const [retryCount, setRetryCount] = useState(0);
-  const [isRetrying, setIsRetrying] = useState(false);
+  const [uploadTaskId, setUploadTaskId] = useState<string | null>(null);
 
   const { user } = useAuthStore();
   const { fetchItems } = useWardrobeStore();
+  const { addTask, updateTask, removeTask } = useUploadStore();
 
   // Fetch available options from API
   const { categories, styles, seasons, occasions } = useWardrobeOptions();
+
+  // Debug: Log status changes
+  useEffect(() => {
+    console.log("🔄 [STATUS] Status changed:", status, {
+      timestamp: new Date().toISOString(),
+      open,
+      hasChanges,
+      isSubmitting,
+      uploadTaskId
+    });
+  }, [status, open, hasChanges, isSubmitting, uploadTaskId]);
 
   // Initialize form data in edit mode OR reset when switching modes
   useEffect(() => {
@@ -101,15 +108,18 @@ export function AddItemWizard({
       setAiSuggestions(null);
       setSelectedFile(null);
       setPreviewUrl("");
-      setAnalysisProgress(0);
     }
   }, [open, editMode, editItem, status]);
 
   // Reset form to initial state
   const resetAndClose = useCallback(() => {
+    console.log("🚪 [CLOSE] resetAndClose() called");
+    
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl);
+      console.log("🧹 [CLOSE] Preview URL revoked");
     }
+    
     setStatus(STATUS.IDLE);
     setSelectedFile(null);
     setPreviewUrl("");
@@ -118,70 +128,107 @@ export function AddItemWizard({
     setHasChanges(false);
     setShowConfirmClose(false);
     setIsSubmitting(false);
-    setAnalysisProgress(0);
+    
+    console.log("🚪 [CLOSE] Calling onOpenChange(false)");
     onOpenChange(false);
+    console.log("✅ [CLOSE] Modal closed successfully");
   }, [onOpenChange, previewUrl]);
 
   // Auto-save after AI analysis
   const autoSaveAfterAnalysis = useCallback(
-    async (data: WizardFormData) => {
+    async (data: WizardFormData, taskId?: string | null) => {
       try {
+        console.log("💾 [SAVE] Step 5: Validating form data...", { taskId });
         setIsSubmitting(true);
 
         const errors = validateWizardFormData(data);
         if (errors.length > 0) {
+          console.warn("⚠️ [SAVE] Validation failed:", errors);
           // If validation fails, show form for manual edit
           setStatus(STATUS.FORM);
           setIsSubmitting(false);
           return;
         }
 
+        console.log("✅ [SAVE] Validation passed");
+
         const userId = await getUserIdFromAuth(user);
         const payload = transformWizardDataToAPI(data, userId);
+
+        console.log("📤 [SAVE] Step 6: Sending to API...", { payload });
+
+        // Update task: saving
+        if (taskId) {
+          updateTask(taskId, {
+            progress: 90,
+            status: "uploading",
+          });
+          console.log("📊 [SAVE] Progress: 90% - Saving to database");
+        }
 
         const response = await wardrobeAPI.createItem(payload);
 
         if (!response) {
-          console.error("❌ API returned undefined response!");
+          console.error("❌ [SAVE] API returned undefined response!");
           throw new Error("Failed to create item - no response from API");
         }
 
         // Store the created item ID
         const createdItemId = response?.id;
+        console.log("✅ [SAVE] Step 7: Item created successfully!", { 
+          createdItemId, 
+          response,
+          taskId // Debug: check if taskId exists
+        });
 
-        // Set to SAVED to hide AnalysisToast
+        // Update task: success IMMEDIATELY
+        if (taskId) {
+          console.log("🔄 [SAVE] Updating upload task to success...", { taskId });
+          updateTask(taskId, {
+            progress: 100,
+            status: "success",
+            createdItemId: createdItemId,
+          });
+          console.log("📊 [SAVE] Progress: 100% - Upload complete!");
+          console.log("🎉 [SUCCESS] Upload task marked as success");
+        } else {
+          console.error("❌ [ERROR] taskId is null! Cannot update task to success");
+        }
+
+        // Set to SAVED to hide modal
+        console.log("🔄 [MODAL] Setting status to SAVED - Modal will close");
         setStatus(STATUS.SAVED);
         setHasChanges(false);
 
         // Refresh items in background
+        console.log("🔄 [REFRESH] Fetching updated items...");
         await fetchItems();
+        console.log("✅ [REFRESH] Items refreshed");
 
-        // Show toast with edit button
-        toast.success(
-          '✅ Item added successfully! Click "Edit Details" to customize.',
-          {
-            duration: 6000,
-            position: "bottom-right",
-            action: {
-              label: "Edit Details",
-              onClick: () => {
-                // Notify parent to open edit mode
-                if (createdItemId && onEditAfterSave) {
-                  onEditAfterSave(createdItemId);
-                } else {
-                  console.warn("❌ Cannot edit: no itemId or callback missing");
-                }
-              },
-            },
-          }
-        );
+        // Don't show manual toast - GlobalUploadToast will handle it
+        console.log("💬 [TOAST] GlobalUploadToast will show success message");
 
-        // Close modal safely via resetAndClose
+        // Close modal immediately after setting status
+        console.log("🚪 [MODAL] Closing modal immediately...");
         setTimeout(() => {
+          console.log("🚪 [MODAL] Calling resetAndClose()");
           resetAndClose();
-        }, 1500);
+        }, 500); // Reduced from 1500ms to 500ms
       } catch (error) {
-        console.error("❌ Auto-save failed:", error);
+        console.error("❌ [ERROR] Auto-save failed:", error);
+
+        // Update task: error
+        if (taskId) {
+          updateTask(taskId, {
+            status: "error",
+            errorMessage: "Failed to save item",
+          });
+          
+          // Auto-remove error task after 5 seconds
+          setTimeout(() => {
+            removeTask(taskId);
+          }, 5000);
+        }
 
         // Show form for manual save if auto-save fails
         setStatus(STATUS.FORM);
@@ -190,15 +237,60 @@ export function AddItemWizard({
         setIsSubmitting(false);
       }
     },
-    [user, fetchItems, onEditAfterSave, resetAndClose]
+    [user, fetchItems, resetAndClose, updateTask, removeTask]
   );
 
   // AI Analysis with retry logic
   const analyzeImage = useCallback(
     async (file: File, url: string, attempt = 1) => {
+      let currentTaskId = uploadTaskId; // Use existing taskId or create new one
+      
       try {
-        setRetryCount(attempt - 1);
+        console.log("🚀 [UPLOAD] Step 1: Starting analysis", { 
+          fileName: file.name, 
+          attempt,
+          timestamp: new Date().toISOString(),
+          currentTaskId
+        });
+
+        // Create upload task on first attempt
+        if (attempt === 1) {
+          const taskId = addTask({
+            fileName: file.name,
+            progress: 10,
+            status: "analyzing",
+            retryCount: 0,
+            isRetrying: false,
+          });
+          currentTaskId = taskId; // Update currentTaskId
+          setUploadTaskId(taskId);
+          console.log("✅ [UPLOAD] Upload task created", { taskId });
+        }
+
+        console.log("📊 [ANALYSIS] Step 2: Sending to AI API...");
+
+        // Update progress: start analysis
+        if (currentTaskId) {
+          updateTask(currentTaskId, {
+            progress: 20,
+            status: "analyzing",
+            retryCount: attempt - 1,
+            isRetrying: attempt > 1,
+          });
+          console.log("📊 [ANALYSIS] Progress: 20% - Analysis started");
+        }
+
         const result = await wardrobeAPI.getImageSummary(file);
+        console.log("✅ [ANALYSIS] Step 3: AI Analysis complete!", { result });
+
+        // Update progress: analysis complete
+        if (currentTaskId) {
+          updateTask(currentTaskId, {
+            progress: 60,
+            status: "analyzing",
+          });
+          console.log("📊 [ANALYSIS] Progress: 60% - Analysis processed");
+        }
 
         setAiSuggestions(result);
 
@@ -231,49 +323,73 @@ export function AddItemWizard({
         };
 
         setFormData(newFormData);
+        console.log("📝 [FORM] Form data prepared", { newFormData });
 
         // ✅ Update preview to show removed background image
         if (result.imageRemBgURL) {
           setPreviewUrl(result.imageRemBgURL);
         }
 
-        setRetryCount(0);
-        setIsRetrying(false);
-        setAnalysisProgress(100); // Set to 100% when complete
+        // Update progress: preparing to save
+        if (currentTaskId) {
+          updateTask(currentTaskId, {
+            progress: 80,
+            status: "uploading",
+          });
+          console.log("📊 [SAVE] Progress: 80% - Preparing to save");
+        }
 
         // 🎯 Auto-save after analysis completes
+        console.log("💾 [SAVE] Step 4: Starting auto-save...");
         setTimeout(async () => {
-          await autoSaveAfterAnalysis(newFormData);
+          await autoSaveAfterAnalysis(newFormData, currentTaskId);
         }, 500);
       } catch (error) {
         console.error(
-          `Analysis failed (attempt ${attempt}/${AI_ANALYSIS_CONFIG.MAX_RETRIES}):`,
+          `❌ [ERROR] Analysis failed (attempt ${attempt}/${AI_ANALYSIS_CONFIG.MAX_RETRIES}):`,
           error
         );
 
         if (attempt < AI_ANALYSIS_CONFIG.MAX_RETRIES) {
-          setIsRetrying(true);
-          // Reset progress for retries
-          if (attempt === 1) {
-            setAnalysisProgress(0);
-          } else {
-            setAnalysisProgress(10);
+          console.log(`🔄 [RETRY] Retrying... (attempt ${attempt + 1})`);
+          // Update task for retry
+          if (currentTaskId) {
+            updateTask(currentTaskId, {
+              progress: 10,
+              status: "analyzing",
+              retryCount: attempt,
+              isRetrying: true,
+            });
           }
 
           setTimeout(() => {
             analyzeImage(file, url, attempt + 1);
           }, AI_ANALYSIS_CONFIG.RETRY_DELAY);
         } else {
-          setIsRetrying(false);
+          console.error("❌ [ERROR] Max retries reached. Giving up.");
+          // Mark task as error
+          if (currentTaskId) {
+            updateTask(currentTaskId, {
+              status: "error",
+              errorMessage: "Failed to analyze image after 5 attempts",
+            });
+            
+            // Auto-remove error task after 5 seconds
+            setTimeout(() => {
+              if (currentTaskId) {
+                removeTask(currentTaskId);
+              }
+            }, 5000);
+          }
+
           toast.error(
             "Failed to analyze image after 5 attempts. Please try again."
           );
           setStatus(STATUS.PREVIEW);
-          setAnalysisProgress(0);
         }
       }
     },
-    [autoSaveAfterAnalysis]
+    [autoSaveAfterAnalysis, addTask, updateTask, removeTask, uploadTaskId]
   );
 
   // Handle initialFile from GalleryPickerFlow
@@ -288,7 +404,6 @@ export function AddItemWizard({
       if (autoAnalyze && skipCrop) {
         // Skip crop and go directly to analyzing
         setStatus(STATUS.ANALYZING);
-        setAnalysisProgress(0);
 
         // Trigger analysis with retry logic
         setTimeout(() => {
@@ -313,11 +428,16 @@ export function AddItemWizard({
     setPreviewUrl("");
     setStatus(STATUS.IDLE);
     setAiSuggestions(null);
-    setAnalysisProgress(0);
   }, [previewUrl]);
 
   // Handle file selection - go to cropping
   const handleFileSelect = useCallback((file: File) => {
+    console.log("📁 [FILE] File selected", { 
+      fileName: file.name, 
+      fileSize: file.size, 
+      fileType: file.type 
+    });
+    
     // Revoke old URL to prevent memory leak
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl);
@@ -327,6 +447,8 @@ export function AddItemWizard({
     setPreviewUrl(url);
     setStatus(STATUS.CROPPING); // Changed from PREVIEW to CROPPING
     setHasChanges(true);
+    
+    console.log("✅ [FILE] Status changed to CROPPING");
   }, [previewUrl]);
 
   // Handle crop complete
@@ -367,10 +489,18 @@ export function AddItemWizard({
 
   // Handle analyze button
   const handleAnalyze = useCallback(async () => {
-    if (!selectedFile || !previewUrl) return;
+    if (!selectedFile || !previewUrl) {
+      console.warn("⚠️ [ANALYZE] No file selected");
+      return;
+    }
 
+    console.log("🔍 [ANALYZE] User clicked analyze button", {
+      fileName: selectedFile.name,
+      hasPreview: !!previewUrl
+    });
+    
     setStatus(STATUS.ANALYZING);
-    setAnalysisProgress(0);
+    console.log("✅ [ANALYZE] Status changed to ANALYZING - Modal will hide");
 
     // Use retry logic
     analyzeImage(selectedFile, previewUrl);
@@ -470,39 +600,10 @@ export function AddItemWizard({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open, handleClose]);
 
-  // Simulate progress when analyzing
-  useEffect(() => {
-    if (status !== STATUS.ANALYZING) {
-      setAnalysisProgress(0);
-      return;
-    }
-
-    // Simulate smooth progress
-    let currentProgress = 0;
-    const interval = setInterval(() => {
-      currentProgress += Math.random() * 15;
-      if (currentProgress >= 95) {
-        currentProgress = 95; // Stop at 95% until real completion
-        clearInterval(interval);
-      }
-      setAnalysisProgress(currentProgress);
-    }, 500);
-
-    return () => clearInterval(interval);
-  }, [status]);
-
   return (
     <>
-      {/* Global Analyzing Toast - renders outside modal */}
-      <AnalysisToast
-        isVisible={status === STATUS.ANALYZING}
-        progress={analysisProgress}
-        retryCount={retryCount}
-        isRetrying={isRetrying}
-      />
-
       <Dialog
-        open={open && status !== STATUS.ANALYZING}
+        open={open && status !== STATUS.ANALYZING && status !== STATUS.SAVED}
         onOpenChange={(open) => !open && handleClose()}
       >
         <DialogContent

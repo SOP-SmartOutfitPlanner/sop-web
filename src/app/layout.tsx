@@ -9,6 +9,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/components/providers/auth-provider";
 import { GoogleAuthProvider } from "@/components/providers/google-oauth-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
+import { GlobalUploadToast } from "@/components/upload/GlobalUploadToast";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -54,6 +55,7 @@ export default function RootLayout({
             <GoogleAuthProvider>
               {children}
               <Toaster />
+              <GlobalUploadToast />
             </GoogleAuthProvider>
           </QueryProvider>
         </AuthProvider>
