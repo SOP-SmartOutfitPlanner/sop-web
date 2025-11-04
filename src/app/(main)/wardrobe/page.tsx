@@ -8,6 +8,7 @@ import { WardrobeHeader } from "@/components/wardrobe/wardrobe-header";
 import { Toolbar } from "@/components/wardrobe/toolbar";
 import { WardrobeContent } from "@/components/wardrobe/wardrobe-content";
 import { ErrorDisplay } from "@/components/common/error-display";
+import { ItemDetailView } from "@/components/wardrobe/item-detail-view";
 import { useWardrobeStore } from "@/store/wardrobe-store";
 import { useAuthStore } from "@/store/auth-store";
 import { getCollectionsWithCounts } from "@/lib/mock/collections";
@@ -33,6 +34,10 @@ export default function WardrobePage() {
   // Edit mode state
   const [editItem, setEditItem] = useState<ApiWardrobeItem | null>(null);
   const isEditMode = !!editItem;
+  
+  // Detail view state
+  const [detailViewItemId, setDetailViewItemId] = useState<number | null>(null);
+  const [isDetailViewOpen, setIsDetailViewOpen] = useState(false);
 
   const { isAuthenticated, user } = useAuthStore();
 
@@ -87,31 +92,14 @@ export default function WardrobePage() {
     }
   };
 
-  // Handle edit after auto-save (from toast action)
-  const handleEditAfterSave = async (itemId: number) => {
+  // Handle view details after auto-save (from toast action)
+  const handleViewAfterSave = async (itemId: number) => {
     try {
-      // Get raw API item from store
-      const rawItem = getRawItemById(itemId);
-      
-      if (!rawItem) {
-        // Fallback: fetch from API if not in store
-        const response = await wardrobeAPI.getItem(itemId);
-        
-        if (!response) {
-          throw new Error("Item not found");
-        }
-        
-        setEditItem(response);
-      } else {
-        setEditItem(rawItem);
-      }
-      
-      // Open wizard in edit mode
-      setTimeout(() => {
-        setIsAddItemOpen(true);
-      }, 100);
+      // Open detail view
+      setDetailViewItemId(itemId);
+      setIsDetailViewOpen(true);
     } catch (error) {
-      console.error("❌ Failed to fetch item for edit:", error);
+      console.error("❌ Failed to show item details:", error);
       toast.error("Failed to load item details. Please try again.");
     }
   };
@@ -192,7 +180,14 @@ export default function WardrobePage() {
           editMode={isEditMode}
           editItemId={editItem?.id}
           editItem={editItem || undefined}
-          onEditAfterSave={handleEditAfterSave}
+          onEditAfterSave={handleViewAfterSave}
+        />
+
+        {/* Item Detail View */}
+        <ItemDetailView
+          open={isDetailViewOpen}
+          onOpenChange={setIsDetailViewOpen}
+          itemId={detailViewItemId}
         />
       </div>
     </div>

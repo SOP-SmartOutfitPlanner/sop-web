@@ -141,20 +141,20 @@ export function AddItemWizard({
         // Refresh items in background
         fetchItems();
 
-        // Show toast with edit button
+        // Show toast with view button
         toast.success(
-          '✅ Item added successfully! Click "Edit Details" to customize.',
+          '✅ Item added successfully.',
           {
             duration: 6000,
             position: "bottom-right",
             action: {
-              label: "Edit Details",
+              label: "View Details",
               onClick: () => {
-                // Notify parent to open edit mode
+                // Notify parent to open detail view
                 if (createdItemId && onEditAfterSave) {
                   onEditAfterSave(createdItemId);
                 } else {
-                  console.warn("❌ Cannot edit: no itemId or callback missing");
+                  console.warn("❌ Cannot view: no itemId or callback missing");
                 }
               },
             },
@@ -173,12 +173,43 @@ export function AddItemWizard({
     [user, fetchItems, onOpenChange, onEditAfterSave]
   );
 
-  // AI Analysis with retry logic
+  // Helper to check if analysis result has null critical fields
+  const hasNullCriticalFields = (result: AISuggestions): boolean => {
+    const criticalFields = [
+      result.name,
+      result.imageRemBgURL,
+      result.category?.id,
+      result.category?.name,
+      result.pattern,
+      result.fabric,
+      result.condition,
+    ];
+    
+    return criticalFields.some(field => field === null || field === undefined || field === "");
+  };
+
+  // AI Analysis with enhanced retry logic
   const analyzeImage = useCallback(
     async (file: File, url: string, attempt = 1) => {
       try {
         setRetryCount(attempt - 1);
         const result = await wardrobeAPI.getImageSummary(file);
+
+        // Check for null critical fields - retry if found
+        if (hasNullCriticalFields(result)) {
+          console.warn(
+            `Analysis returned null fields (attempt ${attempt}/${AI_ANALYSIS_CONFIG.MAX_RETRIES}):`,
+            result
+          );
+          
+          if (attempt < AI_ANALYSIS_CONFIG.MAX_RETRIES) {
+            setIsRetrying(true);
+            setTimeout(() => {
+              analyzeImage(file, url, attempt + 1);
+            }, AI_ANALYSIS_CONFIG.RETRY_DELAY);
+            return;
+          }
+        }
 
         setAiSuggestions(result);
 
@@ -233,9 +264,6 @@ export function AddItemWizard({
 
         if (attempt < AI_ANALYSIS_CONFIG.MAX_RETRIES) {
           setIsRetrying(true);
-          // toast.error(
-          //   `Analysis failed. Retrying in 30s... (${attempt}/${AI_ANALYSIS_CONFIG.MAX_RETRIES})`
-          // );
 
           setTimeout(() => {
             analyzeImage(file, url, attempt + 1);
@@ -453,23 +481,24 @@ export function AddItemWizard({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open, handleClose]);
 
-  // Simulate progress when analyzing
+  // Simulate progress when analyzing - slower to match API timing
   useEffect(() => {
     if (status !== STATUS.ANALYZING) {
       setAnalysisProgress(0);
       return;
     }
 
-    // Simulate smooth progress
+    // Simulate smooth progress - slower animation
     let currentProgress = 0;
     const interval = setInterval(() => {
-      currentProgress += Math.random() * 15;
-      if (currentProgress >= 95) {
-        currentProgress = 95; // Stop at 95% until real completion
+      // Slower increment (reduced from 15 to 8)
+      currentProgress += Math.random() * 8;
+      if (currentProgress >= 90) {
+        currentProgress = 90; // Stop at 90% until real completion
         clearInterval(interval);
       }
       setAnalysisProgress(currentProgress);
-    }, 500);
+    }, 800); // Slower interval (increased from 500ms to 800ms)
 
     return () => clearInterval(interval);
   }, [status]);
