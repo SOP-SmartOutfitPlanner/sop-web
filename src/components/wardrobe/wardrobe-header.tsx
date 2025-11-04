@@ -29,7 +29,6 @@ export function WardrobeHeader({
           <GlassButton
             onClick={onAddItem}
             disabled={isLoading}
-            // glass look
             variant="custom"
             borderRadius="14px"
             blur="10px"

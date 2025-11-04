@@ -9,7 +9,6 @@ import {
   PatternFabricSection,
   StyleOccasionSection,
   WeatherSeasonSection,
-  NotesSection,
   ImagePreviewSection,
   FormActionsSection,
 } from "./sections";
@@ -145,10 +144,11 @@ export function ItemFormContent({
                     }
                   />
 
-                  {/* Color Display */}
-                  <ColorSection colors={formData.colors || []} />
+                  <ColorSection 
+                    colors={formData.colors || []} 
+                    onChange={(colors) => onFormDataChange({ colors })}
+                  />
 
-                  {/* Pattern & Fabric */}
                   <PatternFabricSection
                     pattern={formData.pattern || ""}
                     fabric={formData.fabric || ""}

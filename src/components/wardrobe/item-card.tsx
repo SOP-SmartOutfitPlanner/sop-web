@@ -180,7 +180,7 @@ export function ItemCard({
           </div>
 
           {/* Content */}
-          <div className="p-4 space-y-3">
+          <div className="p-3 space-y-3">
             {/* Header - Updated typography */}
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 flex-1">
@@ -245,7 +245,7 @@ export function ItemCard({
 
                     if (colors.length === 0) return null;
 
-                    return colors.slice(0, 3).map((c) => (
+                    return colors.slice(0, 5).map((c) => (
                       <TooltipProvider key={`${c.name}-${c.hex}`}>
                         <Tooltip>
                           <TooltipTrigger>

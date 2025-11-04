@@ -81,11 +81,6 @@ export function transformWizardDataToAPI(
     ? formData.tags.join(', ') 
     : undefined;
 
-  // Handle worn today
-  const frequencyWorn = formData.wornToday ? "1" : "0";
-  // Always include lastWornAt to match Swagger format
-  const lastWornAt = formData.wornToday ? new Date().toISOString() : new Date().toISOString();
-
   // IMPORTANT: Backend only accepts URL from AI, NOT base64
   // Use removed background image from AI (required)
   const imgUrl = formData.imageRemBgURL || '';
@@ -115,18 +110,15 @@ export function transformWizardDataToAPI(
     color: colorString,
     aiDescription,
     brand: formData.brand || undefined,
-    frequencyWorn,
-    lastWornAt, // Always include to match Swagger
     imgUrl,
     weatherSuitable: weatherString,
     condition: formData.condition || 'New',
     pattern: truncate(formData.pattern || 'Solid', 100),
     fabric: truncate(formData.fabric || 'Cotton', 100),
     tag: tagString,
-    // Include relational IDs if available
     styleIds: formData.styleIds || undefined,
     occasionIds: formData.occasionIds || undefined,
-    seasonIds: undefined, // Seasons are passed as weatherSuitable string, not IDs
+    seasonIds: undefined,
   } as CreateWardrobeItemRequest;
 
   return payload;

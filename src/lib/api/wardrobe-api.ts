@@ -169,12 +169,12 @@ class WardrobeAPI {
    */
   async createItem(item: CreateWardrobeItemRequest): Promise<ApiWardrobeItem> {
     const response = await apiClient.post("/items", item);
-    
+
     // API may wrap response in { statusCode, message, data }
     if (response.data.data) {
       return response.data.data;
     }
-    
+
     return response.data;
   }
 
@@ -243,9 +243,7 @@ class WardrobeAPI {
     { id: number; name: string; description?: string }[]
   > {
     try {
-      const response = await apiClient.get("/styles");
-
-      // API returns { data: [...], metaData: {...} } directly
+      const response = await apiClient.get("/styles?take-all=true");
       const styles = response.data?.data || [];
       return styles;
     } catch (error) {
