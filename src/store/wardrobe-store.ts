@@ -21,6 +21,7 @@ interface WardrobeStore {
   hasInitialFetch: boolean;
   getRawItemById: (id: number) => ApiWardrobeItem | undefined; // Helper to get raw item
   addItem: (item: CreateWardrobeItemRequest) => Promise<void>;
+  addItemOptimistic: (apiItem: ApiWardrobeItem) => void; // ⚡ Optimistic update
   removeItem: (id: string) => void;
   updateItem: (id: string, item: Partial<WardrobeItem>) => Promise<void>;
   setFilters: (filters: WardrobeFilters) => void;
@@ -214,6 +215,7 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
 
       set((state) => {
         const newItems = [...state.items, newItem];
+        const newRawItems = [...state.rawApiItems, newApiItem];
         const filtered = filterItems(
           newItems,
           state.filters,
@@ -222,6 +224,7 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
         const sorted = sortItems(filtered, state.sortBy);
         return {
           items: newItems,
+          rawApiItems: newRawItems,
           isLoading: false,
           filteredItems: sorted,
         };
@@ -234,6 +237,24 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
       });
       throw error;
     }
+  },
+
+  // ⚡ Optimistic update: Add item immediately without API fetch
+  addItemOptimistic: (apiItem) => {
+    const newItem = apiItemToWardrobeItem(apiItem);
+    
+    set((state) => {
+      const newItems = [...state.items, newItem];
+      const newRawItems = [...state.rawApiItems, apiItem];
+      const filtered = filterItems(newItems, state.filters, state.searchQuery);
+      const sorted = sortItems(filtered, state.sortBy);
+      
+      return {
+        items: newItems,
+        rawApiItems: newRawItems,
+        filteredItems: sorted,
+      };
+    });
   },
 
   // Remove item from local state (optimistic update)

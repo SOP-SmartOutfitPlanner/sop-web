@@ -68,7 +68,6 @@ export function AddItemWizard({
   const [uploadTaskId, setUploadTaskId] = useState<string | null>(null);
 
   const { user } = useAuthStore();
-  const { fetchItems } = useWardrobeStore();
   const { addTask, updateTask, removeTask } = useUploadStore();
 
   // Fetch available options from API
@@ -174,8 +173,10 @@ export function AddItemWizard({
         setStatus(STATUS.SAVED);
         setHasChanges(false);
 
-        // Refresh items in background
-        await fetchItems();
+        // ⚡ Optimistic update: Add item to local state immediately
+        // No need to fetch all items again!
+        const state = useWardrobeStore.getState();
+        state.addItemOptimistic(response);
 
         // Close modal after short delay
         setTimeout(() => {
@@ -204,7 +205,7 @@ export function AddItemWizard({
         setIsSubmitting(false);
       }
     },
-    [user, fetchItems, resetAndClose, updateTask, removeTask]
+    [user, resetAndClose, updateTask, removeTask]
   );
 
   // AI Analysis with retry logic
@@ -458,6 +459,11 @@ export function AddItemWizard({
       // Edit mode: update existing item
       if (editMode && editItemId) {
         await wardrobeAPI.updateItem(editItemId, payload);
+        
+        // ⚡ Optimistic update for edit
+        const state = useWardrobeStore.getState();
+        await state.fetchItems(); // Refresh after edit to ensure consistency
+        
         toast.success("Item updated successfully!");
       } else {
         // Create mode: add new item
@@ -473,14 +479,15 @@ export function AddItemWizard({
           });
         }
         
+        // ⚡ Optimistic update: Add item immediately, no fetch needed!
+        const state = useWardrobeStore.getState();
+        state.addItemOptimistic(response);
+        
         toast.success("Item added successfully!");
       }
 
       // Show saved state
       setStatus(STATUS.SAVED);
-
-      // Refresh items in background
-      fetchItems();
 
       // Auto-close after showing success
       setTimeout(() => {
@@ -514,7 +521,7 @@ export function AddItemWizard({
       toast.error(errorMessage);
       setIsSubmitting(false);
     }
-  }, [formData, user, fetchItems, resetAndClose, editMode, editItemId, uploadTaskId, updateTask]);
+  }, [formData, user, resetAndClose, editMode, editItemId, uploadTaskId, updateTask]);
 
   // Update form data
   const updateFormData = useCallback((updates: Partial<WizardFormData>) => {
