@@ -169,6 +169,12 @@ class WardrobeAPI {
    */
   async createItem(item: CreateWardrobeItemRequest): Promise<ApiWardrobeItem> {
     const response = await apiClient.post("/items", item);
+    
+    // API may wrap response in { statusCode, message, data }
+    if (response.data.data) {
+      return response.data.data;
+    }
+    
     return response.data;
   }
 

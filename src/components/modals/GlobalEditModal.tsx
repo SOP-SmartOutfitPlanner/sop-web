@@ -31,10 +31,9 @@ export function GlobalEditModal() {
   // Import upload store to get cached item data
   const { tasks } = useUploadStore();
 
-  // Fetch item details when modal opens
+  // Fetch item details when modal opens with cached data or retry mechanism
   useEffect(() => {
     if (isOpen && editItemId) {
-      console.log("🔍 [GLOBAL EDIT] Fetching item details:", editItemId);
       setIsLoading(true);
 
       // First, check if we have cached data in upload store
@@ -43,13 +42,10 @@ export function GlobalEditModal() {
       );
 
       if (cachedTask?.createdItemData) {
-        console.log("💾 [GLOBAL EDIT] Using cached item data from upload store");
         setEditItem(cachedTask.createdItemData);
         setIsLoading(false);
         return;
       }
-
-      console.log("🌐 [GLOBAL EDIT] No cached data, fetching from API...");
 
       // Helper function to fetch with retry
       const fetchWithRetry = async (
@@ -58,46 +54,22 @@ export function GlobalEditModal() {
         maxAttempts = 3
       ): Promise<ApiWardrobeItem> => {
         try {
-          console.log(
-            `🔄 [GLOBAL EDIT] Fetch attempt ${attempt}/${maxAttempts}`
-          );
-
-          // Add delay before fetching (except first attempt)
-          if (attempt > 1) {
-            const delay = attempt * 500; // 500ms, 1000ms, 1500ms...
-            console.log(`⏱️ [GLOBAL EDIT] Waiting ${delay}ms before retry...`);
-            await new Promise((resolve) => setTimeout(resolve, delay));
-          } else {
-            // Even on first attempt, wait 300ms for DB to commit
-            await new Promise((resolve) => setTimeout(resolve, 300));
-          }
+          // Add delay before fetching
+          const delay = attempt > 1 ? attempt * 500 : 300;
+          await new Promise((resolve) => setTimeout(resolve, delay));
 
           const response = await wardrobeAPI.getItem(itemId);
 
-          console.log("📦 [GLOBAL EDIT] API Response:", {
-            hasResponse: !!response,
-            response,
-            responseType: typeof response,
-          });
-
           if (response) {
-            console.log("✅ [GLOBAL EDIT] Item fetched successfully:", response);
             return response;
           } else {
             throw new Error("Item not found in response");
           }
         } catch (error) {
-          console.warn(
-            `⚠️ [GLOBAL EDIT] Fetch attempt ${attempt} failed:`,
-            error
-          );
-
           // Retry if not max attempts
           if (attempt < maxAttempts) {
-            console.log(`🔄 [GLOBAL EDIT] Retrying... (${attempt + 1}/${maxAttempts})`);
             return fetchWithRetry(itemId, attempt + 1, maxAttempts);
           } else {
-            // All attempts failed
             throw error;
           }
         }
@@ -109,9 +81,9 @@ export function GlobalEditModal() {
           setEditItem(item);
         })
         .catch((error) => {
-          console.error("❌ [GLOBAL EDIT] All fetch attempts failed:", error);
+          console.error("❌ [GlobalEditModal] Failed to fetch item:", error);
           toast.error(
-            "Failed to load item details after multiple attempts. Please try again from Wardrobe page."
+            "Failed to load item details. Please try again from Wardrobe page."
           );
           closeEditModal();
         })
@@ -124,7 +96,7 @@ export function GlobalEditModal() {
     if (!isOpen) {
       setEditItem(null);
     }
-  }, [isOpen, editItemId, closeEditModal]);
+  }, [isOpen, editItemId, closeEditModal, tasks]);
 
   // Show loading state while fetching
   if (isOpen && isLoading) {
@@ -151,7 +123,6 @@ export function GlobalEditModal() {
     <AddItemWizard
       open={isOpen}
       onOpenChange={(open) => {
-        console.log("🔄 [GLOBAL EDIT] Modal open state changed:", open);
         if (!open) {
           closeEditModal();
         }

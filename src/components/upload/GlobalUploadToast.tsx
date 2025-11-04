@@ -8,25 +8,13 @@ import { useGlobalEditModal } from "@/hooks/useGlobalEditModal";
 import { toast } from "sonner";
 
 export function GlobalUploadToast() {
-  const { tasks, activeTaskId, removeTask } = useUploadStore();
+  const { tasks, activeTaskId } = useUploadStore();
   const activeTask = tasks.find((task) => task.id === activeTaskId);
   const { openEditModal } = useGlobalEditModal();
 
-  // Debug: Log active task changes
-  useEffect(() => {
-    console.log("📋 [TOAST] Active task updated:", {
-      activeTaskId,
-      activeTask,
-      status: activeTask?.status,
-      progress: activeTask?.progress,
-    });
-  }, [activeTaskId, activeTask]);
-
-  // Auto-hide success toast after 3 seconds
+  // Show success toast - DON'T remove task (it contains cache data!)
   useEffect(() => {
     if (activeTask?.status === "success") {
-      console.log("🎉 [TOAST] Success status detected! Showing success toast");
-      
       // Show success toast with edit action
       toast.success(`✅ "${activeTask.fileName}" added to wardrobe!`, {
         duration: 5000,
@@ -36,10 +24,6 @@ export function GlobalUploadToast() {
               label: "Edit",
               onClick: () => {
                 if (activeTask.createdItemId) {
-                  console.log("✏️ [TOAST] User clicked Edit button", {
-                    itemId: activeTask.createdItemId,
-                  });
-                  // Open edit modal globally (works from any page)
                   openEditModal(activeTask.createdItemId);
                 }
               },
@@ -47,41 +31,15 @@ export function GlobalUploadToast() {
           : undefined,
       });
 
-      console.log("⏱️ [TOAST] Will auto-remove task in 3 seconds");
-      
-      // Auto-remove task after 3 seconds
-      const timer = setTimeout(() => {
-        if (activeTaskId) {
-          console.log("🗑️ [TOAST] Auto-removing task:", activeTaskId);
-          removeTask(activeTaskId);
-        }
-      }, 3000);
-
-      return () => {
-        clearTimeout(timer);
-      };
+      // ⚠️ DON'T remove success tasks - they contain createdItemData for cache!
+      // Tasks will be cleaned up when limit is reached (max 10 recent tasks)
     }
-  }, [activeTask?.status, activeTask?.fileName, activeTask?.createdItemId, activeTaskId, removeTask, openEditModal]);
+  }, [activeTask?.status, activeTask?.fileName, activeTask?.createdItemId, openEditModal]);
 
   // Only show toast for uploading/analyzing states
   const isVisible =
     activeTask &&
     (activeTask.status === "uploading" || activeTask.status === "analyzing");
-
-  // Debug: Log visibility changes
-  useEffect(() => {
-    console.log("👁️ [TOAST] Visibility changed:", {
-      isVisible,
-      activeTaskStatus: activeTask?.status,
-      reason: !activeTask 
-        ? "No active task" 
-        : activeTask.status === "success" 
-        ? "Success (toast hidden, showing sonner toast)" 
-        : activeTask.status === "error"
-        ? "Error (toast hidden)"
-        : "Uploading/Analyzing (toast visible)"
-    });
-  }, [isVisible, activeTask]);
 
   return (
     <AnimatePresence>

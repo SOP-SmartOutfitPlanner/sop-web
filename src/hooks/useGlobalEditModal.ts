@@ -20,12 +20,10 @@ export const useGlobalEditModal = create<GlobalEditModalState>((set) => ({
   editItemId: null,
 
   openEditModal: (itemId: number) => {
-    console.log("🔓 [GLOBAL] Opening edit modal for item:", itemId);
     set({ isOpen: true, editItemId: itemId });
   },
 
   closeEditModal: () => {
-    console.log("🔒 [GLOBAL] Closing edit modal");
     set({ isOpen: false, editItemId: null });
   },
 }));

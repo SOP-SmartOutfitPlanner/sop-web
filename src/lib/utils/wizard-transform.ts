@@ -111,26 +111,6 @@ export function transformWizardDataToAPI(
     seasonIds: undefined, // Seasons are passed as weatherSuitable string, not IDs
   } as CreateWardrobeItemRequest;
 
-  // Debug logging
-  console.log('🔍 Transform Input:', {
-    colors: formData.colors,
-    colorStringOutput: colorString,
-    seasons: formData.seasons,
-    condition: formData.condition,
-    imageRemBgURL: formData.imageRemBgURL,
-    originalNameLength: formData.name.length,
-    originalAiDescLength: (formData.notes || `${formData.brand} ${formData.name}`).length,
-  });
-  console.log('🔍 Field Lengths:', {
-    name: payload.name.length,
-    aiDescription: payload.aiDescription.length,
-    color: payload.color.length,
-    pattern: payload.pattern.length,
-    fabric: payload.fabric.length,
-    brand: payload.brand?.length || 0,
-  });
-  console.log('🔍 Payload to API:', JSON.stringify(payload, null, 2));
-
   return payload;
 }
 
@@ -224,8 +204,6 @@ export function apiItemToFormData(apiItem: ApiWardrobeItem): Partial<WizardFormD
       }));
     }
   }
-
-  console.log('🔍 apiItemToFormData - Parsed colors:', colors);
 
   // Parse seasons from comma-separated weatherSuitable string
   const seasons: string[] = apiItem.weatherSuitable

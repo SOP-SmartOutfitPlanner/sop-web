@@ -25,7 +25,7 @@ interface UploadStore {
   clearCompletedTasks: () => void;
 }
 
-export const useUploadStore = create<UploadStore>((set, get) => ({
+export const useUploadStore = create<UploadStore>((set) => ({
   tasks: [],
   activeTaskId: null,
 
@@ -33,10 +33,18 @@ export const useUploadStore = create<UploadStore>((set, get) => ({
     const id = `upload-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const newTask = { ...task, id };
 
-    set((state) => ({
-      tasks: [...state.tasks, newTask],
-      activeTaskId: id,
-    }));
+    set((state) => {
+      const updatedTasks = [...state.tasks, newTask];
+      
+      // Keep only last 10 tasks (for cache, cleanup old ones)
+      const MAX_CACHED_TASKS = 10;
+      const tasksToKeep = updatedTasks.slice(-MAX_CACHED_TASKS);
+      
+      return {
+        tasks: tasksToKeep,
+        activeTaskId: id,
+      };
+    });
 
     return id;
   },
