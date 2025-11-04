@@ -173,6 +173,13 @@ export function AddItemWizard({
     [user, fetchItems, onOpenChange, onEditAfterSave]
   );
 
+  // Helper to check if a value is empty (null, undefined, empty string, or whitespace-only)
+  const isEmpty = (value: unknown): boolean => {
+    if (value === null || value === undefined) return true;
+    if (typeof value === 'string') return value.trim() === '';
+    return false;
+  };
+
   // Helper to check if analysis result has null critical fields
   const hasNullCriticalFields = (result: AISuggestions): boolean => {
     const criticalFields = [
@@ -185,7 +192,7 @@ export function AddItemWizard({
       result.condition,
     ];
     
-    return criticalFields.some(field => field === null || field === undefined || field === "");
+    return criticalFields.some(field => isEmpty(field));
   };
 
   // AI Analysis with enhanced retry logic

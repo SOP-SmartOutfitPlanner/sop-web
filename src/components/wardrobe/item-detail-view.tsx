@@ -281,22 +281,25 @@ function InfoCard({
   );
 }
 
+// Color mapping constants
+const COLOR_MAP: Record<string, string> = {
+  red: "#EF4444",
+  blue: "#3B82F6",
+  green: "#10B981",
+  yellow: "#F59E0B",
+  purple: "#A855F7",
+  pink: "#EC4899",
+  orange: "#F97316",
+  gray: "#6B7280",
+  black: "#000000",
+  white: "#FFFFFF",
+  brown: "#92400E",
+};
+
+const DEFAULT_COLOR = "#6B7280"; // Gray fallback
+
 // Helper to get color hex from color name
 function getColorHex(colorName: string): string {
-  const colorMap: Record<string, string> = {
-    red: "#EF4444",
-    blue: "#3B82F6",
-    green: "#10B981",
-    yellow: "#F59E0B",
-    purple: "#A855F7",
-    pink: "#EC4899",
-    orange: "#F97316",
-    gray: "#6B7280",
-    black: "#000000",
-    white: "#FFFFFF",
-    brown: "#92400E",
-  };
-
   const normalized = colorName.toLowerCase().trim();
-  return colorMap[normalized] || "#6B7280"; // Default to gray
+  return COLOR_MAP[normalized] || DEFAULT_COLOR;
 }
