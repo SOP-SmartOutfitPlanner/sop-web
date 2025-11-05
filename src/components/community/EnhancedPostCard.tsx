@@ -1,38 +1,28 @@
-import { useState } from "react";
-import {
-  Heart,
-  MessageCircle,
-  Bookmark,
-  Share2,
-  MoreHorizontal,
-  Star,
-  Trophy,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Post } from "@/types/community";
-import { CommunityUser } from "@/types/community";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Post, CommunityUser } from "@/types/community";
 import { UserMini } from "@/types/chat";
-import { formatDistanceToNow } from "date-fns";
 import { QuickChatModal } from "@/components/chat/QuickChatModal";
 import CommentSection from "@/components/community/CommentSection";
-import Image from "next/image";
+import { PostHeader } from "@/components/community/PostHeader";
+import { PostImage } from "@/components/community/PostImage";
+import { PostContent } from "@/components/community/PostContent";
+import { PostActions } from "@/components/community/PostActions";
+import { CommentInput } from "@/components/community/CommentInput";
+import { communityAPI } from "@/lib/api/community-api";
+import { useAuthStore } from "@/store/auth-store";
+import { toast } from "sonner";
 
 interface EnhancedPostCardProps {
   post: Post;
   currentUser: CommunityUser;
   onLike: () => void;
-  onSave?: () => void;
   onShare?: () => void;
   onReport: (reason: string) => void;
   onRequestStylist?: (post: Post) => void;
@@ -43,45 +33,70 @@ export function EnhancedPostCard({
   post,
   currentUser,
   onLike,
-  onSave,
   onShare,
   onReport,
   showChallengeEntry,
 }: EnhancedPostCardProps) {
-  const [isLiked, setIsLiked] = useState(false);
-  const [isSaved, setIsSaved] = useState(false);
-  const [selectedStylist, setSelectedStylist] = useState<UserMini | null>(null);
-  const [isChatModalOpen, setIsChatModalOpen] = useState(false);
+  const { user } = useAuthStore();
+
+  // State - Use post props directly with local state for optimistic updates
+  const [isLiked, setIsLiked] = useState(post.isLiked ?? false);
+  const [likeCount, setLikeCount] = useState(post.likes);
   const [commentCount, setCommentCount] = useState(post.comments.length);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isLiking, setIsLiking] = useState(false);
+  const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
+  const [isChatModalOpen, setIsChatModalOpen] = useState(false);
+  const [selectedStylist, setSelectedStylist] = useState<UserMini | null>(null);
 
-  // Get images array (use new images field or fallback to legacy image field)
-  const images = post.images?.length > 0 ? post.images : post.image ? [post.image] : [];
-  const hasMultipleImages = images.length > 1;
+  // Sync isLiked and likeCount state with post prop when it changes from React Query
+  // This ensures UI updates when mutation invalidates the query
+  useEffect(() => {
+    setIsLiked(post.isLiked ?? false);
+    setLikeCount(post.likes);
+  }, [post.isLiked, post.likes, post.id]); // Add post.id to deps to ensure update on refetch
 
-  // Check if post author is a stylist (mock logic)
-  const isAuthorStylist =
-    currentUser.name.includes("Chen") ||
-    currentUser.name.includes("Rivera") ||
-    currentUser.name.includes("Patel");
+  // Computed values
+  const images = useMemo(
+    () =>
+      post.images?.length > 0 ? post.images : post.image ? [post.image] : [],
+    [post.images, post.image]
+  );
 
-  const handleLike = () => {
-    setIsLiked(!isLiked);
-    onLike();
-  };
+  const isAuthorStylist = useMemo(
+    () =>
+      currentUser.name.includes("Chen") ||
+      currentUser.name.includes("Rivera") ||
+      currentUser.name.includes("Patel"),
+    [currentUser.name]
+  );
 
-  const handleDoubleClick = () => {
+  // Handlers
+  const handleLike = useCallback(() => {
+    if (!user || isLiking) return;
+
+    setIsLiking(true);
+    
+    try {
+      // Call parent handler which triggers the mutation
+      // The mutation handles:
+      // - API call
+      // - Optimistic updates in React Query cache
+      // - Toast notifications
+      // - Error rollback
+      onLike();
+    } finally {
+      // Reset loading state after a short delay to prevent double-click
+      setTimeout(() => setIsLiking(false), 300);
+    }
+  }, [user, isLiking, onLike]);
+
+  const handleDoubleClick = useCallback(() => {
     if (!isLiked) {
       handleLike();
     }
-  };
+  }, [isLiked, handleLike]);
 
-  const handleSave = () => {
-    setIsSaved(!isSaved);
-    onSave?.();
-  };
-
-  const handleMessageAuthor = () => {
+  const handleMessageAuthor = useCallback(() => {
     if (!isAuthorStylist) return;
 
     const stylistData: UserMini = {
@@ -92,256 +107,72 @@ export function EnhancedPostCard({
     };
     setSelectedStylist(stylistData);
     setIsChatModalOpen(true);
-  };
+  }, [isAuthorStylist, currentUser.name]);
 
-  const handleNextImage = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setCurrentImageIndex((prev) => (prev + 1) % images.length);
-  };
+  const handleCommentSubmit = useCallback(
+    async (comment: string) => {
+      if (!user) return;
 
-  const handlePrevImage = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
-  };
+      await communityAPI.createComment({
+        postId: parseInt(post.id),
+        userId: parseInt(user.id),
+        comment,
+        parentCommentId: null,
+      });
+
+      setCommentCount((prev) => prev + 1);
+      toast.success("Comment added!");
+
+      // Trigger refresh
+      window.dispatchEvent(
+        new CustomEvent("refreshComments", { detail: { postId: post.id } })
+      );
+    },
+    [user, post.id]
+  );
 
   return (
     <>
       <Card className="group overflow-hidden bg-card border-0 shadow-sm hover:shadow-lg transition-all duration-300">
-        {/* Post Header */}
+        {/* Header */}
         <div className="p-4 pb-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Avatar className="w-10 h-10">
-                <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white font-semibold">
-                  {currentUser.name.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <p className="font-medium text-foreground">
-                    {currentUser.name}
-                  </p>
-                  {isAuthorStylist && (
-                    <Badge
-                      variant="secondary"
-                      className="text-xs bg-primary/10 text-primary border-primary/20"
-                    >
-                      <Star className="w-3 h-3 mr-1 fill-current" />
-                      Stylist
-                    </Badge>
-                  )}
-                  {showChallengeEntry && (
-                    <Badge
-                      variant="outline"
-                      className="text-xs bg-gradient-to-r from-accent/10 to-primary/10 text-primary border-primary/30"
-                    >
-                      <Trophy className="w-3 h-3 mr-1" />
-                      Challenge Entry
-                    </Badge>
-                  )}
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {post.timestamp
-                    ? formatDistanceToNow(new Date(post.timestamp), {
-                        addSuffix: true,
-                      })
-                    : "Recently"}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              {/* Message button for stylists - shown on hover */}
-              {isAuthorStylist && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-primary/10"
-                  onClick={handleMessageAuthor}
-                >
-                  <MessageCircle className="w-4 h-4" />
-                </Button>
-              )}
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {isAuthorStylist && (
-                    <DropdownMenuItem onClick={handleMessageAuthor}>
-                      <MessageCircle className="w-4 h-4 mr-2" />
-                      Message author
-                    </DropdownMenuItem>
-                  )}
-                  <DropdownMenuItem onClick={() => onReport("inappropriate")}>
-                    Report
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>Hide</DropdownMenuItem>
-                  <DropdownMenuItem>Copy link</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
+          <PostHeader
+            user={currentUser}
+            timestamp={post.timestamp}
+            isAuthorStylist={isAuthorStylist}
+            showChallengeEntry={showChallengeEntry}
+            onMessageAuthor={handleMessageAuthor}
+            onReport={onReport}
+          />
         </div>
 
-        {/* Post Image(s) - Support multiple images with carousel */}
+        {/* Image */}
         {images.length > 0 && (
-          <div
-            className="relative mx-4 mb-4 aspect-[4/3] rounded-2xl overflow-hidden bg-gradient-to-br from-muted/30 to-background group cursor-pointer"
-            onDoubleClick={handleDoubleClick}
-          >
-            <div className="relative w-full h-full">
-              <Image
-                src={images[currentImageIndex]}
-                alt={`Post image ${currentImageIndex + 1}`}
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-300"
-              />
-            </div>
-
-            {/* Navigation arrows for multiple images */}
-            {hasMultipleImages && (
-              <>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-black/50 hover:bg-black/70 text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={handlePrevImage}
-                >
-                  <ChevronLeft className="h-5 w-5" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-black/50 hover:bg-black/70 text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={handleNextImage}
-                >
-                  <ChevronRight className="h-5 w-5" />
-                </Button>
-              </>
-            )}
-
-            {/* Image counter */}
-            {hasMultipleImages && (
-              <div className="absolute top-2 right-2 px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium">
-                {currentImageIndex + 1} / {images.length}
-              </div>
-            )}
-
-            {/* Dot indicators */}
-            {hasMultipleImages && (
-              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
-                {images.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setCurrentImageIndex(index);
-                    }}
-                    className={`w-1.5 h-1.5 rounded-full transition-all ${
-                      index === currentImageIndex
-                        ? "bg-white w-4"
-                        : "bg-white/50 hover:bg-white/75"
-                    }`}
-                  />
-                ))}
-              </div>
-            )}
-
-            {/* Like animation overlay */}
-            {isLiked && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <Heart className="w-16 h-16 text-red-500 fill-red-500 animate-scale-in" />
-              </div>
-            )}
+          <div className="mx-4 mb-4">
+            <PostImage
+              images={images}
+              isLiked={isLiked}
+              onDoubleClick={handleDoubleClick}
+            />
           </div>
         )}
 
-        {/* Post Content */}
+        {/* Content & Actions */}
         <div className="px-4 pb-4 space-y-3">
-          {/* Actions */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLike}
-                className={`gap-2 hover:text-red-500 transition-all duration-200 ${
-                  isLiked ? "text-red-500 animate-scale-in" : ""
-                }`}
-              >
-                <Heart className={`w-5 h-5 ${isLiked ? "fill-current" : ""}`} />
-                <span className="font-medium">{post.likes}</span>
-              </Button>
+          <PostActions
+            isLiked={isLiked}
+            likeCount={likeCount}
+            commentCount={commentCount}
+            onLike={handleLike}
+            onComment={() => setIsCommentModalOpen(true)}
+            onShare={onShare}
+          />
 
-              <Button
-                variant="ghost"
-                size="sm"
-                className="gap-2 hover:text-blue-500 transition-colors"
-              >
-                <MessageCircle className="w-5 h-5" />
-                <span className="font-medium">{commentCount}</span>
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onShare}
-                className="gap-2 hover:text-green-500 transition-colors"
-              >
-                <Share2 className="w-5 h-5" />
-              </Button>
-            </div>
-
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleSave}
-              className={`hover:text-amber-500 transition-colors ${
-                isSaved ? "text-amber-500" : ""
-              }`}
-            >
-              <Bookmark
-                className={`w-5 h-5 ${isSaved ? "fill-current" : ""}`}
-              />
-            </Button>
-          </div>
-
-          {/* Caption */}
-          <div className="space-y-2">
-            <p className="text-foreground leading-relaxed">{post.caption}</p>
-
-            {/* Tags */}
-            {post.tags.length > 0 && (
-              <div className="flex flex-wrap gap-1">
-                {post.tags.map((tag) => (
-                  <Badge
-                    key={tag}
-                    variant="secondary"
-                    className="text-xs px-2 py-1 bg-primary/10 text-primary hover:bg-primary/20 transition-colors cursor-pointer"
-                  >
-                    #{tag}
-                  </Badge>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Comments Section */}
-          <div className="pt-2">
-            <CommentSection
-              postId={post.id}
-              commentCount={commentCount}
-              onCommentCountChange={setCommentCount}
-            />
-          </div>
+          <PostContent caption={post.caption} tags={post.tags} />
         </div>
       </Card>
 
-      {/* Quick Chat Modal */}
+      {/* Chat Modal */}
       {selectedStylist && (
         <QuickChatModal
           isOpen={isChatModalOpen}
@@ -352,6 +183,63 @@ export function EnhancedPostCard({
           stylist={selectedStylist}
         />
       )}
+
+      {/* Comment Modal */}
+      <Dialog open={isCommentModalOpen} onOpenChange={setIsCommentModalOpen}>
+        <DialogContent className="max-w-3xl h-[90vh] overflow-hidden flex flex-col p-0">
+          <DialogHeader className="px-6 py-4 border-b flex-shrink-0">
+            <DialogTitle className="text-lg font-semibold">
+              {currentUser.name}&apos;s post
+            </DialogTitle>
+          </DialogHeader>
+
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+            <PostHeader
+              user={currentUser}
+              timestamp={post.timestamp}
+              isAuthorStylist={isAuthorStylist}
+              showChallengeEntry={showChallengeEntry}
+              onMessageAuthor={handleMessageAuthor}
+              onReport={onReport}
+            />
+
+            <PostContent caption={post.caption} tags={post.tags} />
+
+            {images.length > 0 && (
+              <PostImage
+                images={images}
+                isLiked={isLiked}
+                onDoubleClick={handleDoubleClick}
+              />
+            )}
+
+            <PostActions
+              isLiked={isLiked}
+              likeCount={likeCount}
+              commentCount={commentCount}
+              onLike={handleLike}
+              onComment={() => {}}
+              onShare={onShare}
+            />
+
+            <div className="space-y-4 pt-4">
+              <h3 className="font-semibold text-lg">Comments</h3>
+              <CommentSection
+                postId={post.id}
+                commentCount={commentCount}
+                onCommentCountChange={setCommentCount}
+              />
+            </div>
+          </div>
+
+          {/* Sticky Comment Input */}
+          <CommentInput
+            userName={user?.displayName || currentUser.name}
+            onSubmit={handleCommentSubmit}
+          />
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

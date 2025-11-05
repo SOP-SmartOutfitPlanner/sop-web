@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { toast } from "sonner";
 import { communityAPI } from "@/lib/api/community-api";
 import { useAuthStore } from "@/store/auth-store";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface CreatePostData {
   caption: string;
@@ -15,6 +16,7 @@ interface CreatePostData {
  */
 export function useCreatePost() {
   const { user } = useAuthStore();
+  const queryClient = useQueryClient();
   const [isCreating, setIsCreating] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
@@ -53,6 +55,11 @@ export function useCreatePost() {
           imageUrls: imageUrls, // Use URLs from MinIO
         });
 
+        // Step 3: Invalidate queries to refetch posts
+        queryClient.invalidateQueries({ 
+          queryKey: ["posts", "all", user.id] 
+        });
+
         toast.success("Post created!", {
           description: "Your outfit has been shared with the community",
         });
@@ -69,7 +76,7 @@ export function useCreatePost() {
         setUploadProgress(0);
       }
     },
-    [user]
+    [user, queryClient]
   );
 
   return {

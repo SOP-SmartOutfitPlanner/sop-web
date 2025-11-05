@@ -48,7 +48,6 @@ export function InfiniteScrollFeed({
       (entries) => {
         // When the sentinel div is visible and we have more pages
         if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
-          console.log("📥 Loading next page...");
           fetchNextPage();
         }
       },
@@ -77,13 +76,13 @@ export function InfiniteScrollFeed({
       const matchesSearch =
         post.body.toLowerCase().includes(searchQuery.toLowerCase()) ||
         post.hashtags.some((tag) =>
-          tag.toLowerCase().includes(searchQuery.toLowerCase())
+          tag.name.toLowerCase().includes(searchQuery.toLowerCase())
         );
       if (!matchesSearch) return false;
     }
 
     // Tag filter
-    if (selectedTag && !post.hashtags.includes(selectedTag)) {
+    if (selectedTag && !post.hashtags.some((tag) => tag.name === selectedTag)) {
       return false;
     }
 

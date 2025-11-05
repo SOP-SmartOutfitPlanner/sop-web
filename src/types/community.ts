@@ -1,4 +1,4 @@
-import { CommunityPost } from "@/lib/api/community-api";
+import { CommunityPost, Hashtag } from "@/lib/api/community-api";
 
 // Legacy types for mock data
 export interface Post {
@@ -7,8 +7,9 @@ export interface Post {
   image?: string; // Deprecated - keep for backward compatibility
   images: string[]; // Array of image URLs
   caption: string;
-  tags: string[];
+  tags: Hashtag[];
   likes: number;
+  isLiked?: boolean; // Whether current user has liked this post
   comments: Comment[];
   timestamp: string;
   status: "visible" | "hidden" | "reported";
@@ -47,21 +48,19 @@ export interface CommunityUser {
   avatar?: string;
 }
 
-// API types
+// API types (deprecated - use CommunityPost from community-api.ts instead)
 export interface ApiPost {
   id: number;
   userId: number;
   userDisplayName: string;
   body: string;
-  hashtags: string[];
+  hashtags: Hashtag[];
   images: string[];
   createdAt: string;
   updatedAt: string | null;
   likeCount: number;
   commentCount: number;
-  isLikedByUser: boolean;
-  authorAvatarUrl: string | null;
-  rankingScore?: number;
+  isLiked: boolean; // Changed from isLikedByUser to match actual API
 }
 
 // Transform API post to UI post
@@ -86,6 +85,7 @@ export function apiPostToPost(apiPost: CommunityPost): Post {
     caption: apiPost.body,
     tags: apiPost.hashtags,
     likes: apiPost.likeCount,
+    isLiked: apiPost.isLiked, // Whether current user has liked this post
     comments: [], // Comments will be loaded separately
     timestamp: apiPost.createdAt,
     status: "visible",

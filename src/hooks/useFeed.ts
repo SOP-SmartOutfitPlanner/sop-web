@@ -41,11 +41,20 @@ export function useFeed(pageSize: number = 10) {
     isError,
     refetch,
   } = useInfiniteQuery<FeedResponse, Error>({
-    queryKey: ["posts", "all"],
+    queryKey: ["posts", "all", user?.id],
     queryFn: async ({ pageParam = 1 }) => {
-      return await communityAPI.getAllPosts(pageParam as number, pageSize);
+      // Pass userId to get isLiked status for each post
+      const userId = user?.id ? parseInt(user.id) : undefined;
+      const result = await communityAPI.getAllPosts(userId, pageParam as number, pageSize);
+      return result;
     },
     getNextPageParam: (lastPage) => {
+      // Safety check for metaData
+      if (!lastPage || !lastPage.metaData) {
+        console.error("Invalid lastPage structure:", lastPage);
+        return undefined;
+      }
+      
       // Return next page number if hasNext is true
       if (lastPage.metaData.hasNext) {
         return lastPage.metaData.currentPage + 1;
@@ -71,21 +80,24 @@ export function useFeed(pageSize: number = 10) {
   // Metadata from the latest page
   const metadata = data?.pages[data.pages.length - 1]?.metaData;
 
-  // Like post mutation
-  const likeMutation = useMutation({
+  // Toggle like/unlike post mutation (single endpoint for both)
+  const toggleLikeMutation = useMutation({
     mutationFn: async ({ postId, userId }: { postId: number; userId: number }) => {
-      await communityAPI.likePost(postId, userId);
+      return await communityAPI.toggleLikePost(postId, userId);
     },
     onMutate: async ({ postId }) => {
+      // Use the correct queryKey that matches the query
+      const queryKey = ["posts", "all", user?.id];
+      
       // Cancel outgoing refetches
-      await queryClient.cancelQueries({ queryKey: ["posts", "all"] });
+      await queryClient.cancelQueries({ queryKey });
 
       // Snapshot previous value
-      const previousData = queryClient.getQueryData(["posts", "all"]);
+      const previousData = queryClient.getQueryData(queryKey);
 
-      // Optimistically update
+      // Optimistically update (toggle the like state)
       queryClient.setQueryData<InfiniteData<FeedResponse>>(
-        ["posts", "all"],
+        queryKey,
         (old) => {
           if (!old) return old;
 
@@ -93,65 +105,39 @@ export function useFeed(pageSize: number = 10) {
             ...old,
             pages: old.pages.map((page: FeedResponse) => ({
               ...page,
-              data: page.data.map((post: CommunityPost) =>
-                post.id === postId
-                  ? { ...post, likeCount: post.likeCount + 1, isLikedByUser: true }
-                  : post
-              ),
+              data: page.data.map((post: CommunityPost) => {
+                if (post.id === postId) {
+                  const isLiked = post.isLiked;
+                  return {
+                    ...post,
+                    likeCount: isLiked ? post.likeCount - 1 : post.likeCount + 1,
+                    isLiked: !isLiked
+                  };
+                }
+                return post;
+              }),
             })),
           };
         }
       );
 
-      return { previousData };
+      return { previousData, queryKey };
     },
     onError: (err, variables, context) => {
-      // Rollback on error
-      if (context?.previousData) {
-        queryClient.setQueryData(["posts", "all"], context.previousData);
+      // Rollback on error using the correct queryKey
+      if (context?.previousData && context?.queryKey) {
+        queryClient.setQueryData(context.queryKey, context.previousData);
       }
-      toast.error("Failed to like post");
+      toast.error("Failed to update like");
     },
     onSuccess: () => {
-      toast.success("Post liked!");
+      // data.isDeleted: false = liked, true = unliked
+      // const action = data.isDeleted ? "unliked" : "liked";
+      // toast.success(`Post ${action}!`);
     },
-  });
-
-  // Unlike post mutation
-  const unlikeMutation = useMutation({
-    mutationFn: async ({ postId, userId }: { postId: number; userId: number }) => {
-      await communityAPI.unlikePost(postId, userId);
-    },
-    onMutate: async ({ postId }) => {
-      await queryClient.cancelQueries({ queryKey: ["posts", "all"] });
-      const previousData = queryClient.getQueryData(["posts", "all"]);
-
-      queryClient.setQueryData<InfiniteData<FeedResponse>>(
-        ["posts", "all"],
-        (old) => {
-          if (!old) return old;
-
-          return {
-            ...old,
-            pages: old.pages.map((page: FeedResponse) => ({
-              ...page,
-              data: page.data.map((post: CommunityPost) =>
-                post.id === postId
-                  ? { ...post, likeCount: post.likeCount - 1, isLikedByUser: false }
-                  : post
-              ),
-            })),
-          };
-        }
-      );
-
-      return { previousData };
-    },
-    onError: (err, variables, context) => {
-      if (context?.previousData) {
-        queryClient.setQueryData(["posts", "all"], context.previousData);
-      }
-      toast.error("Failed to unlike post");
+    onSettled: () => {
+      // Invalidate to refetch and ensure data is in sync with server
+      queryClient.invalidateQueries({ queryKey: ["posts", "all", user?.id] });
     },
   });
 
@@ -166,8 +152,8 @@ export function useFeed(pageSize: number = 10) {
       return await communityAPI.createPost(postData);
     },
     onSuccess: () => {
-      // Invalidate and refetch all posts
-      queryClient.invalidateQueries({ queryKey: ["posts", "all"] });
+      // Invalidate and refetch all posts with correct queryKey
+      queryClient.invalidateQueries({ queryKey: ["posts", "all", user?.id] });
       toast.success("Post created successfully!");
     },
     onError: () => {
@@ -181,7 +167,8 @@ export function useFeed(pageSize: number = 10) {
       await communityAPI.deletePost(postId);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["posts", "all"] });
+      // Invalidate and refetch all posts with correct queryKey
+      queryClient.invalidateQueries({ queryKey: ["posts", "all", user?.id] });
       toast.success("Post deleted successfully");
     },
     onError: () => {
@@ -217,13 +204,7 @@ export function useFeed(pageSize: number = 10) {
     if (!user) return;
     
     const userId = parseInt(user.id);
-    const post = posts.find((p) => p.id === postId);
-    
-    if (post?.isLikedByUser) {
-      unlikeMutation.mutate({ postId, userId });
-    } else {
-      likeMutation.mutate({ postId, userId });
-    }
+    toggleLikeMutation.mutate({ postId, userId });
   };
 
   return {
