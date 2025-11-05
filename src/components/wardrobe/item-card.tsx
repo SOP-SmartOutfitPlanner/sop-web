@@ -334,7 +334,7 @@ export function ItemCard({
             {/* Usage Stats */}
             <div className="flex items-center justify-between text-xs">
               <div className="flex items-center gap-2">
-                <Badge variant="secondary" className="text-xs">
+                {/* <Badge variant="secondary" className="text-xs">
                   {item.frequencyWorn ?? 0} wears
                 </Badge>
                 {item.lastWorn && (
@@ -356,7 +356,7 @@ export function ItemCard({
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
-                )}
+                )} */}
               </div>
             </div>
 

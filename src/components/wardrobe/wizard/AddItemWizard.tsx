@@ -313,6 +313,9 @@ export function AddItemWizard({
           seasons:
             result.seasons?.map((s: { id: number; name: string }) => s.name) ||
             [],
+          seasonIds:
+            result.seasons?.map((s: { id: number; name: string }) => s.id) ||
+            [],
           styleIds:
             result.styles?.map(
               (style: { id: number; name: string }) => style.id
