@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import GlassButton from "@/components/ui/glass-button";
 import { Label } from "@/components/ui/label";
@@ -9,7 +9,7 @@ import { TagInput } from "./tag-input";
 import { userAPI } from "@/lib/api/user-api";
 import { toast } from "sonner";
 import GlassCard from "@/components/ui/glass-card";
-import { Input as AntInput, Select as AntSelect, DatePicker, ConfigProvider, ColorPicker } from "antd";
+import { Input as AntInput, Select as AntSelect, DatePicker, ConfigProvider, ColorPicker, Card, Tag, Spin, Empty } from "antd";
 import dayjs from "dayjs";
 
 
@@ -28,6 +28,8 @@ import {
   User,
   Wand2,
   X,
+  Search,
+  Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -83,6 +85,7 @@ interface StyleOption {
   id: number;
   name: string;
   description: string;
+  createdBy?: string;
 }
 
 const STEPS = {
@@ -101,9 +104,13 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
 
   const [jobs, setJobs] = useState<Job[]>([]);
   const [styles, setStyles] = useState<StyleOption[]>([]);
-  const [loadingJobs, setLoadingJobs] = useState(false);
   const [loadingStyles, setLoadingStyles] = useState(false);
   const [jobSearchQuery, setJobSearchQuery] = useState("");
+  const [styleSearchQuery, setStyleSearchQuery] = useState("");
+  const [otherStyleInput, setOtherStyleInput] = useState("");
+
+  // Ref for scroll container
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Location data
   const [provinces, setProvinces] = useState<Province[]>([]);
@@ -145,17 +152,43 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  // Debounced search for jobs
+  // Debounced search for jobs - only triggers when jobSearchQuery changes
   useEffect(() => {
-    if (!open || currentStep !== STEPS.PERSONAL_INFO) return;
+    if (!open) return;
+
+    // Only run search if we're on the personal info step
+    if (currentStep !== STEPS.PERSONAL_INFO) return;
 
     const debounceTimer = setTimeout(() => {
-      loadJobs(jobSearchQuery);
+      // If search query is empty, reset to all jobs
+      if (jobSearchQuery.trim() === '') {
+        loadJobs();
+      } else {
+        loadJobs(jobSearchQuery);
+      }
     }, 300); // 300ms debounce
 
     return () => clearTimeout(debounceTimer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jobSearchQuery]);
+
+  // Debounced search for styles
+  useEffect(() => {
+    if (!open || currentStep !== STEPS.STYLES) return;
+
+    const debounceTimer = setTimeout(() => {
+      // If search query is empty, reset to all styles
+      if (styleSearchQuery.trim() === '') {
+        loadStyles();
+      } else {
+        loadStyles(styleSearchQuery);
+      }
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(debounceTimer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [styleSearchQuery]);
+
 
   const [formData, setFormData] = useState<OnboardingData>({
     preferedColor: [],
@@ -177,7 +210,6 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
 
   // Load jobs when dialog opens or when reaching personal info step
   const loadJobs = async (search?: string) => {
-    setLoadingJobs(true);
     try {
       const params: { "take-all": boolean; search?: string } = { "take-all": true };
       if (search) {
@@ -192,19 +224,23 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
     } catch (error) {
       console.error("Failed to load jobs:", error);
       toast.error("Failed to load job options");
-    } finally {
-      setLoadingJobs(false);
     }
   };
 
   // Load styles when dialog opens or when reaching styles step
-  const loadStyles = async () => {
-    if (styles.length > 0) return;
+  const loadStyles = async (search?: string) => {
     setLoadingStyles(true);
     try {
-      const response = await userAPI.getStyles({ "take-all": true });
+      const params: { "take-all": boolean; search?: string } = { "take-all": true };
+      if (search) {
+        params.search = search;
+      }
+      const response = await userAPI.getStyles(params);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setStyles((response as any).data.data);
+      const allStyles = (response as any).data.data;
+      // Filter only SYSTEM styles
+      const systemStyles = allStyles.filter((style: StyleOption) => style.createdBy === "SYSTEM");
+      setStyles(systemStyles);
     } catch (error) {
       console.error("Failed to load styles:", error);
       toast.error("Failed to load style options");
@@ -295,12 +331,21 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
     const selectedWard = wards.find(w => w.id === wardId);
     const selectedDistrict = districts.find(d => d.id === formData.district);
     const selectedProvince = provinces.find(p => p.id === formData.province);
+
+    // Build location string with ward if provided, otherwise just district and province
+    let locationStr = '';
+    if (selectedProvince && selectedDistrict) {
+      if (selectedWard) {
+        locationStr = `${selectedProvince.name}, ${selectedDistrict.name}, ${selectedWard.name}`;
+      } else {
+        locationStr = `${selectedProvince.name}, ${selectedDistrict.name}`;
+      }
+    }
+
     setFormData({
       ...formData,
       ward: wardId,
-      location: selectedWard && selectedDistrict && selectedProvince
-        ? `${selectedWard.name}, ${selectedDistrict.name}, ${selectedProvince.name}`
-        : formData.location
+      location: locationStr
     });
   };
 
@@ -316,12 +361,13 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
         toast.error("Date of birth must be in the past");
         return;
       }
-      if (!formData.province || !formData.district || !formData.ward) {
-        toast.error("Please select your complete location (Province, District, Ward)");
+      if (!formData.province || !formData.district) {
+        toast.error("Please select at least Province and District");
         return;
       }
-      if (!formData.jobId) {
-        toast.error("Please select your occupation");
+      // If otherJob is not provided, jobId is required
+      if (!formData.jobId && !formData.otherJob.trim()) {
+        toast.error("Please select your occupation or specify other occupation");
         return;
       }
       if (!formData.bio || formData.bio.trim() === "") {
@@ -334,6 +380,10 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
     if (currentStep === STEPS.COLORS) {
       if (formData.preferedColor.length === 0) {
         toast.error("Please add at least one preferred color");
+        return;
+      }
+      if (formData.avoidedColor.length === 0) {
+        toast.error("Please add at least one avoided color");
         return;
       }
     }
@@ -374,14 +424,15 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
         return;
       }
 
-      if (!formData.province || !formData.district || !formData.ward || !formData.location) {
-        toast.error("Please select your complete location");
+      if (!formData.province || !formData.district || !formData.location) {
+        toast.error("Please select at least Province and District");
         setIsSubmitting(false);
         return;
       }
 
-      if (!formData.jobId) {
-        toast.error("Please select your occupation");
+      // If otherJob is not provided, jobId is required
+      if (!formData.jobId && !formData.otherJob.trim()) {
+        toast.error("Please select your occupation or specify other occupation");
         setIsSubmitting(false);
         return;
       }
@@ -398,8 +449,14 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
         return;
       }
 
+      if (formData.avoidedColor.length === 0) {
+        toast.error("Please add at least one avoided color");
+        setIsSubmitting(false);
+        return;
+      }
+
       if (formData.styleIds.length === 0 && formData.otherStyles.length === 0) {
-        toast.error("Please select at least one style");
+        toast.error("Please select at least one style or add other styles");
         setIsSubmitting(false);
         return;
       }
@@ -431,21 +488,37 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
     }
   };
 
-  const toggleStyle = (styleId: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      styleIds: prev.styleIds.includes(styleId)
-        ? prev.styleIds.filter((id) => id !== styleId)
-        : [...prev.styleIds, styleId],
-    }));
-  };
-
   const toggleBenefit = (benefit: string) => {
     setSelectedBenefits((prev) =>
       prev.includes(benefit)
         ? prev.filter((b) => b !== benefit)
         : [...prev, benefit]
     );
+  };
+
+  const toggleStyle = (styleId: number) => {
+    setFormData((prev) => {
+      const isSelected = prev.styleIds.includes(styleId);
+
+      // If deselecting, allow it
+      if (isSelected) {
+        return {
+          ...prev,
+          styleIds: prev.styleIds.filter((id) => id !== styleId)
+        };
+      }
+
+      // If selecting, check maximum limit
+      if (prev.styleIds.length >= 10) {
+        toast.error("Maximum 10 styles allowed");
+        return prev;
+      }
+
+      return {
+        ...prev,
+        styleIds: [...prev.styleIds, styleId]
+      };
+    });
   };
 
   const progress = ((currentStep + 1) / TOTAL_STEPS) * 100;
@@ -814,7 +887,7 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
                                 { value: "Male", label: "Male" },
                                 { value: "Female", label: "Female" },
                               ]}
-                              dropdownStyle={{ backgroundColor: 'rgba(243, 244, 246, 0.95)' }}
+                              styles={{ popup: { root: { backgroundColor: 'rgba(243, 244, 246, 0.95)' } } }}
                             />
                           </div>
 
@@ -844,7 +917,7 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
                         <div className="space-y-2">
                           <Label className="text-md font-semibold flex items-center gap-2 text-white">
                             <MapPin className="w-4 h-4" />
-                            Location <span className="text-red-500">*</span>
+                            Location <span className="text-red-500">*</span> <span className="text-sm text-gray-300">(Ward is optional)</span>
                           </Label>
                           <div className="grid grid-cols-3 gap-4">
                             <AntSelect
@@ -862,7 +935,7 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
                                 value: province.id,
                                 label: province.name,
                               }))}
-                              dropdownStyle={{ backgroundColor: 'rgba(243, 244, 246, 0.95)' }}
+                              styles={{ popup: { root: { backgroundColor: 'rgba(243, 244, 246, 0.95)' } } }}
                             />
                             <AntSelect
                               placeholder="Select District"
@@ -880,15 +953,16 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
                                 value: district.id,
                                 label: district.name,
                               }))}
-                              dropdownStyle={{ backgroundColor: 'rgba(243, 244, 246, 0.95)' }}
+                              styles={{ popup: { root: { backgroundColor: 'rgba(243, 244, 246, 0.95)' } } }}
                             />
                             <AntSelect
-                              placeholder="Select Ward"
+                              placeholder="Select Ward (Optional)"
                               value={formData.ward || undefined}
                               onChange={handleWardChange}
                               loading={loadingWards}
                               disabled={!formData.district}
                               showSearch
+                              allowClear
                               filterOption={(input, option) =>
                                 (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
                               }
@@ -898,7 +972,7 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
                                 value: ward.id,
                                 label: ward.name,
                               }))}
-                              dropdownStyle={{ backgroundColor: 'rgba(243, 244, 246, 0.95)' }}
+                              styles={{ popup: { root: { backgroundColor: 'rgba(243, 244, 246, 0.95)' } } }}
                             />
                           </div>
                         </div>
@@ -908,28 +982,29 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
                           <div className="space-y-2">
                             <Label htmlFor="job" className="text-md font-semibold flex items-center gap-2 text-white">
                               <Briefcase className="w-4 h-4" />
-                              Occupation <span className="text-red-500">*</span>
+                              Occupation <span className="text-red-500">*</span> 
                             </Label>
-                            {loadingJobs ? (
-                              <div className="text-sm text-gray-300">Loading jobs...</div>
-                            ) : (
-                              <AntSelect
-                                id="job"
-                                value={formData.jobId || undefined}
-                                onChange={(value) => setFormData({ ...formData, jobId: value })}
-                                placeholder="Select your occupation"
-                                className="w-full [&_.ant-select-selector]:!bg-gray-100/90 [&_.ant-select-selector]:!border-gray-300"
-                                size="large"
-                                showSearch
-                                onSearch={(value) => setJobSearchQuery(value)}
-                                filterOption={false}
-                                options={jobs.map((job) => ({
-                                  value: job.id,
-                                  label: job.name,
-                                }))}
-                                dropdownStyle={{ backgroundColor: 'rgba(243, 244, 246, 0.95)' }}
-                              />
-                            )}
+                            <AntSelect
+                              id="job"
+                              value={formData.jobId || undefined}
+                              onChange={(value) => {
+                                setFormData({ ...formData, jobId: value });
+                                setJobSearchQuery(''); // Clear search after selection
+                              }}
+                              placeholder="Select your occupation"
+                              className="w-full [&_.ant-select-selector]:!bg-gray-100/90 [&_.ant-select-selector]:!border-gray-300"
+                              size="large"
+                              showSearch
+                              searchValue={jobSearchQuery}
+                              onSearch={(value) => setJobSearchQuery(value)}
+                              filterOption={false}
+                              allowClear
+                              options={jobs.map((job) => ({
+                                value: job.id,
+                                label: job.name,
+                              }))}
+                              styles={{ popup: { root: { backgroundColor: 'rgba(243, 244, 246, 0.95)' } } }}
+                            />
                           </div>
 
                           <div className="space-y-2">
@@ -1119,7 +1194,9 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
                             <X className="w-7 h-7 text-white" />
                           </div>
                           <div>
-                            <Label className="text-xl font-bold text-gray-800">Avoided Colors</Label>
+                            <Label className="text-xl font-bold text-gray-800">
+                              Avoided Colors <span className="text-red-500">*</span>
+                            </Label>
                             <p className="text-sm text-gray-700 font-medium">Colors you prefer not to wear ({formData.avoidedColor.length} selected)</p>
                           </div>
                         </div>
@@ -1245,69 +1322,214 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
                 <div className="h-full flex flex-col justify-center animate-in fade-in slide-in-from-right-4 duration-500">
                   <div className="space-y-6 max-w-6xl mx-auto w-full">
                     <div className="text-center space-y-3">
-                      <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl shadow-lg">
-                        <Sparkles className="w-10 h-10 text-white" />
-                      </div>
                       <h2 className="font-dela-gothic text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-cyan-200">
                         Choose Your Style
                       </h2>
-                      <p className="font-bricolage text-lg text-gray-200">Select styles that resonate with you</p>
+                      <p className="font-bricolage text-lg text-gray-200">
+                        Select at least one style or add your own <span className="text-red-500">*</span>
+                      </p>
                     </div>
 
-                    <GlassCard
-                      padding="2.5rem"
-                      borderRadius="24px"
-                      backgroundColor="rgba(255, 255, 255, 0.4)"
-                      borderColor="rgba(255, 255, 255, 0.6)"
-                      width="100%"
-                      className="space-y-6"
+                    <ConfigProvider
+                      theme={{
+                        components: {
+                          Card: {
+                            colorBgContainer: 'rgba(255, 255, 255, 0.5)',
+                            colorBorderSecondary: 'rgba(255, 255, 255, 0.6)',
+                          },
+                          Spin: {
+                            colorPrimary: '#3b82f6',
+                          },
+                          Tag: {
+                            colorBorder: 'rgba(255, 255, 255, 0.6)',
+                          },
+                          Input: {
+                            colorBgContainer: 'rgba(255, 255, 255, 0.9)',
+                            colorBorder: 'rgba(255, 255, 255, 0.6)',
+                            colorPrimaryHover: '#3b82f6',
+                            colorPrimary: '#3b82f6',
+                          },
+                        },
+                      }}
                     >
-                      {loadingStyles ? (
-                        <div className="text-center py-8">
-                          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto"></div>
-                          <p className="text-sm text-gray-600 mt-3">Loading styles...</p>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="grid grid-cols-4 gap-4 max-h-[300px] overflow-y-auto pr-2" style={{ scrollbarWidth: 'thin' }}>
-                            {styles.map((style) => (
-                              <button
-                                key={style.id}
-                                type="button"
-                                onClick={() => toggleStyle(style.id)}
-                                className={cn(
-                                  "relative p-5 rounded-2xl border-2 transition-all duration-300 hover:scale-105 backdrop-blur-sm h-full",
-                                  formData.styleIds.includes(style.id)
-                                    ? "border-blue-500 bg-gradient-to-br from-blue-50/80 to-cyan-50/80 shadow-lg shadow-blue-200/50"
-                                    : "border-white/60 bg-white/60 hover:border-blue-300 hover:shadow-md"
-                                )}
-                              >
-                                {formData.styleIds.includes(style.id) && (
-                                  <div className="absolute top-2 right-2 w-6 h-6 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center shadow-lg">
-                                    <Check className="w-4 h-4 text-white" />
-                                  </div>
-                                )}
-                                <div className="space-y-2 text-left">
-                                  <h3 className="font-semibold text-gray-800 text-sm">{style.name}</h3>
-                                  <p className="text-xs text-gray-600 line-clamp-2">{style.description}</p>
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-
-                          {/* Other Styles */}
-                          <div className="pt-4 border-t border-gray-200/50 space-y-3">
-                            <Label className="text-base font-semibold text-gray-800">Other Styles (Optional)</Label>
-                            <p className="text-sm text-gray-600">Add any other styles not listed above</p>
-                            <TagInput
-                              value={formData.otherStyles}
-                              onChange={(styles) => setFormData({ ...formData, otherStyles: styles })}
-                              placeholder="e.g., Minimalist, Bohemian, Streetwear"
+                      <div className="space-y-4">
+                        {/* Search Bar Row */}
+                        <div className="flex items-center gap-4">
+                          {/* Search Styles */}
+                          <div className="flex-1">
+                            <AntInput
+                              size="large"
+                              placeholder="Search styles... (e.g., Casual, Formal)"
+                              prefix={<Search className="w-4 h-4 text-gray-400" />}
+                              value={styleSearchQuery}
+                              onChange={(e) => setStyleSearchQuery(e.target.value)}
+                              allowClear
+                              style={{
+                                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                                borderRadius: '12px',
+                                border: '2px solid rgba(255, 255, 255, 0.6)',
+                              }}
+                              className="font-bricolage"
                             />
                           </div>
-                        </>
-                      )}
-                    </GlassCard>
+
+                          {/* Other Styles Input */}
+                          <div className="flex-1 flex items-center gap-2">
+                            <AntInput
+                              size="large"
+                              placeholder="Other styles (e.g., Minimalist, Bohemian)"
+                              prefix={<Palette className="w-4 h-4 text-gray-400" />}
+                              value={otherStyleInput}
+                              onChange={(e) => setOtherStyleInput(e.target.value)}
+                              onPressEnter={() => {
+                                const trimmed = otherStyleInput.trim();
+                                if (trimmed && !formData.otherStyles.includes(trimmed)) {
+                                  setFormData({ ...formData, otherStyles: [...formData.otherStyles, trimmed] });
+                                  setOtherStyleInput("");
+                                }
+                              }}
+                              style={{
+                                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                                borderRadius: '12px',
+                                border: '2px solid rgba(255, 255, 255, 0.6)',
+                              }}
+                              className="font-bricolage"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const trimmed = otherStyleInput.trim();
+                                if (trimmed && !formData.otherStyles.includes(trimmed)) {
+                                  setFormData({ ...formData, otherStyles: [...formData.otherStyles, trimmed] });
+                                  setOtherStyleInput("");
+                                }
+                              }}
+                              disabled={!otherStyleInput.trim()}
+                              className={cn(
+                                "px-4 py-2 rounded-lg transition-all duration-200",
+                                "bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600",
+                                "text-white font-semibold shadow-md hover:shadow-lg",
+                                "disabled:opacity-50 disabled:cursor-not-allowed",
+                                "flex items-center gap-2"
+                              )}
+                            >
+                              <Plus className="w-5 h-5" />
+                            </button>
+                          </div>
+
+                          {/* Selected Count Badge */}
+                          {formData.styleIds.length > 0 && (
+                            <div className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border border-blue-300/50 whitespace-nowrap">
+                              <span className="text-sm font-semibold text-white font-bricolage">
+                                {formData.styleIds.length} selected
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Style Cards Grid */}
+                        {loadingStyles ? (
+                          <div className="text-center py-12">
+                            <Spin size="large" />
+                            <p className="text-sm text-gray-200 mt-4 font-bricolage font-medium">Loading styles...</p>
+                          </div>
+                        ) : styles.length === 0 ? (
+                          <div className="text-center py-12">
+                            <Empty
+                              description={
+                                <span className="font-bricolage text-gray-200">
+                                  No styles found matching &ldquo;{styleSearchQuery}&rdquo;
+                                </span>
+                              }
+                            />
+                          </div>
+                        ) : (
+                          <div
+                            ref={scrollContainerRef}
+                            className="grid grid-cols-4 gap-4 h-[280px] overflow-y-auto hide-scrollbar p-1"
+                          >
+                            {styles.map((style) => (
+                              <Card
+                                key={style.id}
+                                hoverable
+                                onClick={() => toggleStyle(style.id)}
+                                className={cn(
+                                  "style-card cursor-pointer transition-all duration-300",
+                                  formData.styleIds.includes(style.id) && "ring-4 ring-blue-400"
+                                )}
+                                style={{
+                                  background: formData.styleIds.includes(style.id)
+                                    ? 'linear-gradient(135deg, rgba(96, 165, 250, 0.4) 0%, rgba(59, 130, 246, 0.35) 50%, rgba(147, 197, 253, 0.4) 100%)'
+                                    : 'rgba(255, 255, 255, 0.7)',
+                                  backdropFilter: 'blur(8px)',
+                                  borderRadius: '16px',
+                                  border: formData.styleIds.includes(style.id)
+                                    ? '3px solid #3b82f6'
+                                    : '2px solid rgba(255, 255, 255, 0.7)',
+                                  boxShadow: formData.styleIds.includes(style.id)
+                                    ? '0 12px 32px rgba(59, 130, 246, 0.4), inset 0 2px 8px rgba(255, 255, 255, 0.4)'
+                                    : '0 2px 8px rgba(0, 0, 0, 0.05)',
+                                  transform: formData.styleIds.includes(style.id) ? 'scale(1.03)' : 'scale(1)',
+                                  height: '130px',
+                                  width: '100%',
+                                }}
+                                styles={{ body: { padding: '1.25rem', position: 'relative', height: '100%', display: 'flex', flexDirection: 'column' } }}
+                              >
+                                {formData.styleIds.includes(style.id) && (
+                                  <div className="absolute top-2 right-2 w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center shadow-xl animate-in zoom-in duration-300 ring-2 ring-white">
+                                    <Check className="w-5 h-5 text-white" strokeWidth={3.5} />
+                                  </div>
+                                )}
+                                <div className="space-y-2 text-left pr-8 flex-1 flex flex-col">
+                                  <h3 className={cn(
+                                    "font-bold text-sm font-bricolage leading-tight",
+                                    formData.styleIds.includes(style.id) ? "text-white" : "text-gray-800"
+                                  )}>
+                                    {style.name}
+                                  </h3>
+                                  <p className={cn(
+                                    "text-xs line-clamp-3 font-bricolage leading-relaxed flex-1",
+                                    formData.styleIds.includes(style.id) ? "text-white font-medium" : "text-gray-600"
+                                  )}>
+                                    {style.description}
+                                  </p>
+                                </div>
+                              </Card>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Other Styles Tags Display */}
+                        {formData.otherStyles.length > 0 && (
+                          <div className="flex flex-wrap gap-2 p-4 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30">
+                            {formData.otherStyles.map((style, index) => (
+                              <Tag
+                                key={index}
+                                closable
+                                onClose={() => {
+                                  setFormData({
+                                    ...formData,
+                                    otherStyles: formData.otherStyles.filter((_, i) => i !== index)
+                                  });
+                                }}
+                                style={{
+                                  backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                                  borderColor: '#60a5fa',
+                                  color: '#fff',
+                                  padding: '6px 14px',
+                                  fontSize: '14px',
+                                  borderRadius: '8px',
+                                  fontWeight: 500,
+                                }}
+                                className="font-bricolage"
+                              >
+                                {style}
+                              </Tag>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </ConfigProvider>
                   </div>
                 </div>
               )}
@@ -1373,8 +1595,8 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
               </div>
             </div>
           </div>
-        </div>
-      </div>
+        </div >
+      </div >
     </>
   );
 }
