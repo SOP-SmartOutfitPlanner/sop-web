@@ -5,13 +5,13 @@ import { toast } from "sonner";
 
 /**
  * Hook for infinite scroll feed with React Query
- * Similar to TikTok, Instagram, Facebook feeds
+ * Fetches all posts with pagination (not personalized feed)
  */
 export function useFeed(pageSize: number = 10) {
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
 
-  // Infinite query for feed
+  // Infinite query for all posts
   const {
     data,
     error,
@@ -22,13 +22,9 @@ export function useFeed(pageSize: number = 10) {
     isError,
     refetch,
   } = useInfiniteQuery<FeedResponse, Error>({
-    queryKey: ["feed", user?.id],
+    queryKey: ["posts", "all"],
     queryFn: async ({ pageParam = 1 }) => {
-      if (!user) {
-        throw new Error("User not authenticated");
-      }
-      const userId = parseInt(user.id);
-      return await communityAPI.getFeed(userId, pageParam as number, pageSize);
+      return await communityAPI.getAllPosts(pageParam as number, pageSize);
     },
     getNextPageParam: (lastPage) => {
       // Return next page number if hasNext is true
@@ -38,13 +34,17 @@ export function useFeed(pageSize: number = 10) {
       return undefined; // No more pages
     },
     initialPageParam: 1,
-    enabled: !!user, // Only run query if user is authenticated
     staleTime: 1000 * 60 * 5, // 5 minutes
-    gcTime: 1000 * 60 * 10, // 10 minutes (previously cacheTime)
+    gcTime: 1000 * 60 * 10, // 10 minutes
   });
 
   // Flatten all pages into single array of posts
-  const posts: CommunityPost[] = data?.pages.flatMap((page) => page.data) ?? [];
+  const allPosts: CommunityPost[] = data?.pages.flatMap((page) => page.data) ?? [];
+
+  // Deduplicate posts by ID (prevent duplicate keys error)
+  const posts: CommunityPost[] = Array.from(
+    new Map(allPosts.map((post) => [post.id, post])).values()
+  );
 
   // Metadata from the latest page
   const metadata = data?.pages[data.pages.length - 1]?.metaData;
@@ -56,14 +56,14 @@ export function useFeed(pageSize: number = 10) {
     },
     onMutate: async ({ postId }) => {
       // Cancel outgoing refetches
-      await queryClient.cancelQueries({ queryKey: ["feed", user?.id] });
+      await queryClient.cancelQueries({ queryKey: ["posts", "all"] });
 
       // Snapshot previous value
-      const previousData = queryClient.getQueryData(["feed", user?.id]);
+      const previousData = queryClient.getQueryData(["posts", "all"]);
 
       // Optimistically update
       queryClient.setQueryData<InfiniteData<FeedResponse>>(
-        ["feed", user?.id],
+        ["posts", "all"],
         (old) => {
           if (!old) return old;
 
@@ -86,7 +86,7 @@ export function useFeed(pageSize: number = 10) {
     onError: (err, variables, context) => {
       // Rollback on error
       if (context?.previousData) {
-        queryClient.setQueryData(["feed", user?.id], context.previousData);
+        queryClient.setQueryData(["posts", "all"], context.previousData);
       }
       toast.error("Failed to like post");
     },
@@ -101,11 +101,11 @@ export function useFeed(pageSize: number = 10) {
       await communityAPI.unlikePost(postId, userId);
     },
     onMutate: async ({ postId }) => {
-      await queryClient.cancelQueries({ queryKey: ["feed", user?.id] });
-      const previousData = queryClient.getQueryData(["feed", user?.id]);
+      await queryClient.cancelQueries({ queryKey: ["posts", "all"] });
+      const previousData = queryClient.getQueryData(["posts", "all"]);
 
       queryClient.setQueryData<InfiniteData<FeedResponse>>(
-        ["feed", user?.id],
+        ["posts", "all"],
         (old) => {
           if (!old) return old;
 
@@ -127,7 +127,7 @@ export function useFeed(pageSize: number = 10) {
     },
     onError: (err, variables, context) => {
       if (context?.previousData) {
-        queryClient.setQueryData(["feed", user?.id], context.previousData);
+        queryClient.setQueryData(["posts", "all"], context.previousData);
       }
       toast.error("Failed to unlike post");
     },
@@ -144,8 +144,8 @@ export function useFeed(pageSize: number = 10) {
       return await communityAPI.createPost(postData);
     },
     onSuccess: () => {
-      // Invalidate and refetch feed
-      queryClient.invalidateQueries({ queryKey: ["feed", user?.id] });
+      // Invalidate and refetch all posts
+      queryClient.invalidateQueries({ queryKey: ["posts", "all"] });
       toast.success("Post created successfully!");
     },
     onError: () => {
@@ -159,7 +159,7 @@ export function useFeed(pageSize: number = 10) {
       await communityAPI.deletePost(postId);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["feed", user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["posts", "all"] });
       toast.success("Post deleted successfully");
     },
     onError: () => {

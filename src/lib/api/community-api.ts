@@ -33,7 +33,6 @@ export interface FeedMetaData {
   totalPages: number;
   hasNext: boolean;
   hasPrevious: boolean;
-  sessionId: string;
 }
 
 export interface FeedResponse {
@@ -51,17 +50,31 @@ class CommunityAPI {
   private BASE_PATH = "/posts";
 
   /**
-   * Get community feed
+   * Get all posts with pagination
+   */
+  async getAllPosts(page: number = 1, pageSize: number = 10): Promise<FeedResponse> {
+    const apiResponse = await apiClient.get<ApiResponse<FeedResponse>>(
+      this.BASE_PATH,
+      {
+        params: { 
+          "page-index": page, 
+          "page-size": pageSize 
+        },
+      }
+    );
+    return apiResponse.data;
+  }
+
+  /**
+   * Get community feed (personalized)
    */
   async getFeed(userId: number, page: number = 1, pageSize: number = 10): Promise<FeedResponse> {
-    // apiClient.get returns the unwrapped response.data directly
     const apiResponse = await apiClient.get<ApiResponse<FeedResponse>>(
       `${this.BASE_PATH}/feed`,
       {
         params: { userId, page, pageSize },
       }
     );
-    // Backend returns: { statusCode, message, data: { data: [...], metaData: {...} } }
     return apiResponse.data;
   }
 
