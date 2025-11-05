@@ -2,7 +2,8 @@
 
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
+import GlassButton from "../ui/glass-button";
 
 interface WardrobeHeaderProps {
   onAddItem: () => void;
@@ -24,20 +25,34 @@ export function WardrobeHeader({
         </p>
       </div>
       <div className="flex gap-3">
-        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-          <Button
+        <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.98 }}>
+          <GlassButton
             onClick={onAddItem}
-            className="from-primary transition-all duration-300"
             disabled={isLoading}
+            variant="custom"
+            borderRadius="14px"
+            blur="10px"
+            brightness={1.12}
+            glowColor="rgba(59,130,246,0.45)"
+            glowIntensity={8}
+            borderColor="rgba(255,255,255,0.28)"
+            borderWidth="1px"
+            textColor="#000"
+            className="px-4 py-2.5 font-semibold"
+            displacementScale={10}
           >
-            <motion.div
-              animate={{ rotate: isLoading ? 360 : 0 }}
-              transition={{ duration: 0.5, ease: "easeInOut" }}
-            >
-              <Plus className="w-4 h-4 mr-2" />
-            </motion.div>
-            Add Item
-          </Button>
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Adding...
+              </>
+            ) : (
+              <>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Item
+              </>
+            )}
+          </GlassButton>
         </motion.div>
       </div>
     </div>

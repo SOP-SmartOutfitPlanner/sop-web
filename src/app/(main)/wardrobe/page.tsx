@@ -18,14 +18,22 @@ import { OnboardingDialog } from "@/components/wardrobe/onboarding-dialog";
 import { userAPI } from "@/lib/api/user-api";
 
 // Dynamic import for heavy wizard component
-const AddItemWizard = dynamic(() => import("@/components/wardrobe/wizard").then(mod => ({ default: mod.AddItemWizard })), {
-  loading: () => (
-    <div className="flex items-center justify-center p-8">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      <span className="ml-2 text-sm text-muted-foreground">Loading wizard...</span>
-    </div>
-  ),
-});
+const AddItemWizard = dynamic(
+  () =>
+    import("@/components/wardrobe/wizard").then((mod) => ({
+      default: mod.AddItemWizard,
+    })),
+  {
+    loading: () => (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <span className="ml-2 text-sm text-muted-foreground">
+          Loading wizard...
+        </span>
+      </div>
+    ),
+  }
+);
 
 export default function WardrobePage() {
   const router = useRouter();
@@ -67,50 +75,21 @@ export default function WardrobePage() {
     try {
       // Get raw API item from store (includes styles & occasions)
       const rawItem = getRawItemById(parseInt(item.id));
-      
+
       if (!rawItem) {
         // Fallback: fetch from API if not in store
         const response = await wardrobeAPI.getItem(parseInt(item.id));
-        
-        if (!response) {
-          throw new Error("Item not found");
-        }
-        
-        setEditItem(response);
-      } else {
-        setEditItem(rawItem);
-      }
-      
-      // Small delay to ensure state is updated
-      setTimeout(() => {
-        setIsAddItemOpen(true);
-      }, 100);
-    } catch (error) {
-      console.error("❌ Failed to fetch item for edit:", error);
-      toast.error("Failed to load item details. Please try again.");
-    }
-  };
 
-  // Handle edit after auto-save (from toast action)
-  const handleEditAfterSave = async (itemId: number) => {
-    try {
-      // Get raw API item from store
-      const rawItem = getRawItemById(itemId);
-      
-      if (!rawItem) {
-        // Fallback: fetch from API if not in store
-        const response = await wardrobeAPI.getItem(itemId);
-        
         if (!response) {
           throw new Error("Item not found");
         }
-        
+
         setEditItem(response);
       } else {
         setEditItem(rawItem);
       }
-      
-      // Open wizard in edit mode
+
+      // Small delay to ensure state is updated
       setTimeout(() => {
         setIsAddItemOpen(true);
       }, 100);
@@ -180,7 +159,7 @@ export default function WardrobePage() {
 
   // Render
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-gray-100">
+    <div className="min-h-screen bg-gradient-to-br from-[#F5F8FF] via-[#F5F8FF] to-[#EAF0FF]">
       <div className="container max-w-7xl mx-auto px-4 py-6 space-y-8">
         {/* Error Display */}
         {error && <ErrorDisplay error={error} />}
@@ -218,7 +197,6 @@ export default function WardrobePage() {
           editMode={isEditMode}
           editItemId={editItem?.id}
           editItem={editItem || undefined}
-          onEditAfterSave={handleEditAfterSave}
         />
 
         {/* Onboarding Dialog */}
@@ -230,4 +208,3 @@ export default function WardrobePage() {
     </div>
   );
 }
-

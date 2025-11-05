@@ -38,6 +38,24 @@ export interface ColorOption {
 }
 
 /**
+ * AI Analysis Response (from wardrobeAPI.getImageSummary)
+ */
+export interface AIAnalysisResponse {
+  name: string;
+  colors: { name: string; hex: string }[];
+  aiDescription: string;
+  weatherSuitable: string;
+  condition: string;
+  pattern: string;
+  fabric: string;
+  imageRemBgURL: string;
+  category: { id: number; name: string };
+  styles: { id: number; name: string }[];
+  occasions: { id: number; name: string }[];
+  seasons: { id: number; name: string }[];
+}
+
+/**
  * Transform wizard form data to API request format
  * 
  * @param formData - Data from the wizard form
@@ -48,10 +66,10 @@ export function transformWizardDataToAPI(
   formData: WizardFormData,
   userId: number
 ): CreateWardrobeItemRequest {
-  // Join color names
+  // Store colors as JSON string array (preserves hex codes from AI)
   const colorString = formData.colors.length > 0
-    ? formData.colors.map(c => c.name).join(', ')
-    : 'Unknown';
+    ? JSON.stringify(formData.colors)
+    : JSON.stringify([{ name: 'Unknown', hex: '#808080' }]);
 
   // Join seasons - MUST NOT BE EMPTY (backend constraint)
   const weatherString = formData.seasons.length > 0
@@ -62,11 +80,6 @@ export function transformWizardDataToAPI(
   const tagString = formData.tags.length > 0 
     ? formData.tags.join(', ') 
     : undefined;
-
-  // Handle worn today
-  const frequencyWorn = formData.wornToday ? "1" : "0";
-  // Always include lastWornAt to match Swagger format
-  const lastWornAt = formData.wornToday ? new Date().toISOString() : new Date().toISOString();
 
   // IMPORTANT: Backend only accepts URL from AI, NOT base64
   // Use removed background image from AI (required)
@@ -97,38 +110,16 @@ export function transformWizardDataToAPI(
     color: colorString,
     aiDescription,
     brand: formData.brand || undefined,
-    frequencyWorn,
-    lastWornAt, // Always include to match Swagger
     imgUrl,
     weatherSuitable: weatherString,
     condition: formData.condition || 'New',
     pattern: truncate(formData.pattern || 'Solid', 100),
     fabric: truncate(formData.fabric || 'Cotton', 100),
     tag: tagString,
-    // Include relational IDs if available
     styleIds: formData.styleIds || undefined,
     occasionIds: formData.occasionIds || undefined,
-    seasonIds: undefined, // Seasons are passed as weatherSuitable string, not IDs
+    seasonIds: undefined,
   } as CreateWardrobeItemRequest;
-
-  // Debug logging
-  console.log('🔍 Transform Input:', {
-    colors: formData.colors,
-    seasons: formData.seasons,
-    condition: formData.condition,
-    imageRemBgURL: formData.imageRemBgURL,
-    originalNameLength: formData.name.length,
-    originalAiDescLength: (formData.notes || `${formData.brand} ${formData.name}`).length,
-  });
-  console.log('🔍 Field Lengths:', {
-    name: payload.name.length,
-    aiDescription: payload.aiDescription.length,
-    color: payload.color.length,
-    pattern: payload.pattern.length,
-    fabric: payload.fabric.length,
-    brand: payload.brand?.length || 0,
-  });
-  console.log('🔍 Payload to API:', JSON.stringify(payload, null, 2));
 
   return payload;
 }
@@ -202,13 +193,27 @@ export async function getUserIdFromAuth(user: { id?: string } | null): Promise<n
  * @returns Form data structure for wizard
  */
 export function apiItemToFormData(apiItem: ApiWardrobeItem): Partial<WizardFormData> {
-  // Parse colors from comma-separated string to ColorOption array
-  const colors: ColorOption[] = apiItem.color
-    ? apiItem.color.split(',').map((colorName: string) => ({
+  // Parse colors - supports both JSON array format and legacy comma-separated
+  let colors: ColorOption[] = [];
+  
+  if (apiItem.color) {
+    try {
+      // Try parse as JSON array first (new format from AI)
+      const parsed = JSON.parse(apiItem.color);
+      if (Array.isArray(parsed)) {
+        colors = parsed.map((c: { name?: string; hex?: string }) => ({
+          name: c.name || 'Unknown',
+          hex: c.hex || '#808080',
+        }));
+      }
+    } catch {
+      // Fallback: legacy comma-separated string (e.g., "White, Dark Green")
+      colors = apiItem.color.split(',').map((colorName: string) => ({
         name: colorName.trim(),
-        hex: '#808080', // Default gray - actual hex would need color lookup
-      }))
-    : [];
+        hex: '#808080', // Gray placeholder for legacy data
+      }));
+    }
+  }
 
   // Parse seasons from comma-separated weatherSuitable string
   const seasons: string[] = apiItem.weatherSuitable
@@ -254,4 +259,72 @@ export function apiItemToFormData(apiItem: ApiWardrobeItem): Partial<WizardFormD
   };
 }
 
+/**
+ * Validate AI analysis response to check if it has sufficient data
+ * 
+ * @param result - AI analysis response
+ * @returns { isValid: boolean, missingFields: string[], score: number }
+ */
+export function validateAIResponse(result: Partial<AIAnalysisResponse> | null | undefined): {
+  isValid: boolean;
+  missingFields: string[];
+  score: number;
+  details: {
+    hasName: boolean;
+    hasCategory: boolean;
+    hasImage: boolean;
+    hasColors: boolean;
+    hasPattern: boolean;
+    hasFabric: boolean;
+    hasWeather: boolean;
+  };
+} {
+  const missingFields: string[] = [];
+  const CRITICAL_POINTS = 20;
+  const IMPORTANT_POINTS = 10;
+  
+  const details = {
+    hasName: Boolean(result?.name || result?.aiDescription),
+    hasCategory: Boolean(result?.category?.id && result?.category?.name),
+    hasImage: Boolean(result?.imageRemBgURL),
+    hasColors: Boolean(result?.colors && result.colors.length > 0),
+    hasPattern: Boolean(result?.pattern),
+    hasFabric: Boolean(result?.fabric),
+    hasWeather: Boolean(result?.weatherSuitable),
+  };
 
+  let score = 0;
+
+  if (details.hasName) {
+    score += CRITICAL_POINTS;
+  } else {
+    missingFields.push('name');
+  }
+
+  if (details.hasCategory) {
+    score += CRITICAL_POINTS;
+  } else {
+    missingFields.push('category');
+  }
+
+  if (details.hasImage) {
+    score += CRITICAL_POINTS;
+  } else {
+    missingFields.push('imageRemBgURL');
+  }
+
+  if (details.hasColors) score += IMPORTANT_POINTS;
+  if (details.hasPattern) score += IMPORTANT_POINTS;
+  if (details.hasFabric) score += IMPORTANT_POINTS;
+  if (details.hasWeather) score += IMPORTANT_POINTS;
+
+  const PASSING_SCORE = 60;
+  const isValid = score >= PASSING_SCORE;
+
+  return {
+    isValid,
+    missingFields,
+    score,
+    details,
+  };
+}

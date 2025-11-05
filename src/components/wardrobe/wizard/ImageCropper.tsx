@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import Cropper from "react-easy-crop";
-import { Crop, RotateCw, ZoomIn, ZoomOut, Check, X } from "lucide-react";
+import { Crop, RotateCw, ZoomIn, Check, X } from "lucide-react";
 import type { Area } from "react-easy-crop";
 
 interface ImageCropperProps {
@@ -140,7 +140,7 @@ export default function ImageCropper({
           crop={crop}
           zoom={zoom}
           rotation={rotation}
-          aspect={1}
+          aspect={4 / 5}
           onCropChange={setCrop}
           onZoomChange={setZoom}
           onRotationChange={setRotation}

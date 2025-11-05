@@ -2,7 +2,12 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,6 +22,7 @@ import { Sparkles, X } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/auth-store";
 import { useWardrobeStore } from "@/store/wardrobe-store";
+import { useUploadStore } from "@/store/upload-store";
 import { wardrobeAPI, type ApiWardrobeItem } from "@/lib/api/wardrobe-api";
 import { useWardrobeOptions } from "@/hooks/useWardrobeOptions";
 import {
@@ -24,11 +30,11 @@ import {
   validateWizardFormData,
   getUserIdFromAuth,
   apiItemToFormData,
+  validateAIResponse,
 } from "@/lib/utils/wizard-transform";
 import { StepPhotoAI } from "./StepPhotoAI";
 import { ItemFormContent } from "./ItemFormContent";
 import ImageCropper from "./ImageCropper";
-import { AnalysisToast } from "./AnalysisToast";
 import { STATUS, INITIAL_FORM_DATA, AI_ANALYSIS_CONFIG } from "./wizard-config";
 import type { StatusType } from "./wizard-config";
 import type { WizardFormData, AISuggestions } from "./types";
@@ -36,15 +42,12 @@ import type { WizardFormData, AISuggestions } from "./types";
 interface AddItemWizardProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  initialFile?: File; // Optional: pre-selected file from gallery
-  autoAnalyze?: boolean; // Auto-trigger analysis when initialFile is provided (default: true)
-  skipCrop?: boolean; // Skip cropping step (default: false)
-  // Edit mode props
-  editMode?: boolean; // Whether wizard is in edit mode
-  editItemId?: number; // ID of item being edited
-  editItem?: ApiWardrobeItem; // API item to edit (will be transformed to form data)
-  // Callback when user wants to edit after auto-save
-  onEditAfterSave?: (itemId: number) => void;
+  initialFile?: File;
+  autoAnalyze?: boolean;
+  skipCrop?: boolean;
+  editMode?: boolean;
+  editItemId?: number;
+  editItem?: ApiWardrobeItem;
 }
 
 export function AddItemWizard({
@@ -56,7 +59,6 @@ export function AddItemWizard({
   editMode = false,
   editItemId,
   editItem,
-  onEditAfterSave,
 }: AddItemWizardProps) {
   const [status, setStatus] = useState<StatusType>(STATUS.IDLE);
   const [showConfirmClose, setShowConfirmClose] = useState(false);
@@ -66,102 +68,138 @@ export function AddItemWizard({
   const [aiSuggestions, setAiSuggestions] = useState<AISuggestions | null>(
     null
   );
-  const [analysisProgress, setAnalysisProgress] = useState(0);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState("");
-  const [retryCount, setRetryCount] = useState(0);
-  const [isRetrying, setIsRetrying] = useState(false);
+  const [uploadTaskId, setUploadTaskId] = useState<string | null>(null);
 
   const { user } = useAuthStore();
-  const { fetchItems } = useWardrobeStore();
-
-  // Fetch available options from API
+  const { addTask, updateTask, removeTask } = useUploadStore();
   const { categories, styles, seasons, occasions } = useWardrobeOptions();
 
-  // Initialize form data in edit mode OR reset when switching modes
   useEffect(() => {
-    if (editMode && editItem && open) {
+    if (editMode && editItem && open && status === STATUS.IDLE) {
       const transformedData = apiItemToFormData(editItem);
       const finalFormData = { ...INITIAL_FORM_DATA, ...transformedData };
       setFormData(finalFormData);
       setPreviewUrl(
         transformedData.imageRemBgURL || transformedData.uploadedImageURL || ""
       );
-      setStatus(STATUS.FORM); // Go directly to form in edit mode
+      setStatus(STATUS.FORM);
       setHasChanges(false);
     }
-  }, [editMode, editItem, open]);
+  }, [editMode, editItem, open, status]);
 
-  // Reset when opening fresh (not from edit mode)
   useEffect(() => {
-    if (open && !editMode && !editItem) {
-      // Only reset if opening fresh in add mode
-      setStatus(STATUS.IDLE);
+    if (open && !editMode && !editItem && status === STATUS.IDLE) {
       setFormData(INITIAL_FORM_DATA);
       setAiSuggestions(null);
       setSelectedFile(null);
       setPreviewUrl("");
-      setAnalysisProgress(0);
     }
-  }, [open, editMode, editItem]);
+  }, [open, editMode, editItem, status]);
+
+  // Reset form to initial state
+  const resetAndClose = useCallback(() => {
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+
+    setStatus(STATUS.IDLE);
+    setSelectedFile(null);
+    setPreviewUrl("");
+    setFormData(INITIAL_FORM_DATA);
+    setAiSuggestions(null);
+    setHasChanges(false);
+    setShowConfirmClose(false);
+    setIsSubmitting(false);
+
+    onOpenChange(false);
+  }, [onOpenChange, previewUrl]);
 
   // Auto-save after AI analysis
   const autoSaveAfterAnalysis = useCallback(
-    async (data: WizardFormData) => {
+    async (data: WizardFormData, taskId?: string | null) => {
       try {
         setIsSubmitting(true);
 
         const errors = validateWizardFormData(data);
+
         if (errors.length > 0) {
-          // If validation fails, show form for manual edit
+          console.warn(`⚠️ [AUTO-SAVE] Validation failed:`, errors);
+
+          // Update task to show manual edit needed
+          if (taskId) {
+            updateTask(taskId, {
+              progress: 80,
+              status: "analyzing",
+            });
+          }
+
+          // Show form for manual edit with helpful message
           setStatus(STATUS.FORM);
           setIsSubmitting(false);
+          toast.info("Please review and complete the missing information", {
+            description: errors.join(", "),
+          });
           return;
         }
 
         const userId = await getUserIdFromAuth(user);
+
         const payload = transformWizardDataToAPI(data, userId);
+        // Update task: saving
+        if (taskId) {
+          updateTask(taskId, {
+            progress: 90,
+            status: "uploading",
+          });
+        }
 
         const response = await wardrobeAPI.createItem(payload);
 
         if (!response) {
-          console.error("❌ API returned undefined response!");
           throw new Error("Failed to create item - no response from API");
         }
 
-        // Store the created item ID
-        const createdItemId = response?.id;
+        // Update task: success with cached item data
+        if (taskId) {
+          updateTask(taskId, {
+            progress: 100,
+            status: "success",
+            createdItemId: response.id,
+            createdItemData: response,
+          });
+        }
 
-        // Set to SAVED to hide AnalysisToast
+        // Set to SAVED to hide modal
         setStatus(STATUS.SAVED);
+        setHasChanges(false);
 
-        // Close modal immediately after save
-        onOpenChange(false);
+        // ⚡ Optimistic update: Add item to local state immediately
+        // No need to fetch all items again!
+        const state = useWardrobeStore.getState();
+        state.addItemOptimistic(response);
 
-        // Refresh items in background
-        fetchItems();
-
-        // Show toast with edit button
-        toast.success(
-          '✅ Item added successfully! Click "Edit Details" to customize.',
-          {
-            duration: 6000,
-            position: "bottom-right",
-            action: {
-              label: "Edit Details",
-              onClick: () => {
-                // Notify parent to open edit mode
-                if (createdItemId && onEditAfterSave) {
-                  onEditAfterSave(createdItemId);
-                } else {
-                  console.warn("❌ Cannot edit: no itemId or callback missing");
-                }
-              },
-            },
-          }
-        );
+        // Close modal after short delay
+        setTimeout(() => {
+          resetAndClose();
+        }, 500);
       } catch (error) {
-        console.error("❌ Auto-save failed:", error);
+        console.error("❌ [AUTO-SAVE] Error:", error);
+        console.error("❌ [AUTO-SAVE] Stack:", (error as Error)?.stack);
+
+        // Update task: error
+        if (taskId) {
+          updateTask(taskId, {
+            status: "error",
+            errorMessage: "Failed to save item",
+          });
+
+          // Auto-remove error task after 5 seconds
+          setTimeout(() => {
+            removeTask(taskId);
+          }, 5000);
+        }
 
         // Show form for manual save if auto-save fails
         setStatus(STATUS.FORM);
@@ -170,15 +208,92 @@ export function AddItemWizard({
         setIsSubmitting(false);
       }
     },
-    [user, fetchItems, onOpenChange, onEditAfterSave]
+    [user, resetAndClose, updateTask, removeTask]
   );
 
   // AI Analysis with retry logic
   const analyzeImage = useCallback(
     async (file: File, url: string, attempt = 1) => {
+      let currentTaskId = uploadTaskId;
+
       try {
-        setRetryCount(attempt - 1);
+        // Create upload task if it doesn't exist yet
+        if (!currentTaskId) {
+          const taskId = addTask({
+            fileName: file.name,
+            progress: 10,
+            status: "analyzing",
+            retryCount: attempt - 1,
+            isRetrying: attempt > 1,
+          });
+          currentTaskId = taskId;
+          setUploadTaskId(taskId);
+        }
+
+        // Update progress: start analysis
+        if (currentTaskId) {
+          updateTask(currentTaskId, {
+            progress: 20,
+            status: "analyzing",
+            retryCount: attempt - 1,
+            isRetrying: attempt > 1,
+          });
+        }
+
         const result = await wardrobeAPI.getImageSummary(file);
+
+        // ✨ VALIDATE AI RESPONSE
+        const validation = validateAIResponse(result);
+
+        if (!validation.isValid) {
+          console.warn(
+            `⚠️ [AI Validation] FAILED - Missing fields:`,
+            validation.missingFields
+          );
+          console.warn(`⚠️ [AI Validation] Details:`, {
+            hasName: validation.details.hasName,
+            hasCategory: validation.details.hasCategory,
+            hasImage: validation.details.hasImage,
+            hasColors: validation.details.hasColors,
+            hasPattern: validation.details.hasPattern,
+            hasFabric: validation.details.hasFabric,
+            hasWeather: validation.details.hasWeather,
+          });
+
+          // Retry if not at max attempts
+          if (attempt < AI_ANALYSIS_CONFIG.MAX_RETRIES) {
+            if (currentTaskId) {
+              updateTask(currentTaskId, {
+                progress: 10,
+                status: "analyzing",
+                retryCount: attempt,
+                isRetrying: true,
+              });
+            }
+
+            setTimeout(() => {
+              analyzeImage(file, url, attempt + 1);
+            }, AI_ANALYSIS_CONFIG.RETRY_DELAY);
+            return;
+          } else {
+            console.error(
+              `❌ [AI Validation] Max retries reached with insufficient data`
+            );
+            throw new Error(
+              `AI analysis incomplete after ${
+                AI_ANALYSIS_CONFIG.MAX_RETRIES
+              } attempts. Missing: ${validation.missingFields.join(", ")}`
+            );
+          }
+        }
+
+        // Update progress: analysis complete
+        if (currentTaskId) {
+          updateTask(currentTaskId, {
+            progress: 60,
+            status: "analyzing",
+          });
+        }
 
         setAiSuggestions(result);
 
@@ -194,7 +309,7 @@ export function AddItemWizard({
           notes: result.aiDescription || "",
           categoryId: result.category?.id || 0,
           categoryName: result.category?.name || "",
-          brand: "default", // AI doesn't detect brand
+          brand: "None", // AI doesn't detect brand
           seasons:
             result.seasons?.map((s: { id: number; name: string }) => s.name) ||
             [],
@@ -212,36 +327,87 @@ export function AddItemWizard({
 
         setFormData(newFormData);
 
-        // ✅ Update preview to show removed background image
+        // Update preview to show removed background image
         if (result.imageRemBgURL) {
           setPreviewUrl(result.imageRemBgURL);
         }
 
-        setRetryCount(0);
-        setIsRetrying(false);
-        setAnalysisProgress(100); // Set to 100% when complete
+        // Update progress: preparing to save
+        if (currentTaskId) {
+          updateTask(currentTaskId, {
+            progress: 80,
+            status: "uploading",
+          });
+        }
 
-        // 🎯 Auto-save after analysis completes
+        // Auto-save after analysis completes
         setTimeout(async () => {
-          await autoSaveAfterAnalysis(newFormData);
+          await autoSaveAfterAnalysis(newFormData, currentTaskId);
         }, 500);
       } catch (error) {
-        console.error(
-          `Analysis failed (attempt ${attempt}/${AI_ANALYSIS_CONFIG.MAX_RETRIES}):`,
-          error
-        );
+        console.error("❌ [AI Analysis] Exception caught:", error);
+
+        const isApiError = error instanceof Error && "statusCode" in error;
+        const statusCode = isApiError
+          ? (error as { statusCode?: number }).statusCode
+          : undefined;
+        const is400Error = statusCode === 400;
+
+        if (is400Error) {
+          console.error("❌ [AI Analysis] 400 Validation error - Not retrying");
+
+          const apiMessage =
+            error instanceof Error ? error.message : "Image validation failed";
+
+          if (currentTaskId) {
+            updateTask(currentTaskId, {
+              status: "error",
+              errorMessage: apiMessage,
+            });
+
+            setTimeout(() => {
+              if (currentTaskId) {
+                removeTask(currentTaskId);
+              }
+            }, 8000);
+          }
+
+          toast.error(apiMessage, {
+            duration: 6000,
+          });
+          setStatus(STATUS.PREVIEW);
+          return;
+        }
 
         if (attempt < AI_ANALYSIS_CONFIG.MAX_RETRIES) {
-          setIsRetrying(true);
-          // toast.error(
-          //   `Analysis failed. Retrying in 30s... (${attempt}/${AI_ANALYSIS_CONFIG.MAX_RETRIES})`
-          // );
+          if (currentTaskId) {
+            updateTask(currentTaskId, {
+              progress: 10,
+              status: "analyzing",
+              retryCount: attempt,
+              isRetrying: true,
+            });
+          }
 
           setTimeout(() => {
             analyzeImage(file, url, attempt + 1);
           }, AI_ANALYSIS_CONFIG.RETRY_DELAY);
         } else {
-          setIsRetrying(false);
+          console.error("❌ [AI Analysis] Max retries reached");
+
+          if (currentTaskId) {
+            updateTask(currentTaskId, {
+              status: "error",
+              errorMessage: "Failed to analyze image after 5 attempts",
+            });
+
+            setTimeout(() => {
+              if (currentTaskId) {
+                removeTask(currentTaskId);
+              }
+            }, 5000);
+          }
+
           toast.error(
             "Failed to analyze image after 5 attempts. Please try again."
           );
@@ -249,7 +415,7 @@ export function AddItemWizard({
         }
       }
     },
-    [autoSaveAfterAnalysis]
+    [autoSaveAfterAnalysis, addTask, updateTask, removeTask, uploadTaskId]
   );
 
   // Handle initialFile from GalleryPickerFlow
@@ -264,7 +430,6 @@ export function AddItemWizard({
       if (autoAnalyze && skipCrop) {
         // Skip crop and go directly to analyzing
         setStatus(STATUS.ANALYZING);
-        setAnalysisProgress(0);
 
         // Trigger analysis with retry logic
         setTimeout(() => {
@@ -280,23 +445,6 @@ export function AddItemWizard({
     }
   }, [initialFile, open, autoAnalyze, skipCrop, analyzeImage]);
 
-  // Reset form to initial state
-  const resetAndClose = useCallback(() => {
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl);
-    }
-    setStatus(STATUS.IDLE);
-    setSelectedFile(null);
-    setPreviewUrl("");
-    setFormData(INITIAL_FORM_DATA);
-    setAiSuggestions(null);
-    setHasChanges(false);
-    setShowConfirmClose(false);
-    setIsSubmitting(false);
-    setAnalysisProgress(0);
-    onOpenChange(false);
-  }, [onOpenChange, previewUrl]);
-
   // Clear selected file
   const handleClearFile = useCallback(() => {
     if (previewUrl) {
@@ -306,17 +454,23 @@ export function AddItemWizard({
     setPreviewUrl("");
     setStatus(STATUS.IDLE);
     setAiSuggestions(null);
-    setAnalysisProgress(0);
   }, [previewUrl]);
 
   // Handle file selection - go to cropping
-  const handleFileSelect = useCallback((file: File) => {
-    setSelectedFile(file);
-    const url = URL.createObjectURL(file);
-    setPreviewUrl(url);
-    setStatus(STATUS.CROPPING); // Changed from PREVIEW to CROPPING
-    setHasChanges(true);
-  }, []);
+  const handleFileSelect = useCallback(
+    (file: File) => {
+      // Revoke old URL to prevent memory leak
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+      setSelectedFile(file);
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+      setStatus(STATUS.CROPPING);
+      setHasChanges(true);
+    },
+    [previewUrl]
+  );
 
   // Handle crop complete
   const handleCropComplete = useCallback(
@@ -341,7 +495,13 @@ export function AddItemWizard({
 
   // Handle dialog close with unsaved changes confirmation
   const handleClose = useCallback(() => {
-    if (hasChanges && status !== STATUS.SAVED) {
+    // If just saved, close immediately without confirmation
+    if (status === STATUS.SAVED) {
+      resetAndClose();
+      return;
+    }
+
+    if (hasChanges) {
       setShowConfirmClose(true);
     } else {
       resetAndClose();
@@ -350,10 +510,12 @@ export function AddItemWizard({
 
   // Handle analyze button
   const handleAnalyze = useCallback(async () => {
-    if (!selectedFile || !previewUrl) return;
+    if (!selectedFile || !previewUrl) {
+      console.warn("No file selected for analysis");
+      return;
+    }
 
     setStatus(STATUS.ANALYZING);
-    setAnalysisProgress(0);
 
     // Use retry logic
     analyzeImage(selectedFile, previewUrl);
@@ -377,18 +539,35 @@ export function AddItemWizard({
       // Edit mode: update existing item
       if (editMode && editItemId) {
         await wardrobeAPI.updateItem(editItemId, payload);
+
+        // ⚡ Optimistic update for edit
+        const state = useWardrobeStore.getState();
+        await state.fetchItems(); // Refresh after edit to ensure consistency
+
         toast.success("Item updated successfully!");
       } else {
         // Create mode: add new item
-        await wardrobeAPI.createItem(payload);
+        const response = await wardrobeAPI.createItem(payload);
+
+        // Update upload task if exists
+        if (uploadTaskId) {
+          updateTask(uploadTaskId, {
+            progress: 100,
+            status: "success",
+            createdItemId: response.id,
+            createdItemData: response,
+          });
+        }
+
+        // ⚡ Optimistic update: Add item immediately, no fetch needed!
+        const state = useWardrobeStore.getState();
+        state.addItemOptimistic(response);
+
         toast.success("Item added successfully!");
       }
 
       // Show saved state
       setStatus(STATUS.SAVED);
-
-      // Refresh items in background
-      fetchItems();
 
       // Auto-close after showing success
       setTimeout(() => {
@@ -422,7 +601,15 @@ export function AddItemWizard({
       toast.error(errorMessage);
       setIsSubmitting(false);
     }
-  }, [formData, user, fetchItems, resetAndClose, editMode, editItemId]);
+  }, [
+    formData,
+    user,
+    resetAndClose,
+    editMode,
+    editItemId,
+    uploadTaskId,
+    updateTask,
+  ]);
 
   // Update form data
   const updateFormData = useCallback((updates: Partial<WizardFormData>) => {
@@ -453,56 +640,29 @@ export function AddItemWizard({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open, handleClose]);
 
-  // Simulate progress when analyzing
-  useEffect(() => {
-    if (status !== STATUS.ANALYZING) {
-      setAnalysisProgress(0);
-      return;
-    }
-
-    // Simulate smooth progress
-    let currentProgress = 0;
-    const interval = setInterval(() => {
-      currentProgress += Math.random() * 15;
-      if (currentProgress >= 95) {
-        currentProgress = 95; // Stop at 95% until real completion
-        clearInterval(interval);
-      }
-      setAnalysisProgress(currentProgress);
-    }, 500);
-
-    return () => clearInterval(interval);
-  }, [status]);
-
   return (
     <>
-      {/* Global Analyzing Toast - renders outside modal */}
-      <AnalysisToast
-        isVisible={status === STATUS.ANALYZING}
-        progress={analysisProgress}
-        retryCount={retryCount}
-        isRetrying={isRetrying}
-      />
-
       <Dialog
-        open={open && status !== STATUS.ANALYZING}
+        open={open && status !== STATUS.ANALYZING && status !== STATUS.SAVED}
         onOpenChange={(open) => !open && handleClose()}
       >
         <DialogContent
           className="max-w-[95vw] sm:max-w-xl p-0 gap-0 max-h-[95vh] flex flex-col overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-white/10"
           showCloseButton={false}
         >
-          {/* Accessible title (hidden visually but available to screen readers) */}
           <DialogTitle className="sr-only">
             {editMode ? "Edit Item" : "Add Item by Image"}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            {editMode
+              ? "Update details for your wardrobe item"
+              : "Upload and analyze clothing items using AI"}
+          </DialogDescription>
 
-          {/* Background gradients */}
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(59,130,246,0.15),transparent_50%)]" />
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(147,51,234,0.1),transparent_50%)]" />
           <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent,rgba(0,0,0,0.3))]" />
 
-          {/* Header */}
           <div className="relative border-b border-white/10 bg-gradient-to-r from-black/40 via-black/30 to-black/40 backdrop-blur-xl px-6 sm:px-8 py-5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -536,7 +696,6 @@ export function AddItemWizard({
                 </div>
               </div>
 
-              {/* Close button */}
               <motion.button
                 onClick={handleClose}
                 whileHover={{
@@ -552,10 +711,8 @@ export function AddItemWizard({
             </div>
           </div>
 
-          {/* Content */}
           <div className="relative px-6 sm:px-8 py-8 max-h-[calc(95vh-6rem)] overflow-y-auto custom-scrollbar">
             <AnimatePresence mode="wait">
-              {/* IDLE & PREVIEW State */}
               {(status === STATUS.IDLE || status === STATUS.PREVIEW) && (
                 <motion.div
                   key="upload"
@@ -604,7 +761,6 @@ export function AddItemWizard({
                 </motion.div>
               )}
 
-              {/* CROPPING State */}
               {status === STATUS.CROPPING && (
                 <ImageCropper
                   imageUrl={previewUrl}
@@ -613,7 +769,6 @@ export function AddItemWizard({
                 />
               )}
 
-              {/* FORM State */}
               {status === STATUS.FORM && (
                 <motion.div
                   key="form"
@@ -638,7 +793,6 @@ export function AddItemWizard({
                 </motion.div>
               )}
 
-              {/* SAVED State */}
               {status === STATUS.SAVED && (
                 <motion.div
                   key="saved"
@@ -683,7 +837,6 @@ export function AddItemWizard({
         </DialogContent>
       </Dialog>
 
-      {/* Confirm Close Dialog */}
       <AlertDialog open={showConfirmClose} onOpenChange={setShowConfirmClose}>
         <AlertDialogContent>
           <AlertDialogHeader>

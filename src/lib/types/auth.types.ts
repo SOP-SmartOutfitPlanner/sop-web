@@ -132,6 +132,7 @@ export interface AuthStore extends AuthState {
     success: boolean;
     isFirstTime: boolean;
   }>;
+  adminLogin: (email: string, password: string) => Promise<boolean>;
   loginWithGoogle: (credential: string) => Promise<{
     success: boolean;
     requiresVerification: boolean;

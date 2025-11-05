@@ -9,7 +9,9 @@ export function GoogleLoginButton() {
   const router = useRouter();
   const { loginWithGoogle } = useAuthStore();
 
-  const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
+  const handleGoogleSuccess = async (
+    credentialResponse: CredentialResponse
+  ) => {
     try {
       if (!credentialResponse.credential) {
         toast.error("Không nhận được thông tin từ Google");
@@ -24,14 +26,17 @@ export function GoogleLoginButton() {
           // New user - needs email verification
           // Store Google credential for auto-login after OTP verification
           if (typeof window !== "undefined") {
-            sessionStorage.setItem("googleCredential", credentialResponse.credential);
+            sessionStorage.setItem(
+              "googleCredential",
+              credentialResponse.credential
+            );
           }
 
           toast.success(result.message);
           router.push("/verify-email");
         } else {
           // Existing user - login success
-          toast.success("Đăng nhập thành công!");
+          toast.success("Login successful!");
 
           // Always redirect to wardrobe - onboarding dialog will show if needed
           router.push("/wardrobe");
@@ -49,10 +54,11 @@ export function GoogleLoginButton() {
       }
     } catch (error: unknown) {
       console.error("Google login error:", error);
-      
+
       // Handle specific error messages
-      const errorMessage = (error as Error)?.message || "Đăng nhập với Google thất bại";
-      
+      const errorMessage =
+        (error as Error)?.message || "Đăng nhập với Google thất bại";
+
       if (errorMessage.includes("must login with email and password")) {
         toast.error(
           "Tài khoản này đã đăng ký bằng email/password. Vui lòng đăng nhập bằng email và mật khẩu.",
@@ -86,5 +92,3 @@ export function GoogleLoginButton() {
     </div>
   );
 }
-
-

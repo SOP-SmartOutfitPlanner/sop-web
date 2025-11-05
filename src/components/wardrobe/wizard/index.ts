@@ -10,6 +10,5 @@ export { ItemFormContent } from './ItemFormContent';
 export { default as ImageCropper } from './ImageCropper';
 
 export type { WizardFormData, AISuggestions, ColorOption, CategoryOption } from './types';
-export * from './constants';
 
 

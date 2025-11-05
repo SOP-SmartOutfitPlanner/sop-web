@@ -30,21 +30,21 @@ export type WardrobeItem = {
   createdAt: string; // ISO date string
   updatedAt: string; // ISO date string
   // Additional fields for UI compatibility
-  category?: string; // Mapped from type
+  category?: Category; // Mapped from type
   color?: string; // First color from colors array
-  season?: string; // First season from seasons array
+  season?: Season; // First season from seasons array
 };
 
 export interface Category {
-  id: string;
+  id: number;
   name: string;
   icon?: string;
 }
 
 export interface Filter {
-  category?: string;
+  category?: Category;
   color?: string;
-  season?: string;
+  season?: Season;
   brand?: string;
   tags?: string[];
 }
