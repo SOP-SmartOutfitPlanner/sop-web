@@ -24,9 +24,17 @@ export function middleware(request: NextRequest) {
   // Protect community routes - require authentication
   if (pathname.startsWith("/community") || pathname.startsWith("/wardrobe")) {
     const accessToken = request.cookies.get("accessToken")?.value;
-    
+
     if (!accessToken) {
       return NextResponse.redirect(new URL("/login", request.url));
+    }
+
+    // Check if user is first-time user (needs onboarding)
+    // First-time users should only access wardrobe page
+    const isFirstTime = request.cookies.get("isFirstTime")?.value === "true";
+
+    if (isFirstTime && !pathname.startsWith("/wardrobe")) {
+      return NextResponse.redirect(new URL("/wardrobe", request.url));
     }
   }
 
