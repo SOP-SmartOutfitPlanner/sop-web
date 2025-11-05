@@ -43,7 +43,7 @@ export function AuthForm({ type }: AuthFormProps) {
     <Card className="w-full max-w-sm">
       <CardHeader>
         <CardTitle className="text-2xl">
-          {type === "login" ? "Đăng nhập" : "Đăng ký"}
+          {type === "login" ? "Log in" : "Register"}
         </CardTitle>
       </CardHeader>
       <CardContent>

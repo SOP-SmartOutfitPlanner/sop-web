@@ -39,15 +39,9 @@ export function NavbarAuthSection() {
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            className="relative h-8 w-8 rounded-full p-0"
-          >
+          <Button variant="ghost" className="relative h-8 w-8 rounded-full p-0">
             <Avatar className="h-8 w-8  text-black text-sm">
-              <AvatarImage
-                src={user?.avatar}
-                alt={user?.displayName}
-              />
+              <AvatarImage src={user?.avatar} alt={user?.displayName} />
               <AvatarFallback>
                 {user?.displayName?.charAt(0)?.toUpperCase() || "U"}
               </AvatarFallback>
@@ -86,14 +80,14 @@ export function NavbarAuthSection() {
         onClick={() => router.push("/login")}
         className="font-medium hover:bg-blue-50 hover:text-blue-600 transition-all duration-300"
       >
-        Đăng nhập
+        Log in
       </Button>
       <Button
         size="sm"
         onClick={() => router.push("/register")}
         className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-md hover:shadow-lg transition-all duration-300"
       >
-        Đăng ký
+        Register
       </Button>
     </div>
   );

@@ -45,7 +45,7 @@ export function GoogleLoginButton() {
         // Handle error from result
         if (result.message.includes("must login with email and password")) {
           toast.error(
-            "Tài khoản này đã đăng ký bằng email/password. Vui lòng đăng nhập bằng email và mật khẩu.",
+            "This account was registered with email/password. Please log in with email and password.",
             { duration: 5000 }
           );
         } else {
@@ -56,16 +56,15 @@ export function GoogleLoginButton() {
       console.error("Google login error:", error);
 
       // Handle specific error messages
-      const errorMessage =
-        (error as Error)?.message || "Đăng nhập với Google thất bại";
+      const errorMessage = (error as Error)?.message || "Google login failed";
 
       if (errorMessage.includes("must login with email and password")) {
         toast.error(
-          "Tài khoản này đã đăng ký bằng email/password. Vui lòng đăng nhập bằng email và mật khẩu.",
+          "This account was registered with email/password. Please log in with email and password.",
           { duration: 5000 }
         );
       } else if (errorMessage.includes("Token not valid")) {
-        toast.error("Token Google không hợp lệ. Vui lòng thử lại.");
+        toast.error("Invalid Google Token. Please try again.");
       } else {
         toast.error(errorMessage);
       }
@@ -74,7 +73,7 @@ export function GoogleLoginButton() {
 
   const handleGoogleError = () => {
     console.error("Google OAuth error");
-    toast.error("Đăng nhập với Google thất bại");
+    toast.error("ĐGoogle login failed");
   };
 
   return (
