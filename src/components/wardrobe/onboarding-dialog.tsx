@@ -1,24 +1,19 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import Image from "next/image";
-import GlassButton from "@/components/ui/glass-button";
-import { Label } from "@/components/ui/label";
-import { Progress } from "@/components/ui/progress";
-import { TagInput } from "./tag-input";
-import { userAPI } from "@/lib/api/user-api";
-import { toast } from "sonner";
-import GlassCard from "@/components/ui/glass-card";
-import { Input as AntInput, Select as AntSelect, DatePicker, ConfigProvider, ColorPicker, Card, Tag, Spin, Empty } from "antd";
-import dayjs from "dayjs";
-
-
-const { TextArea } = AntInput;
 import {
-  Sparkles,
-  Shirt,
-  Palette,
-  Heart,
+  Input as AntInput,
+  Select as AntSelect,
+  DatePicker,
+  ConfigProvider,
+  ColorPicker,
+  Card,
+  Tag,
+  Spin,
+  Empty,
+} from "antd";
+import dayjs from "dayjs";
+import {
   ChevronRight,
   ChevronLeft,
   Check,
@@ -26,82 +21,42 @@ import {
   MapPin,
   Calendar,
   User,
-  Wand2,
   X,
   Search,
   Plus,
+  Palette,
+  Heart,
 } from "lucide-react";
+import { toast } from "sonner";
+
+import GlassButton from "@/components/ui/glass-button";
+import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
+import { userAPI } from "@/lib/api/user-api";
 import { cn } from "@/lib/utils";
 
+// Import from extracted modules
+import { STEPS, TOTAL_STEPS, MAX_COLORS, MAX_STYLES, LOCATION_API_BASE, COLOR_PRESETS } from "./onboarding-dialog/constants";
+import type { OnboardingData, Province, District, Ward, Job, StyleOption } from "./onboarding-dialog/types";
+import { validatePersonalInfo, validateColors, validateStyles, buildLocationString } from "./onboarding-dialog/helpers";
+import { WelcomeStep, WhySopStep } from "./onboarding-dialog/steps";
+
+const { TextArea } = AntInput;
+
+// ========== Interfaces ==========
 interface OnboardingDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-interface OnboardingData {
-  preferedColor: string[];
-  avoidedColor: string[];
-  gender: string;
-  location: string;
-  province: string;
-  district: string;
-  ward: string;
-  jobId: number | null;
-  otherJob: string;
-  dob: string;
-  bio: string;
-  styleIds: number[];
-  otherStyles: string[];
-}
-
-interface Province {
-  id: string;
-  name: string;
-  type: string;
-}
-
-interface District {
-  id: string;
-  name: string;
-  provinceId: string;
-  type: string;
-}
-
-interface Ward {
-  id: string;
-  name: string;
-  districtId: string;
-  type: string;
-}
-
-interface Job {
-  id: number;
-  name: string;
-  description: string;
-  createdBy?: string;
-}
-
-interface StyleOption {
-  id: number;
-  name: string;
-  description: string;
-  createdBy?: string;
-}
-
-const STEPS = {
-  WELCOME: 0,
-  WHY_SOP: 1,
-  PERSONAL_INFO: 2,
-  COLORS: 3,
-  STYLES: 4,
-} as const;
-
-const TOTAL_STEPS = Object.keys(STEPS).length;
-
+// ========== Main Component ==========
 export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) {
+  // ===== State Management =====
   const [currentStep, setCurrentStep] = useState<number>(STEPS.WELCOME);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedBenefits, setSelectedBenefits] = useState<string[]>([]);
 
+  // Jobs & Styles state
   const [jobs, setJobs] = useState<Job[]>([]);
   const [styles, setStyles] = useState<StyleOption[]>([]);
   const [loadingStyles, setLoadingStyles] = useState(false);
@@ -109,10 +64,7 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
   const [styleSearchQuery, setStyleSearchQuery] = useState("");
   const [otherStyleInput, setOtherStyleInput] = useState("");
 
-  // Ref for scroll container
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-
-  // Location data
+  // Location data state
   const [provinces, setProvinces] = useState<Province[]>([]);
   const [districts, setDistricts] = useState<District[]>([]);
   const [wards, setWards] = useState<Ward[]>([]);
@@ -120,6 +72,27 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
   const [loadingDistricts, setLoadingDistricts] = useState(false);
   const [loadingWards, setLoadingWards] = useState(false);
 
+  // Refs
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Form data state
+  const [formData, setFormData] = useState<OnboardingData>({
+    preferedColor: [],
+    avoidedColor: [],
+    gender: "Male",
+    location: "",
+    province: "",
+    district: "",
+    ward: "",
+    jobId: null,
+    otherJob: "",
+    dob: "",
+    bio: "",
+    styleIds: [],
+    otherStyles: [],
+  });
+
+  // ===== Effects =====
   // Disable body scroll when dialog is open
   useEffect(() => {
     if (open) {
@@ -189,25 +162,7 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [styleSearchQuery]);
 
-
-  const [formData, setFormData] = useState<OnboardingData>({
-    preferedColor: [],
-    avoidedColor: [],
-    gender: "Male",
-    location: "",
-    province: "",
-    district: "",
-    ward: "",
-    jobId: null,
-    otherJob: "",
-    dob: "",
-    bio: "",
-    styleIds: [],
-    otherStyles: [],
-  });
-
-  const [selectedBenefits, setSelectedBenefits] = useState<string[]>([]);
-
+  // ===== API Functions =====
   // Load jobs when dialog opens or when reaching personal info step
   const loadJobs = async (search?: string) => {
     try {
@@ -254,7 +209,7 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
     if (provinces.length > 0) return;
     setLoadingProvinces(true);
     try {
-      const response = await fetch('https://open.oapi.vn/location/provinces?page=0&size=100');
+      const response = await fetch(`${LOCATION_API_BASE}/provinces?page=0&size=100`);
       const data = await response.json();
       setProvinces(data.data || []);
     } catch (error) {
@@ -269,7 +224,7 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
   const loadDistricts = async (provinceId: string) => {
     setLoadingDistricts(true);
     try {
-      const response = await fetch(`https://open.oapi.vn/location/districts/${provinceId}?page=0&size=100`);
+      const response = await fetch(`${LOCATION_API_BASE}/districts/${provinceId}?page=0&size=100`);
       const data = await response.json();
       setDistricts(data.data || []);
     } catch (error) {
@@ -284,7 +239,7 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
   const loadWards = async (districtId: string) => {
     setLoadingWards(true);
     try {
-      const response = await fetch(`https://open.oapi.vn/location/wards/${districtId}?page=0&size=100`);
+      const response = await fetch(`${LOCATION_API_BASE}/wards/${districtId}?page=0&size=100`);
       const data = await response.json();
       setWards(data.data || []);
     } catch (error) {
@@ -295,6 +250,7 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
     }
   };
 
+  // ===== Event Handlers =====
   // Handle province change
   const handleProvinceChange = (provinceId: string) => {
     const selectedProvince = provinces.find(p => p.id === provinceId);
@@ -332,15 +288,7 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
     const selectedDistrict = districts.find(d => d.id === formData.district);
     const selectedProvince = provinces.find(p => p.id === formData.province);
 
-    // Build location string with ward if provided, otherwise just district and province
-    let locationStr = '';
-    if (selectedProvince && selectedDistrict) {
-      if (selectedWard) {
-        locationStr = `${selectedProvince.name}, ${selectedDistrict.name}, ${selectedWard.name}`;
-      } else {
-        locationStr = `${selectedProvince.name}, ${selectedDistrict.name}`;
-      }
-    }
+    const locationStr = buildLocationString(selectedProvince, selectedDistrict, selectedWard);
 
     setFormData({
       ...formData,
@@ -350,52 +298,29 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
   };
 
   const handleNext = async () => {
-    // Validate PERSONAL_INFO step fields
+    // Validate current step
+    let validationError: string | null = null;
+
     if (currentStep === STEPS.PERSONAL_INFO) {
-      if (!formData.dob) {
-        toast.error("Please select your date of birth");
-        return;
-      }
-      // Validate that DOB is in the past
-      if (dayjs(formData.dob).isAfter(dayjs().startOf('day')) || dayjs(formData.dob).isSame(dayjs().startOf('day'))) {
-        toast.error("Date of birth must be in the past");
-        return;
-      }
-      if (!formData.province || !formData.district) {
-        toast.error("Please select at least Province and District");
-        return;
-      }
-      // If otherJob is not provided, jobId is required
-      if (!formData.jobId && !formData.otherJob.trim()) {
-        toast.error("Please select your occupation or specify other occupation");
-        return;
-      }
-      if (!formData.bio || formData.bio.trim() === "") {
-        toast.error("Please tell us about yourself");
-        return;
-      }
+      validationError = validatePersonalInfo(formData);
+    } else if (currentStep === STEPS.COLORS) {
+      validationError = validateColors(formData);
     }
 
-    // Validate COLORS step
-    if (currentStep === STEPS.COLORS) {
-      if (formData.preferedColor.length === 0) {
-        toast.error("Please add at least one preferred color");
-        return;
-      }
-      if (formData.avoidedColor.length === 0) {
-        toast.error("Please add at least one avoided color");
-        return;
-      }
+    if (validationError) {
+      toast.error(validationError);
+      return;
     }
 
-    // Load jobs when needed
+    // Load data for next step if needed
     if (currentStep === STEPS.PERSONAL_INFO && jobs.length === 0) {
       await loadJobs();
     }
-    // Load styles when needed
     if (currentStep === STEPS.COLORS && styles.length === 0) {
       await loadStyles();
     }
+
+    // Move to next step
     if (currentStep < TOTAL_STEPS - 1) {
       setCurrentStep(currentStep + 1);
     }
@@ -410,64 +335,22 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      // Validate required fields
-      if (!formData.dob) {
-        toast.error("Please select your date of birth");
-        setIsSubmitting(false);
+      // Validate all required fields
+      const personalInfoError = validatePersonalInfo(formData);
+      const colorsError = validateColors(formData);
+      const stylesError = validateStyles(formData);
+
+      const validationError = personalInfoError || colorsError || stylesError;
+      if (validationError) {
+        toast.error(validationError);
         return;
       }
 
-      // Validate that DOB is in the past
-      if (dayjs(formData.dob).isAfter(dayjs().startOf('day')) || dayjs(formData.dob).isSame(dayjs().startOf('day'))) {
-        toast.error("Date of birth must be in the past");
-        setIsSubmitting(false);
-        return;
-      }
-
-      if (!formData.province || !formData.district || !formData.location) {
-        toast.error("Please select at least Province and District");
-        setIsSubmitting(false);
-        return;
-      }
-
-      // If otherJob is not provided, jobId is required
-      if (!formData.jobId && !formData.otherJob.trim()) {
-        toast.error("Please select your occupation or specify other occupation");
-        setIsSubmitting(false);
-        return;
-      }
-
-      if (!formData.bio || formData.bio.trim() === "") {
-        toast.error("Please tell us about yourself");
-        setIsSubmitting(false);
-        return;
-      }
-
-      if (formData.preferedColor.length === 0) {
-        toast.error("Please add at least one preferred color");
-        setIsSubmitting(false);
-        return;
-      }
-
-      if (formData.avoidedColor.length === 0) {
-        toast.error("Please add at least one avoided color");
-        setIsSubmitting(false);
-        return;
-      }
-
-      if (formData.styleIds.length === 0 && formData.otherStyles.length === 0) {
-        toast.error("Please select at least one style or add other styles");
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Convert gender to number (0 = Unknown/Male, 1 = Female)
-      const genderValue = formData.gender === "Female" ? 1 : 0;
-
+      // Prepare payload
       const payload = {
         preferedColor: formData.preferedColor,
         avoidedColor: formData.avoidedColor,
-        gender: genderValue,
+        gender: formData.gender === "Female" ? 1 : 0,
         location: formData.location,
         jobId: formData.jobId || 1,
         otherJob: formData.otherJob,
@@ -509,8 +392,8 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
       }
 
       // If selecting, check maximum limit
-      if (prev.styleIds.length >= 10) {
-        toast.error("Maximum 10 styles allowed");
+      if (prev.styleIds.length >= MAX_STYLES) {
+        toast.error(`Maximum ${MAX_STYLES} styles allowed`);
         return prev;
       }
 
@@ -523,6 +406,7 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
 
   const progress = ((currentStep + 1) / TOTAL_STEPS) * 100;
 
+  // ===== Render =====
   if (!open) return null;
 
   return (
@@ -575,276 +459,14 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
             {/* Content Container  */}
             <div className="flex-1 px-12 py-6 overflow-hidden">
               {/* Step 0: Welcome */}
-              {currentStep === STEPS.WELCOME && (
-                <div className="h-full flex flex-col items-center justify-center animate-in fade-in zoom-in duration-500">
-                  <div className="text-center space-y-3 max-w-4xl">
-                    <div className="relative inline-block">
-                      <div className="absolute inset-0 blur-2xl opacity-40 bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 rounded-full animate-pulse"></div>
-                      <div className="relative w-80 h-32 flex items-center justify-center" style={{
-                        filter: 'drop-shadow(0 0 30px rgba(59, 130, 246, 0.6)) drop-shadow(0 0 15px rgba(59, 130, 246, 0.4))'
-                      }}>
-                        <Image
-                          src="/SOP-logo (2).png"
-                          alt="SOP Logo"
-                          width={200}
-                          height={100}
-                          priority
-                        />
-                      </div>
-                    </div>
-
-                    {/* Welcome Text */}
-                    <div className="space-y-3">
-                      <h1
-                        className="font-dela-gothic text-4xl md:text-5xl lg:text-6xl leading-tight"
-                      >
-                        <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-cyan-200">
-                          Welcome to
-                        </span>
-                        <br />
-                        <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 via-blue-300 to-indigo-300">
-                          Smart Outfit Planner
-                        </span>
-                      </h1>
-                      <div className="h-1 w-32 mx-auto bg-gradient-to-r from-transparent via-cyan-500 to-transparent rounded-full"></div>
-                      <p className="font-bricolage text-xl text-gray-200 max-w-2xl mx-auto leading-relaxed">
-                        Let&apos;s set up your profile so our AI can create the perfect outfits for you
-                      </p>
-                    </div>
-
-                    {/* Feature Cards - 2x2 Grid */}
-                    <div className="grid grid-cols-4 gap-6 max-w-5xl mx-auto pt-6">
-                      <GlassCard
-                        padding="2rem"
-                        borderRadius="20px"
-                        className="hover:scale-105 transition-transform"
-                        backgroundColor="rgba(255, 255, 255, 0.4)"
-                        borderColor="rgba(255, 255, 255, 0.6)"
-                        width="100%"
-                      >
-                        <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mx-auto mb-4">
-                          <Wand2 className="w-7 h-7 text-white" />
-                        </div>
-                        <p className="text-base font-semibold text-gray-700">AI-Powered</p>
-                      </GlassCard>
-
-                      <GlassCard
-                        padding="2rem"
-                        borderRadius="20px"
-                        className="hover:scale-105 transition-transform"
-                        backgroundColor="rgba(255, 255, 255, 0.4)"
-                        borderColor="rgba(255, 255, 255, 0.6)"
-                        width="100%"
-                      >
-                        <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center mx-auto mb-4">
-                          <Shirt className="w-7 h-7 text-white" />
-                        </div>
-                        <p className="text-base font-semibold text-gray-700">Smart Wardrobe</p>
-                      </GlassCard>
-
-                      <GlassCard
-                        padding="2rem"
-                        borderRadius="20px"
-                        className="hover:scale-105 transition-transform"
-                        backgroundColor="rgba(255, 255, 255, 0.4)"
-                        borderColor="rgba(255, 255, 255, 0.6)"
-                        width="100%"
-                      >
-                        <div className="w-14 h-14 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-xl flex items-center justify-center mx-auto mb-4">
-                          <Palette className="w-7 h-7 text-white" />
-                        </div>
-                        <p className="text-base font-semibold text-gray-700">Style Matching</p>
-                      </GlassCard>
-
-                      <GlassCard
-                        padding="2rem"
-                        borderRadius="20px"
-                        className="hover:scale-105 transition-transform"
-                        backgroundColor="rgba(255, 255, 255, 0.4)"
-                        borderColor="rgba(255, 255, 255, 0.6)"
-                        width="100%"
-                      >
-                        <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 to-blue-500 rounded-xl flex items-center justify-center mx-auto mb-4">
-                          <Heart className="w-7 h-7 text-white" />
-                        </div>
-                        <p className="text-base font-semibold text-gray-700">Personalized</p>
-                      </GlassCard>
-                    </div>
-                  </div>
-                </div>
-              )}
+              {currentStep === STEPS.WELCOME && <WelcomeStep />}
 
               {/* Step 1: Why SOP */}
               {currentStep === STEPS.WHY_SOP && (
-                <div className="h-full flex flex-col justify-center animate-in fade-in slide-in-from-right-4 duration-500">
-                  <div className="space-y-8 max-w-6xl mx-auto w-full">
-                    <div className="text-center space-y-3">
-                      <h2 className="font-dela-gothic text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-cyan-200">
-                        What You Use SOP For?
-                      </h2>
-                      <p className="font-bricolage text-lg text-gray-200">Select what matters most to you (optional)</p>
-                    </div>
-
-                    {/* 2x2 Grid for Benefits */}
-                    <div className="grid grid-cols-2 gap-6">
-                      <button
-                        type="button"
-                        onClick={() => toggleBenefit("ai-recommendations")}
-                        className="text-left"
-                      >
-                        <GlassCard
-                          padding="2rem"
-                          borderRadius="24px"
-                          className={cn(
-                            "hover:shadow-lg transition-all hover:scale-[1.02] duration-300 relative",
-                            selectedBenefits.includes("ai-recommendations") && "ring-2 ring-blue-500 shadow-lg shadow-blue-200/50"
-                          )}
-                          backgroundColor={selectedBenefits.includes("ai-recommendations") ? "rgba(59, 130, 246, 0.15)" : "rgba(255, 255, 255, 0.4)"}
-                          borderColor="rgba(255, 255, 255, 0.6)"
-                          width="100%"
-                        >
-                          {selectedBenefits.includes("ai-recommendations") && (
-                            <div className="absolute top-3 right-3 w-7 h-7 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center shadow-lg">
-                              <Check className="w-4 h-4 text-white" />
-                            </div>
-                          )}
-                          <div className="flex items-start gap-4 h-full">
-                            <div className="flex-shrink-0 w-14 h-14 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center transition-transform duration-300 hover:rotate-12">
-                              <Sparkles className="w-7 h-7 text-white" />
-                            </div>
-                            <div>
-                              <h3 className={cn(
-                                "font-bricolage text-xl font-semibold mb-2 transition-colors duration-300",
-                                selectedBenefits.includes("ai-recommendations") ? "text-white" : "text-gray-800"
-                              )}>AI-Powered Recommendations</h3>
-                              <p className={cn(
-                                "font-bricolage transition-colors duration-300",
-                                selectedBenefits.includes("ai-recommendations") ? "text-white/90" : "text-gray-600"
-                              )}>Get personalized outfit suggestions based on weather, occasion, and your personal style preferences.</p>
-                            </div>
-                          </div>
-                        </GlassCard>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => toggleBenefit("wardrobe-management")}
-                        className="text-left"
-                      >
-                        <GlassCard
-                          padding="2rem"
-                          borderRadius="24px"
-                          className={cn(
-                            "hover:shadow-lg transition-all hover:scale-[1.02] duration-300 relative",
-                            selectedBenefits.includes("wardrobe-management") && "ring-2 ring-blue-500 shadow-lg shadow-blue-200/50"
-                          )}
-                          backgroundColor={selectedBenefits.includes("wardrobe-management") ? "rgba(59, 130, 246, 0.15)" : "rgba(255, 255, 255, 0.4)"}
-                          borderColor="rgba(255, 255, 255, 0.6)"
-                          width="100%"
-                        >
-                          {selectedBenefits.includes("wardrobe-management") && (
-                            <div className="absolute top-3 right-3 w-7 h-7 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center shadow-lg">
-                              <Check className="w-4 h-4 text-white" />
-                            </div>
-                          )}
-                          <div className="flex items-start gap-4 h-full">
-                            <div className="flex-shrink-0 w-14 h-14 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-xl flex items-center justify-center transition-transform duration-300 hover:rotate-12">
-                              <Shirt className="w-7 h-7 text-white" />
-                            </div>
-                            <div>
-                              <h3 className={cn(
-                                "font-bricolage text-xl font-semibold mb-2 transition-colors duration-300",
-                                selectedBenefits.includes("wardrobe-management") ? "text-white" : "text-gray-800"
-                              )}>Smart Wardrobe Management</h3>
-                              <p className={cn(
-                                "font-bricolage transition-colors duration-300",
-                                selectedBenefits.includes("wardrobe-management") ? "text-white/90" : "text-gray-600"
-                              )}>Organize your clothes digitally, track what you wear, and discover new combinations you never thought of.</p>
-                            </div>
-                          </div>
-                        </GlassCard>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => toggleBenefit("style-profile")}
-                        className="text-left"
-                      >
-                        <GlassCard
-                          padding="2rem"
-                          borderRadius="24px"
-                          className={cn(
-                            "hover:shadow-lg transition-all hover:scale-[1.02] duration-300 relative",
-                            selectedBenefits.includes("style-profile") && "ring-2 ring-blue-500 shadow-lg shadow-blue-200/50"
-                          )}
-                          backgroundColor={selectedBenefits.includes("style-profile") ? "rgba(59, 130, 246, 0.15)" : "rgba(255, 255, 255, 0.4)"}
-                          borderColor="rgba(255, 255, 255, 0.6)"
-                          width="100%"
-                        >
-                          {selectedBenefits.includes("style-profile") && (
-                            <div className="absolute top-3 right-3 w-7 h-7 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center shadow-lg">
-                              <Check className="w-4 h-4 text-white" />
-                            </div>
-                          )}
-                          <div className="flex items-start gap-4 h-full">
-                            <div className="flex-shrink-0 w-14 h-14 bg-gradient-to-br from-indigo-500 to-blue-500 rounded-xl flex items-center justify-center transition-transform duration-300 hover:rotate-12">
-                              <Heart className="w-7 h-7 text-white" />
-                            </div>
-                            <div>
-                              <h3 className={cn(
-                                "font-bricolage text-xl font-semibold mb-2 transition-colors duration-300",
-                                selectedBenefits.includes("style-profile") ? "text-white" : "text-gray-800"
-                              )}>Personalized Style Profile</h3>
-                              <p className={cn(
-                                "font-bricolage transition-colors duration-300",
-                                selectedBenefits.includes("style-profile") ? "text-white/90" : "text-gray-600"
-                              )}>Build a profile that reflects your unique taste, favorite colors, and lifestyle needs.</p>
-                            </div>
-                          </div>
-                        </GlassCard>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => toggleBenefit("save-time")}
-                        className="text-left"
-                      >
-                        <GlassCard
-                          padding="2rem"
-                          borderRadius="24px"
-                          className={cn(
-                            "hover:shadow-lg transition-all hover:scale-[1.02] duration-300 relative",
-                            selectedBenefits.includes("save-time") && "ring-2 ring-blue-500 shadow-lg shadow-blue-200/50"
-                          )}
-                          backgroundColor={selectedBenefits.includes("save-time") ? "rgba(59, 130, 246, 0.15)" : "rgba(255, 255, 255, 0.4)"}
-                          borderColor="rgba(255, 255, 255, 0.6)"
-                          width="100%"
-                        >
-                          {selectedBenefits.includes("save-time") && (
-                            <div className="absolute top-3 right-3 w-7 h-7 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center shadow-lg">
-                              <Check className="w-4 h-4 text-white" />
-                            </div>
-                          )}
-                          <div className="flex items-start gap-4 h-full">
-                            <div className="flex-shrink-0 w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center transition-transform duration-300 hover:rotate-12">
-                              <Wand2 className="w-7 h-7 text-white" />
-                            </div>
-                            <div>
-                              <h3 className={cn(
-                                "font-bricolage text-xl font-semibold mb-2 transition-colors duration-300",
-                                selectedBenefits.includes("save-time") ? "text-white" : "text-gray-800"
-                              )}>Save Time Every Morning</h3>
-                              <p className={cn(
-                                "font-bricolage transition-colors duration-300",
-                                selectedBenefits.includes("save-time") ? "text-white/90" : "text-gray-600"
-                              )}>No more staring at your closet wondering what to wear. Get instant outfit suggestions that work.</p>
-                            </div>
-                          </div>
-                        </GlassCard>
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                <WhySopStep
+                  selectedBenefits={selectedBenefits}
+                  onToggleBenefit={toggleBenefit}
+                />
               )}
 
               {/* Step 2: Personal Info - Form Layout */}
@@ -1079,24 +701,7 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
                         <div className="space-y-3">
                           <p className="text-sm font-semibold text-gray-700">Select colors:</p>
                           <div className="grid grid-cols-8 gap-2">
-                            {[
-                              { name: "Red", color: "#EF4444" },
-                              { name: "Pink", color: "#EC4899" },
-                              { name: "Purple", color: "#A855F7" },
-                              { name: "Blue", color: "#3B82F6" },
-                              { name: "Cyan", color: "#06B6D4" },
-                              { name: "Green", color: "#10B981" },
-                              { name: "Yellow", color: "#F59E0B" },
-                              { name: "Orange", color: "#F97316" },
-                              { name: "Brown", color: "#92400E" },
-                              { name: "Gray", color: "#6B7280" },
-                              { name: "Black", color: "#1F2937" },
-                              { name: "White", color: "#F9FAFB" },
-                              { name: "Beige", color: "#D4C5B9" },
-                              { name: "Navy", color: "#1E3A8A" },
-                              { name: "Maroon", color: "#7C2D12" },
-                              { name: "Olive", color: "#84CC16" },
-                            ].map((preset) => (
+                            {COLOR_PRESETS.map((preset) => (
                               <button
                                 key={preset.name}
                                 type="button"
@@ -1107,8 +712,8 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
                                       preferedColor: formData.preferedColor.filter((c) => c !== preset.name)
                                     });
                                   } else {
-                                    if (formData.preferedColor.length >= 8) {
-                                      toast.error("Maximum 8 preferred colors allowed");
+                                    if (formData.preferedColor.length >= MAX_COLORS) {
+                                      toast.error(`Maximum ${MAX_COLORS} preferred colors allowed`);
                                       return;
                                     }
                                     setFormData({
@@ -1142,8 +747,8 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
                               disabledAlpha
                               format="hex"
                               onChangeComplete={(color) => {
-                                if (formData.preferedColor.length >= 8) {
-                                  toast.error("Maximum 8 preferred colors allowed");
+                                if (formData.preferedColor.length >= MAX_COLORS) {
+                                  toast.error(`Maximum ${MAX_COLORS} preferred colors allowed`);
                                   return;
                                 }
                                 const colorName = color.toHexString();
@@ -1153,8 +758,8 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
                               }}
                               size="large"
                             />
-                            {formData.preferedColor.length >= 8 && (
-                              <p className="text-xs text-red-600 font-medium">Maximum limit reached (8/8)</p>
+                            {formData.preferedColor.length >= MAX_COLORS && (
+                              <p className="text-xs text-red-600 font-medium">Maximum limit reached ({MAX_COLORS}/{MAX_COLORS})</p>
                             )}
                           </div>
                         </div>
@@ -1205,24 +810,7 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
                         <div className="space-y-3">
                           <p className="text-sm font-semibold text-gray-700">Select colors:</p>
                           <div className="grid grid-cols-8 gap-2">
-                            {[
-                              { name: "Red", color: "#EF4444" },
-                              { name: "Pink", color: "#EC4899" },
-                              { name: "Purple", color: "#A855F7" },
-                              { name: "Blue", color: "#3B82F6" },
-                              { name: "Cyan", color: "#06B6D4" },
-                              { name: "Green", color: "#10B981" },
-                              { name: "Yellow", color: "#F59E0B" },
-                              { name: "Orange", color: "#F97316" },
-                              { name: "Brown", color: "#92400E" },
-                              { name: "Gray", color: "#6B7280" },
-                              { name: "Black", color: "#1F2937" },
-                              { name: "White", color: "#F9FAFB" },
-                              { name: "Beige", color: "#D4C5B9" },
-                              { name: "Navy", color: "#1E3A8A" },
-                              { name: "Maroon", color: "#7C2D12" },
-                              { name: "Olive", color: "#84CC16" },
-                            ].map((preset) => (
+                            {COLOR_PRESETS.map((preset) => (
                               <button
                                 key={preset.name}
                                 type="button"
@@ -1233,8 +821,8 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
                                       avoidedColor: formData.avoidedColor.filter((c) => c !== preset.name)
                                     });
                                   } else {
-                                    if (formData.avoidedColor.length >= 8) {
-                                      toast.error("Maximum 8 avoided colors allowed");
+                                    if (formData.avoidedColor.length >= MAX_COLORS) {
+                                      toast.error(`Maximum ${MAX_COLORS} avoided colors allowed`);
                                       return;
                                     }
                                     setFormData({
@@ -1268,8 +856,8 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
                               disabledAlpha
                               format="hex"
                               onChangeComplete={(color) => {
-                                if (formData.avoidedColor.length >= 8) {
-                                  toast.error("Maximum 8 avoided colors allowed");
+                                if (formData.avoidedColor.length >= MAX_COLORS) {
+                                  toast.error(`Maximum ${MAX_COLORS} avoided colors allowed`);
                                   return;
                                 }
                                 const colorName = color.toHexString();
@@ -1279,8 +867,8 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
                               }}
                               size="large"
                             />
-                            {formData.avoidedColor.length >= 8 && (
-                              <p className="text-xs text-red-600 font-medium">Maximum limit reached (8/8)</p>
+                            {formData.avoidedColor.length >= MAX_COLORS && (
+                              <p className="text-xs text-red-600 font-medium">Maximum limit reached ({MAX_COLORS}/{MAX_COLORS})</p>
                             )}
                           </div>
                         </div>
