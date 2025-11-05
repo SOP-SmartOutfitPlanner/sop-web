@@ -208,6 +208,7 @@ export function InfiniteScrollFeed({
 
       {/* Posts */}
       {sortedPosts.map((post, index) => {
+        // Transform CommunityPost to UI Post format
         const uiPost = apiPostToPost(post);
         
         return (

@@ -3,6 +3,25 @@ import { communityAPI, CommunityPost, FeedResponse } from "@/lib/api/community-a
 import { useAuthStore } from "@/store/auth-store";
 import { toast } from "sonner";
 
+// Helper function to build full image URLs
+// API now returns full URLs from MinIO (https://storage.wizlab.io.vn/sop/...)
+// or old format from uploads folder (filename only)
+const buildImageUrl = (imageUrl: string): string => {
+  // If already a full URL, return as-is
+  if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
+    return imageUrl;
+  }
+  // Otherwise, assume it's a filename from old uploads folder
+  const imageBaseUrl = "https://sop.wizlab.io.vn/uploads";
+  return `${imageBaseUrl}/${imageUrl}`;
+};
+
+// Transform API post to include full image URLs
+const transformPost = (post: CommunityPost): CommunityPost => ({
+  ...post,
+  images: post.images.map(buildImageUrl),
+});
+
 /**
  * Hook for infinite scroll feed with React Query
  * Fetches all posts with pagination (not personalized feed)
@@ -42,9 +61,12 @@ export function useFeed(pageSize: number = 10) {
   const allPosts: CommunityPost[] = data?.pages.flatMap((page) => page.data) ?? [];
 
   // Deduplicate posts by ID (prevent duplicate keys error)
-  const posts: CommunityPost[] = Array.from(
+  const uniquePosts: CommunityPost[] = Array.from(
     new Map(allPosts.map((post) => [post.id, post])).values()
   );
+
+  // Transform posts to include full image URLs
+  const posts: CommunityPost[] = uniquePosts.map(transformPost);
 
   // Metadata from the latest page
   const metadata = data?.pages[data.pages.length - 1]?.metaData;

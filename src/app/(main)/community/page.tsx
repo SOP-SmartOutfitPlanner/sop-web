@@ -40,7 +40,7 @@ export default function Community() {
   const handleCreatePost = async (postData: {
     caption: string;
     tags: string[];
-    image?: string;
+    files?: File[]; // Changed to File[] for upload
   }) => {
     const success = await createPost(postData);
     if (success) {

@@ -25,13 +25,13 @@ interface NewPostDialogProps {
   onCreatePost: (data: {
     caption: string;
     tags: string[];
-    image?: string;
+    files?: File[]; // Changed to File[] instead of string[]
   }) => void;
 }
 
 export function NewPostDialog({ onCreatePost }: NewPostDialogProps) {
-  const [selectedImage, setSelectedImage] = useState<string | null>(null); // Preview URL (base64)
-  const [selectedFileName, setSelectedFileName] = useState<string | null>(null); // Filename for API
+  const [selectedImages, setSelectedImages] = useState<string[]>([]); // For preview (base64)
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]); // Store actual File objects
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   const editor = useEditor({
@@ -75,27 +75,39 @@ export function NewPostDialog({ onCreatePost }: NewPostDialogProps) {
     onCreatePost({
       caption,
       tags: hashtags,
-      image: selectedFileName || undefined, // Send filename instead of base64
+      files: selectedFiles.length > 0 ? selectedFiles : undefined, // Pass File objects
     });
 
     editor.commands.setContent("");
-    setSelectedImage(null);
-    setSelectedFileName(null);
+    setSelectedImages([]);
+    setSelectedFiles([]);
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Save filename for API
-      setSelectedFileName(file.name);
-      
-      // Create preview for UI
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const fileArray = Array.from(files);
+
+    // Store File objects
+    setSelectedFiles((prev) => [...prev, ...fileArray]);
+
+    // Create preview URLs
+    fileArray.forEach((file) => {
       const reader = new FileReader();
       reader.onload = (e) => {
-        setSelectedImage(e.target?.result as string);
+        const result = e.target?.result as string;
+        setSelectedImages((prev) => [...prev, result]);
       };
       reader.readAsDataURL(file);
-    }
+    });
+
+    e.target.value = "";
+  };
+
+  const removeImage = (index: number) => {
+    setSelectedImages((prev) => prev.filter((_, i) => i !== index));
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const caption = editor?.getText() || "";
@@ -120,11 +132,8 @@ export function NewPostDialog({ onCreatePost }: NewPostDialogProps) {
           </div>
         </div>
 
-        {/* TipTap Editor - No border, clean like Facebook */}
         <div className="relative">
           <EditorContent editor={editor} />
-
-          {/* Emoji Picker - Below textarea like Facebook */}
           <div className="absolute bottom-2 right-2">
             <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
               <PopoverTrigger asChild>
@@ -152,36 +161,123 @@ export function NewPostDialog({ onCreatePost }: NewPostDialogProps) {
           </div>
         </div>
 
-        {selectedImage && (
+        {selectedImages.length > 0 && (
           <div className="relative rounded-lg overflow-hidden border bg-muted">
-            <div className="relative w-full h-96">
-              <Image
-                src={selectedImage}
-                alt="Selected"
-                fill
-                className="object-cover"
-              />
-            </div>
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              className="absolute top-2 right-2 h-8 w-8 p-0 bg-background/80 hover:bg-background border shadow-sm"
-              onClick={() => {
-                setSelectedImage(null);
-                setSelectedFileName(null);
-              }}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              className="absolute top-2 left-2 bg-background/80 hover:bg-background border shadow-sm"
-            >
-              ✏️ Edit all
-            </Button>
+            {selectedImages.length === 1 && (
+              <div className="relative w-full h-96">
+                <Image
+                  src={selectedImages[0]}
+                  alt="Selected image"
+                  fill
+                  className="object-cover"
+                />
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  className="absolute top-2 right-2 h-8 w-8 p-0 bg-background/80 hover:bg-background border shadow-sm"
+                  onClick={() => removeImage(0)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+
+            {selectedImages.length === 2 && (
+              <div className="grid grid-cols-2 gap-1">
+                {selectedImages.map((img, index) => (
+                  <div key={index} className="relative aspect-square">
+                    <Image
+                      src={img}
+                      alt={`Image ${index + 1}`}
+                      fill
+                      className="object-cover"
+                    />
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      className="absolute top-2 right-2 h-6 w-6 p-0 bg-background/80 hover:bg-background border shadow-sm"
+                      onClick={() => removeImage(index)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {selectedImages.length === 3 && (
+              <div className="grid grid-cols-2 gap-1">
+                <div className="relative row-span-2 aspect-square">
+                  <Image
+                    src={selectedImages[0]}
+                    alt="Image 1"
+                    fill
+                    className="object-cover"
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="absolute top-2 right-2 h-6 w-6 p-0 bg-background/80 hover:bg-background border shadow-sm"
+                    onClick={() => removeImage(0)}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+                {selectedImages.slice(1).map((img, index) => (
+                  <div key={index + 1} className="relative aspect-square">
+                    <Image
+                      src={img}
+                      alt={`Image ${index + 2}`}
+                      fill
+                      className="object-cover"
+                    />
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      className="absolute top-2 right-2 h-6 w-6 p-0 bg-background/80 hover:bg-background border shadow-sm"
+                      onClick={() => removeImage(index + 1)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {selectedImages.length >= 4 && (
+              <div className="grid grid-cols-2 gap-1">
+                {selectedImages.slice(0, 4).map((img, index) => (
+                  <div key={index} className="relative aspect-square">
+                    <Image
+                      src={img}
+                      alt={`Image ${index + 1}`}
+                      fill
+                      className="object-cover"
+                    />
+                    {index === 3 && selectedImages.length > 4 && (
+                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                        <span className="text-white text-2xl font-semibold">
+                          +{selectedImages.length - 4}
+                        </span>
+                      </div>
+                    )}
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      className="absolute top-2 right-2 h-6 w-6 p-0 bg-background/80 hover:bg-background border shadow-sm z-10"
+                      onClick={() => removeImage(index)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -192,6 +288,7 @@ export function NewPostDialog({ onCreatePost }: NewPostDialogProps) {
               <input
                 type="file"
                 accept="image/*"
+                multiple
                 className="hidden"
                 onChange={handleImageUpload}
               />

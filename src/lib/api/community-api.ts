@@ -198,6 +198,38 @@ class CommunityAPI {
     
     return response.data.data;
   }
+
+  /**
+   * Upload image to MinIO storage
+   * @param file - Image file to upload
+   * @returns Object containing fileName and downloadUrl
+   */
+  async uploadImage(file: File): Promise<{ fileName: string; downloadUrl: string }> {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const apiResponse = await apiClient.post<ApiResponse<{ fileName: string; downloadUrl: string }>>(
+      "/minio/upload",
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+    return apiResponse.data;
+  }
+
+  /**
+   * Upload multiple images to MinIO storage
+   * @param files - Array of image files to upload
+   * @returns Array of downloadUrls
+   */
+  async uploadMultipleImages(files: File[]): Promise<string[]> {
+    const uploadPromises = files.map((file) => this.uploadImage(file));
+    const results = await Promise.all(uploadPromises);
+    return results.map((result) => result.downloadUrl);
+  }
 }
 
 export const communityAPI = new CommunityAPI();

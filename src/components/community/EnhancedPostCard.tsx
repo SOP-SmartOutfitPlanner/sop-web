@@ -7,6 +7,8 @@ import {
   MoreHorizontal,
   Star,
   Trophy,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -51,6 +53,11 @@ export function EnhancedPostCard({
   const [selectedStylist, setSelectedStylist] = useState<UserMini | null>(null);
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
   const [commentCount, setCommentCount] = useState(post.comments.length);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // Get images array (use new images field or fallback to legacy image field)
+  const images = post.images?.length > 0 ? post.images : post.image ? [post.image] : [];
+  const hasMultipleImages = images.length > 1;
 
   // Check if post author is a stylist (mock logic)
   const isAuthorStylist =
@@ -85,6 +92,16 @@ export function EnhancedPostCard({
     };
     setSelectedStylist(stylistData);
     setIsChatModalOpen(true);
+  };
+
+  const handleNextImage = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentImageIndex((prev) => (prev + 1) % images.length);
+  };
+
+  const handlePrevImage = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
   };
 
   return (
@@ -170,20 +187,69 @@ export function EnhancedPostCard({
           </div>
         </div>
 
-        {/* Post Image - Only show if image exists */}
-        {post.image && (
+        {/* Post Image(s) - Support multiple images with carousel */}
+        {images.length > 0 && (
           <div
             className="relative mx-4 mb-4 aspect-[4/3] rounded-2xl overflow-hidden bg-gradient-to-br from-muted/30 to-background group cursor-pointer"
             onDoubleClick={handleDoubleClick}
           >
             <div className="relative w-full h-full">
               <Image
-                src={post.image}
-                alt="Outfit post"
+                src={images[currentImageIndex]}
+                alt={`Post image ${currentImageIndex + 1}`}
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-300"
               />
             </div>
+
+            {/* Navigation arrows for multiple images */}
+            {hasMultipleImages && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-black/50 hover:bg-black/70 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={handlePrevImage}
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-black/50 hover:bg-black/70 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={handleNextImage}
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </Button>
+              </>
+            )}
+
+            {/* Image counter */}
+            {hasMultipleImages && (
+              <div className="absolute top-2 right-2 px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium">
+                {currentImageIndex + 1} / {images.length}
+              </div>
+            )}
+
+            {/* Dot indicators */}
+            {hasMultipleImages && (
+              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
+                {images.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCurrentImageIndex(index);
+                    }}
+                    className={`w-1.5 h-1.5 rounded-full transition-all ${
+                      index === currentImageIndex
+                        ? "bg-white w-4"
+                        : "bg-white/50 hover:bg-white/75"
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
 
             {/* Like animation overlay */}
             {isLiked && (
