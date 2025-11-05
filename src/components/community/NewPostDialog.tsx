@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { useAuthStore } from "@/store/auth-store";
 import {
   Popover,
   PopoverContent,
@@ -30,9 +31,11 @@ interface NewPostDialogProps {
 }
 
 export function NewPostDialog({ onCreatePost }: NewPostDialogProps) {
+  const { user } = useAuthStore();
   const [selectedImages, setSelectedImages] = useState<string[]>([]); // For preview (base64)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]); // Store actual File objects
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [caption, setCaption] = useState(""); // Track caption for button state
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -56,6 +59,10 @@ export function NewPostDialog({ onCreatePost }: NewPostDialogProps) {
         style: "font-size: 16px;",
       },
     },
+    onUpdate: ({ editor }) => {
+      // Update caption state when editor content changes
+      setCaption(editor.getText());
+    },
   });
 
   const addEmoji = (emojiData: EmojiClickData) => {
@@ -67,15 +74,20 @@ export function NewPostDialog({ onCreatePost }: NewPostDialogProps) {
     e.preventDefault();
     if (!editor) return;
 
-    const caption = editor.getText().trim();
-    if (!caption) return;
+    const fullCaption = editor.getText().trim();
+    if (!fullCaption) return;
 
-    const hashtags = caption.match(/#\w+/g)?.map((tag) => tag.slice(1)) || [];
+    // Extract hashtags from caption
+    const hashtags =
+      fullCaption.match(/#\w+/g)?.map((tag) => tag.slice(1)) || [];
+
+    // Remove hashtags from caption (keep only text)
+    const captionWithoutHashtags = fullCaption.replace(/#\w+/g, "").trim();
 
     onCreatePost({
-      caption,
-      tags: hashtags,
-      files: selectedFiles.length > 0 ? selectedFiles : undefined, // Pass File objects
+      caption: captionWithoutHashtags, // Send caption without hashtags
+      tags: hashtags, // Send hashtags separately
+      files: selectedFiles.length > 0 ? selectedFiles : undefined,
     });
 
     editor.commands.setContent("");
@@ -110,8 +122,6 @@ export function NewPostDialog({ onCreatePost }: NewPostDialogProps) {
     setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const caption = editor?.getText() || "";
-
   return (
     <div className="w-full max-w-lg mx-auto">
       <DialogHeader className="pb-4">
@@ -123,11 +133,15 @@ export function NewPostDialog({ onCreatePost }: NewPostDialogProps) {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="flex items-center gap-3">
           <Avatar className="w-10 h-10">
-            <AvatarImage src="/api/placeholder/40/40" />
-            <AvatarFallback>U</AvatarFallback>
+            <AvatarImage src={user?.avatar || "/api/placeholder/40/40"} />
+            <AvatarFallback>
+              {user?.displayName?.charAt(0).toUpperCase() || "U"}
+            </AvatarFallback>
           </Avatar>
           <div>
-            <div className="font-medium text-sm">User Name</div>
+            <div className="font-medium text-sm">
+              {user?.displayName || "User Name"}
+            </div>
             <div className="text-xs text-muted-foreground">Public</div>
           </div>
         </div>
