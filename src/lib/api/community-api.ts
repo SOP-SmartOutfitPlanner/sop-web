@@ -1,23 +1,24 @@
 import { apiClient } from "./client";
 import { ApiComment } from "@/types/community";
 
+export interface Hashtag {
+  id: number;
+  name: string;
+}
+
 export interface CommunityPost {
   id: number;
   userId: number;
   userDisplayName: string;
   body: string;
-  hashtags: string[];
+  hashtags: Hashtag[];
   images: string[];
   createdAt: string;
   updatedAt: string | null;
   likeCount: number;
   commentCount: number;
-  isLikedByUser: boolean;
-  authorAvatarUrl: string | null;
-  rankingScore?: number;
+  isLiked: boolean; // Changed from isLikedByUser to match API
 }
-
-
 
 export interface CreatePostRequest {
   userId: number;
@@ -33,7 +34,6 @@ export interface FeedMetaData {
   totalPages: number;
   hasNext: boolean;
   hasPrevious: boolean;
-  sessionId: string;
 }
 
 export interface FeedResponse {
@@ -51,18 +51,56 @@ class CommunityAPI {
   private BASE_PATH = "/posts";
 
   /**
-   * Get community feed
+   * Get all posts with pagination
+   * API Response: { data: [...], metaData: {...} }
    */
-  async getFeed(userId: number, page: number = 1, pageSize: number = 10): Promise<FeedResponse> {
-    // apiClient.get returns the unwrapped response.data directly
-    const apiResponse = await apiClient.get<ApiResponse<FeedResponse>>(
-      `${this.BASE_PATH}/feed`,
-      {
-        params: { userId, page, pageSize },
-      }
-    );
-    // Backend returns: { statusCode, message, data: { data: [...], metaData: {...} } }
-    return apiResponse.data;
+  async getAllPosts(
+    userId?: number,
+    page: number = 1,
+    pageSize: number = 10
+  ): Promise<FeedResponse> {
+    const response = await apiClient.get(this.BASE_PATH, {
+      params: {
+        ...(userId && { userId }), // Add userId if provided to get isLiked status
+        "page-index": page,
+        "page-size": pageSize,
+      },
+    });
+
+
+    // Axios response.data is already { data: [...], metaData: {...} }
+    const feedData = response.data;
+    
+    if (!feedData || !feedData.metaData) {
+      console.error("Invalid API response structure:", response.data);
+      throw new Error("Invalid API response structure");
+    }
+    
+    return feedData;
+  }
+
+  /**
+   * Get community feed (personalized)
+   * API Response: { data: [...], metaData: {...} }
+   */
+  async getFeed(
+    userId: number,
+    page: number = 1,
+    pageSize: number = 10
+  ): Promise<FeedResponse> {
+    const response = await apiClient.get(`${this.BASE_PATH}/feed`, {
+      params: { userId, page, pageSize },
+    });
+    
+    // Axios response.data is already { data: [...], metaData: {...} }
+    const feedData = response.data;
+    
+    if (!feedData || !feedData.metaData) {
+      console.error("Invalid API response structure:", response.data);
+      throw new Error("Invalid API response structure");
+    }
+    
+    return feedData;
   }
 
   /**
@@ -77,19 +115,33 @@ class CommunityAPI {
   }
 
   /**
-   * Like a post
+   * Toggle like/unlike a post (same endpoint for both)
    */
-  async likePost(postId: number, userId: number): Promise<void> {
-    await apiClient.post(`${this.BASE_PATH}/${postId}/like`, { userId });
-  }
-
-  /**
-   * Unlike a post
-   */
-  async unlikePost(postId: number, userId: number): Promise<void> {
-    await apiClient.delete(`${this.BASE_PATH}/${postId}/like`, {
-      data: { userId },
+  async toggleLikePost(
+    postId: number,
+    userId: number
+  ): Promise<{
+    id: number;
+    postId: number;
+    userId: number;
+    isDeleted: boolean;
+  }> {
+    const apiResponse = await apiClient.post("/like-posts", {
+      postId,
+      userId,
     });
+
+    // API returns: { statusCode, message, data: { id, postId, userId, isDeleted } }
+    // Axios already unwraps to apiResponse.data, which contains the API response
+    const apiData = apiResponse.data;
+
+    // Check if we need to unwrap further
+    if (apiData.data) {
+      return apiData.data;
+    }
+
+    // If already unwrapped, return as-is
+    return apiData;
   }
 
   /**
@@ -112,7 +164,11 @@ class CommunityAPI {
   /**
    * Report a post
    */
-  async reportPost(postId: number, userId: number, reason: string): Promise<void> {
+  async reportPost(
+    postId: number,
+    userId: number,
+    reason: string
+  ): Promise<void> {
     await apiClient.post(`${this.BASE_PATH}/${postId}/report`, {
       userId,
       reason,
@@ -159,7 +215,7 @@ class CommunityAPI {
         };
       };
     }>(`/comment-posts/post/${postId}`);
-    
+
     return response.data.data;
   }
 
@@ -182,8 +238,40 @@ class CommunityAPI {
         };
       };
     }>(`/comment-posts/parent/${parentCommentId}`);
-    
+
     return response.data.data;
+  }
+
+  /**
+   * Upload image to MinIO storage
+   * @param file - Image file to upload
+   * @returns Object containing fileName and downloadUrl
+   */
+  async uploadImage(
+    file: File
+  ): Promise<{ fileName: string; downloadUrl: string }> {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const apiResponse = await apiClient.post<
+      ApiResponse<{ fileName: string; downloadUrl: string }>
+    >("/minio/upload", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return apiResponse.data;
+  }
+
+  /**
+   * Upload multiple images to MinIO storage
+   * @param files - Array of image files to upload
+   * @returns Array of downloadUrls
+   */
+  async uploadMultipleImages(files: File[]): Promise<string[]> {
+    const uploadPromises = files.map((file) => this.uploadImage(file));
+    const results = await Promise.all(uploadPromises);
+    return results.map((result) => result.downloadUrl);
   }
 }
 

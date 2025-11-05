@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MessageCircle, Reply, Send, ChevronDown, ChevronUp } from "lucide-react";
+import { Reply } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -147,7 +147,7 @@ function CommentItem({ comment, postId, onNewReply, replies = [] }: CommentItemP
                   {isSubmitting ? (
                     <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin mr-1" />
                   ) : (
-                    <Send className="w-3 h-3 mr-1" />
+                    <Reply className="w-3 h-3 mr-1" />
                   )}
                   Reply
                 </Button>
@@ -160,13 +160,9 @@ function CommentItem({ comment, postId, onNewReply, replies = [] }: CommentItemP
   );
 }
 
-export default function CommentSection({ postId, commentCount, onCommentCountChange }: CommentSectionProps) {
+export default function CommentSection({ postId, onCommentCountChange }: CommentSectionProps) {
   const [comments, setComments] = useState<ApiComment[]>([]);
-  const [isExpanded, setIsExpanded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [newComment, setNewComment] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { user } = useAuthStore();
 
   const loadComments = async () => {
     setIsLoading(true);
@@ -195,45 +191,20 @@ export default function CommentSection({ postId, commentCount, onCommentCountCha
   };
 
   useEffect(() => {
-    if (isExpanded) {
-      loadComments();
-    }
+    loadComments();
+    
+    // Listen for refresh event
+    const handleRefresh = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail?.postId === postId) {
+        loadComments();
+      }
+    };
+    
+    window.addEventListener('refreshComments', handleRefresh);
+    return () => window.removeEventListener('refreshComments', handleRefresh);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isExpanded, postId]);
-
-  const handleAddComment = async () => {
-    if (!user || !newComment.trim()) return;
-
-    setIsSubmitting(true);
-    try {
-      const createdComment = await communityAPI.createComment({
-        postId: parseInt(postId),
-        userId: parseInt(user.id),
-        comment: newComment.trim(),
-        parentCommentId: null,
-      });
-
-      const commentWithUser = {
-        ...createdComment,
-        userDisplayName: user.displayName,
-        replies: [] // New comments start with empty replies
-      };
-
-      const newComments = [commentWithUser, ...comments];
-      setComments(newComments);
-      setNewComment("");
-      // Update comment count (including all replies)
-      const totalComments = newComments.reduce((total, comment) => {
-        return total + 1 + (comment.replies?.length || 0);
-      }, 0);
-      onCommentCountChange?.(totalComments);
-      toast.success("Comment added!");
-    } catch {
-      toast.error("Failed to add comment");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  }, [postId]);
 
   const handleNewReply = async (parentId: number) => {
     // Refresh child comments for the parent comment
@@ -263,85 +234,31 @@ export default function CommentSection({ postId, commentCount, onCommentCountCha
   const parentComments = comments.filter(comment => comment.parentCommentId === null);
 
   return (
-    <div className="space-y-3">
-      {/* Comment Toggle */}
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 p-0"
-      >
-        <MessageCircle className="w-4 h-4" />
-        <span className="text-sm">
-          {commentCount} {commentCount === 1 ? "comment" : "comments"}
-        </span>
-        {isExpanded ? (
-          <ChevronUp className="w-4 h-4" />
+    <div className="flex flex-col h-full">
+      {/* Comments List - Scrollable */}
+      <div className="flex-1 overflow-y-auto space-y-4 pb-4">
+        {isLoading ? (
+          <div className="flex justify-center py-4">
+            <div className="w-6 h-6 border border-gray-300 border-t-blue-600 rounded-full animate-spin" />
+          </div>
+        ) : parentComments.length > 0 ? (
+          <>
+            {parentComments.map((comment) => (
+              <CommentItem
+                key={comment.id}
+                comment={comment}
+                postId={postId}
+                onNewReply={handleNewReply}
+                replies={comment.replies || []}
+              />
+            ))}
+          </>
         ) : (
-          <ChevronDown className="w-4 h-4" />
+          <p className="text-center text-gray-500 py-4">
+            No comments yet. Be the first to comment!
+          </p>
         )}
-      </Button>
-
-      {/* Comments Section */}
-      {isExpanded && (
-        <div className="space-y-4 border-t pt-4">
-          {/* Add Comment Form */}
-          {user && (
-            <div className="flex space-x-3">
-              <Avatar className="h-8 w-8">
-                <AvatarFallback>
-                  {user.displayName?.charAt(0)?.toUpperCase() || "U"}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 space-y-2">
-                <Textarea
-                  placeholder="Write a comment..."
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  className="min-h-[80px] resize-none"
-                />
-                <div className="flex justify-end">
-                  <Button
-                    onClick={handleAddComment}
-                    disabled={!newComment.trim() || isSubmitting}
-                    size="sm"
-                  >
-                    {isSubmitting ? (
-                      <div className="w-4 h-4 border border-white border-t-transparent rounded-full animate-spin mr-2" />
-                    ) : (
-                      <Send className="w-4 h-4 mr-2" />
-                    )}
-                    Comment
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Comments List */}
-          {isLoading ? (
-            <div className="flex justify-center py-4">
-              <div className="w-6 h-6 border border-gray-300 border-t-blue-600 rounded-full animate-spin" />
-            </div>
-          ) : parentComments.length > 0 ? (
-            <div className="space-y-4">
-              {parentComments.map((comment) => (
-                <CommentItem
-                  key={comment.id}
-                  comment={comment}
-                  postId={postId}
-                  onNewReply={handleNewReply}
-                  replies={comment.replies || []}
-                />
-              ))}
-            </div>
-          ) : (
-            <p className="text-center text-gray-500 py-4">
-              No comments yet. Be the first to comment!
-            </p>
-          )}
-        </div>
-      )}
+      </div>
     </div>
   );
 }

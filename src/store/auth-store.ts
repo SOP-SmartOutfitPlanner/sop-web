@@ -312,7 +312,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
       const errorMessage =
         error instanceof ApiError
           ? error.message
-          : "Đăng nhập với Google thất bại. Vui lòng thử lại.";
+          : "Sign in with Google failed. Please try again.";
 
       set({
         isLoading: false,

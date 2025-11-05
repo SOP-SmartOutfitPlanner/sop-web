@@ -134,7 +134,7 @@ export default function ImageCropper({
       </div>
 
       {/* Cropper Area */}
-      <div className="relative w-full h-[400px] bg-black/40 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden">
+      <div className="relative w-full h-[600px] bg-black/40 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden">
         <Cropper
           image={imageUrl}
           crop={crop}
@@ -166,7 +166,7 @@ export default function ImageCropper({
               <ZoomIn className="w-4 h-4" />
               Zoom
             </label>
-            <span className="text-xs text-white/50">{zoom.toFixed(1)}x</span>
+            <span className="text-xs text-white/50">{zoom.toFixed(0)}x</span>
           </div>
           <input
             type="range"
@@ -268,5 +268,3 @@ export default function ImageCropper({
     </motion.div>
   );
 }
-
-

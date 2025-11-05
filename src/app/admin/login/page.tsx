@@ -6,12 +6,7 @@ import { useAuthStore } from "@/store/auth-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Logo } from "@/components/ui/logo";
 import { Shield, Lock, Mail } from "lucide-react";
 import { toast } from "sonner";
@@ -114,12 +109,12 @@ export default function AdminLoginPage() {
               {isLoading ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                  Đang đăng nhập...
+                  Logging in...
                 </>
               ) : (
                 <>
                   <Shield className="w-4 h-4 mr-2" />
-                  Đăng nhập Admin
+                  Admin Login
                 </>
               )}
             </Button>
@@ -133,7 +128,7 @@ export default function AdminLoginPage() {
               onClick={() => router.push("/login")}
               className="text-sm text-gray-600 hover:text-gray-900"
             >
-              ← Quay lại trang đăng nhập người dùng
+              ← Back to user login page
             </Button>
           </div>
         </CardContent>
