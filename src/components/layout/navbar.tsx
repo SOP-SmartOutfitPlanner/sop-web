@@ -52,7 +52,7 @@ const personalNavigationItems = [
 // -------------------- component --------------------
 export function Navbar() {
   const pathname = usePathname();
-  const { user, isInitialized } = useAuthStore();
+  const { user, isInitialized, isFirstTime } = useAuthStore();
 
   const NavItem = ({
     item,
@@ -182,27 +182,39 @@ export function Navbar() {
               transition={{ duration: 0.35 }}
               className="hidden lg:flex items-center space-x-1"
             >
-              {mainNavigationItems.map((item, i) => (
-                <motion.div
-                  key={item.path}
-                  initial={{ opacity: 0, y: -6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.06 * i, duration: 0.22 }}
-                >
-                  <NavItem item={item} />
-                </motion.div>
-              ))}
+              {mainNavigationItems
+                .filter((item) => {
+                  // First-time users can only see wardrobe
+                  if (isFirstTime) {
+                    return item.path === "/wardrobe";
+                  }
+                  return true;
+                })
+                .map((item, i) => (
+                  <motion.div
+                    key={item.path}
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.06 * i, duration: 0.22 }}
+                  >
+                    <NavItem item={item} />
+                  </motion.div>
+                ))}
             </motion.div>
 
             {/* Right side */}
             <div className="flex items-center space-x-2">
-              <div className="hidden md:flex items-center space-x-1">
-                {personalNavigationItems.map((item) => (
-                  <NavItem key={item.path} item={item} showLabel={false} />
-                ))}
-              </div>
+              {/* Hide personal navigation for first-time users */}
+              {!isFirstTime && (
+                <div className="hidden md:flex items-center space-x-1">
+                  {personalNavigationItems.map((item) => (
+                    <NavItem key={item.path} item={item} showLabel={false} />
+                  ))}
+                </div>
+              )}
 
-              {isInitialized && user && (
+              {/* Hide messages for first-time users */}
+              {isInitialized && user && !isFirstTime && (
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button

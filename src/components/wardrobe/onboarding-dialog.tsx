@@ -414,7 +414,6 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
       {/* Backdrop */}
       <div
         className="fixed h-full inset-0 bg-black/50 backdrop-blur-sm z-50 overflow-hidden overscroll-none touch-none"
-        onClick={() => onOpenChange(false)}
         style={{ position: 'fixed', inset: 0 }}
       />
 

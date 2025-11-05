@@ -112,6 +112,7 @@ export interface AuthState {
   // User data
   user: User | null;
   isAuthenticated: boolean;
+  isFirstTime: boolean;
 
   // Loading states
   isLoading: boolean;
@@ -151,6 +152,7 @@ export interface AuthStore extends AuthState {
   clearError: () => void;
   clearMessages: () => void;
   setLoading: (loading: boolean) => void;
+  setIsFirstTime: (isFirstTime: boolean) => void;
 }
 
 // ============================================================================

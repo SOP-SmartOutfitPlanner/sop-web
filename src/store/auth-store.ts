@@ -12,6 +12,7 @@ import type {
 export const useAuthStore = create<AuthStore>((set) => ({
   user: null,
   isAuthenticated: false,
+  isFirstTime: false,
   isLoading: false,
   isInitialized: false,
   error: null,
@@ -24,26 +25,29 @@ export const useAuthStore = create<AuthStore>((set) => ({
     if (typeof window !== 'undefined') {
       const userStr = localStorage.getItem('user');
       const accessToken = localStorage.getItem('accessToken');
+      const isFirstTimeStr = localStorage.getItem('isFirstTime');
       const pendingEmail = sessionStorage.getItem('pendingVerificationEmail');
-      
+
       if (userStr && accessToken) {
         try {
           const user = JSON.parse(userStr);
-          set({ user, isAuthenticated: true, isInitialized: true });
+          const isFirstTime = isFirstTimeStr === 'true';
+          set({ user, isAuthenticated: true, isFirstTime, isInitialized: true });
         } catch {
           localStorage.removeItem('user');
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
+          localStorage.removeItem('isFirstTime');
           set({ isInitialized: true });
         }
       } else {
         set({ isInitialized: true });
       }
-      
+
       if (pendingEmail) {
-        set({ 
+        set({
           requiresVerification: true,
-          pendingVerificationEmail: pendingEmail 
+          pendingVerificationEmail: pendingEmail
         });
       }
     }
@@ -88,15 +92,29 @@ export const useAuthStore = create<AuthStore>((set) => ({
         updatedAt: undefined,
       };
 
-      // Save user to localStorage
+      // Fetch user profile to check isFirstTime
+      let isFirstTime = false;
+      try {
+        const profileResponse = await userAPI.getUserProfile();
+        isFirstTime = profileResponse.data.isFirstTime;
+      } catch (profileError) {
+        console.error("Failed to fetch user profile:", profileError);
+        // Continue with login success even if profile fetch fails
+      }
+
+      // Save user and isFirstTime to localStorage and cookies
       if (typeof window !== "undefined") {
         localStorage.setItem("user", JSON.stringify(user));
+        localStorage.setItem("isFirstTime", String(isFirstTime));
+        // Set cookie for middleware access (expires in 1 day)
+        document.cookie = `isFirstTime=${isFirstTime}; path=/; max-age=86400; samesite=strict`;
         sessionStorage.removeItem("pendingVerificationEmail");
       }
 
       set({
         user,
         isAuthenticated: true,
+        isFirstTime,
         isLoading: false,
         error: null,
         successMessage: response.message,
@@ -104,17 +122,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
         pendingVerificationEmail: null,
       });
 
-      // Fetch user profile to check isFirstTime
-      try {
-        const profileResponse = await userAPI.getUserProfile();
-        const isFirstTime = profileResponse.data.isFirstTime;
-
-        return { success: true, isFirstTime };
-      } catch (profileError) {
-        console.error("Failed to fetch user profile:", profileError);
-        // Continue with login success even if profile fetch fails
-        return { success: true, isFirstTime: false };
-      }
+      return { success: true, isFirstTime };
     } catch (error: unknown) {
       const errorMessage = error instanceof ApiError
         ? error.message
@@ -266,14 +274,27 @@ export const useAuthStore = create<AuthStore>((set) => ({
         updatedAt: undefined,
       };
 
+      // Fetch user profile to check isFirstTime
+      let isFirstTime = false;
+      try {
+        const profileResponse = await userAPI.getUserProfile();
+        isFirstTime = profileResponse.data.isFirstTime;
+      } catch (profileError) {
+        console.error("Failed to fetch user profile:", profileError);
+      }
+
       if (typeof window !== "undefined") {
         localStorage.setItem("user", JSON.stringify(user));
+        localStorage.setItem("isFirstTime", String(isFirstTime));
+        // Set cookie for middleware access (expires in 1 day)
+        document.cookie = `isFirstTime=${isFirstTime}; path=/; max-age=86400; samesite=strict`;
         sessionStorage.removeItem("pendingVerificationEmail");
       }
 
       set({
         user,
         isAuthenticated: true,
+        isFirstTime,
         isLoading: false,
         error: null,
         successMessage: response.message,
@@ -281,26 +302,12 @@ export const useAuthStore = create<AuthStore>((set) => ({
         pendingVerificationEmail: null,
       });
 
-      // Fetch user profile to check isFirstTime
-      try {
-        const profileResponse = await userAPI.getUserProfile();
-        const isFirstTime = profileResponse.data.isFirstTime;
-
-        return {
-          success: true,
-          requiresVerification: false,
-          message: response.message,
-          isFirstTime,
-        };
-      } catch (profileError) {
-        console.error("Failed to fetch user profile:", profileError);
-        return {
-          success: true,
-          requiresVerification: false,
-          message: response.message,
-          isFirstTime: false,
-        };
-      }
+      return {
+        success: true,
+        requiresVerification: false,
+        message: response.message,
+        isFirstTime,
+      };
     } catch (error: unknown) {
       const errorMessage =
         error instanceof ApiError
@@ -423,6 +430,9 @@ export const useAuthStore = create<AuthStore>((set) => ({
         localStorage.removeItem('user');
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
+        localStorage.removeItem('isFirstTime');
+        // Clear cookies
+        document.cookie = 'isFirstTime=; path=/; max-age=0';
         sessionStorage.removeItem('pendingVerificationEmail');
         sessionStorage.removeItem('googleCredential');
       }
@@ -440,6 +450,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
       set({
         user: null,
         isAuthenticated: false,
+        isFirstTime: false,
         isLoading: false,
         error: null,
         successMessage: null,
@@ -452,4 +463,12 @@ export const useAuthStore = create<AuthStore>((set) => ({
   clearError: () => set({ error: null }),
   clearMessages: () => set({ error: null, successMessage: null }),
   setLoading: (loading: boolean) => set({ isLoading: loading }),
+  setIsFirstTime: (isFirstTime: boolean) => {
+    set({ isFirstTime });
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('isFirstTime', String(isFirstTime));
+      // Update cookie for middleware access
+      document.cookie = `isFirstTime=${isFirstTime}; path=/; max-age=86400; samesite=strict`;
+    }
+  },
 }));
