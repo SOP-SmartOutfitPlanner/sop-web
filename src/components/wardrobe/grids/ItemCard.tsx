@@ -28,7 +28,6 @@ import {
 import { WardrobeItem } from "@/types";
 import { cn } from "@/lib/utils";
 import { validateHexColor, parseColorString } from "@/lib/utils/color-mapping";
-import { formatDistanceToNow } from "date-fns";
 
 interface ItemCardProps {
   item: WardrobeItem;

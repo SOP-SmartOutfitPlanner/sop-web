@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Heart, MessageCircle, Share2 } from "lucide-react";
+import { Heart, MessageCircle } from "lucide-react";
 
 interface PostActionsProps {
   isLiked: boolean;
@@ -7,7 +7,6 @@ interface PostActionsProps {
   commentCount: number;
   onLike: () => void;
   onComment: () => void;
-  onShare?: () => void;
 }
 
 export function PostActions({
@@ -16,7 +15,6 @@ export function PostActions({
   commentCount,
   onLike,
   onComment,
-  onShare,
 }: PostActionsProps) {
   return (
     <div className="space-y-3">
@@ -28,11 +26,10 @@ export function PostActions({
               <Heart className="w-3 h-3 text-white fill-white" />
             </div>
           </div>
-          <span className="ml-1">{likeCount}</span>
+          <span className="ml-1">{likeCount} {likeCount === 1 ? 'like' : 'likes'}</span>
         </div>
         <div className="flex items-center gap-3">
-          <span>{commentCount} comments</span>
-          <span>1 share</span>
+          <span>{commentCount} {commentCount === 1 ? 'comment' : 'comments'}</span>
         </div>
       </div>
 
@@ -59,16 +56,6 @@ export function PostActions({
           >
             <MessageCircle className="w-5 h-5" />
             <span className="font-medium">Comment</span>
-          </Button>
-
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onShare}
-            className="flex-1 gap-2 text-muted-foreground hover:bg-muted transition-colors rounded-md"
-          >
-            <Share2 className="w-5 h-5" />
-            <span className="font-medium">Share</span>
           </Button>
         </div>
       </div>

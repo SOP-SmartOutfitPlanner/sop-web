@@ -1,7 +1,7 @@
 "use client";
 
-import { ItemGrid } from "./item-grid";
-import { SidebarStats } from "./sidebar-stats";
+import { ItemGrid } from "./grids/ItemGrid";
+import { SidebarStats } from "./sidebar/SidebarStats";
 import { WardrobeItem } from "@/types";
 
 interface WardrobeContentProps {

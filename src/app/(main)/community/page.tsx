@@ -5,11 +5,13 @@ import { useCommunityAuth } from "@/hooks/useCommunityAuth";
 import { useCommunityFilters } from "@/hooks/useCommunityFilters";
 import { useCreatePost } from "@/hooks/useCreatePost";
 
-import { CommunityLayout } from "@/components/community/CommunityLayout";
-import { CommunityHeader } from "@/components/community/CommunityHeader";
-import { CommunityFilters } from "@/components/community/CommunityFilters";
-import { InfiniteScrollFeed } from "@/components/community/InfiniteScrollFeed";
-import { LoadingScreen } from "@/components/community/LoadingScreen";
+import {
+  CommunityLayout,
+  CommunityHeader,
+  CommunityFilters,
+  InfiniteScrollFeed,
+  LoadingScreen,
+} from "@/components/community";
 
 /**
  * Community page - Social feed for outfit sharing

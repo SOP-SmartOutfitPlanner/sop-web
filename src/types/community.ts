@@ -4,6 +4,7 @@ import { CommunityPost, Hashtag } from "@/lib/api/community-api";
 export interface Post {
   id: string;
   userId: string;
+  userDisplayName: string; // Added: Display name of post author
   image?: string; // Deprecated - keep for backward compatibility
   images: string[]; // Array of image URLs
   caption: string;
@@ -80,6 +81,7 @@ export function apiPostToPost(apiPost: CommunityPost): Post {
   return {
     id: apiPost.id.toString(),
     userId: apiPost.userId.toString(),
+    userDisplayName: apiPost.userDisplayName, // Added: Post author's display name
     image: fullImageUrls[0] || "", // Keep first image for backward compatibility
     images: fullImageUrls, // Full array of all images
     caption: apiPost.body,

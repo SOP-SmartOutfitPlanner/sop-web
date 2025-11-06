@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
-import { EnhancedPostCard } from "./EnhancedPostCard";
+import { EnhancedPostCard } from "@/components/community/post/EnhancedPostCard";
 import { PostSkeleton } from "./PostSkeleton";
 import { useFeed } from "@/hooks/useFeed";
 import { apiPostToPost } from "@/types/community";

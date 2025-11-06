@@ -1,15 +1,14 @@
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, Heart } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 
 interface PostImageProps {
   images: string[];
-  isLiked: boolean;
   onDoubleClick: () => void;
 }
 
-export function PostImage({ images, isLiked, onDoubleClick }: PostImageProps) {
+export function PostImage({ images, onDoubleClick }: PostImageProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const hasMultiple = images.length > 1;
 
@@ -85,13 +84,6 @@ export function PostImage({ images, isLiked, onDoubleClick }: PostImageProps) {
               }`}
             />
           ))}
-        </div>
-      )}
-
-      {/* Like animation overlay */}
-      {isLiked && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <Heart className="w-16 h-16 text-red-500 fill-red-500 animate-scale-in" />
         </div>
       )}
     </div>

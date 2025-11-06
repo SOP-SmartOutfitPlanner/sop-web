@@ -3,7 +3,7 @@
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
-import { NewPostDialog } from "./NewPostDialog";
+import { NewPostDialog } from "../NewPostDialog";
 
 interface CommunityHeaderProps {
   isNewPostOpen: boolean;

@@ -1,9 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
 import { Loader2, Plus } from "lucide-react";
-import GlassButton from "../ui/glass-button";
+import GlassButton from "../../ui/glass-button";
 
 interface WardrobeHeaderProps {
   onAddItem: () => void;
