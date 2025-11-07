@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,8 +17,11 @@ interface PostHeaderProps {
   timestamp?: string;
   isAuthorStylist: boolean;
   showChallengeEntry?: boolean;
+  isOwnPost?: boolean;
+  isFollowing?: boolean;
   onMessageAuthor: () => void;
   onReport: (reason: string) => void;
+  onFollow?: () => void;
 }
 
 export function PostHeader({
@@ -26,14 +29,20 @@ export function PostHeader({
   timestamp,
   isAuthorStylist,
   showChallengeEntry,
+  isOwnPost = false,
+  isFollowing = false,
   onMessageAuthor,
   onReport,
+  onFollow,
 }: PostHeaderProps) {
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-3">
         <Link href={`/community/profile/${user.id}`}>
           <Avatar className="w-10 h-10 cursor-pointer hover:opacity-80 transition-opacity">
+            {user.avatar && (
+              <AvatarImage src={user.avatar} alt={user.name} />
+            )}
             <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white font-semibold">
               {user.name.charAt(0).toUpperCase()}
             </AvatarFallback>
@@ -46,6 +55,14 @@ export function PostHeader({
                 {user.name}
               </p>
             </Link>
+            {!isOwnPost && !isFollowing && onFollow && (
+              <span
+                className="text-primary font-semibold text-sm cursor-pointer hover:text-primary/80 transition-colors ml-1"
+                onClick={onFollow}
+              >
+                • Follow
+              </span>
+            )}
             {isAuthorStylist && (
               <Badge
                 variant="secondary"
@@ -74,6 +91,8 @@ export function PostHeader({
       </div>
 
       <div className="flex items-center gap-2">
+        {/* Follow Button - show only if not own post and not following */}
+
         {isAuthorStylist && (
           <Button
             size="sm"

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { communityAPI } from "@/lib/api/community-api";
 import { useAuthStore } from "@/store/auth-store";
 import { ApiComment } from "@/types/community";
@@ -21,7 +21,12 @@ interface CommentItemProps {
   replies?: ApiComment[];
 }
 
-function CommentItem({ comment, postId, onNewReply, replies = [] }: CommentItemProps) {
+function CommentItem({
+  comment,
+  postId,
+  onNewReply,
+  replies = [],
+}: CommentItemProps) {
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [replyText, setReplyText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -56,23 +61,31 @@ function CommentItem({ comment, postId, onNewReply, replies = [] }: CommentItemP
       {/* Main Comment */}
       <div className="flex gap-3">
         <Avatar className="w-8 h-8 flex-shrink-0">
-          <AvatarFallback className="text-xs bg-gradient-to-br from-blue-500 to-purple-500 text-white">
+          {comment.userAvatarUrl && (
+            <AvatarImage
+              src={comment.userAvatarUrl}
+              alt={comment.userDisplayName || "User"}
+            />
+          )}
+          {/* <AvatarFallback className="text-xs bg-gradient-to-br from-blue-500 to-purple-500 text-white">
             {comment.userDisplayName?.charAt(0)?.toUpperCase() || comment.userId.toString().charAt(0)}
-          </AvatarFallback>
+          </AvatarFallback> */}
         </Avatar>
         <div className="flex-1 min-w-0">
           <div className="text-sm">
             <span className="font-semibold mr-2">
               {comment.userDisplayName || `User ${comment.userId}`}
             </span>
-            <span className="text-foreground break-words">{comment.comment}</span>
+            <span className="text-foreground break-words">
+              {comment.comment}
+            </span>
           </div>
           <div className="flex items-center gap-3 mt-1">
             <span className="text-xs text-muted-foreground">
-              {new Date(comment.createdDate).toLocaleDateString('vi-VN', { 
-                month: 'short', 
-                day: 'numeric',
-                year: 'numeric'
+              {new Date(comment.createdDate).toLocaleDateString("vi-VN", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
               })}
             </span>
             <Button
@@ -93,23 +106,31 @@ function CommentItem({ comment, postId, onNewReply, replies = [] }: CommentItemP
           {replies.map((reply) => (
             <div key={reply.id} className="flex gap-3">
               <Avatar className="w-6 h-6 flex-shrink-0">
-                <AvatarFallback className="text-xs bg-gradient-to-br from-blue-400 to-purple-400 text-white">
+                {reply.userAvatarUrl && (
+                  <AvatarImage
+                    src={reply.userAvatarUrl}
+                    alt={reply.userDisplayName || "User"}
+                  />
+                )}
+                {/* <AvatarFallback className="text-xs bg-gradient-to-br from-blue-400 to-purple-400 text-white">
                   {reply.userDisplayName?.charAt(0)?.toUpperCase() || "U"}
-                </AvatarFallback>
+                </AvatarFallback> */}
               </Avatar>
               <div className="flex-1 min-w-0">
                 <div className="text-sm">
                   <span className="font-semibold mr-2">
                     {reply.userDisplayName || "User"}
                   </span>
-                  <span className="text-foreground break-words">{reply.comment}</span>
+                  <span className="text-foreground break-words">
+                    {reply.comment}
+                  </span>
                 </div>
                 <div className="flex items-center gap-3 mt-1">
                   <span className="text-xs text-muted-foreground">
-                    {new Date(reply.createdDate).toLocaleDateString('vi-VN', { 
-                      month: 'short', 
-                      day: 'numeric',
-                      year: 'numeric'
+                    {new Date(reply.createdDate).toLocaleDateString("vi-VN", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
                     })}
                   </span>
                   <Button
@@ -130,9 +151,9 @@ function CommentItem({ comment, postId, onNewReply, replies = [] }: CommentItemP
       {showReplyForm && (
         <div className="ml-11 flex gap-2">
           <Avatar className="w-6 h-6 flex-shrink-0">
-            <AvatarFallback className="text-xs bg-gradient-to-br from-blue-500 to-purple-500 text-white">
+            {/* <AvatarFallback className="text-xs bg-gradient-to-br from-blue-500 to-purple-500 text-white">
               {user?.displayName?.charAt(0)?.toUpperCase() || "U"}
-            </AvatarFallback>
+            </AvatarFallback> */}
           </Avatar>
           <div className="flex-1 flex items-center gap-2">
             <input
@@ -167,7 +188,10 @@ function CommentItem({ comment, postId, onNewReply, replies = [] }: CommentItemP
   );
 }
 
-export default function CommentSection({ postId, onCommentCountChange }: CommentSectionProps) {
+export default function CommentSection({
+  postId,
+  onCommentCountChange,
+}: CommentSectionProps) {
   const [comments, setComments] = useState<ApiComment[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -175,20 +199,25 @@ export default function CommentSection({ postId, onCommentCountChange }: Comment
     setIsLoading(true);
     try {
       const parentComments = await communityAPI.getComments(parseInt(postId));
-      
+
       // Load child comments for each parent comment
       const commentsWithReplies = await Promise.all(
         parentComments.map(async (comment) => {
           try {
-            const childComments = await communityAPI.getChildComments(comment.id);
+            const childComments = await communityAPI.getChildComments(
+              comment.id
+            );
             return { ...comment, replies: childComments };
           } catch (error) {
-            console.error(`Error loading replies for comment ${comment.id}:`, error);
+            console.error(
+              `Error loading replies for comment ${comment.id}:`,
+              error
+            );
             return { ...comment, replies: [] };
           }
         })
       );
-      
+
       setComments(commentsWithReplies);
     } catch {
       toast.error("Failed to load comments");
@@ -199,7 +228,7 @@ export default function CommentSection({ postId, onCommentCountChange }: Comment
 
   useEffect(() => {
     loadComments();
-    
+
     // Listen for refresh event
     const handleRefresh = (e: Event) => {
       const customEvent = e as CustomEvent;
@@ -207,38 +236,45 @@ export default function CommentSection({ postId, onCommentCountChange }: Comment
         loadComments();
       }
     };
-    
-    window.addEventListener('refreshComments', handleRefresh);
-    return () => window.removeEventListener('refreshComments', handleRefresh);
+
+    window.addEventListener("refreshComments", handleRefresh);
+    return () => window.removeEventListener("refreshComments", handleRefresh);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [postId]);
 
   const handleNewReply = async (parentId: number) => {
     // Refresh child comments for the parent comment
     try {
-      const updatedChildComments = await communityAPI.getChildComments(parentId);
-      
-      setComments(comments.map(comment => {
-        if (comment.id === parentId) {
-          return { ...comment, replies: updatedChildComments };
-        }
-        return comment;
-      }));
-      
+      const updatedChildComments = await communityAPI.getChildComments(
+        parentId
+      );
+
+      setComments(
+        comments.map((comment) => {
+          if (comment.id === parentId) {
+            return { ...comment, replies: updatedChildComments };
+          }
+          return comment;
+        })
+      );
+
       // Update total comment count (including all replies)
-      const totalComments = comments.reduce((total, comment) => {
-        return total + 1 + (comment.replies?.length || 0);
-      }, 0) + 1; // +1 for the new reply
-      
+      const totalComments =
+        comments.reduce((total, comment) => {
+          return total + 1 + (comment.replies?.length || 0);
+        }, 0) + 1; // +1 for the new reply
+
       onCommentCountChange?.(totalComments);
     } catch (error) {
-      console.error('Error refreshing replies:', error);
-      toast.error('Failed to refresh replies');
+      console.error("Error refreshing replies:", error);
+      toast.error("Failed to refresh replies");
     }
   };
 
   // Filter only parent comments (those with parentCommentId === null)
-  const parentComments = comments.filter(comment => comment.parentCommentId === null);
+  const parentComments = comments.filter(
+    (comment) => comment.parentCommentId === null
+  );
 
   return (
     <div className="flex flex-col h-full">

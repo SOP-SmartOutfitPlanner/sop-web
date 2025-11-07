@@ -19,6 +19,7 @@ import { communityAPI } from "@/lib/api/community-api";
 import { userAPI } from "@/lib/api/user-api";
 import { toast } from "sonner";
 import { PostGrid } from "./PostGrid";
+import { FollowersModal } from "./FollowersModal";
 
 interface UserProfileProps {
   userId: string;
@@ -44,6 +45,8 @@ export function UserProfile({ userId }: UserProfileProps) {
   const [isFollowing, setIsFollowing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [userProfile, setUserProfile] = useState<UserProfileData | null>(null);
+  const [followersModalOpen, setFollowersModalOpen] = useState(false);
+  const [followingModalOpen, setFollowingModalOpen] = useState(false);
 
   const isOwnProfile = currentUser?.id?.toString() === userId;
 
@@ -66,6 +69,12 @@ export function UserProfile({ userId }: UserProfileProps) {
           1
         );
 
+        // Get followers and following counts from API
+        const [followersCount, followingCount] = await Promise.all([
+          communityAPI.getFollowerCount(numericUserId),
+          communityAPI.getFollowingCount(numericUserId),
+        ]);
+
         setUserProfile({
           id: userId,
           name: userData.displayName,
@@ -76,12 +85,19 @@ export function UserProfile({ userId }: UserProfileProps) {
             )}&background=3B82F6&color=fff`,
           bio: userData.bio || "",
           location: userData.location || "",
-          followersCount: 423, // Mock data - API temporarily disabled
-          followingCount: 346, // Mock data - API temporarily disabled
+          followersCount,
+          followingCount,
           postsCount: postsResponse.metaData.totalCount,
         });
 
-        setIsFollowing(false);
+        // Check if current user is following this profile
+        if (currentUser?.id && !isOwnProfile) {
+          const followStatus = await communityAPI.getFollowStatus(
+            parseInt(currentUser.id),
+            numericUserId
+          );
+          setIsFollowing(followStatus);
+        }
       } catch (error) {
         console.error("Error fetching user profile:", error);
         toast.error("Không thể tải thông tin người dùng");
@@ -91,7 +107,7 @@ export function UserProfile({ userId }: UserProfileProps) {
     };
 
     fetchUserProfile();
-  }, [userId, currentUser?.id]);
+  }, [userId, currentUser?.id, isOwnProfile]);
 
   const handleFollowToggle = async () => {
     if (!currentUser?.id) {
@@ -99,18 +115,52 @@ export function UserProfile({ userId }: UserProfileProps) {
       return;
     }
 
-    setIsFollowing(!isFollowing);
+    try {
+      const followerId = parseInt(currentUser.id);
+      const followingId = parseInt(userId);
 
-    if (!isFollowing) {
+      // Optimistic update
+      const wasFollowing = isFollowing;
+      setIsFollowing(!isFollowing);
       setUserProfile((prev) =>
-        prev ? { ...prev, followersCount: prev.followersCount + 1 } : prev
+        prev
+          ? {
+              ...prev,
+              followersCount: wasFollowing
+                ? prev.followersCount - 1
+                : prev.followersCount + 1,
+            }
+          : prev
       );
-      toast.success("Đã theo dõi");
-    } else {
+
+      // Call API
+      const response = await communityAPI.toggleFollow(followerId, followingId);
+      
+      // Show success message
+      if (response.message?.includes("Follow user successfully")) {
+        toast.success("Đã theo dõi");
+      } else if (response.message?.includes("Unfollow user successfully")) {
+        toast.success("Đã bỏ theo dõi");
+      }
+
+      // Fetch updated counts from API
+      const [followersCount, followingCount] = await Promise.all([
+        communityAPI.getFollowerCount(followingId),
+        communityAPI.getFollowingCount(followerId),
+      ]);
+
       setUserProfile((prev) =>
-        prev ? { ...prev, followersCount: prev.followersCount - 1 } : prev
+        prev ? { ...prev, followersCount, followingCount } : prev
       );
-      toast.success("Đã bỏ theo dõi");
+
+    } catch (error) {
+      console.error("Error toggling follow:", error);
+      
+      // Rollback on error
+      setIsFollowing(isFollowing);
+      setUserProfile((prev) => prev);
+      
+      toast.error("Không thể thực hiện thao tác");
     }
   };
 
@@ -122,6 +172,26 @@ export function UserProfile({ userId }: UserProfileProps) {
     const url = `${window.location.origin}/community/profile/${userId}`;
     navigator.clipboard.writeText(url);
     toast.success("Đã copy link profile");
+  };
+
+  const handleFollowChange = async () => {
+    // Refresh follower and following counts after follow/unfollow in modal
+    try {
+      const numericUserId = parseInt(userId);
+      const [followersCount, followingCount] = await Promise.all([
+        communityAPI.getFollowerCount(numericUserId),
+        communityAPI.getFollowingCount(
+          currentUser?.id ? parseInt(currentUser.id) : numericUserId
+        ),
+      ]);
+
+      setUserProfile((prev) =>
+        prev ? { ...prev, followersCount, followingCount } : prev
+      );
+
+    } catch (error) {
+      console.error("Error refreshing counts:", error);
+    }
   };
 
   if (isLoading) {
@@ -178,22 +248,28 @@ export function UserProfile({ userId }: UserProfileProps) {
                   posts
                 </div>
               </div>
-              <div className="text-center cursor-pointer hover:opacity-70">
+              <button
+                onClick={() => setFollowersModalOpen(true)}
+                className="text-center cursor-pointer hover:opacity-70 transition-opacity"
+              >
                 <div className="font-semibold text-sm md:text-base">
                   {userProfile.followersCount.toLocaleString()}
                 </div>
                 <div className="text-xs md:text-sm text-muted-foreground">
                   followers
                 </div>
-              </div>
-              <div className="text-center cursor-pointer hover:opacity-70">
+              </button>
+              <button
+                onClick={() => setFollowingModalOpen(true)}
+                className="text-center cursor-pointer hover:opacity-70 transition-opacity"
+              >
                 <div className="font-semibold text-sm md:text-base">
                   {userProfile.followingCount}
                 </div>
                 <div className="text-xs md:text-sm text-muted-foreground">
                   following
                 </div>
-              </div>
+              </button>
             </div>
           </div>
 
@@ -289,6 +365,26 @@ export function UserProfile({ userId }: UserProfileProps) {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Followers Modal */}
+      <FollowersModal
+        isOpen={followersModalOpen}
+        onClose={() => setFollowersModalOpen(false)}
+        userId={parseInt(userId)}
+        type="followers"
+        onFollowChange={handleFollowChange}
+        isOwnProfile={isOwnProfile}
+      />
+
+      {/* Following Modal */}
+      <FollowersModal
+        isOpen={followingModalOpen}
+        onClose={() => setFollowingModalOpen(false)}
+        userId={parseInt(userId)}
+        type="following"
+        onFollowChange={handleFollowChange}
+        isOwnProfile={isOwnProfile}
+      />
     </div>
   );
 }

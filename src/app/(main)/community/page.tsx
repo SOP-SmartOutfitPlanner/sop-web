@@ -26,6 +26,7 @@ export default function Community() {
     activeTab,
     selectedTag,
     searchQuery,
+    debouncedSearchQuery, // ✅ Get debounced version
     timeFilter,
     setActiveTab,
     setSelectedTag,
@@ -78,9 +79,9 @@ export default function Community() {
         onClearAll={clearAllFilters}
       />
 
-      {/* Infinite scroll feed */}
+      {/* Infinite scroll feed - Uses debounced search for performance */}
       <InfiniteScrollFeed
-        searchQuery={searchQuery}
+        searchQuery={debouncedSearchQuery}
         selectedTag={selectedTag}
         timeFilter={timeFilter}
         activeTab={activeTab}

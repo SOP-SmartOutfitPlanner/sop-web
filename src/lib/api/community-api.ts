@@ -10,6 +10,7 @@ export interface CommunityPost {
   id: number;
   userId: number;
   userDisplayName: string;
+  userAvatarUrl?: string;
   body: string;
   hashtags: Hashtag[];
   images: string[];
@@ -67,15 +68,14 @@ class CommunityAPI {
       },
     });
 
-
     // Axios response.data is already { data: [...], metaData: {...} }
     const feedData = response.data;
-    
+
     if (!feedData || !feedData.metaData) {
       console.error("Invalid API response structure:", response.data);
       throw new Error("Invalid API response structure");
     }
-    
+
     return feedData;
   }
 
@@ -91,15 +91,15 @@ class CommunityAPI {
     const response = await apiClient.get(`${this.BASE_PATH}/feed`, {
       params: { userId, page, pageSize },
     });
-    
+
     // Axios response.data is already { data: [...], metaData: {...} }
     const feedData = response.data;
-    
+
     if (!feedData || !feedData.metaData) {
       console.error("Invalid API response structure:", response.data);
       throw new Error("Invalid API response structure");
     }
-    
+
     return feedData;
   }
 
@@ -120,12 +120,12 @@ class CommunityAPI {
     });
 
     const feedData = response.data;
-    
+
     if (!feedData || !feedData.metaData) {
       console.error("Invalid API response structure:", response.data);
       throw new Error("Invalid API response structure");
     }
-    
+
     return feedData;
   }
 
@@ -332,10 +332,7 @@ class CommunityAPI {
    * Unfollow a user (using DELETE or POST - check API docs)
    * API: DELETE /followers or POST /followers/unfollow
    */
-  async unfollowUser(
-    followerId: number,
-    followingId: number
-  ): Promise<void> {
+  async unfollowUser(followerId: number, followingId: number): Promise<void> {
     // If API uses DELETE with query params
     await apiClient.delete("/followers", {
       data: { followerId, followingId },
@@ -345,45 +342,166 @@ class CommunityAPI {
   /**
    * Get follower count for a user
    * API: GET /followers/count/followers/{userId}
+   * Response: { statusCode: 200, message: "...", data: { count: 1 } }
    */
   async getFollowerCount(userId: number): Promise<number> {
-    const response = await apiClient.get<
-      ApiResponse<{ count: number }>
-    >(`/followers/count/followers/${userId}`);
+    const response = await apiClient.get(
+      `/followers/count/followers/${userId}`
+    );
 
-    return response.data.count;
+    // Handle nested data structure
+    if (response.data?.data?.count !== undefined) {
+      return response.data.data.count;
+    }
+    // Fallback: check if count is at top level
+    if (response.data?.count !== undefined) {
+      return response.data.count;
+    }
+
+    console.error("[API] Unexpected follower count response:", response.data);
+    return 0;
   }
 
   /**
    * Get following count for a user
    * API: GET /followers/count/following/{userId}
+   * Response: { statusCode: 200, message: "...", data: { count: 5 } }
    */
   async getFollowingCount(userId: number): Promise<number> {
-    const response = await apiClient.get<
-      ApiResponse<{ count: number }>
-    >(`/followers/count/following/${userId}`);
+    const response = await apiClient.get(
+      `/followers/count/following/${userId}`
+    );
 
-    return response.data.count;
+    // Handle nested data structure
+    if (response.data?.data?.count !== undefined) {
+      return response.data.data.count;
+    }
+    // Fallback: check if count is at top level
+    if (response.data?.count !== undefined) {
+      return response.data.count;
+    }
+
+    console.error("[API] Unexpected following count response:", response.data);
+    return 0;
+  }
+
+  /**
+   * Get list of followers for a user
+   * API: GET /followers/followers/{userId}?page-index=1&page-size=10
+   * Response: { statusCode, message, data: { data: [...users], metaData: {...} } }
+   */
+  async getFollowersList(
+    userId: number,
+    page: number = 1,
+    pageSize: number = 10
+  ) {
+    try {
+      const response = await apiClient.get(`/followers/followers/${userId}`, {
+        params: {
+          "page-index": page,
+          "page-size": pageSize,
+        },
+      });
+
+      // Try different response structures
+      if (response.data?.data?.data && Array.isArray(response.data.data.data)) {
+        return response.data.data.data;
+      }
+      if (response.data?.data && Array.isArray(response.data.data)) {
+        return response.data.data;
+      }
+      if (Array.isArray(response.data)) {
+        return response.data;
+      }
+
+      console.warn(
+        "[API] Unexpected followers list response structure:",
+        response.data
+      );
+      return [];
+    } catch (error) {
+      console.error("[API] Error fetching followers list:", error);
+      return [];
+    }
+  }
+
+  /**
+   * Get list of users that a user is following
+   * API: GET /followers/following/{userId}?page-index=1&page-size=10
+   * Response: { statusCode, message, data: { data: [...users], metaData: {...} } }
+   */
+  async getFollowingList(
+    userId: number,
+    page: number = 1,
+    pageSize: number = 10
+  ) {
+    try {
+      const response = await apiClient.get(`/followers/following/${userId}`, {
+        params: {
+          "page-index": page,
+          "page-size": pageSize,
+        },
+      });
+      // Try different response structures
+      if (response.data?.data?.data && Array.isArray(response.data.data.data)) {
+        return response.data.data.data;
+      }
+      if (response.data?.data && Array.isArray(response.data.data)) {
+        return response.data.data;
+      }
+      if (Array.isArray(response.data)) {
+        return response.data;
+      }
+
+      console.warn(
+        "[API] Unexpected following list response structure:",
+        response.data
+      );
+      return [];
+    } catch (error) {
+      console.error("[API] Error fetching following list:", error);
+      return [];
+    }
+  }
+
+  /**
+   * Toggle follow/unfollow a user
+   * API: POST /followers
+   * Body: { followerId: number, followingId: number }
+   */
+  async toggleFollow(followerId: number, followingId: number) {
+    const response = await apiClient.post("/followers", {
+      followerId,
+      followingId,
+    });
+    return response.data;
   }
 
   /**
    * Check if current user is following another user
-   * API: GET /followers/is-following?followerId={}&followingId={}
+   * API: GET /followers/status?followerId={}&followingId={}
+   * Response: { statusCode: 200, message: "...", data: { isFollowing: true/false } }
    */
-  async isFollowing(
+  async getFollowStatus(
     followerId: number,
     followingId: number
   ): Promise<boolean> {
     try {
-      const response = await apiClient.get<
-        ApiResponse<{ isFollowing: boolean }>
-      >("/followers/is-following", {
+      const response = await apiClient.get("/followers/status", {
         params: { followerId, followingId },
       });
 
-      return response.data.isFollowing;
-    } catch {
-      // If API doesn't have this endpoint, return false
+      // Try different response structures
+      if (response.data?.data?.isFollowing !== undefined) {
+        return response.data.data.isFollowing;
+      }
+      if (response.data?.isFollowing !== undefined) {
+        return response.data.isFollowing;
+      }
+
+      return false;
+    } catch (error) {
+      console.error("[API] Error getting follow status:", error);
       return false;
     }
   }
