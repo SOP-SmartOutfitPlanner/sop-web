@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useMemo } from "react";
+import { useEffect, useRef, useMemo, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import { EnhancedPostCard } from "@/components/community/post/EnhancedPostCard";
@@ -8,6 +8,8 @@ import { PostSkeleton } from "./PostSkeleton";
 import { useFeed } from "@/hooks/useFeed";
 import { apiPostToPost } from "@/types/community";
 import { useAuthStore } from "@/store/auth-store";
+import { communityAPI } from "@/lib/api/community-api";
+import { toast } from "sonner";
 
 interface InfiniteScrollFeedProps {
   searchQuery?: string;
@@ -29,6 +31,9 @@ export function InfiniteScrollFeed({
   const { user } = useAuthStore();
   const observerTarget = useRef<HTMLDivElement>(null);
   
+  // Track following status for each user
+  const [followingStatus, setFollowingStatus] = useState<Record<string, boolean>>({});
+  
   const {
     posts,
     isLoading,
@@ -41,6 +46,78 @@ export function InfiniteScrollFeed({
     reportPost,
     metadata,
   } = useFeed(10); // 10 posts per page
+
+  // Handle follow toggle
+  const handleFollow = useCallback(async (targetUserId: string) => {
+    if (!user?.id) {
+      toast.error("Vui lòng đăng nhập để follow");
+      return;
+    }
+
+    try {
+      const followerId = parseInt(user.id);
+      const followingId = parseInt(targetUserId);
+
+      // Optimistic update
+      setFollowingStatus((prev) => ({ ...prev, [targetUserId]: true }));
+
+      const response = await communityAPI.toggleFollow(followerId, followingId);
+
+      if (response.message?.includes("Follow user successfully")) {
+        toast.success("Đã theo dõi");
+      }
+    } catch (error) {
+      console.error("Error following user:", error);
+      // Rollback
+      setFollowingStatus((prev) => ({ ...prev, [targetUserId]: false }));
+      toast.error("Không thể theo dõi");
+    }
+  }, [user]);
+
+  // Fetch follow status for all unique users in posts
+  useEffect(() => {
+    const fetchFollowStatuses = async () => {
+      if (!user?.id || posts.length === 0) return;
+
+      try {
+        const currentUserId = parseInt(user.id);
+        
+        // Get unique user IDs from posts (exclude own posts)
+        const uniqueUserIds = Array.from(
+          new Set(
+            posts
+              .map((post) => post.userId)
+              .filter((userId) => userId !== currentUserId)
+          )
+        );
+
+        // Fetch follow status for each unique user
+        const statusPromises = uniqueUserIds.map(async (targetUserId) => {
+          try {
+            const status = await communityAPI.getFollowStatus(currentUserId, targetUserId);
+            return { userId: targetUserId.toString(), status };
+          } catch (error) {
+            console.error(`Error fetching follow status for user ${targetUserId}:`, error);
+            return { userId: targetUserId.toString(), status: false };
+          }
+        });
+
+        const statuses = await Promise.all(statusPromises);
+        
+        // Build status map
+        const statusMap: Record<string, boolean> = {};
+        statuses.forEach(({ userId, status }) => {
+          statusMap[userId] = status;
+        });
+
+        setFollowingStatus(statusMap);
+      } catch (error) {
+        console.error('Error fetching follow statuses:', error);
+      }
+    };
+
+    fetchFollowStatuses();
+  }, [posts, user]);
 
   // Intersection Observer for infinite scroll
   useEffect(() => {
@@ -213,6 +290,7 @@ export function InfiniteScrollFeed({
       {sortedPosts.map((post, index) => {
         // Transform CommunityPost to UI Post format
         const uiPost = apiPostToPost(post);
+        const isFollowing = followingStatus[post.userId] ?? false;
         
         return (
           <motion.div
@@ -233,6 +311,8 @@ export function InfiniteScrollFeed({
                   reason,
                 });
               }}
+              onFollow={handleFollow}
+              isFollowing={isFollowing}
             />
           </motion.div>
         );

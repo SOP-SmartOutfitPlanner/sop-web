@@ -17,6 +17,8 @@ interface EnhancedPostCardProps {
   onReport: (reason: string) => void;
   onRequestStylist?: (post: Post) => void;
   showChallengeEntry?: boolean;
+  onFollow?: (userId: string) => void;
+  isFollowing?: boolean;
 }
 
 /**
@@ -31,6 +33,8 @@ export function EnhancedPostCard({
   onLike,
   onReport,
   showChallengeEntry,
+  onFollow,
+  isFollowing = false,
 }: EnhancedPostCardProps) {
   const { user } = useAuthStore();
 
@@ -56,6 +60,9 @@ export function EnhancedPostCard({
     currentUser.name.includes("Chen") ||
     currentUser.name.includes("Rivera") ||
     currentUser.name.includes("Patel");
+
+  // Check if this is the current user's own post
+  const isOwnPost = user?.id?.toString() === post.userId;
 
   // Handlers
   const handleLike = useCallback(() => {
@@ -105,13 +112,16 @@ export function EnhancedPostCard({
             user={{
               id: post.userId,
               name: post.userDisplayName,
-              avatar: undefined, // Will use fallback in PostHeader
+              avatar: post.userAvatarUrl, 
             }}
             timestamp={post.timestamp}
             isAuthorStylist={isAuthorStylist}
             showChallengeEntry={showChallengeEntry}
+            isOwnPost={isOwnPost}
+            isFollowing={isFollowing}
             onMessageAuthor={handleMessageAuthor}
             onReport={onReport}
+            onFollow={onFollow ? () => onFollow(post.userId) : undefined}
           />
         </div>
 
@@ -127,7 +137,7 @@ export function EnhancedPostCard({
           <PostActions
             isLiked={isLiked}
             likeCount={likeCount}
-            commentCount={post.comments.length}
+            commentCount={post.commentCount}
             onLike={handleLike}
             onComment={() => setIsCommentModalOpen(true)}
           />

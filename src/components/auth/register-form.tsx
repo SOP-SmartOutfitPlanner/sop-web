@@ -34,10 +34,6 @@ export function RegisterForm() {
     await handleRegister(data);
   };
 
-  // const handleGoogleRegister = () => {
-  //   console.log("Google register");
-  // };
-
   return (
     <div className="w-full">
       {/* Header */}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import {
   Heart,
@@ -33,16 +33,13 @@ interface PostModalProps {
  * Instagram-style post detail modal
  * Layout: Image on left, Comments/Info on right
  */
-export function PostModal({
-  post,
-  isOpen,
-  onClose,
-  onLike,
-}: PostModalProps) {
+export function PostModal({ post, isOpen, onClose, onLike }: PostModalProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [commentCount, setCommentCount] = useState(post.comments.length);
+  const [userAvatarUrl, setUserAvatarUrl] = useState<string | undefined>(
+    post.userAvatarUrl
+  );
   const { user } = useAuthStore();
-
   const hasMultipleImages = post.images.length > 1;
   const currentImage = post.images[currentImageIndex] || post.images[0];
 
@@ -57,6 +54,26 @@ export function PostModal({
       setCurrentImageIndex(currentImageIndex - 1);
     }
   };
+
+  // Fetch user avatar if not available from post
+  useEffect(() => {
+    if (!post.userAvatarUrl && isOpen) {
+      const fetchUserAvatar = async () => {
+        try {
+          const userAPI = await import("@/lib/api/user-api").then(
+            (m) => m.userAPI
+          );
+          const userData = await userAPI.getUserById(parseInt(post.userId));
+          if (userData.data.avtUrl) {
+            setUserAvatarUrl(userData.data.avtUrl);
+          }
+        } catch (error) {
+          console.error("[PostModal] Error fetching user avatar:", error);
+        }
+      };
+      fetchUserAvatar();
+    }
+  }, [post.userAvatarUrl, post.userId, isOpen]);
 
   const handlePostComment = async (comment: string) => {
     if (!user) {
@@ -97,14 +114,6 @@ export function PostModal({
         </DialogTitle>
 
         <div className="flex flex-1 h-full w-full min-h-0">
-          {/* Close button */}
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 z-50 w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center text-white transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-
           {/* Left: Image */}
           <div className="flex-1 bg-white relative flex items-center justify-center overflow-hidden">
             {currentImage ? (
@@ -191,10 +200,15 @@ export function PostModal({
             <div className="flex items-center justify-between p-4 border-b">
               <div className="flex items-center gap-3">
                 <Avatar className="w-8 h-8">
-                  <AvatarImage src={undefined} />
-                  <AvatarFallback className="text-xs bg-gradient-to-br from-primary to-accent text-white">
+                  {userAvatarUrl && (
+                    <AvatarImage
+                      src={userAvatarUrl}
+                      alt={post.userDisplayName || "User"}
+                    />
+                  )}
+                  {/* <AvatarFallback className="text-xs bg-gradient-to-br from-primary to-accent text-white">
                     {post.userDisplayName.charAt(0)}
-                  </AvatarFallback>
+                  </AvatarFallback> */}
                 </Avatar>
                 <div className="font-semibold text-sm">
                   {post.userDisplayName}
@@ -210,10 +224,15 @@ export function PostModal({
               {/* Original post caption */}
               <div className="flex gap-3 py-4 border-b">
                 <Avatar className="w-8 h-8 flex-shrink-0">
-                  <AvatarImage src={undefined} />
-                  <AvatarFallback className="text-xs bg-gradient-to-br from-primary to-accent text-white">
+                  {userAvatarUrl && (
+                    <AvatarImage
+                      src={userAvatarUrl}
+                      alt={post.userDisplayName || "User"}
+                    />
+                  )}
+                  {/* <AvatarFallback className="text-xs bg-gradient-to-br from-primary to-accent text-white">
                     {post.userDisplayName.charAt(0)}
-                  </AvatarFallback>
+                  </AvatarFallback> */}
                 </Avatar>
                 <div className="flex-1">
                   <div className="text-sm">

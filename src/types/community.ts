@@ -12,9 +12,13 @@ export interface Post {
   likes: number;
   isLiked?: boolean; // Whether current user has liked this post
   comments: Comment[];
+  commentCount: number; // Comment count from API
   timestamp: string;
   status: "visible" | "hidden" | "reported";
   reports: Report[];
+  userAvatar?: string;
+  userAvatarUrl?: string;
+  userRole?: string;
 }
 
 export interface Comment {
@@ -33,7 +37,9 @@ export interface ApiComment {
   createdDate: string;
   updatedDate: string | null;
   userDisplayName?: string;
-  userAvatar?: string;
+  userAvatarUrl?: string;
+  userRole?: string;
+  userAvatar?: string; // Keep for backward compatibility
   replies?: ApiComment[];
 }
 
@@ -66,6 +72,7 @@ export interface ApiPost {
 
 // Transform API post to UI post
 export function apiPostToPost(apiPost: CommunityPost): Post {
+
   // Images can be:
   // 1. Full URLs from MinIO: https://storage.wizlab.io.vn/sop/xxx.jpg
   // 2. Filenames from old uploads: filename.jpg
@@ -82,6 +89,8 @@ export function apiPostToPost(apiPost: CommunityPost): Post {
     id: apiPost.id.toString(),
     userId: apiPost.userId.toString(),
     userDisplayName: apiPost.userDisplayName, // Added: Post author's display name
+    userAvatar: apiPost.userAvatarUrl,
+    userAvatarUrl: apiPost.userAvatarUrl, // Avatar URL from API
     image: fullImageUrls[0] || "", // Keep first image for backward compatibility
     images: fullImageUrls, // Full array of all images
     caption: apiPost.body,
@@ -89,6 +98,7 @@ export function apiPostToPost(apiPost: CommunityPost): Post {
     likes: apiPost.likeCount,
     isLiked: apiPost.isLiked, // Whether current user has liked this post
     comments: [], // Comments will be loaded separately
+    commentCount: apiPost.commentCount, // Comment count from API
     timestamp: apiPost.createdAt,
     status: "visible",
     reports: [],
