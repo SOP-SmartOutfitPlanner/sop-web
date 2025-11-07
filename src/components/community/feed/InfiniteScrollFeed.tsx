@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import { EnhancedPostCard } from "@/components/community/post/EnhancedPostCard";
@@ -69,54 +69,58 @@ export function InfiniteScrollFeed({
     };
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  // Filter posts based on search, tags, and time
-  const filteredPosts = posts.filter((post) => {
-    // Search filter
-    if (searchQuery) {
-      const matchesSearch =
-        post.body.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        post.hashtags.some((tag) =>
-          tag.name.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-      if (!matchesSearch) return false;
-    }
+  // ✅ OPTIMIZED: Memoize filtered posts - only recompute when dependencies change
+  const filteredPosts = useMemo(() => {
+    return posts.filter((post) => {
+      // Search filter
+      if (searchQuery) {
+        const matchesSearch =
+          post.body.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          post.hashtags.some((tag) =>
+            tag.name.toLowerCase().includes(searchQuery.toLowerCase())
+          );
+        if (!matchesSearch) return false;
+      }
 
-    // Tag filter
-    if (selectedTag && !post.hashtags.some((tag) => tag.name === selectedTag)) {
-      return false;
-    }
+      // Tag filter
+      if (selectedTag && !post.hashtags.some((tag) => tag.name === selectedTag)) {
+        return false;
+      }
 
-    // Time filter
-    if (timeFilter !== "all") {
-      const now = new Date();
-      const postDate = new Date(post.createdAt);
-      const diffMs = now.getTime() - postDate.getTime();
-      
-      const filterTime =
-        timeFilter === "week"
-          ? 7 * 24 * 60 * 60 * 1000
-          : timeFilter === "month"
-          ? 30 * 24 * 60 * 60 * 1000
-          : 24 * 60 * 60 * 1000; // today
+      // Time filter
+      if (timeFilter !== "all") {
+        const now = new Date();
+        const postDate = new Date(post.createdAt);
+        const diffMs = now.getTime() - postDate.getTime();
+        
+        const filterTime =
+          timeFilter === "week"
+            ? 7 * 24 * 60 * 60 * 1000
+            : timeFilter === "month"
+            ? 30 * 24 * 60 * 60 * 1000
+            : 24 * 60 * 60 * 1000; // today
 
-      if (diffMs > filterTime) return false;
-    }
+        if (diffMs > filterTime) return false;
+      }
 
-    return true;
-  });
+      return true;
+    });
+  }, [posts, searchQuery, selectedTag, timeFilter]);
 
-  // Sort based on active tab
-  const sortedPosts = [...filteredPosts].sort((a, b) => {
-    if (activeTab === "trending") {
-      // Sort by engagement (likes + comments * 2)
-      const scoreA = a.likeCount + a.commentCount * 2;
-      const scoreB = b.likeCount + b.commentCount * 2;
-      return scoreB - scoreA;
-    } else {
-      // Sort by date (latest first)
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    }
-  });
+  // ✅ OPTIMIZED: Memoize sorted posts - only resort when filtered posts or tab changes
+  const sortedPosts = useMemo(() => {
+    return [...filteredPosts].sort((a, b) => {
+      if (activeTab === "trending") {
+        // Sort by engagement (likes + comments * 2)
+        const scoreA = a.likeCount + a.commentCount * 2;
+        const scoreB = b.likeCount + b.commentCount * 2;
+        return scoreB - scoreA;
+      } else {
+        // Sort by date (latest first)
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      }
+    });
+  }, [filteredPosts, activeTab]);
 
   // Get current user for EnhancedPostCard
   const currentUser = user
@@ -199,11 +203,11 @@ export function InfiniteScrollFeed({
   return (
     <div className="space-y-6">
       {/* Feed metadata */}
-      {metadata && (
+      {/* {metadata && (
         <div className="text-sm text-muted-foreground text-center py-2">
           Showing {sortedPosts.length} of {metadata.totalCount} posts
         </div>
-      )}
+      )} */}
 
       {/* Posts */}
       {sortedPosts.map((post, index) => {

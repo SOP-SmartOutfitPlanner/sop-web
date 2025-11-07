@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Post, CommunityUser } from "@/types/community";
 import { UserMini } from "@/types/chat";
@@ -19,6 +19,12 @@ interface EnhancedPostCardProps {
   showChallengeEntry?: boolean;
 }
 
+/**
+ * ✅ OPTIMIZED: Removed duplicate state management
+ * - Removed local isLiked/likeCount state (use props directly)
+ * - Removed useEffect sync (no longer needed)
+ * - Removed useMemo for trivial computations
+ */
 export function EnhancedPostCard({
   post,
   currentUser,
@@ -28,35 +34,28 @@ export function EnhancedPostCard({
 }: EnhancedPostCardProps) {
   const { user } = useAuthStore();
 
-  // State - Use post props directly with local state for optimistic updates
-  const [isLiked, setIsLiked] = useState(post.isLiked ?? false);
-  const [likeCount, setLikeCount] = useState(post.likes);
+  // ✅ Only UI state (not data state - React Query manages data)
   const [isLiking, setIsLiking] = useState(false);
   const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
   const [selectedStylist, setSelectedStylist] = useState<UserMini | null>(null);
 
-  // Sync isLiked and likeCount state with post prop when it changes from React Query
-  // This ensures UI updates when mutation invalidates the query
-  useEffect(() => {
-    setIsLiked(post.isLiked ?? false);
-    setLikeCount(post.likes);
-  }, [post.isLiked, post.likes, post.id]); // Add post.id to deps to ensure update on refetch
+  // ✅ Use post props directly (managed by React Query optimistic updates)
+  const isLiked = post.isLiked ?? false;
+  const likeCount = post.likes;
 
-  // Computed values
-  const images = useMemo(
-    () =>
-      post.images?.length > 0 ? post.images : post.image ? [post.image] : [],
-    [post.images, post.image]
-  );
+  // ✅ Simple computations (no useMemo overhead needed)
+  const images = post.images?.length > 0 
+    ? post.images 
+    : post.image 
+    ? [post.image] 
+    : [];
 
-  const isAuthorStylist = useMemo(
-    () =>
-      currentUser.name.includes("Chen") ||
-      currentUser.name.includes("Rivera") ||
-      currentUser.name.includes("Patel"),
-    [currentUser.name]
-  );
+  // ✅ Simple check (no useMemo needed for trivial computation)
+  const isAuthorStylist =
+    currentUser.name.includes("Chen") ||
+    currentUser.name.includes("Rivera") ||
+    currentUser.name.includes("Patel");
 
   // Handlers
   const handleLike = useCallback(() => {
