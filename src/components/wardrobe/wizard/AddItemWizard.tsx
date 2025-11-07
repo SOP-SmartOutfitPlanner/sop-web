@@ -76,8 +76,12 @@ export function AddItemWizard({
   const { addTask, updateTask, removeTask } = useUploadStore();
   const { categories, styles, seasons, occasions } = useWardrobeOptions();
 
+  // Initialize form state on dialog open
   useEffect(() => {
-    if (editMode && editItem && open && status === STATUS.IDLE) {
+    if (!open || status !== STATUS.IDLE) return;
+
+    if (editMode && editItem) {
+      // Edit mode: load existing item data
       const transformedData = apiItemToFormData(editItem);
       const finalFormData = { ...INITIAL_FORM_DATA, ...transformedData };
       setFormData(finalFormData);
@@ -86,11 +90,8 @@ export function AddItemWizard({
       );
       setStatus(STATUS.FORM);
       setHasChanges(false);
-    }
-  }, [editMode, editItem, open, status]);
-
-  useEffect(() => {
-    if (open && !editMode && !editItem && status === STATUS.IDLE) {
+    } else {
+      // Create mode: reset to initial state
       setFormData(INITIAL_FORM_DATA);
       setAiSuggestions(null);
       setSelectedFile(null);

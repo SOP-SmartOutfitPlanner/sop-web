@@ -104,6 +104,32 @@ class CommunityAPI {
   }
 
   /**
+   * Get posts by specific user
+   * API: GET /posts/user/{userId}
+   */
+  async getPostsByUser(
+    userId: number,
+    page: number = 1,
+    pageSize: number = 10
+  ): Promise<FeedResponse> {
+    const response = await apiClient.get(`${this.BASE_PATH}/user/${userId}`, {
+      params: {
+        "page-index": page,
+        "page-size": pageSize,
+      },
+    });
+
+    const feedData = response.data;
+    
+    if (!feedData || !feedData.metaData) {
+      console.error("Invalid API response structure:", response.data);
+      throw new Error("Invalid API response structure");
+    }
+    
+    return feedData;
+  }
+
+  /**
    * Create a new post
    */
   async createPost(postData: CreatePostRequest): Promise<CommunityPost> {
@@ -272,6 +298,94 @@ class CommunityAPI {
     const uploadPromises = files.map((file) => this.uploadImage(file));
     const results = await Promise.all(uploadPromises);
     return results.map((result) => result.downloadUrl);
+  }
+
+  /**
+   * Follow a user
+   * API: POST /followers
+   */
+  async followUser(
+    followerId: number,
+    followingId: number
+  ): Promise<{
+    id: number;
+    followerId: number;
+    followingId: number;
+    createdDate: string;
+  }> {
+    const response = await apiClient.post<
+      ApiResponse<{
+        id: number;
+        followerId: number;
+        followingId: number;
+        createdDate: string;
+      }>
+    >("/followers", {
+      followerId,
+      followingId,
+    });
+
+    return response.data;
+  }
+
+  /**
+   * Unfollow a user (using DELETE or POST - check API docs)
+   * API: DELETE /followers or POST /followers/unfollow
+   */
+  async unfollowUser(
+    followerId: number,
+    followingId: number
+  ): Promise<void> {
+    // If API uses DELETE with query params
+    await apiClient.delete("/followers", {
+      data: { followerId, followingId },
+    });
+  }
+
+  /**
+   * Get follower count for a user
+   * API: GET /followers/count/followers/{userId}
+   */
+  async getFollowerCount(userId: number): Promise<number> {
+    const response = await apiClient.get<
+      ApiResponse<{ count: number }>
+    >(`/followers/count/followers/${userId}`);
+
+    return response.data.count;
+  }
+
+  /**
+   * Get following count for a user
+   * API: GET /followers/count/following/{userId}
+   */
+  async getFollowingCount(userId: number): Promise<number> {
+    const response = await apiClient.get<
+      ApiResponse<{ count: number }>
+    >(`/followers/count/following/${userId}`);
+
+    return response.data.count;
+  }
+
+  /**
+   * Check if current user is following another user
+   * API: GET /followers/is-following?followerId={}&followingId={}
+   */
+  async isFollowing(
+    followerId: number,
+    followingId: number
+  ): Promise<boolean> {
+    try {
+      const response = await apiClient.get<
+        ApiResponse<{ isFollowing: boolean }>
+      >("/followers/is-following", {
+        params: { followerId, followingId },
+      });
+
+      return response.data.isFollowing;
+    } catch {
+      // If API doesn't have this endpoint, return false
+      return false;
+    }
   }
 }
 

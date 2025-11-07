@@ -3,28 +3,38 @@
  * Centralized exports for all community-related components
  */
 
-// Layout & Structure
-export { CommunityLayout } from "./CommunityLayout";
-export { CommunityHeader } from "./CommunityHeader";
-export { CommunityFilters } from "./CommunityFilters";
-export { LoadingScreen } from "./LoadingScreen";
+// ===========================
+// Layout Components
+// ===========================
+export * from "./layout";
 
+// ===========================
 // Feed Components
-export { InfiniteScrollFeed } from "./InfiniteScrollFeed";
-export { EnhancedPostCard } from "./EnhancedPostCard";
-export { PostSkeleton } from "./PostSkeleton";
+// ===========================
+export * from "./feed";
 
+// ===========================
 // Filter Components
-export { StatsBar } from "./StatsBar";
-export { HashtagCloud } from "./HashtagCloud";
-export { CommunityTabs } from "./CommunityTabs";
-export { SearchFilters } from "./SearchFilters";
+// ===========================
+export * from "./filters";
 
-// Post Creation
+// ===========================
+// Post Components
+// ===========================
+export * from "./post";
+
+// ===========================
+// Comment Components
+// ===========================
+export * from "./comment";
+
+// ===========================
+// Profile Components
+// ===========================
+export * from "./profile";
+
+// ===========================
+// Post Creation Dialog (Root Level)
+// ===========================
 export { NewPostDialog } from "./NewPostDialog";
 
-// Comments
-export { default as CommentSection } from "./CommentSection";
-
-// Sidebar
-export { Sidebar } from "./Sidebar";

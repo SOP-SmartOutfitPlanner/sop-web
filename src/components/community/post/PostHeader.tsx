@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -31,14 +32,20 @@ export function PostHeader({
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-3">
-        <Avatar className="w-10 h-10">
-          <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white font-semibold">
-            {user.name.charAt(0).toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
+        <Link href={`/community/profile/${user.id}`}>
+          <Avatar className="w-10 h-10 cursor-pointer hover:opacity-80 transition-opacity">
+            <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white font-semibold">
+              {user.name.charAt(0).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+        </Link>
         <div>
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="font-medium text-foreground">{user.name}</p>
+            <Link href={`/community/profile/${user.id}`}>
+              <p className="font-medium text-foreground hover:underline cursor-pointer">
+                {user.name}
+              </p>
+            </Link>
             {isAuthorStylist && (
               <Badge
                 variant="secondary"
@@ -94,8 +101,6 @@ export function PostHeader({
             <DropdownMenuItem onClick={() => onReport("inappropriate")}>
               Report
             </DropdownMenuItem>
-            <DropdownMenuItem>Hide</DropdownMenuItem>
-            <DropdownMenuItem>Copy link</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

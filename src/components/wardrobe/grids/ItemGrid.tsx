@@ -3,9 +3,9 @@
 import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { Package } from "lucide-react";
-import { ItemCard } from "./item-card";
+import { ItemCard } from "./ItemCard";
 import { useWardrobeStore } from "@/store/wardrobe-store";
-import { Skeleton } from "../ui/skeleton";
+import { Skeleton } from "../../ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { WardrobeItem } from "@/types";

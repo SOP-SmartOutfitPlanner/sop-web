@@ -1,9 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Reply } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { communityAPI } from "@/lib/api/community-api";
 import { useAuthStore } from "@/store/auth-store";
@@ -54,30 +52,35 @@ function CommentItem({ comment, postId, onNewReply, replies = [] }: CommentItemP
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {/* Main Comment */}
-      <div className="flex space-x-3">
-        <Avatar className="h-8 w-8">
-          <AvatarFallback className="text-xs">
+      <div className="flex gap-3">
+        <Avatar className="w-8 h-8 flex-shrink-0">
+          <AvatarFallback className="text-xs bg-gradient-to-br from-blue-500 to-purple-500 text-white">
             {comment.userDisplayName?.charAt(0)?.toUpperCase() || comment.userId.toString().charAt(0)}
           </AvatarFallback>
         </Avatar>
-        <div className="flex-1 space-y-1">
-          <div className="bg-gray-50 rounded-lg px-3 py-2">
-            <p className="font-medium text-sm text-gray-900">
+        <div className="flex-1 min-w-0">
+          <div className="text-sm">
+            <span className="font-semibold mr-2">
               {comment.userDisplayName || `User ${comment.userId}`}
-            </p>
-            <p className="text-sm text-gray-700">{comment.comment}</p>
+            </span>
+            <span className="text-foreground break-words">{comment.comment}</span>
           </div>
-          <div className="flex items-center space-x-4 text-xs text-gray-500">
-            <span>{new Date(comment.createdDate).toLocaleDateString()}</span>
+          <div className="flex items-center gap-3 mt-1">
+            <span className="text-xs text-muted-foreground">
+              {new Date(comment.createdDate).toLocaleDateString('vi-VN', { 
+                month: 'short', 
+                day: 'numeric',
+                year: 'numeric'
+              })}
+            </span>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setShowReplyForm(!showReplyForm)}
-              className="h-auto p-0 text-xs text-gray-500 hover:text-blue-600"
+              className="h-auto p-0 text-xs text-muted-foreground hover:text-foreground font-semibold hover:bg-transparent"
             >
-              <Reply className="w-3 h-3 mr-1" />
               Reply
             </Button>
           </div>
@@ -86,23 +89,36 @@ function CommentItem({ comment, postId, onNewReply, replies = [] }: CommentItemP
 
       {/* Replies */}
       {replies.length > 0 && (
-        <div className="ml-11 space-y-3">
+        <div className="ml-11 space-y-2">
           {replies.map((reply) => (
-            <div key={reply.id} className="flex space-x-3">
-              <Avatar className="h-6 w-6">
-                <AvatarFallback className="text-xs">
+            <div key={reply.id} className="flex gap-3">
+              <Avatar className="w-6 h-6 flex-shrink-0">
+                <AvatarFallback className="text-xs bg-gradient-to-br from-blue-400 to-purple-400 text-white">
                   {reply.userDisplayName?.charAt(0)?.toUpperCase() || "U"}
                 </AvatarFallback>
               </Avatar>
-              <div className="flex-1">
-                <div className="bg-gray-50 rounded-lg px-3 py-2">
-                  <p className="font-medium text-xs text-gray-900">
+              <div className="flex-1 min-w-0">
+                <div className="text-sm">
+                  <span className="font-semibold mr-2">
                     {reply.userDisplayName || "User"}
-                  </p>
-                  <p className="text-sm text-gray-700">{reply.comment}</p>
+                  </span>
+                  <span className="text-foreground break-words">{reply.comment}</span>
                 </div>
-                <div className="flex items-center space-x-4 text-xs text-gray-500 mt-1">
-                  <span>{new Date(reply.createdDate).toLocaleDateString()}</span>
+                <div className="flex items-center gap-3 mt-1">
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(reply.createdDate).toLocaleDateString('vi-VN', { 
+                      month: 'short', 
+                      day: 'numeric',
+                      year: 'numeric'
+                    })}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-auto p-0 text-xs text-muted-foreground hover:text-foreground font-semibold hover:bg-transparent"
+                  >
+                    Reply
+                  </Button>
                 </div>
               </div>
             </div>
@@ -112,47 +128,38 @@ function CommentItem({ comment, postId, onNewReply, replies = [] }: CommentItemP
 
       {/* Reply Form */}
       {showReplyForm && (
-        <div className="ml-11">
-          <div className="flex space-x-2">
-            <Avatar className="h-6 w-6">
-              <AvatarFallback className="text-xs">
-                {user?.displayName?.charAt(0)?.toUpperCase() || "U"}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 space-y-2">
-              <Textarea
-                placeholder="Write a reply..."
-                value={replyText}
-                onChange={(e) => setReplyText(e.target.value)}
-                className="min-h-[60px] text-sm resize-none"
-              />
-              <div className="flex justify-end space-x-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setShowReplyForm(false);
-                    setReplyText("");
-                  }}
-                  className="text-xs"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={handleReply}
-                  disabled={!replyText.trim() || isSubmitting}
-                  className="text-xs"
-                >
-                  {isSubmitting ? (
-                    <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin mr-1" />
-                  ) : (
-                    <Reply className="w-3 h-3 mr-1" />
-                  )}
-                  Reply
-                </Button>
-              </div>
-            </div>
+        <div className="ml-11 flex gap-2">
+          <Avatar className="w-6 h-6 flex-shrink-0">
+            <AvatarFallback className="text-xs bg-gradient-to-br from-blue-500 to-purple-500 text-white">
+              {user?.displayName?.charAt(0)?.toUpperCase() || "U"}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 flex items-center gap-2">
+            <input
+              type="text"
+              placeholder="Add a reply..."
+              value={replyText}
+              onChange={(e) => setReplyText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleReply();
+                }
+              }}
+              className="flex-1 outline-none bg-transparent text-sm placeholder:text-muted-foreground"
+              autoFocus
+            />
+            {replyText.trim() && (
+              <Button
+                size="sm"
+                onClick={handleReply}
+                disabled={isSubmitting}
+                variant="ghost"
+                className="h-auto p-0 text-xs text-primary font-semibold hover:bg-transparent"
+              >
+                {isSubmitting ? "..." : "Post"}
+              </Button>
+            )}
           </div>
         </div>
       )}
@@ -236,10 +243,10 @@ export default function CommentSection({ postId, onCommentCountChange }: Comment
   return (
     <div className="flex flex-col h-full">
       {/* Comments List - Scrollable */}
-      <div className="flex-1 overflow-y-auto space-y-4 pb-4">
+      <div className="flex-1 overflow-y-auto space-y-4">
         {isLoading ? (
           <div className="flex justify-center py-4">
-            <div className="w-6 h-6 border border-gray-300 border-t-blue-600 rounded-full animate-spin" />
+            <div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin" />
           </div>
         ) : parentComments.length > 0 ? (
           <>
@@ -254,7 +261,7 @@ export default function CommentSection({ postId, onCommentCountChange }: Comment
             ))}
           </>
         ) : (
-          <p className="text-center text-gray-500 py-4">
+          <p className="text-center text-muted-foreground text-sm py-8">
             No comments yet. Be the first to comment!
           </p>
         )}

@@ -1,15 +1,10 @@
 import { useState, useRef } from "react";
 import Image from "next/image";
-import { Upload, Sparkles, Check, X, Crop } from "lucide-react";
+import { Upload, X, Crop } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import { wardrobeAPI } from "@/lib/api/wardrobe-api";
-import {
-  parseAIResponseToFormData,
-  base64ToFile,
-} from "@/lib/utils/ai-suggestions-parser";
-import { ImageCropper } from "@/components/wardrobe/image-cropper";
+import { ImageCropper } from "@/components/wardrobe/upload";
 import type { WizardFormData, AISuggestions } from "./types";
 
 interface StepPhotoAIProps {
@@ -17,7 +12,7 @@ interface StepPhotoAIProps {
   updateFormData: (updates: Partial<WizardFormData>) => void;
   aiSuggestions: AISuggestions | null;
   setAiSuggestions: (suggestions: AISuggestions | null) => void;
-  // New props for external file handling
+  // Props for external file handling (new flow)
   onFileSelect?: (file: File) => void;
   onClearFile?: () => void;
   selectedFile?: File | null;
@@ -30,11 +25,9 @@ export function StepPhotoAI({
   setAiSuggestions,
   onFileSelect,
   onClearFile,
-  selectedFile: _selectedFile,
   previewUrl,
 }: StepPhotoAIProps) {
   const [isDragging, setIsDragging] = useState(false);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [tempImage, setTempImage] = useState<string | null>(null);
   const [showCropper, setShowCropper] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -89,33 +82,6 @@ export function StepPhotoAI({
         if (file) handleFileSelect(file);
         break;
       }
-    }
-  };
-
-  const handleAIAnalyze = async () => {
-    // In new flow, this button is not used (analysis is triggered externally)
-    if (onFileSelect) return;
-
-    if (!formData.uploadedImageURL) return;
-
-    setIsAnalyzing(true);
-
-    try {
-      // Convert base64 to file
-      const file = await base64ToFile(formData.uploadedImageURL, "item.jpg");
-
-      // Call AI analysis API
-      const response = await wardrobeAPI.getImageSummary(file);
-
-      // Save AI response (wardrobeAPI already returns the data object)
-      setAiSuggestions(response);
-
-      toast.success("Analysis successful! ✅");
-    } catch (error) {
-      console.error("AI analysis failed:", error);
-      toast.error("Cannot analyze image. Please try again.");
-    } finally {
-      setIsAnalyzing(false);
     }
   };
 
@@ -219,26 +185,6 @@ export function StepPhotoAI({
               </div>
             )}
           </div>
-
-          {formData.uploadedImageURL && (
-            <Button
-              className="w-full"
-              onClick={handleAIAnalyze}
-              disabled={isAnalyzing}
-            >
-              {isAnalyzing ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                  Đang phân tích...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Phân tích bằng AI
-                </>
-              )}
-            </Button>
-          )}
         </div>
 
         {/* Preview & AI Suggestions */}
@@ -259,34 +205,5 @@ export function StepPhotoAI({
         </div>
       </div>
     </>
-  );
-}
-
-function SuggestionRow({
-  label,
-  value,
-  onApply,
-}: {
-  label: string;
-  value: string;
-  onApply: () => void;
-}) {
-  return (
-    <div className="flex items-center justify-between p-2 rounded bg-background border">
-      <div className="flex items-center gap-2 flex-1">
-        <span className="text-xs font-medium text-muted-foreground min-w-20">
-          {label}:
-        </span>
-        <span className="text-sm">{value}</span>
-      </div>
-      <Button
-        size="sm"
-        variant="ghost"
-        onClick={onApply}
-        className="h-7 w-7 p-0"
-      >
-        <Check className="w-3 h-3" />
-      </Button>
-    </div>
   );
 }

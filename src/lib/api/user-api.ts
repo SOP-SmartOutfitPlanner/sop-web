@@ -114,6 +114,23 @@ class UserAPI {
     }
   }
 
+  /**
+   * Get user by ID
+   * API: GET /user/{userId}
+   */
+  async getUserById(userId: number): Promise<ApiResponse<UserProfileResponse>> {
+    try {
+      const response = await apiClient.get<ApiResponse<UserProfileResponse>>(
+        `${this.BASE_PATH}/${userId}`
+      );
+
+      return response;
+    } catch (error) {
+      console.error("Failed to fetch user by ID:", error);
+      throw error;
+    }
+  }
+
 }
 
 export const userAPI = new UserAPI();

@@ -7,7 +7,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useInView } from "react-intersection-observer";
-import { ItemCard } from "./item-card";
+import { ItemCard } from "./ItemCard";
 import { WardrobeItem } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
