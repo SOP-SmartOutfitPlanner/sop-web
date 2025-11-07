@@ -12,7 +12,7 @@ import { OnboardingDialog } from "@/components/wardrobe/onboarding-dialog";
 export function OnboardingProvider({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, user, isInitialized, isFirstTime, setIsFirstTime } = useAuthStore();
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
-  const [isChecking, setIsChecking] = useState(false);
+  const [hasChecked, setHasChecked] = useState(false);
 
   useEffect(() => {
     // Only check onboarding when:
@@ -20,19 +20,19 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     // 2. User is authenticated
     // 3. User exists
     // 4. We haven't already checked
-    if (!isInitialized || !isAuthenticated || !user || isChecking) {
+    if (!isInitialized || !isAuthenticated || !user || hasChecked) {
       return;
     }
 
     // If we already know the user is first time from the store, show modal immediately
     if (isFirstTime) {
       setIsOnboardingOpen(true);
+      setHasChecked(true);
       return;
     }
 
-    // Otherwise, check with the API
+    // Otherwise, check with the API (only once)
     const checkOnboarding = async () => {
-      setIsChecking(true);
       try {
         const profileResponse = await userAPI.getUserProfile();
         const needsOnboarding = profileResponse.data.isFirstTime;
@@ -44,12 +44,12 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
       } catch (error) {
         console.error("Failed to check onboarding status:", error);
       } finally {
-        setIsChecking(false);
+        setHasChecked(true);
       }
     };
 
     checkOnboarding();
-  }, [isAuthenticated, user, isInitialized, isFirstTime, isChecking, setIsFirstTime]);
+  }, [isAuthenticated, user, isInitialized, isFirstTime, hasChecked, setIsFirstTime]);
 
   const handleOnboardingComplete = (open: boolean) => {
     setIsOnboardingOpen(open);
