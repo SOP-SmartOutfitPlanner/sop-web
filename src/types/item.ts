@@ -1,3 +1,5 @@
+import { PaginationMetaData } from "@/lib/api";
+
 export interface Item{
     id: number;
     userId: number;
@@ -43,14 +45,7 @@ export interface ItemsListResponse {
     message: string;
     data:{
         data: Item[];
-        metaData: {
-        totalCount: number;
-        pageSize: number;
-        currentPage: number;
-        totalPages: number;
-        hasNext: boolean;
-        hasPrevious: boolean;
+        metaData: PaginationMetaData;
     };
     }
-}
    

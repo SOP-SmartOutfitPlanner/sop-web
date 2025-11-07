@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Search, Plus, Eye, Trash2, Loader2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
-import { useAdminItems } from "@/hooks/useAdminItem";
+import { useAdminItems } from "@/hooks/admin/useAdminItem";
 import Image from "next/image";
 
 export default function AdminItemsPage() {
@@ -70,10 +70,10 @@ export default function AdminItemsPage() {
             Manage all user wardrobe items
           </p>
         </div>
-        <Button className="bg-blue-600 hover:bg-blue-700">
+        {/* <Button className="bg-blue-600 hover:bg-blue-700">
           <Plus className="w-4 h-4 mr-2" />
           Add Item
-        </Button>
+        </Button> */}
       </div>
 
       {/* Stats */}

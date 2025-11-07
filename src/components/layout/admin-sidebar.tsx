@@ -36,15 +36,30 @@ const menuItems = [
     href: "/admin/categories",
   },
   {
-    title: "Thống kê",
-    icon: BarChart3,
-    href: "/admin/analytics",
+    title: "Occasions",
+    icon: Tags,
+    href: "/admin/occasion",
   },
   {
-    title: "Cài đặt",
-    icon: Settings,
-    href: "/admin/settings",
+    title: "Seasons",
+    icon: Tags,
+    href: "/admin/seasons",
   },
+  {
+    title: "Styles",
+    icon: Tags,
+    href: "/admin/styles",
+  }
+  // {
+  //   title: "Thống kê",
+  //   icon: BarChart3,
+  //   href: "/admin/analytics",
+  // },
+  // {
+  //   title: "Cài đặt",
+  //   icon: Settings,
+  //   href: "/admin/settings",
+  // },
 ];
 
 export function AdminSidebar() {

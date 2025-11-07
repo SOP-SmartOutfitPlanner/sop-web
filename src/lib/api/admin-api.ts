@@ -7,6 +7,14 @@ import { apiClient } from "./client";
 import type { ApiResponse } from "@/lib/types/api.types";
 import { ApiItemsResponse, ApiWardrobeItem } from "./wardrobe-api";
 import { ItemsListRequest, ItemsListResponse } from "@/types/item";
+import { 
+  OccasionsListRequest, 
+  OccasionsListResponse, 
+  CreateOccasionRequest,
+  CreateOccasionResponse,
+  UpdateOccasionRequest, 
+  UpdateOccasionResponse 
+} from "@/types/occasion";
 
 // ============================================================================
 // Types
@@ -252,5 +260,34 @@ export const adminAPI = {
     }
     
     return apiClient.get<ItemsListResponse>(`/items`, { params });
-  }
-};
+  },
+  getOccasions: async (data: OccasionsListRequest): Promise<OccasionsListResponse> => {
+    // Transform PascalCase params to kebab-case as required by API
+    const params: Record<string, string | number | boolean> = {
+      'page-index': data.PageIndex,
+      'page-size': data.PageSize,
+    };
+    
+    if (data.Search) {
+      params['search'] = data.Search;
+    }
+    
+    if (data.takeAll !== undefined) {
+      params['take-all'] = data.takeAll;
+    }
+    
+    return apiClient.get<OccasionsListResponse>(`/occasions`, { params });
+  },
+  createOccasion: async (data: CreateOccasionRequest): Promise<CreateOccasionResponse> => {
+    return apiClient.post<CreateOccasionResponse>(`/occasions`, data);
+  },
+  editOccasion: async (data: UpdateOccasionRequest): Promise<UpdateOccasionResponse> => {
+    return apiClient.put<UpdateOccasionResponse>(`/occasions`, { 
+      id: data.id, 
+      name: data.name 
+    });
+  },
+  deleteOccasion: async (id: number): Promise<ApiResponse<void>> => {
+    return apiClient.delete<ApiResponse<void>>(`/occasions/${id}`);
+  },
+}

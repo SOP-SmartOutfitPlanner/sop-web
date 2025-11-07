@@ -50,7 +50,7 @@ import {
   useDeleteCategory,
   useBulkDeleteCategories,
   useCategoryStats,
-} from "@/hooks/useAdminCategories";
+} from "@/hooks/admin/useAdminCategories";
 import type { Category } from "@/lib/api/admin-api";
 import { toast } from "sonner";
 
@@ -155,7 +155,7 @@ export default function AdminCategoriesPage() {
 
   const handleCreate = async () => {
     if (!formName.trim()) {
-      toast.error("Vui lòng nhập tên category");
+      toast.error("Please enter category name");
       return;
     }
 
@@ -164,12 +164,12 @@ export default function AdminCategoriesPage() {
         name: formName,
         parentId: formParentId === "null" ? null : parseInt(formParentId),
       });
-      toast.success("Tạo category thành công!");
+      toast.success("Category created successfully!");
       setIsCreateOpen(false);
       setFormName("");
       setFormParentId("null");
     } catch {
-      toast.error("Có lỗi xảy ra khi tạo category");
+      toast.error("An error occurred while creating category");
     }
   };
 
@@ -184,13 +184,13 @@ export default function AdminCategoriesPage() {
           parentId: formParentId === "null" ? null : parseInt(formParentId),
         },
       });
-      toast.success("Cập nhật category thành công!");
+      toast.success("Category updated successfully!");
       setIsEditOpen(false);
       setSelectedCategory(null);
       setFormName("");
       setFormParentId("null");
     } catch {
-      toast.error("Có lỗi xảy ra khi cập nhật category");
+      toast.error("An error occurred while updating category");
     }
   };
 
@@ -199,11 +199,11 @@ export default function AdminCategoriesPage() {
 
     try {
       await deleteMutation.mutateAsync(selectedCategory.id);
-      toast.success("Xóa category thành công!");
+      toast.success("Category deleted successfully!");
       setIsDeleteOpen(false);
       setSelectedCategory(null);
     } catch {
-      toast.error("Có lỗi xảy ra khi xóa category");
+      toast.error("An error occurred while deleting category");
     }
   };
 
@@ -212,11 +212,11 @@ export default function AdminCategoriesPage() {
 
     try {
       await bulkDeleteMutation.mutateAsync(Array.from(selectedIds));
-      toast.success(`Đã xóa ${selectedIds.size} categories!`);
+      toast.success(`Deleted ${selectedIds.size} categories successfully!`);
       setIsBulkDeleteOpen(false);
       setSelectedIds(new Set());
     } catch {
-      toast.error("Có lỗi xảy ra khi xóa categories");
+      toast.error("An error occurred while deleting categories");
     }
   };
 
@@ -331,7 +331,7 @@ export default function AdminCategoriesPage() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600">Đang tải categories...</p>
+          <p className="text-gray-600">Loading categories...</p>
         </div>
       </div>
     );
@@ -343,10 +343,10 @@ export default function AdminCategoriesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">
-            Quản lý Categories
+            Category Management
           </h1>
           <p className="text-gray-600 mt-2">
-            Quản lý danh mục sản phẩm và phân loại
+            Manage product categories and classifications
           </p>
         </div>
         <Button
@@ -358,7 +358,7 @@ export default function AdminCategoriesPage() {
           className="bg-blue-600 hover:bg-blue-700"
         >
           <Plus className="w-4 h-4 mr-2" />
-          Thêm Category
+          Add Category
         </Button>
       </div>
 
@@ -442,18 +442,17 @@ export default function AdminCategoriesPage() {
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Tạo Category Mới</DialogTitle>
+            <DialogTitle>Create New Category</DialogTitle>
             <DialogDescription>
-              Thêm category mới vào hệ thống. Chọn parent nếu đây là
-              subcategory.
+              Add a new category to the system. Select a parent if this is a subcategory.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Tên Category</Label>
+              <Label htmlFor="name">Category Name</Label>
               <Input
                 id="name"
-                placeholder="Nhập tên category..."
+                placeholder="Enter category name..."
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
               />
@@ -462,7 +461,7 @@ export default function AdminCategoriesPage() {
               <Label htmlFor="parent">Parent Category</Label>
               <Select value={formParentId} onValueChange={setFormParentId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Chọn parent category" />
+                  <SelectValue placeholder="Select parent category" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="null">None (Root Category)</SelectItem>
@@ -477,16 +476,16 @@ export default function AdminCategoriesPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
-              Hủy
+              Cancel
             </Button>
             <Button onClick={handleCreate} disabled={createMutation.isPending}>
               {createMutation.isPending ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Đang tạo...
+                  Creating...
                 </>
               ) : (
-                "Tạo"
+                "Create"
               )}
             </Button>
           </DialogFooter>
@@ -497,15 +496,15 @@ export default function AdminCategoriesPage() {
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Chỉnh sửa Category</DialogTitle>
-            <DialogDescription>Cập nhật thông tin category</DialogDescription>
+            <DialogTitle>Edit Category</DialogTitle>
+            <DialogDescription>Update category information</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-name">Tên Category</Label>
+              <Label htmlFor="edit-name">Category Name</Label>
               <Input
                 id="edit-name"
-                placeholder="Nhập tên category..."
+                placeholder="Enter category name..."
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
               />
@@ -514,7 +513,7 @@ export default function AdminCategoriesPage() {
               <Label htmlFor="edit-parent">Parent Category</Label>
               <Select value={formParentId} onValueChange={setFormParentId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Chọn parent category" />
+                  <SelectValue placeholder="Select parent category" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="null">None (Root Category)</SelectItem>
@@ -531,16 +530,16 @@ export default function AdminCategoriesPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditOpen(false)}>
-              Hủy
+              Cancel
             </Button>
             <Button onClick={handleEdit} disabled={updateMutation.isPending}>
               {updateMutation.isPending ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Đang lưu...
+                  Saving...
                 </>
               ) : (
-                "Lưu"
+                "Save"
               )}
             </Button>
           </DialogFooter>
@@ -551,15 +550,14 @@ export default function AdminCategoriesPage() {
       <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
+            <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
             <AlertDialogDescription>
-              Bạn có chắc muốn xóa category{" "}
-              <strong>{selectedCategory?.name}</strong>? Hành động này không thể
-              hoàn tác.
+              Are you sure you want to delete the category{" "}
+              <strong>{selectedCategory?.name}</strong>? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Hủy</AlertDialogCancel>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-red-600 hover:bg-red-700"
@@ -568,10 +566,10 @@ export default function AdminCategoriesPage() {
               {deleteMutation.isPending ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Đang xóa...
+                  Deleting...
                 </>
               ) : (
-                "Xóa"
+                "Delete"
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -582,15 +580,15 @@ export default function AdminCategoriesPage() {
       <AlertDialog open={isBulkDeleteOpen} onOpenChange={setIsBulkDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Xác nhận xóa hàng loạt</AlertDialogTitle>
+            <AlertDialogTitle>Confirm Bulk Deletion</AlertDialogTitle>
             <AlertDialogDescription>
-              Bạn có chắc muốn xóa{" "}
-              <strong>{selectedIds.size} categories</strong>? Hành động này
-              không thể hoàn tác và có thể ảnh hưởng đến dữ liệu liên quan.
+              Are you sure you want to delete{" "}
+              <strong>{selectedIds.size} categories</strong>? This action
+              cannot be undone and may affect related data.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Hủy</AlertDialogCancel>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleBulkDelete}
               className="bg-red-600 hover:bg-red-700"
@@ -599,10 +597,10 @@ export default function AdminCategoriesPage() {
               {bulkDeleteMutation.isPending ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Đang xóa...
+                  Deleting...
                 </>
               ) : (
-                `Xóa ${selectedIds.size} categories`
+                `Delete ${selectedIds.size} categories`
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
