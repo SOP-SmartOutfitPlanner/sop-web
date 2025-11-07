@@ -5,6 +5,8 @@
 
 import { apiClient } from "./client";
 import type { ApiResponse } from "@/lib/types/api.types";
+import { ApiItemsResponse, ApiWardrobeItem } from "./wardrobe-api";
+import { ItemsListRequest, ItemsListResponse } from "@/types/item";
 
 // ============================================================================
 // Types
@@ -234,4 +236,21 @@ export const adminAPI = {
     }));
     return { statusCode: 200, message: "Success", data: stats };
   },
+  getItems: async (data: ItemsListRequest): Promise<ItemsListResponse> => {
+    // Transform PascalCase params to kebab-case as required by API
+    const params: Record<string, string | number | boolean> = {
+      'page-index': data.PageIndex,
+      'page-size': data.PageSize,
+    };
+    
+    if (data.Search) {
+      params['search'] = data.Search;
+    }
+    
+    if (data.takeAll !== undefined) {
+      params['take-all'] = data.takeAll;
+    }
+    
+    return apiClient.get<ItemsListResponse>(`/items`, { params });
+  }
 };
