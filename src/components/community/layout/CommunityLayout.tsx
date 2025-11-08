@@ -13,7 +13,7 @@ interface CommunityLayoutProps {
  */
 export function CommunityLayout({ children }: CommunityLayoutProps) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-muted/10">
+    <div className="min-h-screen bg-gradient-to-br from-[#F5F8FF] via-[#F5F8FF] to-[#EAF0FF]">
       <div className="container mx-auto max-w-7xl px-4 py-8">
         {/* Main Grid Layout */}
         <div className="flex flex-col md:flex-row gap-6">

@@ -26,7 +26,8 @@ export function PostImage({ images, onDoubleClick }: PostImageProps) {
 
   return (
     <div
-      className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-gradient-to-br from-muted/30 to-background group cursor-pointer"
+      className="relative w-full rounded-2xl overflow-hidden bg-gradient-to-br from-muted/30 to-background group cursor-pointer"
+      style={{ height: "clamp(260px, 40vh, 520px)" }} // ✅ giới hạn chiều cao
       onDoubleClick={onDoubleClick}
     >
       <div className="relative w-full h-full">
@@ -34,7 +35,9 @@ export function PostImage({ images, onDoubleClick }: PostImageProps) {
           src={images[currentIndex]}
           alt={`Post image ${currentIndex + 1}`}
           fill
-          className="object-cover group-hover:scale-105 transition-transform duration-300"
+          className="object-contain transition-transform duration-300 group-hover:scale-[1.02]"
+          sizes="(max-width: 768px) 100vw, 680px" // ✅ render đúng size, tiết kiệm băng thông
+          priority={false}
         />
       </div>
 
