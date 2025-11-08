@@ -8,11 +8,11 @@ interface PostContentProps {
 
 export function PostContent({ caption, tags }: PostContentProps) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 px-4">
       <p className="text-foreground leading-relaxed">{caption}</p>
 
       {tags.length > 0 && (
-        <div className="flex flex-wrap gap-1">
+        <div className="flex flex-wrap gap-1 py-1">
           {tags.map((tag) => (
             <Badge
               key={tag.id}

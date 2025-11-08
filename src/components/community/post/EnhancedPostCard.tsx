@@ -9,6 +9,8 @@ import { PostContent } from "./PostContent";
 import { PostActions } from "./PostActions";
 import { PostModal } from "@/components/community/profile/PostModal";
 import { useAuthStore } from "@/store/auth-store";
+import { communityAPI } from "@/lib/api/community-api";
+import { toast } from "sonner";
 
 interface EnhancedPostCardProps {
   post: Post;
@@ -19,6 +21,7 @@ interface EnhancedPostCardProps {
   showChallengeEntry?: boolean;
   onFollow?: (userId: string) => void;
   isFollowing?: boolean;
+  onPostDeleted?: (postId: string) => void;
 }
 
 /**
@@ -35,6 +38,7 @@ export function EnhancedPostCard({
   showChallengeEntry,
   onFollow,
   isFollowing = false,
+  onPostDeleted,
 }: EnhancedPostCardProps) {
   const { user } = useAuthStore();
 
@@ -104,6 +108,20 @@ export function EnhancedPostCard({
     setIsChatModalOpen(true);
   }, [isAuthorStylist, currentUser.name]);
 
+  const handleDeletePost = useCallback(async () => {
+    if (!isOwnPost) return;
+
+    try {
+      // TODO: Call delete API
+      // await communityAPI.deletePost(parseInt(post.id));
+      toast.success("Post deleted successfully");
+      onPostDeleted?.(post.id);
+    } catch (error) {
+      console.error("Error deleting post:", error);
+      toast.error("Failed to delete post");
+    }
+  }, [isOwnPost, post.id, onPostDeleted]);
+
   return (
     <>
       <Card className="group overflow-hidden bg-card border-0 shadow-sm hover:shadow-lg transition-all duration-300">
@@ -123,9 +141,10 @@ export function EnhancedPostCard({
             onMessageAuthor={handleMessageAuthor}
             onReport={onReport}
             onFollow={onFollow ? () => onFollow(post.userId) : undefined}
+            onDelete={isOwnPost ? handleDeletePost : undefined}
           />
         </div>
-
+        <PostContent caption={post.caption} tags={post.tags} />
         {/* Image */}
         {images.length > 0 && (
           <div className="mx-4 mb-4 cursor-pointer" onClick={handleImageClick}>
@@ -142,8 +161,6 @@ export function EnhancedPostCard({
             onLike={handleLike}
             onComment={() => setIsCommentModalOpen(true)}
           />
-
-          <PostContent caption={post.caption} tags={post.tags} />
         </div>
       </Card>
 

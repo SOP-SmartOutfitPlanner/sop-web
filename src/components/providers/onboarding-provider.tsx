@@ -49,7 +49,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     };
 
     checkOnboarding();
-  }, [isAuthenticated, user, isInitialized, isFirstTime, isChecking, setIsFirstTime]);
+  }, [isAuthenticated, user, isInitialized, isFirstTime, setIsFirstTime]);
 
   const handleOnboardingComplete = (open: boolean) => {
     setIsOnboardingOpen(open);

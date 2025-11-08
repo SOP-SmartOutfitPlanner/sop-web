@@ -155,7 +155,7 @@ export default function AdminCategoriesPage() {
 
   const handleCreate = async () => {
     if (!formName.trim()) {
-      toast.error("Vui lòng nhập tên category");
+      toast.error("Please enter a name for the category");
       return;
     }
 
@@ -164,12 +164,12 @@ export default function AdminCategoriesPage() {
         name: formName,
         parentId: formParentId === "null" ? null : parseInt(formParentId),
       });
-      toast.success("Tạo category thành công!");
+      toast.success("Category created successfully!");
       setIsCreateOpen(false);
       setFormName("");
       setFormParentId("null");
     } catch {
-      toast.error("Có lỗi xảy ra khi tạo category");
+      toast.error("An error occurred while creating the category");
     }
   };
 
@@ -184,13 +184,13 @@ export default function AdminCategoriesPage() {
           parentId: formParentId === "null" ? null : parseInt(formParentId),
         },
       });
-      toast.success("Cập nhật category thành công!");
+      toast.success("Category updated successfully!");
       setIsEditOpen(false);
       setSelectedCategory(null);
       setFormName("");
       setFormParentId("null");
     } catch {
-      toast.error("Có lỗi xảy ra khi cập nhật category");
+      toast.error("An error occurred while updating the category");
     }
   };
 
@@ -199,11 +199,11 @@ export default function AdminCategoriesPage() {
 
     try {
       await deleteMutation.mutateAsync(selectedCategory.id);
-      toast.success("Xóa category thành công!");
+      toast.success("Category deleted successfully!");
       setIsDeleteOpen(false);
       setSelectedCategory(null);
     } catch {
-      toast.error("Có lỗi xảy ra khi xóa category");
+      toast.error("An error occurred while deleting the category");
     }
   };
 
@@ -212,11 +212,11 @@ export default function AdminCategoriesPage() {
 
     try {
       await bulkDeleteMutation.mutateAsync(Array.from(selectedIds));
-      toast.success(`Đã xóa ${selectedIds.size} categories!`);
+      toast.success(`Deleted ${selectedIds.size} categories!`);
       setIsBulkDeleteOpen(false);
       setSelectedIds(new Set());
     } catch {
-      toast.error("Có lỗi xảy ra khi xóa categories");
+      toast.error("An error occurred while deleting the categories");
     }
   };
 
@@ -331,7 +331,7 @@ export default function AdminCategoriesPage() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600">Đang tải categories...</p>
+          <p className="text-gray-600">Loading categories...</p>
         </div>
       </div>
     );
@@ -343,10 +343,10 @@ export default function AdminCategoriesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">
-            Quản lý Categories
+            Manage Categories
           </h1>
           <p className="text-gray-600 mt-2">
-            Quản lý danh mục sản phẩm và phân loại
+            Manage product categories and subcategories
           </p>
         </div>
         <Button
@@ -358,7 +358,7 @@ export default function AdminCategoriesPage() {
           className="bg-blue-600 hover:bg-blue-700"
         >
           <Plus className="w-4 h-4 mr-2" />
-          Thêm Category
+          Add Category
         </Button>
       </div>
 

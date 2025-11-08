@@ -134,7 +134,7 @@ class CommunityAPI {
   /**
    * Create a new post with multipart/form-data
    * API expects: multipart/form-data with UserId, Body, Hashtags, Images
-   * 
+   *
    * Example:
    * const formData = new FormData();
    * formData.append('UserId', '9');
@@ -144,43 +144,39 @@ class CommunityAPI {
    */
   async createPost(postData: CreatePostRequest): Promise<CommunityPost> {
     const formData = new FormData();
-    
+
     // Add required fields
-    formData.append('UserId', String(postData.userId));
-    formData.append('Body', postData.body);
-    
+    formData.append("UserId", String(postData.userId));
+    formData.append("Body", postData.body);
+
     // Handle hashtags (can be single string or array)
-    const hashtags = Array.isArray(postData.hashtags) 
-      ? postData.hashtags 
+    const hashtags = Array.isArray(postData.hashtags)
+      ? postData.hashtags
       : [postData.hashtags];
-    
-    hashtags.forEach(hashtag => {
-      formData.append('Hashtags', hashtag);
+
+    hashtags.forEach((hashtag) => {
+      formData.append("Hashtags", hashtag);
     });
-    
+
     // Add images
-    postData.images.forEach(file => {
-      formData.append('Images', file);
+    postData.images.forEach((file) => {
+      formData.append("Images", file);
     });
-    
+
     const apiResponse = await apiClient.post<ApiResponse<CommunityPost>>(
       this.BASE_PATH,
       formData,
       {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          "Content-Type": "multipart/form-data",
         },
       }
     );
-    
+
     // API returns { statusCode, message, data: CommunityPost }
     // Axios unwraps to apiResponse.data which is the whole response
     // We need to return just the data part
-    if (apiResponse.data?.data) {
-      return apiResponse.data.data;
-    }
-    
-    return apiResponse.data as CommunityPost;
+    return apiResponse.data;
   }
 
   /**
@@ -546,6 +542,31 @@ class CommunityAPI {
     } catch (error) {
       console.error("[API] Error getting follow status:", error);
       return false;
+    }
+  }
+
+  /**
+   * Get top contributors
+   * API: GET /posts/top-contributors?userId={optional}
+   * Response: { statusCode, message, data: { data: [{ userId, displayName, avatarUrl, postCount, isFollowing }], metaData: {...} } }
+   * userId is optional - if provided, includes follow status for logged-in user
+   */
+  async getTopContributors(userId?: number) {
+    try {
+      const params = userId ? { userId } : {};
+      const response = await apiClient.get("/posts/top-contributors", {
+        params,
+      });
+      if (response.data?.data?.data && Array.isArray(response.data.data.data)) {
+        return response.data.data.data;
+      }
+      if (response.data?.data && Array.isArray(response.data.data)) {
+        return response.data.data;
+      }
+      return [];
+    } catch (error) {
+      console.error("[API] Error fetching top contributors:", error);
+      return [];
     }
   }
 }

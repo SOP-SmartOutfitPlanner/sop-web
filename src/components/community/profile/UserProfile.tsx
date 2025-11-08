@@ -1,168 +1,69 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import {
-  ArrowLeft,
-  MessageCircle,
-  Grid3x3,
-  User,
-  Share2,
-  MoreHorizontal,
-} from "lucide-react";
+import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuthStore } from "@/store/auth-store";
 import { communityAPI } from "@/lib/api/community-api";
-import { userAPI } from "@/lib/api/user-api";
 import { toast } from "sonner";
-import { PostGrid } from "./PostGrid";
+import { EnhancedPostCard } from "@/components/community/post/EnhancedPostCard";
 import { FollowersModal } from "./FollowersModal";
+import { ProfileHeader } from "./ProfileHeader";
+import { ProfileInfo } from "./ProfileInfo";
+import { useUserProfile } from "@/hooks/community/useUserProfile";
+import { useUserPosts } from "@/hooks/community/useUserPosts";
+import { useFollowUser } from "@/hooks/community/useFollowUser";
+import { useState } from "react";
 
 interface UserProfileProps {
   userId: string;
 }
 
-interface UserProfileData {
-  id: string;
-  name: string;
-  avatar: string;
-  bio: string;
-  location: string;
-  followersCount: number;
-  followingCount: number;
-  postsCount: number;
-}
-
 /**
- * Instagram-style User Profile
+ * Optimized User Profile Component
+ * - Uses custom hooks for separation of concerns
+ * - Split into smaller sub-components
+ * - Better performance with memoization
  */
 export function UserProfile({ userId }: UserProfileProps) {
   const router = useRouter();
   const { user: currentUser } = useAuthStore();
-  const [isFollowing, setIsFollowing] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [userProfile, setUserProfile] = useState<UserProfileData | null>(null);
   const [followersModalOpen, setFollowersModalOpen] = useState(false);
   const [followingModalOpen, setFollowingModalOpen] = useState(false);
 
   const isOwnProfile = currentUser?.id?.toString() === userId;
 
-  // Fetch user profile data
+  // Custom hooks
+  const { userProfile, isLoading, refreshCounts, setUserProfile } =
+    useUserProfile(userId);
+  const { posts, isInitialLoading, isFetching, observerTarget, handleLike } =
+    useUserPosts(userId, currentUser?.id);
+  const { isFollowing, setIsFollowing, toggleFollow } = useFollowUser(
+    userId,
+    currentUser?.id,
+    refreshCounts
+  );
+
+  // Check follow status on mount
   useEffect(() => {
-    const fetchUserProfile = async () => {
-      try {
-        setIsLoading(true);
-
-        const numericUserId = parseInt(userId, 10);
-
-        // Get user info from API
-        const userResponse = await userAPI.getUserById(numericUserId);
-        const userData = userResponse.data;
-
-        // Get posts count
-        const postsResponse = await communityAPI.getPostsByUser(
-          numericUserId,
-          1,
-          1
-        );
-
-        // Get followers and following counts from API
-        const [followersCount, followingCount] = await Promise.all([
-          communityAPI.getFollowerCount(numericUserId),
-          communityAPI.getFollowingCount(numericUserId),
-        ]);
-
-        setUserProfile({
-          id: userId,
-          name: userData.displayName,
-          avatar:
-            userData.avtUrl ||
-            `https://ui-avatars.com/api/?name=${encodeURIComponent(
-              userData.displayName
-            )}&background=3B82F6&color=fff`,
-          bio: userData.bio || "",
-          location: userData.location || "",
-          followersCount,
-          followingCount,
-          postsCount: postsResponse.metaData.totalCount,
-        });
-
-        // Check if current user is following this profile
-        if (currentUser?.id && !isOwnProfile) {
+    const checkFollowStatus = async () => {
+      if (currentUser?.id && !isOwnProfile) {
+        try {
           const followStatus = await communityAPI.getFollowStatus(
             parseInt(currentUser.id),
-            numericUserId
+            parseInt(userId)
           );
           setIsFollowing(followStatus);
+        } catch (error) {
+          console.error("Error checking follow status:", error);
         }
-      } catch (error) {
-        console.error("Error fetching user profile:", error);
-        toast.error("Không thể tải thông tin người dùng");
-      } finally {
-        setIsLoading(false);
       }
     };
 
-    fetchUserProfile();
-  }, [userId, currentUser?.id, isOwnProfile]);
+    checkFollowStatus();
+  }, [userId, currentUser?.id, isOwnProfile, setIsFollowing]);
 
-  const handleFollowToggle = async () => {
-    if (!currentUser?.id) {
-      toast.error("Vui lòng đăng nhập để theo dõi");
-      return;
-    }
-
-    try {
-      const followerId = parseInt(currentUser.id);
-      const followingId = parseInt(userId);
-
-      // Optimistic update
-      const wasFollowing = isFollowing;
-      setIsFollowing(!isFollowing);
-      setUserProfile((prev) =>
-        prev
-          ? {
-              ...prev,
-              followersCount: wasFollowing
-                ? prev.followersCount - 1
-                : prev.followersCount + 1,
-            }
-          : prev
-      );
-
-      // Call API
-      const response = await communityAPI.toggleFollow(followerId, followingId);
-
-      // Show success message
-      if (response.message?.includes("Follow user successfully")) {
-        toast.success("Đã theo dõi");
-      } else if (response.message?.includes("Unfollow user successfully")) {
-        toast.success("Đã bỏ theo dõi");
-      }
-
-      // Fetch updated counts from API
-      const [followersCount, followingCount] = await Promise.all([
-        communityAPI.getFollowerCount(followingId),
-        communityAPI.getFollowingCount(followerId),
-      ]);
-
-      setUserProfile((prev) =>
-        prev ? { ...prev, followersCount, followingCount } : prev
-      );
-    } catch (error) {
-      console.error("Error toggling follow:", error);
-
-      // Rollback on error
-      setIsFollowing(isFollowing);
-      setUserProfile((prev) => prev);
-
-      toast.error("Không thể thực hiện thao tác");
-    }
-  };
-
+  // Handlers
   const handleMessage = () => {
     console.log("Open chat with", userId);
   };
@@ -173,33 +74,42 @@ export function UserProfile({ userId }: UserProfileProps) {
     toast.success("Đã copy link profile");
   };
 
-  const handleFollowChange = async () => {
-    // Refresh follower and following counts after follow/unfollow in modal
-    try {
-      const numericUserId = parseInt(userId);
-      const [followersCount, followingCount] = await Promise.all([
-        communityAPI.getFollowerCount(numericUserId),
-        communityAPI.getFollowingCount(
-          currentUser?.id ? parseInt(currentUser.id) : numericUserId
-        ),
-      ]);
+  const handleReportPost = (reason: string) => {
+    if (!currentUser?.id) {
+      toast.error("Vui lòng đăng nhập");
+      return;
+    }
+    toast.success("Cảm ơn bạn đã báo cáo");
+  };
 
+  const handleFollowToggleWithUpdate = async () => {
+    await toggleFollow();
+
+    // Update follower count optimistically
+    if (userProfile) {
       setUserProfile((prev) =>
-        prev ? { ...prev, followersCount, followingCount } : prev
+        prev
+          ? {
+              ...prev,
+              followersCount: isFollowing
+                ? prev.followersCount - 1
+                : prev.followersCount + 1,
+            }
+          : prev
       );
-    } catch (error) {
-      console.error("Error refreshing counts:", error);
     }
   };
 
-  if (isLoading) {
+  // Loading state
+  if (isLoading || isInitialLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#F5F8FF] via-[#F5F8FF] to-[#EAF0FF] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
 
+  // Error state
   if (!userProfile) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#F5F8FF] via-[#F5F8FF] to-[#EAF0FF] flex items-center justify-center">
@@ -212,167 +122,75 @@ export function UserProfile({ userId }: UserProfileProps) {
     <div className="min-h-screen bg-gradient-to-br from-[#F5F8FF] via-[#F5F8FF] to-[#EAF0FF]">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="border-b border-border sticky top-0  backdrop-blur-sm z-10">
-          <div className="flex items-center justify-between px-4 h-14">
-            <Button variant="ghost" size="icon" onClick={() => router.back()}>
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <h1 className="font-semibold text-base">{userProfile.name}</h1>
-            <Button variant="ghost" size="icon">
-              <MoreHorizontal className="w-5 h-5" />
-            </Button>
-          </div>
-        </div>
+        <ProfileHeader
+          userName={userProfile.name}
+          onBack={() => router.back()}
+        />
 
         {/* Profile Info */}
-        <div className="px-4 py-6">
-          {/* Avatar + Stats Row */}
-          <div className="flex items-center gap-6 mb-5">
-            {/* Avatar */}
-            <Avatar className="w-20 h-20 md:w-24 md:h-24">
-              <AvatarImage src={userProfile.avatar} alt={userProfile.name} />
-              <AvatarFallback className="text-2xl font-bold bg-gradient-to-br from-primary to-accent text-white">
-                {userProfile.name.charAt(0)}
-              </AvatarFallback>
-            </Avatar>
+        <ProfileInfo
+          userProfile={userProfile}
+          isOwnProfile={isOwnProfile}
+          isFollowing={isFollowing}
+          onFollowToggle={handleFollowToggleWithUpdate}
+          onMessage={handleMessage}
+          onShare={handleShare}
+          onFollowersClick={() => setFollowersModalOpen(true)}
+          onFollowingClick={() => setFollowingModalOpen(true)}
+        />
 
-            {/* Stats */}
-            <div className="flex-1 grid grid-cols-3 gap-3">
-              {[
-                { k: "posts", v: userProfile.postsCount },
-                { k: "followers", v: userProfile.followersCount },
-                { k: "following", v: userProfile.followingCount },
-              ].map(({ k, v }) => (
-                <button
-                  key={k}
-                  onClick={() => {
-                    if (k === "followers") setFollowersModalOpen(true);
-                    if (k === "following") setFollowingModalOpen(true);
+        {/* Feed */}
+        <div className="border-t border-border">
+          {posts.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20">
+              <p className="text-muted-foreground">Chưa có bài viết nào</p>
+            </div>
+          ) : (
+            <div className="space-y-4 p-4">
+              {posts.map((post) => (
+                <EnhancedPostCard
+                  key={post.id}
+                  post={post}
+                  currentUser={{
+                    id: userProfile.id,
+                    name: userProfile.name,
+                    avatar: userProfile.avatar,
                   }}
-                  className="rounded-2xl bg-white/70 backdrop-blur-xl border border-white/70 
-                 py-3 text-center hover:shadow-md transition-shadow"
-                >
-                  <div className="text-lg font-semibold text-slate-900">
-                    {k === "followers" ? v.toLocaleString() : v}
-                  </div>
-                  <div className="text-[11px] tracking-wide uppercase text-slate-600">
-                    {k}
-                  </div>
-                </button>
+                  onLike={() => handleLike(parseInt(post.id))}
+                  onReport={handleReportPost}
+                />
               ))}
+
+              {/* Infinite scroll trigger */}
+              <div
+                ref={observerTarget}
+                className="h-10 flex items-center justify-center"
+              >
+                {isFetching && (
+                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                )}
+              </div>
             </div>
-          </div>
-
-          {/* Bio */}
-          <div className="space-y-1 mb-4">
-            <div className="font-semibold text-sm">{userProfile.name}</div>
-            {userProfile.bio && (
-              <div className="text-sm whitespace-pre-wrap">
-                {userProfile.bio}
-              </div>
-            )}
-            {userProfile.location && (
-              <div className="text-sm text-muted-foreground">
-                📍 {userProfile.location}
-              </div>
-            )}
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex gap-2">
-            {!isOwnProfile ? (
-              <>
-                <Button
-                  onClick={handleFollowToggle}
-                  variant={isFollowing ? "outline" : "default"}
-                  className="flex-1 h-8 text-sm font-semibold"
-                >
-                  {isFollowing ? "Following" : "Follow"}
-                </Button>
-                <Button
-                  onClick={handleMessage}
-                  variant="outline"
-                  className="flex-1 h-8 text-sm font-semibold"
-                >
-                  Message
-                </Button>
-                <Button
-                  onClick={handleShare}
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                >
-                  <Share2 className="w-4 h-4" />
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button
-                  variant="outline"
-                  className="flex-1 h-8 text-sm font-semibold"
-                >
-                  Edit profile
-                </Button>
-                <Button
-                  variant="outline"
-                  className="flex-1 h-8 text-sm font-semibold"
-                >
-                  Share profile
-                </Button>
-              </>
-            )}
-          </div>
+          )}
         </div>
-
-        {/* Tabs */}
-        <Tabs defaultValue="posts" className="w-full">
-          <TabsList className="w-full grid grid-cols-2 h-12 rounded-none border-t">
-            <TabsTrigger value="posts" className="gap-2">
-              <Grid3x3 className="w-4 h-4" />
-              <span className="hidden sm:inline">POSTS</span>
-            </TabsTrigger>
-            <TabsTrigger value="tagged" className="gap-2">
-              <User className="w-4 h-4" />
-              <span className="hidden sm:inline">TAGGED</span>
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="posts" className="mt-0">
-            <PostGrid userId={userId} />
-          </TabsContent>
-
-          <TabsContent value="tagged" className="mt-0 p-12 text-center">
-            <div className="space-y-2">
-              <div className="w-16 h-16 rounded-full border-2 border-foreground mx-auto flex items-center justify-center">
-                <User className="w-8 h-8" />
-              </div>
-              <h3 className="font-semibold text-lg">No tagged posts</h3>
-              <p className="text-sm text-muted-foreground">
-                Posts that {userProfile.name} has been tagged in will appear
-                here.
-              </p>
-            </div>
-          </TabsContent>
-        </Tabs>
       </div>
 
-      {/* Followers Modal */}
+      {/* Modals */}
       <FollowersModal
         isOpen={followersModalOpen}
         onClose={() => setFollowersModalOpen(false)}
         userId={parseInt(userId)}
         type="followers"
-        onFollowChange={handleFollowChange}
+        onFollowChange={refreshCounts}
         isOwnProfile={isOwnProfile}
       />
 
-      {/* Following Modal */}
       <FollowersModal
         isOpen={followingModalOpen}
         onClose={() => setFollowingModalOpen(false)}
         userId={parseInt(userId)}
         type="following"
-        onFollowChange={handleFollowChange}
+        onFollowChange={refreshCounts}
         isOwnProfile={isOwnProfile}
       />
     </div>

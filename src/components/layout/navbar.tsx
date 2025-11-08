@@ -35,7 +35,7 @@ const mainNavigationItems = [
   { path: "/daily", label: "Daily", icon: Calendar, enabled: false },
   { path: "/weekly", label: "Weekly", icon: CalendarDays, enabled: false },
   { path: "/community", label: "Community", icon: Users, enabled: true },
-  { path: "/challenges", label: "Challenges", icon: Trophy, enabled: false },
+  { path: "/challenges", label: "Favorites", icon: Heart, enabled: false },
 ];
 
 const personalNavigationItems = [
@@ -45,7 +45,6 @@ const personalNavigationItems = [
     icon: CreditCard,
     enabled: false,
   },
-  { path: "/favorites", label: "Favorites", icon: Heart, enabled: false },
   { path: "/collections", label: "Collections", icon: ImgIcon, enabled: false },
 ];
 
@@ -165,7 +164,7 @@ export function Navbar() {
               className="flex items-center space-x-3 group relative py-2"
               suppressHydrationWarning
             >
-              <div className="transform transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
+              <div className="ml-10 transform transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
                 <Logo
                   variant="rectangle"
                   width={70}
