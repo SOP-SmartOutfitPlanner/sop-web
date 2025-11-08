@@ -49,11 +49,8 @@ export function EnhancedPostCard({
   const likeCount = post.likes;
 
   // ✅ Simple computations (no useMemo overhead needed)
-  const images = post.images?.length > 0 
-    ? post.images 
-    : post.image 
-    ? [post.image] 
-    : [];
+  const images =
+    post.images?.length > 0 ? post.images : post.image ? [post.image] : [];
 
   // ✅ Simple check (no useMemo needed for trivial computation)
   const isAuthorStylist =
@@ -90,6 +87,10 @@ export function EnhancedPostCard({
     }
   }, [isLiked, handleLike]);
 
+  const handleImageClick = useCallback(() => {
+    setIsCommentModalOpen(true);
+  }, []);
+
   const handleMessageAuthor = useCallback(() => {
     if (!isAuthorStylist) return;
 
@@ -112,7 +113,7 @@ export function EnhancedPostCard({
             user={{
               id: post.userId,
               name: post.userDisplayName,
-              avatar: post.userAvatarUrl, 
+              avatar: post.userAvatarUrl,
             }}
             timestamp={post.timestamp}
             isAuthorStylist={isAuthorStylist}
@@ -127,7 +128,7 @@ export function EnhancedPostCard({
 
         {/* Image */}
         {images.length > 0 && (
-          <div className="mx-4 mb-4">
+          <div className="mx-4 mb-4 cursor-pointer" onClick={handleImageClick}>
             <PostImage images={images} onDoubleClick={handleDoubleClick} />
           </div>
         )}

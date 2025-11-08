@@ -37,13 +37,13 @@ export function CommunityFilters({
   return (
     <div className="space-y-4">
       {/* Stats Bar */}
-      <StatsBar />
+      {/* <StatsBar /> */}
 
       {/* Hashtag Cloud */}
-      <HashtagCloud selectedTag={selectedTag} onTagClick={onTagClick} />
+      {/* <HashtagCloud selectedTag={selectedTag} onTagClick={onTagClick} /> */}
 
       {/* Tabs */}
-      <CommunityTabs activeTab={activeTab} onTabChange={onTabChange} />
+      {/* <CommunityTabs activeTab={activeTab} onTabChange={onTabChange} /> */}
 
       {/* Search & Filters */}
       <SearchFilters

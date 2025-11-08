@@ -11,21 +11,23 @@ export interface CommunityPost {
   userId: number;
   userDisplayName: string;
   userAvatarUrl?: string;
-  body: string;
+  body: string; // Same as "Body" in API request
   hashtags: Hashtag[];
-  images: string[];
+  images: string[]; // Array of URLs from API
   createdAt: string;
   updatedAt: string | null;
   likeCount: number;
   commentCount: number;
-  isLiked: boolean; // Changed from isLikedByUser to match API
+  isLiked: boolean; // User's like status
+  // Note: Caption is sometimes used instead of body in responses
+  caption?: string;
 }
 
 export interface CreatePostRequest {
   userId: number;
   body: string;
-  hashtags: string[];
-  imageUrls: string[];
+  hashtags: string | string[]; // Can be single string or array
+  images: File[]; // Raw files, not URLs (will be uploaded)
 }
 
 export interface FeedMetaData {
@@ -130,14 +132,55 @@ class CommunityAPI {
   }
 
   /**
-   * Create a new post
+   * Create a new post with multipart/form-data
+   * API expects: multipart/form-data with UserId, Body, Hashtags, Images
+   * 
+   * Example:
+   * const formData = new FormData();
+   * formData.append('UserId', '9');
+   * formData.append('Body', 'My outfit today!');
+   * formData.append('Hashtags', 'casual');
+   * files.forEach(file => formData.append('Images', file));
    */
   async createPost(postData: CreatePostRequest): Promise<CommunityPost> {
+    const formData = new FormData();
+    
+    // Add required fields
+    formData.append('UserId', String(postData.userId));
+    formData.append('Body', postData.body);
+    
+    // Handle hashtags (can be single string or array)
+    const hashtags = Array.isArray(postData.hashtags) 
+      ? postData.hashtags 
+      : [postData.hashtags];
+    
+    hashtags.forEach(hashtag => {
+      formData.append('Hashtags', hashtag);
+    });
+    
+    // Add images
+    postData.images.forEach(file => {
+      formData.append('Images', file);
+    });
+    
     const apiResponse = await apiClient.post<ApiResponse<CommunityPost>>(
       this.BASE_PATH,
-      postData
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
     );
-    return apiResponse.data;
+    
+    // API returns { statusCode, message, data: CommunityPost }
+    // Axios unwraps to apiResponse.data which is the whole response
+    // We need to return just the data part
+    if (apiResponse.data?.data) {
+      return apiResponse.data.data;
+    }
+    
+    return apiResponse.data as CommunityPost;
   }
 
   /**

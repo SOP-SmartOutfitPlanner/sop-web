@@ -85,58 +85,6 @@ export function Sidebar() {
         </div>
       </Card>
 
-      {/* Weekly Challenge */}
-      <Card className="p-6 bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20">
-        <div className="space-y-3">
-          <Badge className="bg-gradient-to-r from-primary to-accent text-white">
-            Weekly Challenge
-          </Badge>
-          <div>
-            <h3 className="font-semibold text-lg mb-1">#CozyFall</h3>
-            <p className="text-sm text-muted-foreground mb-3">
-              Share your favorite fall outfit and get featured in our weekly
-              highlights!
-            </p>
-          </div>
-          <Button className="w-full bg-gradient-to-r from-primary to-accent">
-            Join Challenge
-          </Button>
-        </div>
-      </Card>
-
-      {/* Suggested Looks */}
-      <Card className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Bookmark className="w-5 h-5 text-primary" />
-          <h3 className="font-semibold">Suggested Looks</h3>
-        </div>
-        <div className="grid grid-cols-3 gap-2">
-          {[
-            "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=300&h=300&fit=crop",
-            "https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=300&h=300&fit=crop",
-            "https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=300&h=300&fit=crop",
-          ].map((look, index) => (
-            <div
-              key={index}
-              className="group relative aspect-square rounded-lg overflow-hidden cursor-pointer"
-            >
-              <div className="relative w-full h-full">
-                <Image
-                  src={look}
-                  alt={`Suggested look ${index + 1}`}
-                  fill
-                  className="object-cover group-hover:scale-110 transition-transform duration-300"
-                />
-              </div>
-
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                <Bookmark className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
-            </div>
-          ))}
-        </div>
-      </Card>
-
       {/* Quick Chat Modal */}
       {selectedStylist && (
         <QuickChatModal
