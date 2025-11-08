@@ -11,6 +11,11 @@ export type Season = "spring" | "summer" | "fall" | "winter";
 
 export type Occasion = "casual" | "formal" | "sport" | "travel" | "work" | "party" | "date" | "vacation" | "smart";
 
+export type ColorInfo = {
+  name: string;
+  hex: string;
+};
+
 export type WardrobeItem = {
   id: string;
   userId?: string;
@@ -19,9 +24,9 @@ export type WardrobeItem = {
   imageUrl: string;
   brand?: string;
   description?: string;
-  colors: string[];
-  seasons: Season[];
-  occasions: Occasion[];
+  colors: ColorInfo[];
+  seasons: Season[] | Array<{ id: number; name: string }>;
+  occasions: Occasion[] | Array<{ id: number; name: string }>;
   status: "ok" | "laundry" | "donate" | "archived" | "active";
   timesWorn?: number;
   frequencyWorn?: string;
@@ -29,6 +34,15 @@ export type WardrobeItem = {
   tags?: string[];
   createdAt: string; // ISO date string
   updatedAt: string; // ISO date string
+  // Additional fields from API
+  aiDescription?: string;
+  weatherSuitable?: string;
+  condition?: string;
+  pattern?: string;
+  fabric?: string;
+  isAnalyzed?: boolean;
+  aiConfidence?: number;
+  styles?: Array<{ id: number; name: string }>;
   // Additional fields for UI compatibility
   category?: Category; // Mapped from type
   color?: string; // First color from colors array

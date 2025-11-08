@@ -64,7 +64,7 @@ export function getUniqueColorsFromItems(wardrobeItems: WardrobeItem[]): { value
   
   wardrobeItems.forEach(item => {
     if (item.colors && Array.isArray(item.colors)) {
-      item.colors.forEach(color => colorSet.add(color));
+      item.colors.forEach(color => colorSet.add(color.name));
     }
   });
   

@@ -6,7 +6,7 @@ import { Package } from "lucide-react";
 import { ItemCard } from "./item-card";
 import { useWardrobeStore } from "@/store/wardrobe-store";
 import { Skeleton } from "../ui/skeleton";
-import { Card, CardContent } from "@/components/ui/card";
+import GlassCard from "@/components/ui/glass-card";
 import { cn } from "@/lib/utils";
 import { WardrobeItem } from "@/types";
 
@@ -159,11 +159,12 @@ export function ItemGrid({
           key={item.id}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ 
+          transition={{
             duration: 0.3,
             delay: index * 0.05,
             ease: "easeOut"
           }}
+          className="h-full"
         >
           <ItemCard
             item={item}
@@ -191,13 +192,24 @@ export function ItemGrid({
 
 function SkeletonCard() {
   return (
-    <Card className="overflow-hidden">
-      <CardContent className="p-0">
+    <GlassCard
+      padding="0"
+      borderRadius="16px"
+      blur="8px"
+      brightness={1.15}
+      glowColor="rgba(255, 255, 255, 0.3)"
+      glowIntensity={8}
+      borderColor="rgba(255, 255, 255, 0.3)"
+      borderWidth="2px"
+      displacementScale={15}
+      className="overflow-hidden"
+    >
+      <div className="p-0">
         {/* Image */}
-        <Skeleton className="aspect-[4/3] w-full" />
+        <Skeleton className="aspect-[4/5] w-full" />
 
         {/* Content */}
-        <div className="p-4 space-y-3">
+        <div className="p-3 space-y-3">
           {/* Header */}
           <div className="flex items-start justify-between gap-2">
             <div className="space-y-1 flex-1">
@@ -211,8 +223,8 @@ function SkeletonCard() {
           <div className="flex items-center gap-2">
             <Skeleton className="h-3 w-12" />
             <div className="flex gap-1">
-              <Skeleton className="w-4 h-4 rounded-full" />
-              <Skeleton className="w-4 h-4 rounded-full" />
+              <Skeleton className="w-5 h-5 rounded-full" />
+              <Skeleton className="w-5 h-5 rounded-full" />
             </div>
           </div>
 
@@ -231,7 +243,7 @@ function SkeletonCard() {
           {/* Button */}
           <Skeleton className="h-8 w-full rounded" />
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </GlassCard>
   );
 }

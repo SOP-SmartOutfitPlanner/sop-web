@@ -1,16 +1,14 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { toast } from "sonner";
 import { WardrobeHeader } from "@/components/wardrobe/wardrobe-header";
-import { Toolbar } from "@/components/wardrobe/toolbar";
 import { WardrobeContent } from "@/components/wardrobe/wardrobe-content";
 import { ErrorDisplay } from "@/components/common/error-display";
 import { useWardrobeStore } from "@/store/wardrobe-store";
 import { useAuthStore } from "@/store/auth-store";
-import { getCollectionsWithCounts } from "@/lib/mock/collections";
 import { WardrobeFilters } from "@/types/wardrobe";
 import { WardrobeItem } from "@/types";
 import { ApiWardrobeItem, wardrobeAPI } from "@/lib/api/wardrobe-api";
@@ -50,23 +48,11 @@ export default function WardrobePage() {
     error,
     items,
     getRawItemById, // Get raw API item helper
-    isSelectionMode,
-    toggleSelectionMode,
-    selectedItems,
-    clearSelection,
     filters,
     setFilters: setStoreFilters,
   } = useWardrobeStore();
 
-  // Collections data - Pass actual items instead of just length
-  const collections = useMemo(() => getCollectionsWithCounts(items), [items]);
-
   // Handlers - ALL hooks must be called before conditional returns
-  const handleAddItem = () => {
-    setEditItem(null); // Clear any edit state
-    setIsAddItemOpen(true);
-  };
-
   const handleEditItem = async (item: WardrobeItem) => {
     try {
       // Get raw API item from store (includes styles & occasions)
@@ -99,12 +85,6 @@ export default function WardrobePage() {
     setStoreFilters(newFilters);
   };
 
-  const handleSelectMode = (enabled: boolean) => {
-    if (enabled !== isSelectionMode) {
-      toggleSelectionMode();
-    }
-  };
-
   // Redirect to login if not authenticated (useEffect AFTER all other hooks)
   useEffect(() => {
     // Give time for AuthProvider to initialize
@@ -133,23 +113,17 @@ export default function WardrobePage() {
 
   // Render
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#F5F8FF] via-[#F5F8FF] to-[#EAF0FF]">
+    <div className="min-h-screen  pt-32">
       <div className="container max-w-7xl mx-auto px-4 py-6 space-y-8">
         {/* Error Display */}
         {error && <ErrorDisplay error={error} />}
 
-        {/* Header Section */}
-        <WardrobeHeader onAddItem={handleAddItem} isLoading={isLoading} />
-
-        {/* Toolbar */}
-        <Toolbar
+        {/* Header Section with Search and Filter */}
+        <WardrobeHeader
+          onAddItem={() => setIsAddItemOpen(true)}
+          isLoading={isLoading}
           filters={filters}
           onFiltersChange={handleFiltersChange}
-          collections={collections}
-          selectedItems={selectedItems}
-          onClearSelection={clearSelection}
-          onSelectMode={handleSelectMode}
-          isSelectMode={isSelectionMode}
           wardrobeItems={items}
         />
 

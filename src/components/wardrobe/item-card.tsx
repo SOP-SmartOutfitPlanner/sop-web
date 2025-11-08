@@ -2,16 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import {
-  MoreHorizontal,
-  Edit,
-  Trash2,
-  Sparkles,
-  ShirtIcon,
-} from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { MoreVertical, Edit, Trash2, Sparkles, Flower2, Sun, Leaf, Snowflake } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
@@ -19,16 +10,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import GlassButton from "@/components/ui/glass-button";
+import GlassCard from "@/components/ui/glass-card";
 import { WardrobeItem } from "@/types";
 import { cn } from "@/lib/utils";
-import { validateHexColor, parseColorString } from "@/lib/utils/color-mapping";
-import { formatDistanceToNow } from "date-fns";
 
 interface ItemCardProps {
   item: WardrobeItem;
@@ -59,322 +44,263 @@ export function ItemCard({
   const handleDelete = () => onDelete?.(item.id);
   const handleUseInOutfit = () => onUseInOutfit?.(item);
 
+  // Get unique colors from item
+  const colors = item.colors?.slice(0, 4) || [];
+
+  // Helper function to format season/occasion/style names
+  const formatNames = (items: Array<string | { id: number; name: string }> | undefined): string => {
+    if (!items || items.length === 0) return "N/A";
+    return items.map((s) => (typeof s === 'string' ? s : s.name)).join(", ");
+  };
+
+  const styles = formatNames(item.styles);
+
+  // Get season data for badges
+  const getSeasonData = (seasonName: string) => {
+    const name = seasonName.toLowerCase();
+    if (name === 'spring') return { icon: Flower2, color: 'text-pink-200', bg: 'bg-pink-500/50', border: 'border-pink-300/70' };
+    if (name === 'summer') return { icon: Sun, color: 'text-yellow-200', bg: 'bg-yellow-500/50', border: 'border-yellow-300/70' };
+    if (name === 'fall' || name === 'autumn') return { icon: Leaf, color: 'text-orange-200', bg: 'bg-orange-500/50', border: 'border-orange-300/70' };
+    if (name === 'winter') return { icon: Snowflake, color: 'text-cyan-200', bg: 'bg-cyan-500/50', border: 'border-cyan-300/70' };
+    return { icon: null, color: 'text-gray-200', bg: 'bg-gray-500/50', border: 'border-gray-300/70' };
+  };
+
+  const seasonItems = item.seasons?.map(s => typeof s === 'string' ? s : s.name) || [];
+
   return (
     <div
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="transition-transform duration-200 hover:scale-[1.02]"
+      className="group relative w-full h-full flex flex-col"
     >
-      <Card
+      {/* AI Badge - Top Left Corner */}
+      {item.isAnalyzed && (
+        <div className="absolute -top-1.5 -left-1.5 z-20">
+          <div className="relative">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500/40 to-indigo-600/50 backdrop-blur-md flex items-center justify-center shadow-lg border border-white/30">
+              <span className="text-[10px] font-bold text-white drop-shadow-md">AI</span>
+            </div>
+            {item.aiConfidence && (
+              <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-white/80 backdrop-blur-md border border-white/40 flex items-center justify-center shadow-md">
+                <span className="text-[7px] font-bold text-indigo-600">
+                  {item.aiConfidence}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Menu - Positioned outside the card */}
+      <div className="absolute top-2 right-2 z-20">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              className={cn(
+                "p-2 rounded-lg",
+                "bg-white/20 backdrop-blur-md border border-white/30",
+                "text-white hover:bg-white/30 hover:border-white/40",
+                "shadow-lg shadow-white/10",
+                "transition-all duration-200",
+                isHovered ? "opacity-100" : "opacity-0"
+              )}
+            >
+              <MoreVertical className="w-4 h-4" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48 bg-white/90 backdrop-blur-xl border-white/50">
+            <DropdownMenuItem onClick={handleEdit} className="hover:bg-white/60">
+              <Edit className="w-4 h-4 mr-2" />
+              Edit Item
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleUseInOutfit} className="hover:bg-white/60">
+              <Sparkles className="w-4 h-4 mr-2" />
+              Use in Outfit
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={handleDelete}
+              className="text-red-600 focus:text-red-600 hover:bg-red-50/60"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      <GlassCard
+        padding="16px"
+        borderRadius="24px"
+        blur="12px"
+        brightness={1.1}
+        glowColor={isSelected ? "rgba(34, 211, 238, 0.5)" : isHovered ? "rgba(34, 211, 238, 0.35)" : "rgba(34, 211, 238, 0.2)"}
+        borderColor={isSelected ? "rgba(34, 211, 238, 0.5)" : isHovered ? "rgba(34, 211, 238, 0.4)" : "rgba(255, 255, 255, 0.2)"}
+        borderWidth="3px"
         className={cn(
-          "group overflow-hidden transition-all duration-300 rounded-2xl",
-          "bg-white/80 backdrop-blur-sm border border-gray-200/50",
-          "shadow-[0_4px_20px_-4px_hsl(var(--primary)/0.1)]",
+          "relative h-full flex flex-col",
+          "bg-gradient-to-br from-cyan-300/30 via-blue-200/10 to-indigo-300/30",
+          "transition-all duration-300",
           isHovered && [
-            "shadow-[0_8px_32px_-12px_hsl(var(--primary)/0.25)]",
-            "border-primary/40",
+            "bg-gradient-to-br from-white/20 via-cyan-100/15 to-cyan-200/8",
+            "scale-[1.02]"
           ],
           isSelected && [
-            "border-primary ring-2 ring-primary/20",
-            "shadow-[0_8px_32px_-12px_hsl(var(--primary)/0.3)]",
-          ],
-          !isSelected && !isHovered && "hover:shadow-lg"
+            "gb-gradient-to-br from-cyan-400/20 via-cyan-300/15 to-white/10",
+            "ring-2 ring-cyan-400/50"
+          ]
         )}
       >
-        <CardContent className="p-0">
-          {/* Image Container - Larger, more fashionable ratio */}
-          <div className="relative aspect-[4/5] overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
+        {/* Inner gradient overlay for extra depth with cyan accent */}
+        <div className="absolute inset-0 rounded-3xl bg-gradient-to-t from-cyan-900/5 via-transparent to-white/5 pointer-events-none" />
+
+        <div className="w-full flex flex-col flex-1 relative z-10">
+          {/* Image Container */}
+          {/* Checkbox - Top Left */}
+
+          {showCheckbox && (
+            <div
+              className={cn(
+                "absolute top-4 left-4 z-10",
+                "rounded-lg bg-black/50 backdrop-blur-md p-1.5",
+                "transition-opacity duration-200",
+                isHovered || isSelected ? "opacity-100" : "opacity-0"
+              )}
+            >
+              <Checkbox
+                checked={isSelected}
+                onCheckedChange={handleCheckboxChange}
+                className="bg-white border-0 data-[state=checked]:bg-blue-500"
+              />
+            </div>
+          )}
+          {/* Image with aspect ratio */}
+          <div className="bg-white/5 rounded-xl aspect-square flex items-center justify-center overflow-hidden relative">
             <Image
               src={item.imageUrl}
               alt={item.name}
               fill
-              className={cn(
-                "object-cover transition-transform duration-300",
-                isHovered && "scale-105"
-              )}
+              className="object-cover"
+              sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 target.style.display = "none";
-                target.parentElement!.innerHTML = `
-                <div class="flex h-full w-full items-center justify-center bg-gray-100">
-                  <div class="text-center">
-                    <div class="mx-auto h-12 w-12 rounded-full bg-gray-200 flex items-center justify-center mb-2">
-                      <span class="text-gray-400 text-lg font-medium">
-                        ${item.name.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                    <p class="text-sm text-gray-500">No image</p>
-                  </div>
-                </div>
-              `;
+                if (target.parentElement) {
+                  target.parentElement.innerHTML = `
+                      <div class="flex h-full w-full items-center justify-center bg-gradient-to-br from-white/5 to-white/[0.02]">
+                        <div class="text-center">
+                          <div class="mx-auto h-20 w-20 rounded-full bg-white/10 flex items-center justify-center mb-3 ring-1 ring-white/20">
+                            <span class="text-white/60 text-3xl font-semibold">
+                              ${item.name.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                          <p class="text-sm text-white/40 font-medium">No image</p>
+                        </div>
+                      </div>
+                    `;
+                }
               }}
             />
-
-            {/* Checkbox */}
-            {showCheckbox && (
-              <div className="absolute top-2 left-2">
-                <Checkbox
-                  checked={isSelected}
-                  onCheckedChange={handleCheckboxChange}
-                  className="bg-background/80 border-2"
-                />
-              </div>
-            )}
-
-            {/* Hover Actions */}
-            <div
-              className={cn(
-                "absolute top-2 right-2 flex gap-1 transition-opacity duration-200",
-                showCheckbox
-                  ? "opacity-0"
-                  : isHovered
-                  ? "opacity-100"
-                  : "opacity-0"
-              )}
-            >
-              {/* <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={handleView}
-                    className="h-8 w-8 p-0 bg-black/20 hover:bg-black/40 border-0"
-                  >
-                    <Eye className="w-4 h-4 text-white" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>View Details</TooltipContent>
-              </Tooltip>
-            </TooltipProvider> */}
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="h-8 w-8 p-0 bg-black/20 hover:bg-black/40 border-0"
-                  >
-                    <MoreHorizontal className="w-4 h-4 text-white" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={handleEdit}>
-                    <Edit className="w-4 h-4 mr-2" />
-                    Edit Item
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleUseInOutfit}>
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    Use in Outfit
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={handleDelete}
-                    className="text-destructive"
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
           </div>
 
-          {/* Content */}
-          <div className="p-3 space-y-3">
-            {/* Header - Updated typography */}
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0 flex-1">
-                {/* <h3 className="font-semibold text-base truncate text-gray-900 font-[Inter,Poppins] tracking-tight">
-                  {item.name}
-                </h3> */}
-                <TooltipProvider delayDuration={150}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <h3 className="block min-w-0 truncate font-semibold text-base tracking-tight">
-                        {item.name}
-                      </h3>
-                    </TooltipTrigger>
-                    <TooltipContent
-                      side="top"
-                      align="start"
-                      sideOffset={8}
-                      collisionPadding={12}
-                      className="max-w-[260px]"
-                    >
-                      <p className="capitalize">{item.name}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                {item.brand && (
-                  <p className="text-sm text-gray-500 truncate font-medium">
-                    {item.brand}
-                  </p>
-                )}
-              </div>
-              <Badge
-                variant="outline"
-                className="shrink-0 text-xs font-medium bg-gray-50 border-gray-200"
-              >
-                {item.category?.name}
-              </Badge>
+          {/* Item Details */}
+          <div className="flex flex-col h-[160px] my-3">
+            {/* Name and Category */}
+            <div className="mb-2 flex items-center gap-2">
+              <h3 className="text-white font-semibold text-base truncate">
+                {item.name}
+              </h3>
+              <span className="px-2 py-0.5 rounded-full bg-white/10 border border-white/20 text-white/70 text-[10px] font-medium whitespace-nowrap">
+                {item.category?.name || "Uncategorized"}
+              </span>
             </div>
 
-            {/* Color Swatches (supports JSON array or legacy comma-separated string) */}
-            {item.color && (
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">Color:</span>
-                <div className="flex gap-1">
-                  {(() => {
-                    let colors: { name: string; hex: string }[] = [];
-                    try {
-                      const parsed = JSON.parse(
-                        item.color as unknown as string
-                      );
-                      if (Array.isArray(parsed)) {
-                        colors = parsed.map(
-                          (c: { name?: string; hex?: string }) => ({
-                            name: c?.name || "Unknown",
-                            hex: validateHexColor(c?.hex || "#808080"),
-                          })
-                        );
-                      }
-                    } catch {
-                      // Legacy: comma separated names
-                      colors = parseColorString(String(item.color));
-                    }
-
-                    if (colors.length === 0) return null;
-
-                    return colors.slice(0, 5).map((c) => (
-                      <TooltipProvider key={`${c.name}-${c.hex}`}>
-                        <Tooltip>
-                          <TooltipTrigger>
-                            <div
-                              className="w-5 h-5 rounded-full border-2 border-white shadow-md ring-1 ring-gray-200"
-                              style={{ backgroundColor: c.hex }}
-                            />
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p className="font-medium">{c.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {c.hex}
-                            </p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    ));
-                  })()}
-                </div>
-              </div>
-            )}
-            {/* Seasons & Occasions */}
-            <div className="flex items-center gap-4 text-xs">
-              {/* Seasons */}
-              {item.seasons && item.seasons.length > 0 && (
-                <div className="flex items-center gap-1">
-                  <span className="text-muted-foreground">Seasons:</span>
-                  <div className="flex gap-1">
-                    {item.seasons.slice(0, 2).map((season) => (
-                      <TooltipProvider key={season}>
-                        <Tooltip>
-                          <TooltipTrigger>
-                            <Badge
-                              variant="outline"
-                              className="text-xs capitalize"
-                            >
-                              {season}
-                            </Badge>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p className="capitalize">{season}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+            {/* Info Lines - Each field in one line */}
+            <div className="space-y-1 text-xs flex-1 overflow-hidden">
+              {/* Colors - Only show color circles */}
+              {colors.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
+                    {colors.map((color, index) => (
+                      <div
+                        key={index}
+                        className="w-4 h-4 rounded-full border border-white/30 shadow-sm"
+                        style={{ backgroundColor: color.hex }}
+                        title={color.name}
+                      />
                     ))}
-                    {item.seasons.length > 2 && (
-                      <span className="text-muted-foreground">
-                        +{item.seasons.length - 2}
-                      </span>
-                    )}
                   </div>
                 </div>
               )}
-            </div>
-            {/* Occasions */}
-            {item.tags && item.tags.length > 0 && (
-              <div className="flex items-center gap-1">
-                <span className="text-muted-foreground text-xs">For:</span>
-                <div className="flex gap-1">
-                  {item.tags.slice(0, 2).map((tag) => (
-                    <TooltipProvider key={tag}>
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <Badge
-                            variant="outline"
-                            className="text-xs capitalize"
-                          >
-                            {tag}
-                          </Badge>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="capitalize">{tag}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  ))}
-                  {item.tags.length > 2 && (
-                    <span className="text-muted-foreground">
-                      +{item.tags.length - 2}
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
 
-            {/* Usage Stats */}
-            <div className="flex items-center justify-between text-xs">
+              {/* Fabric */}
               <div className="flex items-center gap-2">
-                <Badge variant="secondary" className="text-xs">
-                  {item.frequencyWorn ?? 0} wears
-                </Badge>
-                {item.lastWorn && (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <span className="text-muted-foreground">
-                          Last:{" "}
-                          {formatDistanceToNow(new Date(item.lastWorn), {
-                            addSuffix: true,
-                          })}
+                <span className="text-white/70 truncate">{item.fabric || "N/A"}</span>
+              </div>
+
+              {/* Weather */}
+              <div className="flex items-center gap-2">
+                <span className="text-white/70 truncate">{item.weatherSuitable || "N/A"}</span>
+              </div>
+
+              {/* Seasons */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {seasonItems.length > 0 ? (
+                  seasonItems.slice(0, 4).map((season, index) => {
+                    const seasonData = getSeasonData(season);
+                    const Icon = seasonData.icon;
+                    return (
+                      <div
+                        key={index}
+                        className={cn(
+                          "flex items-center gap-1 px-2 py-0.5 rounded-full border",
+                          seasonData.bg,
+                          seasonData.border
+                        )}
+                      >
+                        {Icon && (
+                          <Icon className={cn("w-3 h-3", seasonData.color)} />
+                        )}
+                        <span className={cn("text-[10px] font-medium", seasonData.color)}>
+                          {season}
                         </span>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>
-                          Last worn:{" "}
-                          {new Date(item.lastWorn).toLocaleDateString()}
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <span className="text-white/50 text-xs">N/A</span>
                 )}
               </div>
-            </div>
 
-            {/* Quick Action */}
-            <div className="pt-2 border-t">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleUseInOutfit}
-                className="w-full text-xs"
-              >
-                <ShirtIcon className="w-3 h-3 mr-1" />
-                Use in Outfit
-              </Button>
+              {/* Styles */}
+              <div className="flex items-center gap-2">
+                <span className="text-white/70 truncate">{styles}</span>
+              </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+
+          {/* Action Button */}
+          <div className="flex justify-center">
+            <GlassButton
+              className="font-semibold w-full"
+              size="sm"
+              variant="primary"
+              onClick={handleUseInOutfit}
+              borderRadius="10px"
+              blur="5px"
+              brightness={1.2}
+              glowColor="rgba(59, 130, 246, 0.5)"
+              glowIntensity={8}
+              borderColor="rgba(148, 163, 184, 0.3)"
+              borderWidth="1px"
+              textColor="rgba(19, 19, 19, 1)"
+              backgroundColor="rgb(216, 234, 254)"
+            >
+              <Sparkles className="w-4 h-4" />
+              Use in Outfit
+            </GlassButton>
+          </div>
+        </div>
+      </GlassCard>
     </div>
   );
 }

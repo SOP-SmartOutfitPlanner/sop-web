@@ -124,7 +124,7 @@ const filterItems = (
     if (
       filters.colors?.length &&
       !filters.colors.some((c) =>
-        item.colors?.some((ic) => ic.toLowerCase().includes(c.toLowerCase()))
+        item.colors?.some((ic) => ic.name.toLowerCase().includes(c.toLowerCase()))
       )
     )
       return false;
@@ -535,8 +535,9 @@ const apiItemToWardrobeItem = (apiItem: ApiWardrobeItem): WardrobeItem => {
 
   // Parse weather suitable for seasons
   const parseSeasons = (
-    weatherSuitable: string
+    weatherSuitable: string | null
   ): ("spring" | "summer" | "fall" | "winter")[] => {
+    if (!weatherSuitable) return ["summer"]; // Default if null
     const weather = weatherSuitable.toLowerCase();
     const seasons: ("spring" | "summer" | "fall" | "winter")[] = [];
 
@@ -571,24 +572,55 @@ const apiItemToWardrobeItem = (apiItem: ApiWardrobeItem): WardrobeItem => {
   const seasons = parseSeasons(apiItem.weatherSuitable);
   const occasions: ("casual" | "formal" | "sport" | "travel")[] = ["casual"]; // Default to casual
 
+  // Parse color JSON string into ColorInfo array
+  const parseColors = (colorString: string | null): Array<{ name: string; hex: string }> => {
+    if (!colorString) return [];
+
+    try {
+      const parsed = JSON.parse(colorString);
+      if (Array.isArray(parsed)) {
+        return parsed.map(c => ({
+          name: c.name || "Unknown",
+          hex: c.hex || "#808080"
+        }));
+      }
+    } catch {
+      // If not JSON, treat as legacy plain text color name
+      return [{ name: colorString, hex: "#808080" }];
+    }
+
+    return [];
+  };
+
+  const colors = parseColors(apiItem.color);
+
   const converted: WardrobeItem = {
     id: apiItem.id?.toString() || `${apiItem.userId}-${Date.now()}`, // Generate ID if not present
     userId: apiItem.userId.toString(),
     name: apiItem.name,
     type: type,
     imageUrl: apiItem.imgUrl,
-    brand: apiItem.brand || "",
-    colors: [apiItem.color], // Single color to array
-    seasons: seasons,
-    occasions: occasions,
+    brand: apiItem.brand || undefined,
+    colors: colors,
+    seasons: apiItem.seasons || seasons,
+    occasions: apiItem.occasions || occasions,
     status: "active", // Default status
-    frequencyWorn: apiItem.frequencyWorn || "",
+    frequencyWorn: apiItem.frequencyWorn || undefined,
+    // Additional fields from API
+    aiDescription: apiItem.aiDescription,
+    weatherSuitable: apiItem.weatherSuitable || undefined,
+    condition: apiItem.condition || undefined,
+    pattern: apiItem.pattern || undefined,
+    fabric: apiItem.fabric || undefined,
+    isAnalyzed: apiItem.isAnalyzed,
+    aiConfidence: apiItem.aiConfidence,
+    styles: apiItem.styles,
     // Additional fields for ItemCard compatibility
     category: {
       id: apiItem.categoryId,
       name: apiItem.categoryName,
     },
-    color: apiItem.color,
+    color: apiItem.color || "",
     season: seasons[0],
     createdAt: apiItem.createdAt || new Date().toISOString(),
     updatedAt: apiItem.updatedAt || new Date().toISOString(),

@@ -410,9 +410,7 @@ class ApiClient {
     formData.append("file", file);
 
     const response = await this.client.post<T>(url, formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
+      // Don't set Content-Type - let the browser set it with the correct boundary
       onUploadProgress: (progressEvent) => {
         if (onProgress && progressEvent.total) {
           const progress = Math.round(

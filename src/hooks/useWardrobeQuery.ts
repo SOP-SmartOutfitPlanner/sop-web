@@ -42,22 +42,22 @@ export function useWardrobeItems(filters: WardrobeFilters = {}) {
       
       if (filters.search) {
         const searchTerm = filters.search.toLowerCase();
-        filteredItems = filteredItems.filter(item => 
-          item.name.toLowerCase().includes(searchTerm) ||
+        filteredItems = filteredItems.filter(item =>
+          item.name?.toLowerCase().includes(searchTerm) ||
           item.brand?.toLowerCase().includes(searchTerm) ||
-          item.color.toLowerCase().includes(searchTerm)
+          item.color?.toLowerCase().includes(searchTerm)
         );
       }
-      
+
       if (filters.category) {
-        filteredItems = filteredItems.filter(item => 
-          item.categoryName.toLowerCase() === filters.category?.toLowerCase()
+        filteredItems = filteredItems.filter(item =>
+          item.categoryName?.toLowerCase() === filters.category?.toLowerCase()
         );
       }
-      
+
       if (filters.color) {
-        filteredItems = filteredItems.filter(item => 
-          item.color.toLowerCase().includes(filters.color!.toLowerCase())
+        filteredItems = filteredItems.filter(item =>
+          item.color?.toLowerCase().includes(filters.color!.toLowerCase())
         );
       }
       
