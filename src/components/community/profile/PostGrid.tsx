@@ -8,6 +8,7 @@ import { communityAPI } from "@/lib/api/community-api";
 import { apiPostToPost, Post } from "@/types/community";
 import { toast } from "sonner";
 import { PostModal } from "./PostModal";
+import { AvatarFallback } from "@/components/ui/avatar";
 
 interface PostGridProps {
   userId: string;
@@ -180,7 +181,12 @@ export function PostGrid({ userId }: PostGridProps) {
                   sizes="(max-width: 768px) 33vw, (max-width: 1200px) 25vw, 20vw"
                 />
               ) : (
-                <div className="w-full h-full bg-gradient-to-br from-muted to-muted-foreground/20" />
+                <div className="w-full h-full bg-gradient-to-br from-muted to-muted-foreground/20">
+                  <AvatarFallback className="text-xs bg-gradient-to-br from-blue-500 to-purple-500 text-white">
+                    {post.userDisplayName?.charAt(0)?.toUpperCase() ||
+                      post.userId.toString().charAt(0)}
+                  </AvatarFallback>
+                </div>
               )}
 
               {/* Multiple images indicator */}

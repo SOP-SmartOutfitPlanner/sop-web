@@ -135,7 +135,7 @@ export function UserProfile({ userId }: UserProfileProps) {
 
       // Call API
       const response = await communityAPI.toggleFollow(followerId, followingId);
-      
+
       // Show success message
       if (response.message?.includes("Follow user successfully")) {
         toast.success("Đã theo dõi");
@@ -152,14 +152,13 @@ export function UserProfile({ userId }: UserProfileProps) {
       setUserProfile((prev) =>
         prev ? { ...prev, followersCount, followingCount } : prev
       );
-
     } catch (error) {
       console.error("Error toggling follow:", error);
-      
+
       // Rollback on error
       setIsFollowing(isFollowing);
       setUserProfile((prev) => prev);
-      
+
       toast.error("Không thể thực hiện thao tác");
     }
   };
@@ -188,7 +187,6 @@ export function UserProfile({ userId }: UserProfileProps) {
       setUserProfile((prev) =>
         prev ? { ...prev, followersCount, followingCount } : prev
       );
-
     } catch (error) {
       console.error("Error refreshing counts:", error);
     }
@@ -196,7 +194,7 @@ export function UserProfile({ userId }: UserProfileProps) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-[#F5F8FF] via-[#F5F8FF] to-[#EAF0FF] flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
@@ -204,17 +202,17 @@ export function UserProfile({ userId }: UserProfileProps) {
 
   if (!userProfile) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-[#F5F8FF] via-[#F5F8FF] to-[#EAF0FF] flex items-center justify-center">
         <p className="text-muted-foreground">Không tìm thấy người dùng</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-[#F5F8FF] via-[#F5F8FF] to-[#EAF0FF]">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="border-b border-border sticky top-0 bg-background/95 backdrop-blur-sm z-10">
+        <div className="border-b border-border sticky top-0  backdrop-blur-sm z-10">
           <div className="flex items-center justify-between px-4 h-14">
             <Button variant="ghost" size="icon" onClick={() => router.back()}>
               <ArrowLeft className="w-5 h-5" />
@@ -239,37 +237,29 @@ export function UserProfile({ userId }: UserProfileProps) {
             </Avatar>
 
             {/* Stats */}
-            <div className="flex-1 flex justify-around">
-              <div className="text-center">
-                <div className="font-semibold text-sm md:text-base">
-                  {userProfile.postsCount}
-                </div>
-                <div className="text-xs md:text-sm text-muted-foreground">
-                  posts
-                </div>
-              </div>
-              <button
-                onClick={() => setFollowersModalOpen(true)}
-                className="text-center cursor-pointer hover:opacity-70 transition-opacity"
-              >
-                <div className="font-semibold text-sm md:text-base">
-                  {userProfile.followersCount.toLocaleString()}
-                </div>
-                <div className="text-xs md:text-sm text-muted-foreground">
-                  followers
-                </div>
-              </button>
-              <button
-                onClick={() => setFollowingModalOpen(true)}
-                className="text-center cursor-pointer hover:opacity-70 transition-opacity"
-              >
-                <div className="font-semibold text-sm md:text-base">
-                  {userProfile.followingCount}
-                </div>
-                <div className="text-xs md:text-sm text-muted-foreground">
-                  following
-                </div>
-              </button>
+            <div className="flex-1 grid grid-cols-3 gap-3">
+              {[
+                { k: "posts", v: userProfile.postsCount },
+                { k: "followers", v: userProfile.followersCount },
+                { k: "following", v: userProfile.followingCount },
+              ].map(({ k, v }) => (
+                <button
+                  key={k}
+                  onClick={() => {
+                    if (k === "followers") setFollowersModalOpen(true);
+                    if (k === "following") setFollowingModalOpen(true);
+                  }}
+                  className="rounded-2xl bg-white/70 backdrop-blur-xl border border-white/70 
+                 py-3 text-center hover:shadow-md transition-shadow"
+                >
+                  <div className="text-lg font-semibold text-slate-900">
+                    {k === "followers" ? v.toLocaleString() : v}
+                  </div>
+                  <div className="text-[11px] tracking-wide uppercase text-slate-600">
+                    {k}
+                  </div>
+                </button>
+              ))}
             </div>
           </div>
 

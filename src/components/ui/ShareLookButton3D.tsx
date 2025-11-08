@@ -57,7 +57,7 @@ const ShareLookButton3D = React.forwardRef<HTMLButtonElement, Props>(
             className={[
               "absolute inset-0 rounded-2xl",
               "bg-white/12 backdrop-blur-xl [-webkit-backdrop-filter:blur(20px)]",
-              "ring-1 ring-white/30",
+              "ring-1 ring-white/20",
               // inner highlights for crisp glass edge
               "shadow-[inset_0_0_0.5px_rgba(255,255,255,0.5),inset_0_-10px_24px_rgba(2,6,23,0.08)]",
               "transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",

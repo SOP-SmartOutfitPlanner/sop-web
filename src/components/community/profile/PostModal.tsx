@@ -206,9 +206,10 @@ export function PostModal({ post, isOpen, onClose, onLike }: PostModalProps) {
                       alt={post.userDisplayName || "User"}
                     />
                   )}
-                  {/* <AvatarFallback className="text-xs bg-gradient-to-br from-primary to-accent text-white">
-                    {post.userDisplayName.charAt(0)}
-                  </AvatarFallback> */}
+                  <AvatarFallback className="text-xs bg-gradient-to-br from-primary to-accent text-white">
+                    {post.userDisplayName?.charAt(0)?.toUpperCase() ||
+                      post.userId.toString().charAt(0)}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="font-semibold text-sm">
                   {post.userDisplayName}
@@ -230,9 +231,10 @@ export function PostModal({ post, isOpen, onClose, onLike }: PostModalProps) {
                       alt={post.userDisplayName || "User"}
                     />
                   )}
-                  {/* <AvatarFallback className="text-xs bg-gradient-to-br from-primary to-accent text-white">
-                    {post.userDisplayName.charAt(0)}
-                  </AvatarFallback> */}
+                  <AvatarFallback className="text-xs bg-gradient-to-br from-primary to-accent text-white">
+                    {post.userDisplayName?.charAt(0)?.toUpperCase() ||
+                      post.userId.toString().charAt(0)}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
                   <div className="text-sm">

@@ -67,9 +67,10 @@ function CommentItem({
               alt={comment.userDisplayName || "User"}
             />
           )}
-          {/* <AvatarFallback className="text-xs bg-gradient-to-br from-blue-500 to-purple-500 text-white">
-            {comment.userDisplayName?.charAt(0)?.toUpperCase() || comment.userId.toString().charAt(0)}
-          </AvatarFallback> */}
+          <AvatarFallback className="text-xs bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
+            {comment.userDisplayName?.charAt(0)?.toUpperCase() ||
+              comment.userId.toString().charAt(0)}
+          </AvatarFallback>
         </Avatar>
         <div className="flex-1 min-w-0">
           <div className="text-sm">
@@ -112,9 +113,9 @@ function CommentItem({
                     alt={reply.userDisplayName || "User"}
                   />
                 )}
-                {/* <AvatarFallback className="text-xs bg-gradient-to-br from-blue-400 to-purple-400 text-white">
+                <AvatarFallback className="text-xs bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
                   {reply.userDisplayName?.charAt(0)?.toUpperCase() || "U"}
-                </AvatarFallback> */}
+                </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
                 <div className="text-sm">
@@ -151,9 +152,9 @@ function CommentItem({
       {showReplyForm && (
         <div className="ml-11 flex gap-2">
           <Avatar className="w-6 h-6 flex-shrink-0">
-            {/* <AvatarFallback className="text-xs bg-gradient-to-br from-blue-500 to-purple-500 text-white">
+            <AvatarFallback className="text-xs bg-gradient-to-br from-blue-500 to-purple-500 text-white">
               {user?.displayName?.charAt(0)?.toUpperCase() || "U"}
-            </AvatarFallback> */}
+            </AvatarFallback>
           </Avatar>
           <div className="flex-1 flex items-center gap-2">
             <input
