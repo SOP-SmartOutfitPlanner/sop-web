@@ -88,18 +88,23 @@ export function PostHeader({
         <div>
           <div className="flex items-center gap-2 flex-wrap">
             <Link href={`/community/profile/${user.id}`}>
-              <p className="font-semibold text-foreground hover:underline cursor-pointer bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 to-blue-300">
+              <p className="font-semibold hover:underline cursor-pointer bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 to-blue-300">
                 {user.name}
               </p>
             </Link>
             {!isOwnPost && !isFollowing && onFollow && (
-              <span
-                className="text-primary font-semibold text-sm cursor-pointer hover:text-primary/80 transition-colors ml-1"
+              <button
+                className="px-3 py-1 ml-2 rounded-lg text-xs font-semibold text-white bg-gradient-to-r from-cyan-500/60 to-blue-500/60 hover:from-cyan-500/80 hover:to-blue-500/80 border border-cyan-400/30 hover:border-cyan-400/50 transition-all hover:shadow-lg hover:shadow-cyan-500/30"
                 onClick={onFollow}
               >
-                • Follow
-              </span>
+                + Follow
+              </button>
             )}
+            {/* {!isOwnPost && isFollowing && (
+              <span className="px-3 py-1 ml-2 rounded-lg text-xs font-semibold text-cyan-200 bg-cyan-500/20 border border-cyan-400/30">
+                ✓ Following
+              </span>
+            )} */}
             {isAuthorStylist && (
               <Badge
                 variant="secondary"
@@ -119,7 +124,7 @@ export function PostHeader({
               </Badge>
             )}
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-blue-200/80 font-medium">
             {timestamp
               ? formatDistanceToNow(new Date(timestamp), { addSuffix: true })
               : "Recently"}

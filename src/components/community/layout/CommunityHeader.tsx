@@ -42,7 +42,7 @@ export function CommunityHeader({
           <ShareLookButton3D />
         </DialogTrigger>
 
-        <DialogContent className="max-w-2xl max-h-[90vh] !overflow-hidden flex flex-col">
+        <DialogContent className="max-w-2xl max-h-[90vh] !overflow-hidden flex flex-col backdrop-blur-xl bg-gradient-to-br from-cyan-950/60 via-blue-950/50 to-indigo-950/60 border-2 border-cyan-400/25 shadow-2xl shadow-cyan-500/20">
           <div className="flex-1 overflow-y-auto">
             <NewPostDialog onCreatePost={onCreatePost} />
           </div>

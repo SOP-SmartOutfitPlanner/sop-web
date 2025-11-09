@@ -60,29 +60,29 @@ function CommentItem({
     <div className="space-y-2">
       {/* Main Comment */}
       <div className="flex gap-3">
-        <Avatar className="w-8 h-8 flex-shrink-0">
+        <Avatar className="w-8 h-8 flex-shrink-0 ring-1.5 ring-cyan-400/20">
           {comment.userAvatarUrl && (
             <AvatarImage
               src={comment.userAvatarUrl}
               alt={comment.userDisplayName || "User"}
             />
           )}
-          <AvatarFallback className="text-xs bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
+          <AvatarFallback className="text-xs font-semibold bg-gradient-to-br from-cyan-400 to-blue-500 text-white">
             {comment.userDisplayName?.charAt(0)?.toUpperCase() ||
               comment.userId.toString().charAt(0)}
           </AvatarFallback>
         </Avatar>
         <div className="flex-1 min-w-0">
           <div className="text-sm">
-            <span className="font-semibold mr-2">
+            <span className="font-semibold bg-clip-text text-transparent bg-gradient-to-r from-cyan-200 to-blue-200 mr-2">
               {comment.userDisplayName || `User ${comment.userId}`}
             </span>
-            <span className="text-foreground break-words">
+            <span className="text-white/95 font-medium break-words">
               {comment.comment}
             </span>
           </div>
-          <div className="flex items-center gap-3 mt-1">
-            <span className="text-xs text-muted-foreground">
+          <div className="flex items-center gap-3 mt-2">
+            <span className="text-xs text-blue-200/70 font-medium">
               {new Date(comment.createdDate).toLocaleDateString("vi-VN", {
                 month: "short",
                 day: "numeric",
@@ -93,7 +93,7 @@ function CommentItem({
               variant="ghost"
               size="sm"
               onClick={() => setShowReplyForm(!showReplyForm)}
-              className="h-auto p-0 text-xs text-muted-foreground hover:text-foreground font-semibold hover:bg-transparent"
+              className="h-auto p-0 text-xs text-cyan-200 hover:text-cyan-100 font-semibold hover:bg-transparent transition-colors"
             >
               Reply
             </Button>
@@ -106,28 +106,28 @@ function CommentItem({
         <div className="ml-11 space-y-2">
           {replies.map((reply) => (
             <div key={reply.id} className="flex gap-3">
-              <Avatar className="w-6 h-6 flex-shrink-0">
+              <Avatar className="w-6 h-6 flex-shrink-0 ring-1 ring-cyan-400/15">
                 {reply.userAvatarUrl && (
                   <AvatarImage
                     src={reply.userAvatarUrl}
                     alt={reply.userDisplayName || "User"}
                   />
                 )}
-                <AvatarFallback className="text-xs bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
+                <AvatarFallback className="text-xs font-semibold bg-gradient-to-br from-cyan-400 to-blue-500 text-white">
                   {reply.userDisplayName?.charAt(0)?.toUpperCase() || "U"}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
                 <div className="text-sm">
-                  <span className="font-semibold mr-2">
+                  <span className="font-semibold bg-clip-text text-transparent bg-gradient-to-r from-cyan-200 to-blue-200 mr-2">
                     {reply.userDisplayName || "User"}
                   </span>
-                  <span className="text-foreground break-words">
+                  <span className="text-white/95 font-medium break-words">
                     {reply.comment}
                   </span>
                 </div>
-                <div className="flex items-center gap-3 mt-1">
-                  <span className="text-xs text-muted-foreground">
+                <div className="flex items-center gap-3 mt-2">
+                  <span className="text-xs text-blue-200/70 font-medium">
                     {new Date(reply.createdDate).toLocaleDateString("vi-VN", {
                       month: "short",
                       day: "numeric",
@@ -137,7 +137,7 @@ function CommentItem({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-auto p-0 text-xs text-muted-foreground hover:text-foreground font-semibold hover:bg-transparent"
+                    className="h-auto p-0 text-xs text-cyan-200 hover:text-cyan-100 font-semibold hover:bg-transparent transition-colors"
                   >
                     Reply
                   </Button>
@@ -150,9 +150,9 @@ function CommentItem({
 
       {/* Reply Form */}
       {showReplyForm && (
-        <div className="ml-11 flex gap-2">
-          <Avatar className="w-6 h-6 flex-shrink-0">
-            <AvatarFallback className="text-xs bg-gradient-to-br from-blue-500 to-purple-500 text-white">
+        <div className="ml-11 flex gap-2 p-2.5 rounded-lg bg-gradient-to-br from-cyan-400/5 to-blue-400/5 border border-cyan-400/10 group">
+          <Avatar className="w-6 h-6 flex-shrink-0 ring-1 ring-cyan-400/20">
+            <AvatarFallback className="text-xs font-semibold bg-gradient-to-br from-cyan-400 to-blue-500 text-white">
               {user?.displayName?.charAt(0)?.toUpperCase() || "U"}
             </AvatarFallback>
           </Avatar>
@@ -168,7 +168,7 @@ function CommentItem({
                   handleReply();
                 }
               }}
-              className="flex-1 outline-none bg-transparent text-sm placeholder:text-muted-foreground"
+              className="flex-1 outline-none bg-transparent text-sm text-blue-100 placeholder:text-blue-300/50 focus:placeholder:text-blue-300/70 transition-colors disabled:opacity-50"
               autoFocus
             />
             {replyText.trim() && (
@@ -177,7 +177,7 @@ function CommentItem({
                 onClick={handleReply}
                 disabled={isSubmitting}
                 variant="ghost"
-                className="h-auto p-0 text-xs text-primary font-semibold hover:bg-transparent"
+                className="h-auto p-0 text-xs text-cyan-300 hover:text-cyan-200 font-semibold hover:bg-transparent transition-colors disabled:opacity-50"
               >
                 {isSubmitting ? "..." : "Post"}
               </Button>
@@ -298,7 +298,7 @@ export default function CommentSection({
             ))}
           </>
         ) : (
-          <p className="text-center text-muted-foreground text-sm py-8">
+          <p className="text-center text-blue-200/70 font-medium   text-sm py-8">
             No comments yet. Be the first to comment!
           </p>
         )}

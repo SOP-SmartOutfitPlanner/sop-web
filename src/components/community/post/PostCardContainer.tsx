@@ -67,13 +67,13 @@ export function PostCardContainer({
         borderColor={
           isHovered ? "rgba(34, 211, 238, 0.4)" : "rgba(255, 255, 255, 0.2)"
         }
-        borderWidth="2px"
-        className="relative overflow-hidden bg-gradient-to-br from-cyan-300/30 via-blue-200/10 to-indigo-300/30 transition-all duration-300 group shadow-lg shadow-cyan-500/10 hover:shadow-cyan-500/20"
+        borderWidth="3px"
+        className={`relative h-full flex flex-col bg-gradient-to-br from-cyan-300/30 via-blue-200/10 to-indigo-300/30 transition-all duration-300 group shadow-lg shadow-cyan-500/10 hover:shadow-cyan-500/20 ${
+          isHovered &&
+          "bg-gradient-to-br from-white/20 via-cyan-100/15 to-cyan-200/8 "
+        }`}
       >
-        {/* Inner gradient overlay for depth */}
-        <div className="absolute inset-0 rounded-3xl bg-gradient-to-t from-cyan-900/5 via-transparent to-white/5 pointer-events-none" />
-
-        <div className="relative z-10 w-full flex flex-col">
+        <div className="w-full flex flex-col">
           {/* Header */}
           <div className="p-4 pb-3">
             <PostHeader
@@ -96,7 +96,7 @@ export function PostCardContainer({
 
           {/* Image */}
           {images.length > 0 && (
-            <div className="mx-4 mb-4 cursor-pointer" onClick={onImageClick}>
+            <div className="mx-2 mb-4 cursor-pointer" onClick={onImageClick}>
               <PostImage images={images} onDoubleClick={onDoubleClick} />
             </div>
           )}

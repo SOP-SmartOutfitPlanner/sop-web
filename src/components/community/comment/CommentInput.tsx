@@ -31,10 +31,10 @@ export function CommentInput({ userName, onSubmit }: CommentInputProps) {
   };
 
   return (
-    <div className="flex-shrink-0 border-t bg-background px-4 py-3">
-      <div className="flex items-center gap-3">
-        <Avatar className="h-8 w-8 flex-shrink-0">
-          <AvatarFallback className="text-xs bg-gradient-to-br from-primary to-accent text-white">
+    <div className="flex-shrink-0 border-t border-white/10 bg-gradient-to-r from-cyan-950/55 via-blue-950/55 to-indigo-950/95 backdrop-blur-lg px-4 py-3">
+      <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-gradient-to-br from-cyan-400/15 to-blue-400/15 border border-cyan-400/20 group hover:border-cyan-400/40 transition-all">
+        <Avatar className="h-8 w-8 flex-shrink-0 ring-1.5 ring-cyan-400/20">
+          <AvatarFallback className="text-xs font-semibold bg-gradient-to-br from-cyan-400 to-blue-500 text-white">
             {userName.charAt(0).toUpperCase()}
           </AvatarFallback>
         </Avatar>
@@ -45,7 +45,7 @@ export function CommentInput({ userName, onSubmit }: CommentInputProps) {
           onChange={(e) => setComment(e.target.value)}
           onKeyDown={handleKeyDown}
           disabled={isSubmitting}
-          className="flex-1 outline-none bg-transparent text-sm placeholder:text-muted-foreground"
+          className="flex-1 outline-none bg-transparent text-sm text-blue-100 placeholder:text-cyan-400/50 to-blue-400/50   group hover:border-cyan-400/40 transition-colors disabled:opacity-50"
         />
         {comment.trim() && (
           <Button
@@ -53,9 +53,9 @@ export function CommentInput({ userName, onSubmit }: CommentInputProps) {
             disabled={isSubmitting}
             variant="ghost"
             size="sm"
-            className="h-auto p-0 text-primary font-semibold hover:bg-transparent"
+            className="h-auto p-0 text-cyan-300 hover:text-cyan-200 font-semibold hover:bg-transparent transition-colors disabled:opacity-50"
           >
-            {isSubmitting ? "Posting..." : "Post"}
+            {isSubmitting ? "..." : "Post"}
           </Button>
         )}
       </div>
