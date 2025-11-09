@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useAuthStore } from "@/store/auth-store";
 import { OnboardingDialog } from "@/components/wardrobe/onboarding-dialog";
+import { userAPI } from "@/lib/api/user-api";
 
 /**
  * OnboardingProvider - Shows onboarding modal for first-time users
