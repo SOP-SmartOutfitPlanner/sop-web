@@ -40,8 +40,9 @@ export interface ApiWardrobeItem {
   userId: number;
   userDisplayName?: string;
   name: string;
-  categoryId: number;
-  categoryName: string;
+  categoryId?: number;
+  categoryName?: string;
+  category?: { id: number; name: string }; // Some endpoints return category as object
   color: string;
   aiDescription: string;
   brand?: string;
@@ -75,60 +76,136 @@ export interface ApiItemsResponse {
   };
 }
 
-export interface CreateWardrobeItemRequest {
+// New ItemCreateModel following the API specification
+export interface ItemCreateModel {
   userId: number;
   name: string;
   categoryId: number;
-  categoryName: string;
-  color: string;
-  aiDescription: string;
+  imgUrl: string; // Required - from image upload
+
+  // Optional fields
+  color?: string;
   brand?: string;
+  aiDescription?: string;
+  weatherSuitable?: string;
+  condition?: string;
+  pattern?: string;
+  fabric?: string;
   frequencyWorn?: string;
-  lastWornAt?: string;
-  imgUrl: string;
-  weatherSuitable: string;
-  condition: string;
-  pattern: string;
-  fabric: string;
-  tag?: string;
-  // Relational IDs
+  lastWornAt?: string; // ISO date
+
+  // Optional relationships
   styleIds?: number[];
   occasionIds?: number[];
   seasonIds?: number[];
 }
 
+// Bulk upload models
+export interface BulkItemRequestAutoModel {
+  userId: number;
+  imageURLs: string[]; // Array of uploaded image URLs
+}
+
+export interface BulkItemModel {
+  imageURLs: string; // Note: singular - one URL per item
+  categoryId: number;
+}
+
+export interface BulkItemRequestManualModel {
+  userId: number;
+  itemsUpload: BulkItemModel[];
+}
+
+// Item analysis request
+export interface ItemModelRequest {
+  itemIds: number[];
+}
+
+// Legacy type for backward compatibility
+export interface CreateWardrobeItemRequest extends ItemCreateModel {
+  categoryName?: string;
+  tag?: string;
+}
+
 class WardrobeAPI {
   /**
-   * Get all wardrobe items for current user
+   * Get all wardrobe items for current user with pagination
    */
-  async getItems(): Promise<ApiWardrobeItem[]> {
+  async getItems(pageIndex: number = 1, pageSize: number = 10): Promise<ApiItemsResponse> {
     // Get userId from localStorage token
     const userId = this.getUserIdFromToken();
 
     if (!userId) {
-      return [];
+      return {
+        data: [],
+        metaData: {
+          totalCount: 0,
+          pageSize,
+          currentPage: pageIndex,
+          totalPages: 0,
+          hasNext: false,
+          hasPrevious: false,
+        },
+      };
     }
 
-    // New endpoint: /items/user/{userId}
-    const response = await apiClient.get(`/items/user/${userId}`);
+    // New endpoint: /items/user/{userId} with pagination params
+    const response = await apiClient.get<{
+      statusCode: number;
+      message: string;
+      data: {
+        data: ApiWardrobeItem[];
+        metaData: {
+          totalCount: number;
+          pageSize: number;
+          currentPage: number;
+          totalPages: number;
+          hasNext: boolean;
+          hasPrevious: boolean;
+        };
+      };
+    }>(`/items/user/${userId}`, {
+      params: {
+        "page-index": pageIndex,
+        "page-size": pageSize,
+      },
+    });
 
     // API returns { statusCode, message, data: { data: [...], metaData: {...} } }
-    const apiData = response.data.data;
-
-    // Handle different response structures
-    let items: ApiWardrobeItem[] = [];
-    if (apiData && typeof apiData === "object") {
-      // Case 1: Paginated response with data.data array
-      if (apiData.data && Array.isArray(apiData.data)) {
-        items = apiData.data;
-      }
-      // Case 2: Direct array response
-      else if (Array.isArray(apiData)) {
-        items = apiData;
-      }
+    // The apiClient already unwraps to response.data, so we access response.data.data
+    if (response?.data?.data && Array.isArray(response.data.data)) {
+      return {
+        data: response.data.data,
+        metaData: response.data.metaData,
+      };
     }
 
-    return items;
+    // Fallback: check if it's a direct array (legacy, no pagination)
+    if (Array.isArray(response?.data)) {
+      return {
+        data: response.data,
+        metaData: {
+          totalCount: response.data.length,
+          pageSize: response.data.length,
+          currentPage: 1,
+          totalPages: 1,
+          hasNext: false,
+          hasPrevious: false,
+        },
+      };
+    }
+
+    return {
+      data: [],
+      metaData: {
+        totalCount: 0,
+        pageSize,
+        currentPage: pageIndex,
+        totalPages: 0,
+        hasNext: false,
+        hasPrevious: false,
+      },
+    };
   }
 
   /**
@@ -160,19 +237,148 @@ class WardrobeAPI {
    * Get specific wardrobe item
    */
   async getItem(id: number): Promise<ApiWardrobeItem> {
-    const response = await apiClient.get(`/items/${id}`);
-    return response.data.data;
+    const response = await apiClient.get<{
+      statusCode: number;
+      message: string;
+      data: ApiWardrobeItem;
+    }>(`/items/${id}`);
+
+    // Handle both direct data and nested data structure
+    if (response.data) {
+      return response.data;
+    }
+
+    return response as unknown as ApiWardrobeItem;
   }
 
   /**
-   * Create new wardrobe item
+   * Create new wardrobe item (Single Item Creation)
+   * Phase 1: Upload image via minioAPI first to get imgUrl
+   * Phase 2: Create item with the image URL
    */
-  async createItem(item: CreateWardrobeItemRequest): Promise<ApiWardrobeItem> {
-    const response = await apiClient.post("/items", item);
+  async createItem(item: ItemCreateModel): Promise<ApiWardrobeItem> {
+    const response = await apiClient.post<{
+      statusCode: number;
+      message: string;
+      data: ApiWardrobeItem;
+    }>("/items", item);
 
-    // API may wrap response in { statusCode, message, data }
-    if (response.data.data) {
-      return response.data.data;
+    if (response.statusCode !== 200) {
+      throw new Error(response.message || "Failed to create item");
+    }
+
+    return response.data;
+  }
+
+  /**
+   * Bulk Upload (Auto Mode)
+   * AI automatically categorizes items
+   * Phase 1: Upload images first via minioAPI
+   * Phase 2: Create items with auto categorization
+   *
+   * Response format (full success - 201):
+   * { statusCode: 201, message: "Item created successfully",
+   *   data: { count: 6, itemIds: [222, 223, ...] } }
+   *
+   * Response format (partial success - 207 Multi-Status):
+   * { statusCode: 207, message: "Items created with some failures",
+   *   data: { successfulItems: { count: 6, itemIds: [216, 217, ...] },
+   *           failedItems: { count: 1, items: [{imageUrl, reason}] } } }
+   *
+   * Note: The API returns 404 for partial success, but the client interceptor
+   * converts it to 207 Multi-Status for proper handling.
+   */
+  async bulkUploadAuto(
+    data: BulkItemRequestAutoModel
+  ): Promise<{
+    itemIds: number[];
+    failedItems?: Array<{ imageUrl: string; reason: string }>;
+  }> {
+    const response = await apiClient.post<{
+      statusCode: number;
+      message: string;
+      data: {
+        count?: number;
+        itemIds?: number[];
+        successfulItems?: { count: number; itemIds: number[] };
+        failedItems?: { count: number; items: Array<{ imageUrl: string; reason: string }> };
+      };
+    }>("/items/bulk-upload/auto", data);
+
+    // Case 1: Full success (statusCode 201)
+    if (response.statusCode === 201 && response.data.itemIds) {
+      // Convert to array if it's an object with numeric keys
+      const itemIds = Array.isArray(response.data.itemIds)
+        ? response.data.itemIds
+        : Object.values(response.data.itemIds) as number[];
+      return { itemIds };
+    }
+
+    // Case 2: Partial success (statusCode 207 - some items failed)
+    // Note: Originally 404 from API, but converted to 207 by client interceptor
+    if (response.statusCode === 207 && response.data.successfulItems) {
+      // Convert to array if it's an object with numeric keys
+      const itemIds = Array.isArray(response.data.successfulItems.itemIds)
+        ? response.data.successfulItems.itemIds
+        : Object.values(response.data.successfulItems.itemIds) as number[];
+      const failedItems = response.data.failedItems?.items || [];
+      return {
+        itemIds,
+        failedItems
+      };
+    }
+
+    throw new Error(response.message || "Failed to bulk upload items");
+  }
+
+  /**
+   * Bulk Upload (Manual Mode)
+   * User specifies categories for each item
+   * Phase 1: Upload images first via minioAPI
+   * Phase 2: Create items with user-specified categories
+   *
+   * Response format:
+   * { statusCode: 201, message: "Item created successfully",
+   *   data: { count: 6, itemIds: [222, 223, 224, 225, 226, 227] } }
+   */
+  async bulkUploadManual(
+    data: BulkItemRequestManualModel
+  ): Promise<{ itemIds: number[] }> {
+    const response = await apiClient.post<{
+      statusCode: number;
+      message: string;
+      data: {
+        count: number;
+        itemIds: number[];
+      };
+    }>("/items/bulk-upload/manual", data);
+
+    if (response.statusCode !== 201) {
+      throw new Error(response.message || "Failed to bulk upload items");
+    }
+
+    // Convert to array if it's an object with numeric keys
+    const itemIds = Array.isArray(response.data.itemIds)
+      ? response.data.itemIds
+      : Object.values(response.data.itemIds) as number[];
+
+    return { itemIds };
+  }
+
+  /**
+   * Run AI Analysis on items (Optional Phase 2)
+   * Updates items with detailed attributes: colors, patterns, fabric, weather suitability
+   * Sets isAnalyzed=true and aiConfidence (0-100)
+   */
+  async analyzeItems(itemIds: number[]): Promise<number[]> {
+    const response = await apiClient.post<{
+      statusCode: number;
+      message: string;
+      data: number[]; // Array of confidence scores
+    }>("/items/analysis", { itemIds });
+
+    if (response.statusCode !== 200) {
+      throw new Error(response.message || "Failed to analyze items");
     }
 
     return response.data;
@@ -196,45 +402,6 @@ class WardrobeAPI {
     await apiClient.delete(`/items/${id}`);
   }
 
-  /**
-   * Get AI summary of clothing item from image
-   */
-  async getImageSummary(file: File): Promise<{
-    name: string;
-    colors: { name: string; hex: string }[];
-    aiDescription: string;
-    weatherSuitable: string;
-    condition: string;
-    pattern: string;
-    fabric: string;
-    imageRemBgURL: string;
-    category: { id: number; name: string };
-    styles: { id: number; name: string }[];
-    occasions: { id: number; name: string }[];
-    seasons: { id: number; name: string }[];
-  }> {
-    const formData = new FormData();
-    formData.append("file", file, file.name);
-
-    const response = await apiClient.post("/items/analysis", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
-
-    // API returns { statusCode, message, data: { actualData } }
-    const apiResponse = response.data;
-
-    let result;
-    if (apiResponse.data) {
-      result = apiResponse.data;
-    } else {
-      // Fallback: Direct data { name, colors, ... }
-      result = apiResponse;
-    }
-
-    return result;
-  }
 
   /**
    * Get all available styles
@@ -297,6 +464,45 @@ class WardrobeAPI {
     } catch (error) {
       console.error("❌ Failed to fetch categories:", error);
       return [];
+    }
+  }
+
+  /**
+   * Get user wardrobe statistics
+   */
+  async getUserStats(): Promise<{
+    totalItems: number;
+    categoryCounts: Record<string, number>;
+  }> {
+    try {
+      const userId = this.getUserIdFromToken();
+      if (!userId) {
+        return {
+          totalItems: 0,
+          categoryCounts: {},
+        };
+      }
+
+      const response = await apiClient.get<{
+        statusCode: number;
+        message: string;
+        data: {
+          totalItems: number;
+          categoryCounts: Record<string, number>;
+        };
+      }>(`/items/stats/${userId}`);
+
+      if (response.statusCode !== 200) {
+        throw new Error(response.message || "Failed to fetch stats");
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error("❌ Failed to fetch user stats:", error);
+      return {
+        totalItems: 0,
+        categoryCounts: {},
+      };
     }
   }
 }

@@ -80,20 +80,20 @@ export function SidebarStats({ className }: SidebarStatsProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
       >
-        <Card className="bg-white/60 backdrop-blur-md border-white/20 shadow-[0_8px_32px_-12px_hsl(var(--primary)/0.12)]">
+        <Card className="backdrop-blur-xl bg-white/60 border-white/30 shadow-[0_8px_32px_-12px_rgba(0,0,0,0.12)]">
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Package className="w-5 h-5" />
+            <CardTitle className="text-lg flex items-center gap-2 text-gray-800 font-bold">
+              <Package className="w-5 h-5 text-cyan-600" />
               Wardrobe Stats
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Total Items */}
-            <div className="text-center p-4 bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg">
-              <div className="text-3xl font-bold text-primary">
+            <div className="text-center p-4 bg-white/40 backdrop-blur-md rounded-lg border border-white/40 shadow-md">
+              <div className="text-3xl font-bold text-gray-800">
                 {counts.total}
               </div>
-              <div className="text-sm text-muted-foreground">Total Items</div>
+              <div className="text-sm text-gray-600 font-medium">Total Items</div>
             </div>
 
             {/* Type Breakdown */}
@@ -103,10 +103,10 @@ export function SidebarStats({ className }: SidebarStatsProps) {
                 .map(([type, count]) => (
                   <div
                     key={type}
-                    className="text-center p-3 bg-muted/30 rounded-lg"
+                    className="text-center p-3 bg-white/30 backdrop-blur-md rounded-lg border border-white/40 shadow-sm"
                   >
-                    <div className="text-lg font-semibold">{count}</div>
-                    <div className="text-xs text-muted-foreground capitalize">
+                    <div className="text-lg font-semibold text-gray-800">{count}</div>
+                    <div className="text-xs text-gray-600 capitalize font-medium">
                       {type}
                     </div>
                   </div>
@@ -122,10 +122,10 @@ export function SidebarStats({ className }: SidebarStatsProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.1 }}
       >
-        <Card className="bg-white/60 backdrop-blur-md border-white/20 shadow-[0_8px_32px_-12px_hsl(var(--primary)/0.12)]">
+        <Card className="backdrop-blur-xl bg-white/60 border-white/30 shadow-[0_8px_32px_-12px_rgba(0,0,0,0.12)]">
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Shirt className="w-5 h-5" />
+            <CardTitle className="text-lg flex items-center gap-2 text-gray-800 font-bold">
+              <Shirt className="w-5 h-5 text-cyan-600" />
               Type Distribution
             </CardTitle>
           </CardHeader>
@@ -178,11 +178,11 @@ export function SidebarStats({ className }: SidebarStatsProps) {
                   className="flex items-center gap-2 text-sm"
                 >
                   <div
-                    className="w-3 h-3 rounded-full"
+                    className="w-3 h-3 rounded-full shadow-md"
                     style={{ backgroundColor: entry.color }}
                   />
-                  <span className="capitalize">{entry.name}</span>
-                  <span className="text-muted-foreground">({entry.value})</span>
+                  <span className="capitalize text-gray-800 font-medium">{entry.name}</span>
+                  <span className="text-gray-600">({entry.value})</span>
                 </div>
               ))}
             </div>
@@ -191,10 +191,10 @@ export function SidebarStats({ className }: SidebarStatsProps) {
       </motion.div>
 
       {/* Color Distribution */}
-      <Card>
+      <Card className="backdrop-blur-xl bg-white/60 border-white/30 shadow-[0_8px_32px_-12px_rgba(0,0,0,0.12)]">
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <PaintBucket className="w-5 h-5" />
+          <CardTitle className="text-lg flex items-center gap-2 text-gray-800 font-bold">
+            <PaintBucket className="w-5 h-5 text-cyan-600" />
             Popular Colors
           </CardTitle>
         </CardHeader>
@@ -247,10 +247,10 @@ export function SidebarStats({ className }: SidebarStatsProps) {
       </Card>
 
       {/* Most Worn Items */}
-      <Card>
+      <Card className="backdrop-blur-xl bg-white/60 border-white/30 shadow-[0_8px_32px_-12px_rgba(0,0,0,0.12)]">
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <TrendingUp className="w-5 h-5" />
+          <CardTitle className="text-lg flex items-center gap-2 text-gray-800 font-bold">
+            <TrendingUp className="w-5 h-5 text-cyan-600" />
             Most Worn
           </CardTitle>
         </CardHeader>
@@ -262,20 +262,20 @@ export function SidebarStats({ className }: SidebarStatsProps) {
                   src={item.imageUrl}
                   alt={item.name}
                   fill
-                  className="object-cover rounded-lg border"
+                  className="object-cover rounded-lg border border-cyan-200/50 shadow-md"
                 />
-                <div className="absolute -top-1 -left-1 w-5 h-5 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-bold">
+                <div className="absolute -top-1 -left-1 w-5 h-5 bg-white text-cyan-600 rounded-full flex items-center justify-center text-xs font-bold shadow-lg">
                   {index + 1}
                 </div>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm truncate">{item.name}</p>
+                <p className="font-medium text-sm truncate text-gray-800">{item.name}</p>
                 <div className="flex items-center gap-2 mt-1">
                   <Progress
                     value={((item.timesWorn || 0) / 40) * 100}
-                    className="h-1 flex-1"
+                    className="h-1 flex-1 bg-gray-200"
                   />
-                  <span className="text-xs text-muted-foreground whitespace-nowrap">
+                  <span className="text-xs text-gray-600 whitespace-nowrap font-medium">
                     {item.timesWorn || 0} wears
                   </span>
                 </div>

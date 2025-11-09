@@ -1,9 +1,10 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
+import Image from "next/image";
+import { motion } from "framer-motion";
 import {
   Shirt,
   Sparkles,
@@ -24,9 +25,8 @@ import {
   TooltipContent,
 } from "@/components/ui/tooltip";
 import { useAuthStore } from "@/store/auth-store";
-import { Logo } from "@/components/ui/logo";
+import GlassCard from "@/components/ui/glass-card";
 import { NavbarAuthSection } from "@/components/layout/navbar-auth-section";
-import { motion, useReducedMotion } from "framer-motion";
 
 // -------------------- nav data --------------------
 const mainNavigationItems = [
@@ -53,191 +53,285 @@ const personalNavigationItems = [
 export function Navbar() {
   const pathname = usePathname();
   const { user, isInitialized, isFirstTime } = useAuthStore();
+  const [tabPositions, setTabPositions] = useState<{ [key: string]: { left: number; width: number } }>({});
+  const [isVisible, setIsVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
 
-  const NavItem = ({
-    item,
-    showLabel = true,
-  }: {
-    item: (typeof mainNavigationItems)[number];
-    showLabel?: boolean;
-  }) => {
-    const Icon = item.icon;
-    const isActive = pathname === item.path;
-    const prefersReduced = useReducedMotion();
-
-    const baseClasses =
-      "relative flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium font-poppins overflow-hidden transition-all duration-300 border"; // <- always has border
-    const activeClasses =
-      "text-white bg-white/15 border-white/25 shadow-[0_8px_24px_rgba(0,0,0,0.25),inset_0_1px_6px_rgba(255,255,255,0.15)] [text-shadow:0_0_12px_rgba(255,255,255,0.8)]";
-    const hoverClasses =
-      "border-transparent text-white/70 hover:text-white hover:bg-white/10 hover:border-white/20 hover:backdrop-blur-md hover:shadow-[0_6px_18px_rgba(0,0,0,0.20)]";
-    const disabledClasses =
-      "border-transparent text-white/40 cursor-not-allowed";
-
-    const node = (
-      <motion.div
-        whileHover={!prefersReduced ? { scale: 1.04 } : undefined}
-        whileTap={!prefersReduced ? { scale: 0.985 } : undefined}
-        // Bạn có thể tách transition ra nếu muốn 'scale' và 'backgroundColor'
-        // có tốc độ khác nhau, nhưng hiện tại dùng chung vẫn ổn.
-        transition={{ type: "spring", stiffness: 340, damping: 30, mass: 0.35 }}
-        className={cn(
-          baseClasses,
-          isActive
-            ? activeClasses
-            : item.enabled
-            ? hoverClasses
-            : disabledClasses,
-          "transform-gpu"
-        )}
-        // Dùng 'animate' để kiểm soát trạng thái
-        animate={
-          isActive
-            ? {
-                // Trạng thái 'active':
-                backgroundColor: "rgba(255, 255, 255, 0.15)",
-                opacity: 1, // Hiển thị rõ
-              }
-            : {
-                // Trạng thái 'inactive':
-                backgroundColor: "rgba(255, 255, 255, 0.0)",
-                opacity: 0.7, // Làm mờ toàn bộ element đi một chút
-              }
+  useEffect(() => {
+    // Calculate tab positions for the indicator
+    const calculateTabPositions = () => {
+      const positions: { [key: string]: { left: number; width: number } } = {};
+      const filteredItems = mainNavigationItems.filter((item) => {
+        if (isFirstTime) {
+          return item.path === "/wardrobe";
         }
-      >
-        {/* active pill that morphs between tabs */}
-        {isActive && (
-          <motion.span
-            layoutId="nav-active-pill"
-            className="absolute inset-0 rounded-full"
-            transition={{ type: "spring", stiffness: 500, damping: 34 }}
-          />
-        )}
+        return true;
+      });
 
-        <Icon className="w-4 h-4 relative z-10" />
-        {showLabel && <span className="relative z-10">{item.label}</span>}
+      filteredItems.forEach(item => {
+        const element = document.getElementById(`nav-tab-${item.path}`);
+        if (element) {
+          const rect = element.getBoundingClientRect();
+          const container = element.parentElement?.parentElement;
+          if (container) {
+            const containerRect = container.getBoundingClientRect();
+            positions[item.path] = {
+              left: rect.left - containerRect.left,
+              width: rect.width
+            };
+          }
+        }
+      });
+      setTabPositions(positions);
+    };
 
-        {/* glossy + glow overlays on top of pill */}
-        {isActive && (
-          <>
-            <span
-              className="pointer-events-none absolute -top-1 left-0 w-full h-[45%]
-              bg-gradient-to-b from-white/60 to-transparent opacity-70 rounded-full"
-            />
-            <span className="pointer-events-none absolute inset-0 blur-xl opacity-10 bg-white" />
-            <span
-              className="pointer-events-none absolute inset-0 opacity-[0.12]
-              bg-[radial-gradient(120px_60px_at_30%_10%,#fff,transparent)]"
-            />
-          </>
-        )}
-      </motion.div>
-    );
+    // Use requestAnimationFrame for better timing
+    const timer = requestAnimationFrame(calculateTabPositions);
+    window.addEventListener("resize", calculateTabPositions);
 
-    return item.enabled ? (
-      <Link key={item.path} href={item.path}>
-        {node}
-      </Link>
-    ) : (
-      <Tooltip key={item.path}>
-        <TooltipTrigger asChild>{node}</TooltipTrigger>
-        <TooltipContent>
-          <p>Đang hoàn thiện</p>
-        </TooltipContent>
-      </Tooltip>
-    );
-  };
+    return () => {
+      cancelAnimationFrame(timer);
+      window.removeEventListener("resize", calculateTabPositions);
+    };
+  }, [isFirstTime, pathname]);
+
+  useEffect(() => {
+    // Handle scroll to show/hide navbar
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+
+      // Show navbar when scrolling up or at the top
+      if (currentScrollY < lastScrollY || currentScrollY < 10) {
+        setIsVisible(true);
+      }
+      // Hide navbar when scrolling down (and not at the top)
+      else if (currentScrollY > lastScrollY && currentScrollY > 100) {
+        setIsVisible(false);
+      }
+
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [lastScrollY]);
+
+  const filteredMainItems = mainNavigationItems.filter((item) => {
+    if (isFirstTime) {
+      return item.path === "/wardrobe";
+    }
+    return true;
+  });
 
   return (
     <TooltipProvider>
-      <motion.nav
-        role="navigation"
-        aria-label="Primary"
-        className="sticky top-0 z-50 border-b border-white/10
-          bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900
-          backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.35)]"
+      <header
+        className="fixed top-0 left-0 right-0 z-[49] transition-all duration-300 py-4"
+        style={{
+          transform: isVisible ? 'translateY(0)' : 'translateY(-100%)',
+        }}
       >
-        <div className="container mx-auto px-6">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <Link
-              href="/wardrobe"
-              className="flex items-center space-x-3 group relative py-2"
-              suppressHydrationWarning
-            >
-              <div className="transform transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
-                <Logo
-                  variant="rectangle"
-                  width={70}
-                  height={48}
-                  className="filter drop-shadow-md group-hover:drop-shadow-lg"
+        <div className="max-w-[1600px] mx-auto px-10 flex items-center justify-between gap-20">
+          {/* PART 1: Logo - Left Corner */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+            className="flex items-center gap-1 cursor-pointer flex-shrink-0"
+          >
+            <Link href="/wardrobe">
+              <div className="relative w-80 h-28 md:w-72 md:h-24" style={{
+                filter: 'drop-shadow(0 0 20px rgba(59, 130, 246, 0.4)) drop-shadow(0 0 10px rgba(59, 130, 246, 0.3))'
+              }}>
+                <Image
+                  src="/SOP-logo (2).png"
+                  alt="SOP Logo"
+                  fill
+                  className="object-contain transition-opacity duration-300"
+                  priority
                 />
               </div>
             </Link>
+          </motion.div>
 
-            {/* Main navigation */}
+          {/* PART 2: Desktop Navigation - Center */}
+          <nav className="hidden lg:flex absolute left-1/2 transform -translate-x-1/2">
             <motion.div
-              initial={{ opacity: 0, y: -8 }}
+              initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.35 }}
-              className="hidden lg:flex items-center space-x-1"
+              transition={{ duration: 0.6, delay: 0.2 }}
             >
-              {mainNavigationItems
-                .filter((item) => {
-                  // First-time users can only see wardrobe
-                  if (isFirstTime) {
-                    return item.path === "/wardrobe";
-                  }
-                  return true;
-                })
-                .map((item, i) => (
-                  <motion.div
-                    key={item.path}
-                    initial={{ opacity: 0, y: -6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.06 * i, duration: 0.22 }}
-                  >
-                    <NavItem item={item} />
-                  </motion.div>
-                ))}
-            </motion.div>
+              <GlassCard
+                padding="0.75rem"
+                blur="5px"
+                brightness={1.2}
+                glowColor="rgba(255, 255, 255, 0.5)"
+                glowIntensity={12}
+                borderColor="rgba(210, 206, 206, 0.5)"
+                borderWidth="2px"
+                borderRadius="50px"
+                displacementScale={20}
+                className="relative shadow-xl shadow-white/20 bg-white/50"
+              >
+                <div className="flex items-center justify-center gap-2 relative">
+                  {/* Animated indicator */}
+                  {tabPositions[pathname] && (
+                    <>
+                      <motion.div
+                        className="absolute h-11 rounded-full z-10 pointer-events-none"
+                        initial={false}
+                        animate={{
+                          left: tabPositions[pathname].left,
+                          width: tabPositions[pathname].width
+                        }}
+                        transition={{
+                          type: "spring",
+                          stiffness: 350,
+                          damping: 30
+                        }}
+                        style={{
+                          backdropFilter: "brightness(1.3) blur(15px) url(#indicatorDisplacementFilter)",
+                          boxShadow: "inset 15px 15px 0px -15px rgba(59, 130, 246, 0.8), inset 0 0 8px 1px rgba(59, 130, 246, 0.8), 0 20px 40px rgba(37, 99, 235, 0.5)",
+                          border: "2px solid rgba(59, 130, 246, 0.6)",
+                        }}
+                      >
+                        <div className="absolute inset-0 bg-gradient-to-r from-sky-600 via-blue-700 to-blue-800 rounded-full" />
+                      </motion.div>
 
-            {/* Right side */}
-            <div className="flex items-center space-x-2">
-              {/* Hide personal navigation for first-time users */}
-              {!isFirstTime && (
-                <div className="hidden md:flex items-center space-x-1">
-                  {personalNavigationItems.map((item) => (
-                    <NavItem key={item.path} item={item} showLabel={false} />
-                  ))}
+                      <svg style={{ display: 'none' }}>
+                        <filter id="indicatorDisplacementFilter">
+                          <feTurbulence
+                            type="turbulence"
+                            baseFrequency="0.01"
+                            numOctaves={2}
+                            result="turbulence"
+                          />
+                          <feDisplacementMap
+                            in="SourceGraphic"
+                            in2="turbulence"
+                            scale={20}
+                            xChannelSelector="R"
+                            yChannelSelector="G"
+                          />
+                        </filter>
+                      </svg>
+                    </>
+                  )}
+
+                  {/* Navigation tabs */}
+                  {filteredMainItems.map((item, index) => {
+                    const Icon = item.icon;
+                    const isActive = pathname === item.path;
+
+                    const tabButton = (
+                      <motion.button
+                        key={item.path}
+                        id={`nav-tab-${item.path}`}
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5, delay: 0.3 + index * 0.05 }}
+                        onClick={() => item.enabled ? null : null}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className={`relative z-20 px-6 py-2.5 rounded-full font-bricolage font-bold text-sm transition-all duration-300 ease-out whitespace-nowrap flex items-center gap-2 ${
+                          isActive
+                            ? "text-white"
+                            : item.enabled
+                            ? "text-gray-700 hover:text-blue-600 hover:bg-white/40"
+                            : "text-gray-400 cursor-not-allowed"
+                        }`}
+                        disabled={!item.enabled}
+                      >
+                        <Icon className="w-4 h-4" />
+                        {item.label}
+                      </motion.button>
+                    );
+
+                    return item.enabled ? (
+                      <Link key={item.path} href={item.path}>
+                        {tabButton}
+                      </Link>
+                    ) : (
+                      <Tooltip key={item.path}>
+                        <TooltipTrigger asChild>
+                          {tabButton}
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Đang hoàn thiện</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    );
+                  })}
                 </div>
-              )}
+              </GlassCard>
+            </motion.div>
+          </nav>
 
-              {/* Hide messages for first-time users */}
-              {isInitialized && user && !isFirstTime && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
+          {/* PART 3: User Information - Right Corner */}
+          <div className="hidden lg:flex items-center gap-4 flex-shrink-0">
+            {/* Personal Navigation Icons */}
+            {!isFirstTime && (
+              <div className="flex items-center gap-2">
+                {personalNavigationItems.map((item) => {
+                  const Icon = item.icon;
+                  const navItem = (
                     <Button
+                      key={item.path}
                       variant="ghost"
                       size="sm"
-                      className="relative text-white/60 hover:text-white hover:bg-white/10 rounded-full"
+                      className="relative text-white/80 hover:text-white hover:bg-white/10 rounded-full p-2"
+                      disabled={!item.enabled}
                     >
-                      <MessageSquare className="w-4 h-4" />
+                      <Icon className="w-5 h-5" />
                     </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Đang hoàn thiện</p>
-                  </TooltipContent>
-                </Tooltip>
-              )}
+                  );
 
-              <div suppressHydrationWarning>
-                <NavbarAuthSection />
+                  return item.enabled ? (
+                    <Link key={item.path} href={item.path}>
+                      {navItem}
+                    </Link>
+                  ) : (
+                    <Tooltip key={item.path}>
+                      <TooltipTrigger asChild>
+                        {navItem}
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Đang hoàn thiện</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  );
+                })}
               </div>
+            )}
+
+            {/* Messages */}
+            {isInitialized && user && !isFirstTime && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="relative text-white/80 hover:text-white hover:bg-white/10 rounded-full p-2"
+                  >
+                    <MessageSquare className="w-5 h-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Đang hoàn thiện</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+
+            {/* Auth Section */}
+            <div suppressHydrationWarning>
+              <NavbarAuthSection />
             </div>
           </div>
         </div>
-      </motion.nav>
+      </header>
     </TooltipProvider>
   );
 }

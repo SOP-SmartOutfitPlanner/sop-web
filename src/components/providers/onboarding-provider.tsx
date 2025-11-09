@@ -2,54 +2,31 @@
 
 import { useEffect, useState } from "react";
 import { useAuthStore } from "@/store/auth-store";
-import { userAPI } from "@/lib/api/user-api";
 import { OnboardingDialog } from "@/components/wardrobe/onboarding-dialog";
 
 /**
  * OnboardingProvider - Shows onboarding modal for first-time users
- * This provider checks if the user needs onboarding and displays the modal globally
+ * This provider relies on the auth store's isFirstTime flag which is fetched during login
  */
 export function OnboardingProvider({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, user, isInitialized, isFirstTime, setIsFirstTime } = useAuthStore();
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
-  const [hasChecked, setHasChecked] = useState(false);
 
   useEffect(() => {
-    // Only check onboarding when:
+    // Only show onboarding when:
     // 1. Auth is initialized
     // 2. User is authenticated
     // 3. User exists
-    // 4. We haven't already checked
-    if (!isInitialized || !isAuthenticated || !user || hasChecked) {
+    // 4. User is first time (fetched during login)
+    if (!isInitialized || !isAuthenticated || !user) {
       return;
     }
 
-    // If we already know the user is first time from the store, show modal immediately
+    // Show onboarding modal if user is first time
     if (isFirstTime) {
       setIsOnboardingOpen(true);
-      setHasChecked(true);
-      return;
     }
-
-    // Otherwise, check with the API (only once)
-    const checkOnboarding = async () => {
-      try {
-        const profileResponse = await userAPI.getUserProfile();
-        const needsOnboarding = profileResponse.data.isFirstTime;
-
-        if (needsOnboarding) {
-          setIsFirstTime(true);
-          setIsOnboardingOpen(true);
-        }
-      } catch (error) {
-        console.error("Failed to check onboarding status:", error);
-      } finally {
-        setHasChecked(true);
-      }
-    };
-
-    checkOnboarding();
-  }, [isAuthenticated, user, isInitialized, isFirstTime, hasChecked, setIsFirstTime]);
+  }, [isAuthenticated, user, isInitialized, isFirstTime]);
 
   const handleOnboardingComplete = (open: boolean) => {
     setIsOnboardingOpen(open);
