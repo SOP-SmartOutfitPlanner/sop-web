@@ -1,292 +1,356 @@
+"use client";
+
 import { useState, useRef } from "react";
-import Image from "next/image";
-import { Upload, Sparkles, Check, X, Crop } from "lucide-react";
+import { Upload, X, Edit2, Plus } from "lucide-react";
+import { Image as AntImage } from "antd";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import { wardrobeAPI } from "@/lib/api/wardrobe-api";
-import {
-  parseAIResponseToFormData,
-  base64ToFile,
-} from "@/lib/utils/ai-suggestions-parser";
-import { ImageCropper } from "@/components/wardrobe/image-cropper";
-import type { WizardFormData, AISuggestions } from "./types";
+import { cn } from "@/lib/utils";
+import { TuiImageEditor } from "./TuiImageEditor";
+
+const MAX_IMAGES = 10;
+const MAX_FILE_SIZE_MB = 10;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
+interface ImageFile {
+  file: File;
+  preview: string;
+  id: string;
+}
 
 interface StepPhotoAIProps {
-  formData: WizardFormData;
-  updateFormData: (updates: Partial<WizardFormData>) => void;
-  aiSuggestions: AISuggestions | null;
-  setAiSuggestions: (suggestions: AISuggestions | null) => void;
-  // New props for external file handling
-  onFileSelect?: (file: File) => void;
-  onClearFile?: () => void;
-  selectedFile?: File | null;
-  previewUrl?: string;
+  onFilesSelect?: (files: File[]) => void;
+  onClearFiles?: () => void;
 }
 
 export function StepPhotoAI({
-  formData,
-  updateFormData,
-  setAiSuggestions,
-  onFileSelect,
-  onClearFile,
-  selectedFile: _selectedFile,
-  previewUrl,
+  onFilesSelect,
+  onClearFiles,
 }: StepPhotoAIProps) {
   const [isDragging, setIsDragging] = useState(false);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [tempImage, setTempImage] = useState<string | null>(null);
-  const [showCropper, setShowCropper] = useState(false);
+  const [imageFiles, setImageFiles] = useState<ImageFile[]>([]);
+  const [editingImage, setEditingImage] = useState<{ url: string; index: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = (file: File) => {
+  // Validate file
+  const validateFile = (file: File): string | null => {
     if (!file.type.startsWith("image/")) {
-      toast.error("Please select an image file");
+      return "File must be an image";
+    }
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      return `File size must be less than ${MAX_FILE_SIZE_MB}MB`;
+    }
+    return null;
+  };
+
+  // Handle file selection
+  const handleFileSelect = (files: FileList | File[]) => {
+    const fileArray = Array.from(files);
+    const currentCount = imageFiles.length;
+
+    if (currentCount + fileArray.length > MAX_IMAGES) {
+      toast.error(`You can only upload up to ${MAX_IMAGES} images`);
       return;
     }
 
-    // Use external handler if provided (new flow)
-    if (onFileSelect) {
-      onFileSelect(file);
-      return;
+    const validFiles: ImageFile[] = [];
+    const errors: string[] = [];
+
+    fileArray.forEach((file) => {
+      const error = validateFile(file);
+      if (error) {
+        errors.push(`${file.name}: ${error}`);
+      } else {
+        validFiles.push({
+          file,
+          preview: URL.createObjectURL(file),
+          id: `${Date.now()}-${Math.random()}`,
+        });
+      }
+    });
+
+    if (errors.length > 0) {
+      errors.forEach((error) => toast.error(error));
     }
 
-    // Otherwise use old flow with cropper
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const imageUrl = e.target?.result as string;
-      setTempImage(imageUrl);
-      setShowCropper(true);
-    };
-    reader.readAsDataURL(file);
+    if (validFiles.length > 0) {
+      const newImageFiles = [...imageFiles, ...validFiles];
+      setImageFiles(newImageFiles);
+
+      // Notify parent component
+      if (onFilesSelect) {
+        onFilesSelect(newImageFiles.map((img) => img.file));
+      }
+
+      toast.success(`Added ${validFiles.length} image${validFiles.length > 1 ? 's' : ''}`);
+    }
   };
 
-  const handleCropComplete = (croppedImage: string) => {
-    updateFormData({ uploadedImageURL: croppedImage });
-    setShowCropper(false);
-    setTempImage(null);
-    toast.success("Image cropped successfully!");
-  };
-
-  const handleCropCancel = () => {
-    setShowCropper(false);
-    setTempImage(null);
-  };
-
+  // Handle drag and drop
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
 
-    const file = e.dataTransfer.files[0];
-    if (file) handleFileSelect(file);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFileSelect(e.dataTransfer.files);
+    }
   };
 
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  // Handle paste
   const handlePaste = (e: React.ClipboardEvent) => {
     const items = e.clipboardData.items;
+    const files: File[] = [];
+
     for (let i = 0; i < items.length; i++) {
       if (items[i].type.startsWith("image/")) {
         const file = items[i].getAsFile();
-        if (file) handleFileSelect(file);
-        break;
+        if (file) files.push(file);
       }
     }
-  };
 
-  const handleAIAnalyze = async () => {
-    // In new flow, this button is not used (analysis is triggered externally)
-    if (onFileSelect) return;
-
-    if (!formData.uploadedImageURL) return;
-
-    setIsAnalyzing(true);
-
-    try {
-      // Convert base64 to file
-      const file = await base64ToFile(formData.uploadedImageURL, "item.jpg");
-
-      // Call AI analysis API
-      const response = await wardrobeAPI.getImageSummary(file);
-
-      // Save AI response (wardrobeAPI already returns the data object)
-      setAiSuggestions(response);
-
-      toast.success("Analysis successful! ✅");
-    } catch (error) {
-      console.error("AI analysis failed:", error);
-      toast.error("Cannot analyze image. Please try again.");
-    } finally {
-      setIsAnalyzing(false);
+    if (files.length > 0) {
+      handleFileSelect(files);
     }
   };
 
-  const handleClearImage = () => {
-    // Use external handler if provided (new flow)
-    if (onClearFile) {
-      onClearFile();
-      return;
+  // Remove image
+  const handleRemoveImage = (index: number) => {
+    const newImageFiles = imageFiles.filter((_, i) => i !== index);
+
+    // Revoke object URL to prevent memory leaks
+    URL.revokeObjectURL(imageFiles[index].preview);
+
+    setImageFiles(newImageFiles);
+
+    if (onFilesSelect) {
+      onFilesSelect(newImageFiles.map((img) => img.file));
     }
 
-    // Otherwise use old flow
-    updateFormData({ uploadedImageURL: "", imageRemBgURL: "" });
-    setAiSuggestions(null);
+    toast.success("Image removed");
   };
+
+  // Clear all images
+  const handleClearAll = () => {
+    imageFiles.forEach((img) => URL.revokeObjectURL(img.preview));
+    setImageFiles([]);
+
+    if (onClearFiles) {
+      onClearFiles();
+    }
+
+    toast.success("All images cleared");
+  };
+
+  // Handle edit complete
+  const handleEditComplete = (editedFile: File, index: number) => {
+    const newImageFiles = [...imageFiles];
+
+    // Revoke old preview URL
+    URL.revokeObjectURL(newImageFiles[index].preview);
+
+    // Update with new file
+    newImageFiles[index] = {
+      file: editedFile,
+      preview: URL.createObjectURL(editedFile),
+      id: `${Date.now()}-${Math.random()}`,
+    };
+
+    setImageFiles(newImageFiles);
+
+    if (onFilesSelect) {
+      onFilesSelect(newImageFiles.map((img) => img.file));
+    }
+
+    setEditingImage(null);
+    toast.success("Image updated");
+  };
+
+  const canAddMore = imageFiles.length < MAX_IMAGES;
 
   return (
     <>
-      {/* Image Cropper Dialog */}
-      {tempImage && (
-        <ImageCropper
-          image={tempImage}
-          onCropComplete={handleCropComplete}
-          onCancel={handleCropCancel}
-          open={showCropper}
+      {/* TUI Image Editor */}
+      {editingImage && (
+        <TuiImageEditor
+          open={true}
+          imageUrl={editingImage.url}
+          onComplete={(file) => handleEditComplete(file, editingImage.index)}
+          onCancel={() => setEditingImage(null)}
         />
       )}
 
-      <div>
-        {/* Dropzone */}
-        <div className="space-y-4">
+      <div
+        className="h-full flex flex-col"
+        onPaste={handlePaste}
+        tabIndex={0}
+      >
+        {/* Image Grid - At Top */}
+        {imageFiles.length > 0 ? (
+          <>
+            {/* Header - Fixed height */}
+            <div className="flex items-center justify-between mb-1.5 flex-shrink-0">
+              <h3 className="font-bricolage font-bold text-sm text-white">
+                Selected ({imageFiles.length}/{MAX_IMAGES})
+              </h3>
+              <button
+                onClick={handleClearAll}
+                className="px-3 py-2 bg-gradient-to-r from-blue-500/60 to-cyan-500/60 hover:from-blue-600/70 hover:to-cyan-600/70 backdrop-blur-sm text-white rounded-lg font-bricolage font-semibold shadow-lg transition-all duration-200 border border-blue-400/50 text-xs h-8 flex items-center"
+              >
+                <X className="w-3.5 h-3.5 mr-1" />
+                Clear
+              </button>
+            </div>
+
+            {/* Image Grid - Fixed height to fit in dialog */}
+            <div className="flex-shrink-0 mb-2">
+              <div className="grid grid-cols-5 gap-2">
+                <AntImage.PreviewGroup>
+                  {imageFiles.map((imageFile, index) => (
+                    <div
+                      key={imageFile.id}
+                      className="relative group aspect-square rounded-lg overflow-hidden hover:shadow-lg transition-all duration-200"
+                    >
+                      <AntImage
+                        src={imageFile.preview}
+                        alt={`Image ${index + 1}`}
+                        className="w-full h-full object-cover"
+                        preview={{
+                          mask: (
+                            <div className="flex items-center justify-center">
+                              <span className="text-white font-bricolage font-medium text-xs">
+                                Preview
+                              </span>
+                            </div>
+                          ),
+                        }}
+                      />
+
+                      {/* Edit and Remove buttons */}
+                      <div className="absolute top-0.5 right-0.5 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingImage({ url: imageFile.preview, index });
+                          }}
+                          className="w-7 h-7 rounded bg-blue-500 hover:bg-blue-600 flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-110"
+                          title="Edit image"
+                        >
+                          <Edit2 className="w-3 h-3 text-white" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveImage(index);
+                          }}
+                          className="w-7 h-7 rounded bg-red-500 hover:bg-red-600 flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-110"
+                          title="Remove image"
+                        >
+                          <X className="w-3 h-3 text-white" />
+                        </button>
+                      </div>
+
+                      {/* File info overlay */}
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-1 py-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        <p className="text-[8px] text-white font-bricolage font-medium truncate">
+                          {imageFile.file.name}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </AntImage.PreviewGroup>
+              </div>
+            </div>
+
+            {/* Add More Button - Fixed at bottom */}
+            {canAddMore && (
+              <div className="flex justify-center flex-shrink-0 mt-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files.length > 0) {
+                      handleFileSelect(e.target.files);
+                    }
+                  }}
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-4 py-2 bg-gradient-to-r from-blue-500/60 to-cyan-500/60 hover:from-blue-600/70 hover:to-cyan-600/70 backdrop-blur-sm text-white rounded-lg font-bricolage font-semibold shadow-lg transition-all duration-200 border border-blue-400/50 flex items-center"
+                >
+                  <Plus className="w-5 h-5 mr-2" />
+                  Add More Images ({imageFiles.length}/{MAX_IMAGES})
+                </button>
+              </div>
+            )}
+          </>
+        ) : (
+          /* Upload Area - Takes full height when no images */
           <div
-            className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-              isDragging ? "border-primary bg-primary/5" : "border-border"
-            }`}
+            className={cn(
+              "relative border-2 border-dashed rounded-2xl text-center transition-all duration-300 h-full flex items-center justify-center",
+              isDragging
+                ? "border-blue-400 bg-blue-50/50 scale-[1.02]"
+                : "border-gray-300 bg-white/70 hover:border-gray-400",
+              "backdrop-blur-sm shadow-lg"
+            )}
             onDrop={handleDrop}
-            onDragOver={(e) => {
-              e.preventDefault();
-              setIsDragging(true);
-            }}
-            onDragLeave={() => setIsDragging(false)}
-            onPaste={handlePaste}
-            tabIndex={0}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
           >
             <input
               ref={fileInputRef}
               type="file"
               accept="image/*"
+              multiple
               className="hidden"
-              onChange={(e) =>
-                e.target.files?.[0] && handleFileSelect(e.target.files[0])
-              }
+              onChange={(e) => {
+                if (e.target.files && e.target.files.length > 0) {
+                  handleFileSelect(e.target.files);
+                }
+              }}
             />
 
-            {!(previewUrl || formData.uploadedImageURL) ? (
-              <div className="space-y-4">
-                <div className="w-16 h-16 mx-auto rounded-full bg-muted flex items-center justify-center">
-                  <Upload className="w-8 h-8 text-muted-foreground" />
-                </div>
-                <div>
-                  <p className="font-medium">Drag and drop image here</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    or click to select file, or paste from clipboard
-                  </p>
-                </div>
-                <Button
-                  variant="outline"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  Select File
-                </Button>
+            <div className="space-y-3">
+              <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg">
+                <Upload className="w-8 h-8 text-white" />
               </div>
-            ) : (
-              <div className="relative w-full h-64">
-                <Image
-                  src={previewUrl || formData.uploadedImageURL}
-                  alt="Uploaded item"
-                  fill
-                  className="object-contain rounded-lg"
-                />
-                <div className="absolute top-2 right-2 flex gap-2">
-                  {!previewUrl && (
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => {
-                        setTempImage(formData.uploadedImageURL);
-                        setShowCropper(true);
-                      }}
-                    >
-                      <Crop className="w-4 h-4" />
-                    </Button>
-                  )}
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={handleClearImage}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
+
+              <div>
+                <p className="font-bricolage font-bold text-base text-gray-800">
+                  Drag and drop images here
+                </p>
+                <p className="font-bricolage text-xs text-gray-600 mt-1">
+                  or click the button below to select files
+                </p>
+                <p className="font-bricolage text-[10px] text-gray-500 mt-1">
+                  Max {MAX_IMAGES} images, {MAX_FILE_SIZE_MB}MB each • PNG, JPG, WEBP
+                </p>
               </div>
-            )}
+
+              <Button
+                onClick={() => fileInputRef.current?.click()}
+                className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-bricolage font-semibold shadow-md"
+                size="default"
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                Select Images
+              </Button>
+            </div>
           </div>
-
-          {formData.uploadedImageURL && (
-            <Button
-              className="w-full"
-              onClick={handleAIAnalyze}
-              disabled={isAnalyzing}
-            >
-              {isAnalyzing ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                  Đang phân tích...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Phân tích bằng AI
-                </>
-              )}
-            </Button>
-          )}
-        </div>
-
-        {/* Preview & AI Suggestions */}
-        <div className="space-y-4">
-          {formData.uploadedImageURL && (
-            <Card className="p-4">
-              <h4 className="font-medium mb-3">Preview</h4>
-              <div className="aspect-square rounded-lg overflow-hidden bg-muted relative">
-                <Image
-                  src={formData.uploadedImageURL}
-                  alt="Preview"
-                  fill
-                  className="object-cover hover:scale-110 transition-transform duration-300"
-                />
-              </div>
-            </Card>
-          )}
-        </div>
+        )}
       </div>
     </>
-  );
-}
-
-function SuggestionRow({
-  label,
-  value,
-  onApply,
-}: {
-  label: string;
-  value: string;
-  onApply: () => void;
-}) {
-  return (
-    <div className="flex items-center justify-between p-2 rounded bg-background border">
-      <div className="flex items-center gap-2 flex-1">
-        <span className="text-xs font-medium text-muted-foreground min-w-20">
-          {label}:
-        </span>
-        <span className="text-sm">{value}</span>
-      </div>
-      <Button
-        size="sm"
-        variant="ghost"
-        onClick={onApply}
-        className="h-7 w-7 p-0"
-      >
-        <Check className="w-3 h-3" />
-      </Button>
-    </div>
   );
 }

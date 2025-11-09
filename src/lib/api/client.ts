@@ -181,6 +181,26 @@ class ApiClient {
       },
       async (error: AxiosError) => {
 
+        // Handle 404 with partial success (207 Multi-Status equivalent)
+        // When bulk operations have some successes and some failures,
+        // the API returns 404 with successfulItems and failedItems
+        if (error.response?.status === 404) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const responseData = error.response?.data as any;
+
+          // Check if this is a partial success response (has successfulItems)
+          if (responseData?.data?.successfulItems) {
+            // Treat as 207 Multi-Status - return the response instead of rejecting
+            return {
+              ...error.response,
+              status: 207,
+              data: {
+                ...responseData,
+                statusCode: 207, // Override to 207
+              }
+            } as AxiosResponse;
+          }
+        }
 
         // Handle 401 Unauthorized - Try to refresh token
         // BUT: Don't refresh for public auth endpoints!

@@ -45,7 +45,12 @@ export function getCollectionsWithCounts(wardrobeItems: WardrobeItem[]): Collect
     } else {
       // Count items that have the collection in their occasions/tags
       count = wardrobeItems.filter((item) => {
-        const hasOccasion = item.occasions?.includes(collection.id as "casual" | "smart" | "formal" | "sport" | "travel");
+        // Check occasions - could be string array or object array
+        const hasOccasion = item.occasions?.some(occasion =>
+          typeof occasion === 'string'
+            ? occasion === collection.id
+            : occasion.name?.toLowerCase() === collection.id.toLowerCase()
+        );
         const hasTag = item.tags?.includes(collection.id);
         return hasOccasion || hasTag;
       }).length;

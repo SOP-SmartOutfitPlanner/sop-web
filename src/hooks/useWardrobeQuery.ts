@@ -35,10 +35,10 @@ export function useWardrobeItems(filters: WardrobeFilters = {}) {
     queryKey: queryKeys.wardrobe.list(filters),
     queryFn: async (): Promise<ApiWardrobeItem[]> => {
       // For now, use existing API - later can implement pagination
-      const items = await wardrobeAPI.getItems();
-      
+      const response = await wardrobeAPI.getItems();
+
       // Client-side filtering until backend pagination is implemented
-      let filteredItems = items;
+      let filteredItems = response.data;
       
       if (filters.search) {
         const searchTerm = filters.search.toLowerCase();
@@ -106,8 +106,15 @@ export function useCreateWardrobeItem() {
           id: Date.now(), // Temporary ID
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
+          categoryName: newItem.categoryName || '',
+          color: newItem.color || '',
+          aiDescription: newItem.aiDescription || '',
+          weatherSuitable: newItem.weatherSuitable || '',
+          condition: newItem.condition || '',
+          pattern: newItem.pattern || '',
+          fabric: newItem.fabric || '',
         };
-        
+
         queryClient.setQueryData(
           queryKeys.wardrobe.list({}),
           [...previousItems, optimisticItem]

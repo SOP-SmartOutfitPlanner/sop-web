@@ -19,6 +19,15 @@ interface WardrobeStore {
   selectedItems: string[];
   isSelectionMode: boolean;
   hasInitialFetch: boolean;
+  // Pagination
+  currentPage: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrevious: boolean;
+  setPage: (page: number) => void;
+  setPageSize: (size: number) => void;
   getRawItemById: (id: number) => ApiWardrobeItem | undefined; // Helper to get raw item
   addItem: (item: CreateWardrobeItemRequest) => Promise<void>;
   addItemOptimistic: (apiItem: ApiWardrobeItem) => void; // ⚡ Optimistic update
@@ -87,8 +96,10 @@ const filterItems = (
     if (
       filters.occasions?.length &&
       !filters.occasions.some((o) =>
-        item.occasions?.includes(
-          o as "casual" | "smart" | "formal" | "sport" | "travel"
+        item.occasions?.some(occasion =>
+          typeof occasion === 'string'
+            ? occasion === o
+            : occasion.name?.toLowerCase() === o.toLowerCase()
         )
       )
     )
@@ -96,13 +107,10 @@ const filterItems = (
 
     // Collection filter - based on occasions or tags
     if (filters.collectionId && filters.collectionId !== "all") {
-      const hasOccasion = item.occasions?.includes(
-        filters.collectionId as
-          | "casual"
-          | "smart"
-          | "formal"
-          | "sport"
-          | "travel"
+      const hasOccasion = item.occasions?.some(occasion =>
+        typeof occasion === 'string'
+          ? occasion === filters.collectionId
+          : occasion.name?.toLowerCase() === filters.collectionId?.toLowerCase()
       );
       const hasTag = item.tags?.includes(filters.collectionId);
 
@@ -117,7 +125,11 @@ const filterItems = (
     if (
       filters.seasons?.length &&
       !filters.seasons.some((s) =>
-        item.seasons?.includes(s as "spring" | "summer" | "fall" | "winter")
+        item.seasons?.some(season =>
+          typeof season === 'string'
+            ? season === s
+            : season.name?.toLowerCase() === s.toLowerCase()
+        )
       )
     )
       return false;
@@ -174,6 +186,13 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
   selectedItems: [],
   isSelectionMode: false,
   hasInitialFetch: false,
+  // Pagination state
+  currentPage: 1,
+  pageSize: 15,
+  totalCount: 0,
+  totalPages: 0,
+  hasNext: false,
+  hasPrevious: false,
 
   // Helper to get raw API item by ID
   getRawItemById: (id: number) => {
@@ -181,21 +200,25 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
     return state.rawApiItems.find((item) => item.id === id);
   },
 
-  // Fetch items from API
+  // Fetch items from API with pagination
   fetchItems: async () => {
     set({ isLoading: true, error: null });
     try {
-      const apiItems = await wardrobeAPI.getItems();
-      const items = apiItems.map(apiItemToWardrobeItem);
       const state = get();
+      const response = await wardrobeAPI.getItems(state.currentPage, state.pageSize);
+      const items = response.data.map(apiItemToWardrobeItem);
       const filtered = filterItems(items, state.filters, state.searchQuery);
       const sorted = sortItems(filtered, state.sortBy);
       set({
         items,
-        rawApiItems: apiItems, // Store raw API items
+        rawApiItems: response.data, // Store raw API items
         isLoading: false,
         filteredItems: sorted,
         hasInitialFetch: true,
+        totalCount: response.metaData.totalCount,
+        totalPages: response.metaData.totalPages,
+        hasNext: response.metaData.hasNext,
+        hasPrevious: response.metaData.hasPrevious,
       });
     } catch (error) {
       console.error("Failed to fetch items:", error);
@@ -204,6 +227,17 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
         error: error instanceof Error ? error.message : "Failed to fetch items",
       });
     }
+  },
+
+  // Pagination actions
+  setPage: (page: number) => {
+    set({ currentPage: page });
+    get().fetchItems();
+  },
+
+  setPageSize: (size: number) => {
+    set({ pageSize: size, currentPage: 1 }); // Reset to page 1 when changing page size
+    get().fetchItems();
   },
 
   // Add new item via API
@@ -277,7 +311,7 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
       // Convert WardrobeItem fields to API format
       const apiUpdateData: Partial<CreateWardrobeItemRequest> = {
         name: updatedData.name,
-        color: updatedData.color || updatedData.colors?.[0],
+        color: updatedData.color || (typeof updatedData.colors?.[0] === 'object' ? updatedData.colors[0].name : updatedData.colors?.[0]),
         brand: updatedData.brand,
         imgUrl: updatedData.imageUrl,
         // Add other necessary fields as needed
@@ -479,6 +513,12 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
       isSelectionMode: false,
       hasInitialFetch: false,
       searchQuery: "",
+      currentPage: 1,
+      pageSize: 15,
+      totalCount: 0,
+      totalPages: 0,
+      hasNext: false,
+      hasPrevious: false,
     });
   },
 }));
@@ -612,8 +652,8 @@ const apiItemToWardrobeItem = (apiItem: ApiWardrobeItem): WardrobeItem => {
     condition: apiItem.condition || undefined,
     pattern: apiItem.pattern || undefined,
     fabric: apiItem.fabric || undefined,
-    isAnalyzed: apiItem.isAnalyzed,
-    aiConfidence: apiItem.aiConfidence,
+    isAnalyzed: (apiItem as { isAnalyzed?: boolean }).isAnalyzed,
+    aiConfidence: (apiItem as { aiConfidence?: number }).aiConfidence,
     styles: apiItem.styles,
     // Additional fields for ItemCard compatibility
     category: {

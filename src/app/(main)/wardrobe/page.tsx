@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import { toast } from "sonner";
 import { WardrobeHeader } from "@/components/wardrobe/wardrobe-header";
 import { WardrobeContent } from "@/components/wardrobe/wardrobe-content";
+import { WardrobeStats } from "@/components/wardrobe/wardrobe-stats";
 import { ErrorDisplay } from "@/components/common/error-display";
 import { useWardrobeStore } from "@/store/wardrobe-store";
 import { useAuthStore } from "@/store/auth-store";
@@ -85,6 +86,46 @@ export default function WardrobePage() {
     setStoreFilters(newFilters);
   };
 
+  // Prevent scrolling when dialog is open
+  useEffect(() => {
+    if (isAddItemOpen) {
+      // Stop Lenis smooth scrolling
+      const html = document.documentElement;
+      html.classList.add("lenis-stopped");
+
+      // Prevent body scroll
+      document.body.style.overflow = "hidden";
+      document.body.style.position = "fixed";
+      document.body.style.width = "100%";
+      document.body.style.top = `-${window.scrollY}px`;
+    } else {
+      // Re-enable Lenis smooth scrolling
+      const html = document.documentElement;
+      html.classList.remove("lenis-stopped");
+
+      // Restore body scroll and scroll position
+      const scrollY = document.body.style.top;
+      document.body.style.overflow = "";
+      document.body.style.position = "";
+      document.body.style.width = "";
+      document.body.style.top = "";
+
+      if (scrollY) {
+        window.scrollTo(0, parseInt(scrollY || "0") * -1);
+      }
+    }
+
+    // Cleanup on unmount
+    return () => {
+      const html = document.documentElement;
+      html.classList.remove("lenis-stopped");
+      document.body.style.overflow = "";
+      document.body.style.position = "";
+      document.body.style.width = "";
+      document.body.style.top = "";
+    };
+  }, [isAddItemOpen]);
+
   // Redirect to login if not authenticated (useEffect AFTER all other hooks)
   useEffect(() => {
     // Give time for AuthProvider to initialize
@@ -129,6 +170,9 @@ export default function WardrobePage() {
 
         {/* Main Content */}
         <WardrobeContent onEditItem={handleEditItem} />
+
+        {/* Wardrobe Statistics at Bottom */}
+        <WardrobeStats />
 
         {/* Add Item Wizard */}
         <AddItemWizard

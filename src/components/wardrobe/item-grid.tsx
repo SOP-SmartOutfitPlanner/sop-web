@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { Package } from "lucide-react";
+import { Pagination } from "antd";
 import { ItemCard } from "./item-card";
 import { useWardrobeStore } from "@/store/wardrobe-store";
 import { Skeleton } from "../ui/skeleton";
@@ -45,6 +46,12 @@ export function ItemGrid({
     toggleItemSelection,
     isSelectionMode,
     hasInitialFetch,
+    // Pagination
+    currentPage,
+    pageSize,
+    totalCount,
+    setPage,
+    setPageSize,
   } = useWardrobeStore();
 
   // Use external props or fallback to store values
@@ -145,46 +152,71 @@ export function ItemGrid({
   }
 
   return (
-    <div
-      className={cn(
-        "grid gap-6",
-        "grid-cols-1",
-        "sm:grid-cols-2",
-        "lg:grid-cols-3",
-        "xl:grid-cols-4"
-      )}
-    >
-      {items.map((item, index) => (
-        <motion.div
-          key={item.id}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{
-            duration: 0.3,
-            delay: index * 0.05,
-            ease: "easeOut"
-          }}
-          className="h-full"
-        >
-          <ItemCard
-            item={item}
-            isSelected={selectedItems.includes(item.id)}
-            onSelect={handleSelectItem}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            onUseInOutfit={handleUseInOutfit}
-            showCheckbox={showCheckboxes || isSelectionMode}
-          />
-        </motion.div>
-      ))}
+    <div className="space-y-6">
+      <div
+        className={cn(
+          "grid gap-6",
+          "grid-cols-1",
+          "sm:grid-cols-2",
+          "md:grid-cols-3",
+          "lg:grid-cols-4",
+          "xl:grid-cols-5"
+        )}
+      >
+        {items.map((item, index) => (
+          <motion.div
+            key={item.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{
+              duration: 0.3,
+              delay: index * 0.05,
+              ease: "easeOut"
+            }}
+            className="h-full"
+          >
+            <ItemCard
+              item={item}
+              isSelected={selectedItems.includes(item.id)}
+              onSelect={handleSelectItem}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              onUseInOutfit={handleUseInOutfit}
+              showCheckbox={showCheckboxes || isSelectionMode}
+            />
+          </motion.div>
+        ))}
 
-      {/* Loading skeletons */}
-      {loading && (
-        <>
-          {Array.from({ length: 8 }).map((_, index) => (
-            <SkeletonCard key={`skeleton-${index}`} />
-          ))}
-        </>
+        {/* Loading skeletons */}
+        {loading && (
+          <>
+            {Array.from({ length: 8 }).map((_, index) => (
+              <SkeletonCard key={`skeleton-${index}`} />
+            ))}
+          </>
+        )}
+      </div>
+
+      {/* Pagination - only show when not using external items and not loading */}
+      {!externalItems && !loading && items.length > 0 && (
+        <div className="flex justify-center mt-8">
+          <Pagination
+            current={currentPage}
+            pageSize={pageSize}
+            total={totalCount}
+            onChange={(page, size) => {
+              if (size !== pageSize) {
+                setPageSize(size);
+              } else {
+                setPage(page);
+              }
+            }}
+            showSizeChanger
+            showTotal={(total, range) => `${range[0]}-${range[1]} of ${total} items`}
+            pageSizeOptions={[15, 30, 45, 60]}
+            className="antd-pagination"
+          />
+        </div>
       )}
     </div>
   );
