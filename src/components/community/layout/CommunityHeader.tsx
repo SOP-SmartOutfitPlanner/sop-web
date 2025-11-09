@@ -4,6 +4,7 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { NewPostDialog } from "../NewPostDialog";
+import ShareLookButton3D from "@/components/ui/ShareLookButton3D";
 
 interface CommunityHeaderProps {
   isNewPostOpen: boolean;
@@ -26,23 +27,25 @@ export function CommunityHeader({
   return (
     <div className="flex items-center justify-between">
       <div>
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
-          Style Community
+        <h1 className="font-dela-gothic text-2xl md:text-3xl lg:text-4xl leading-tight">
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-cyan-200">
+            Style Community
+          </span>
+          <p className="text-lg text-blue-100 mt-1">
+            Discover, share, and get inspired by fashion looks
+          </p>
         </h1>
-        <p className="text-lg text-muted-foreground mt-1">
-          Discover, share, and get inspired by fashion looks
-        </p>
       </div>
 
       <Dialog open={isNewPostOpen} onOpenChange={onNewPostOpenChange}>
         <DialogTrigger asChild>
-          <Button className="bg-gradient-to-r from-primary to-accent hover:shadow-lg hover:shadow-primary/25 transition-all duration-200">
-            <Plus className="w-5 h-5 mr-2" />
-            Share Look
-          </Button>
+          <ShareLookButton3D />
         </DialogTrigger>
-        <DialogContent className="max-w-2xl">
-          <NewPostDialog onCreatePost={onCreatePost} />
+
+        <DialogContent className="max-w-2xl max-h-[90vh] !overflow-hidden flex flex-col">
+          <div className="flex-1 overflow-y-auto">
+            <NewPostDialog onCreatePost={onCreatePost} />
+          </div>
         </DialogContent>
       </Dialog>
     </div>

@@ -10,6 +10,7 @@ interface PostImageProps {
 
 export function PostImage({ images, onDoubleClick }: PostImageProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
   const hasMultiple = images.length > 1;
 
   if (images.length === 0) return null;
@@ -26,15 +27,41 @@ export function PostImage({ images, onDoubleClick }: PostImageProps) {
 
   return (
     <div
-      className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-gradient-to-br from-muted/30 to-background group cursor-pointer"
+      className="relative w-full rounded-3xl overflow-hidden group cursor-pointer transition-all duration-300"
+      style={{ height: "clamp(260px, 40vh, 520px)" }}
       onDoubleClick={onDoubleClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="relative w-full h-full">
+      {/* Glass border effect */}
+      <div className={`absolute inset-0 rounded-3xl pointer-events-none transition-all duration-300 ${
+        isHovered
+          ? "bg-gradient-to-br from-cyan-300/20 via-blue-300/10 to-indigo-300/20 border-2 border-cyan-400/50 shadow-lg shadow-cyan-500/30"
+          : "bg-gradient-to-br from-cyan-300/10 via-blue-300/5 to-indigo-300/10 border-2 border-cyan-400/20"
+      }`} />
+
+      {/* Background gradient - Transitions to white on hover */}
+      <div className={`absolute inset-0 z-0 transition-all duration-300 ${
+        isHovered
+          ? "bg-gradient-to-br from-white/80 via-blue-50/60 to-cyan-50/50"
+          : "bg-gradient-to-br from-muted/30 to-background"
+      }`} />
+      
+      {/* Premium white glass overlay on hover */}
+      <div className={`absolute inset-0 rounded-3xl backdrop-blur-sm pointer-events-none transition-all duration-300 z-[5] ${
+        isHovered
+          ? "bg-gradient-to-br from-white/20 via-blue-100/10 to-cyan-100/10"
+          : "bg-transparent"
+      }`} />
+      
+      <div className="relative w-full h-full z-10">
         <Image
           src={images[currentIndex]}
           alt={`Post image ${currentIndex + 1}`}
           fill
-          className="object-cover group-hover:scale-105 transition-transform duration-300"
+          className="object-contain transition-transform duration-300 group-hover:scale-[1.02]"
+          sizes="(max-width: 768px) 100vw, 680px"
+          priority={false}
         />
       </div>
 
@@ -44,7 +71,7 @@ export function PostImage({ images, onDoubleClick }: PostImageProps) {
           <Button
             variant="ghost"
             size="icon"
-            className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-black/50 hover:bg-black/70 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+            className="absolute left-2 top-1/2 -translate-y-1/2 z-20 h-9 w-9 rounded-full bg-gradient-to-br from-cyan-500/60 to-blue-500/60 hover:from-cyan-500/80 hover:to-blue-500/80 text-white opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-lg shadow-cyan-500/40 hover:shadow-cyan-500/60 backdrop-blur-sm border border-cyan-400/30 hover:border-cyan-400/50"
             onClick={handlePrev}
           >
             <ChevronLeft className="h-5 w-5" />
@@ -52,7 +79,7 @@ export function PostImage({ images, onDoubleClick }: PostImageProps) {
           <Button
             variant="ghost"
             size="icon"
-            className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-black/50 hover:bg-black/70 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+            className="absolute right-2 top-1/2 -translate-y-1/2 z-20 h-9 w-9 rounded-full bg-gradient-to-br from-cyan-500/60 to-blue-500/60 hover:from-cyan-500/80 hover:to-blue-500/80 text-white opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-lg shadow-cyan-500/40 hover:shadow-cyan-500/60 backdrop-blur-sm border border-cyan-400/30 hover:border-cyan-400/50"
             onClick={handleNext}
           >
             <ChevronRight className="h-5 w-5" />
@@ -62,14 +89,14 @@ export function PostImage({ images, onDoubleClick }: PostImageProps) {
 
       {/* Image counter */}
       {hasMultiple && (
-        <div className="absolute top-2 right-2 px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium">
+        <div className="absolute top-3 right-3 z-20 px-3 py-1.5 rounded-full bg-gradient-to-r from-cyan-500/60 to-blue-500/60 text-white text-xs font-semibold backdrop-blur-sm border border-cyan-400/30 shadow-lg shadow-cyan-500/30">
           {currentIndex + 1} / {images.length}
         </div>
       )}
 
       {/* Dot indicators */}
       {hasMultiple && (
-        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex gap-2 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-sm border border-white/10">
           {images.map((_, index) => (
             <button
               key={index}
@@ -77,10 +104,10 @@ export function PostImage({ images, onDoubleClick }: PostImageProps) {
                 e.stopPropagation();
                 setCurrentIndex(index);
               }}
-              className={`w-1.5 h-1.5 rounded-full transition-all ${
+              className={`rounded-full transition-all duration-300 ${
                 index === currentIndex
-                  ? "bg-white w-4"
-                  : "bg-white/50 hover:bg-white/75"
+                  ? "bg-cyan-400 w-2.5 h-2.5 shadow-lg shadow-cyan-500/50"
+                  : "bg-white/40 w-2 h-2 hover:bg-white/60"
               }`}
             />
           ))}

@@ -147,7 +147,7 @@ export function useFeed(pageSize: number = 10) {
       userId: number;
       body: string;
       hashtags: string[];
-      imageUrls: string[];
+      images: File[];
     }) => {
       return await communityAPI.createPost(postData);
     },

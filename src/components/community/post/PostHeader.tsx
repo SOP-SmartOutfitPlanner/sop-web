@@ -8,9 +8,26 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { CommunityUser } from "@/types/community";
 import { formatDistanceToNow } from "date-fns";
-import { MessageCircle, MoreHorizontal, Star, Trophy } from "lucide-react";
+import {
+  MessageCircle,
+  MoreHorizontal,
+  Star,
+  Trophy,
+  Trash2,
+  Edit,
+} from "lucide-react";
+import { useState } from "react";
 
 interface PostHeaderProps {
   user: CommunityUser;
@@ -22,6 +39,8 @@ interface PostHeaderProps {
   onMessageAuthor: () => void;
   onReport: (reason: string) => void;
   onFollow?: () => void;
+  onDelete?: () => Promise<void>;
+  onEdit?: () => void;
 }
 
 export function PostHeader({
@@ -34,24 +53,42 @@ export function PostHeader({
   onMessageAuthor,
   onReport,
   onFollow,
+  onDelete,
+  onEdit,
 }: PostHeaderProps) {
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteConfirm = async () => {
+    if (!onDelete) return;
+
+    try {
+      setIsDeleting(true);
+      await onDelete();
+      setIsDeleteDialogOpen(false);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-3">
         <Link href={`/community/profile/${user.id}`}>
-          <Avatar className="w-10 h-10 cursor-pointer hover:opacity-80 transition-opacity">
-            {user.avatar && (
-              <AvatarImage src={user.avatar} alt={user.name} />
-            )}
-            <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white font-semibold">
-              {user.name.charAt(0).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
+          <div className="relative group">
+            <Avatar className="w-12 h-12 cursor-pointer transition-all duration-300 ring-2 ring-cyan-400/0 group-hover:ring-cyan-400/50 shadow-lg group-hover:shadow-cyan-500/30">
+              {user.avatar && <AvatarImage src={user.avatar} alt={user.name} />}
+              <AvatarFallback className="bg-gradient-to-br from-cyan-400 to-blue-500 text-white font-semibold text-lg">
+                {user.name.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div className="absolute inset-0 rounded-full bg-cyan-400/0 group-hover:bg-cyan-400/10 transition-colors duration-300" />
+          </div>
         </Link>
         <div>
           <div className="flex items-center gap-2 flex-wrap">
             <Link href={`/community/profile/${user.id}`}>
-              <p className="font-medium text-foreground hover:underline cursor-pointer">
+              <p className="font-semibold text-foreground hover:underline cursor-pointer bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 to-blue-300">
                 {user.name}
               </p>
             </Link>
@@ -111,18 +148,61 @@ export function PostHeader({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            {isAuthorStylist && (
+            {isAuthorStylist && !isOwnPost && (
               <DropdownMenuItem onClick={onMessageAuthor}>
                 <MessageCircle className="w-4 h-4 mr-2" />
                 Message author
               </DropdownMenuItem>
             )}
-            <DropdownMenuItem onClick={() => onReport("inappropriate")}>
-              Report
-            </DropdownMenuItem>
+            {isOwnPost && onEdit && (
+              <DropdownMenuItem onClick={onEdit}>
+                <Edit className="w-4 h-4 mr-2" />
+                Edit post
+              </DropdownMenuItem>
+            )}
+            {isOwnPost && onDelete && (
+              <DropdownMenuItem
+                onClick={() => setIsDeleteDialogOpen(true)}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete post
+              </DropdownMenuItem>
+            )}
+            {!isOwnPost && (
+              <DropdownMenuItem onClick={() => onReport("inappropriate")}>
+                Report
+              </DropdownMenuItem>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete post</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this post? This action cannot be
+              undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex gap-3">
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
