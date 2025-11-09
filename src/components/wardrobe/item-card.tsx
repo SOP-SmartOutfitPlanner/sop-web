@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { MoreVertical, Edit, Trash2, Sparkles, Flower2, Sun, Leaf, Snowflake } from "lucide-react";
+import { MoreVertical, Edit, Trash2, Sparkles, Flower2, Sun, Leaf, Snowflake, Wand2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
@@ -22,6 +22,7 @@ interface ItemCardProps {
   onEdit?: (item: WardrobeItem) => void;
   onDelete?: (id: string) => void;
   onUseInOutfit?: (item: WardrobeItem) => void;
+  onAnalyze?: (id: string) => void;
   showCheckbox?: boolean;
 }
 
@@ -32,9 +33,12 @@ export function ItemCard({
   onEdit,
   onDelete,
   onUseInOutfit,
+  onAnalyze,
   showCheckbox = false,
 }: ItemCardProps) {
   const [isHovered, setIsHovered] = useState(false);
+
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const handleCheckboxChange = (checked: boolean) => {
     onSelect?.(item.id, checked);
@@ -43,6 +47,15 @@ export function ItemCard({
   const handleEdit = () => onEdit?.(item);
   const handleDelete = () => onDelete?.(item.id);
   const handleUseInOutfit = () => onUseInOutfit?.(item);
+  const handleAnalyze = async () => {
+    if (isAnalyzing) return;
+    setIsAnalyzing(true);
+    try {
+      await onAnalyze?.(item.id);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
 
   // Get unique colors from item
   const colors = item.colors?.slice(0, 4) || [];
@@ -73,20 +86,17 @@ export function ItemCard({
       onMouseLeave={() => setIsHovered(false)}
       className="group relative w-full h-full flex flex-col"
     >
-      {/* AI Badge - Top Left Corner */}
-      {item.isAnalyzed && (
-        <div className="absolute -top-1.5 -left-1.5 z-20">
+      {/* AI Badge - Top Left Corner - Only show if confidence > 50 */}
+      {item.isAnalyzed && item.aiConfidence && item.aiConfidence > 50 && (
+        <div className="absolute -top-2 -left-2 z-20">
           <div className="relative">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500/40 to-indigo-600/50 backdrop-blur-md flex items-center justify-center shadow-lg border border-white/30">
-              <span className="text-[10px] font-bold text-white drop-shadow-md">AI</span>
+            {/* Glow effect */}
+            <div className="absolute inset-0 w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 blur-md opacity-75 animate-pulse" />
+
+            {/* Main badge */}
+            <div className="relative w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 via-cyan-500 to-blue-500 flex items-center justify-center shadow-xl border-2 border-white">
+              <span className="text-xs font-black text-white drop-shadow-lg">AI</span>
             </div>
-            {item.aiConfidence && (
-              <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-white/80 backdrop-blur-md border border-white/40 flex items-center justify-center shadow-md">
-                <span className="text-[7px] font-bold text-indigo-600">
-                  {item.aiConfidence}
-                </span>
-              </div>
-            )}
           </div>
         </div>
       )}
@@ -280,24 +290,55 @@ export function ItemCard({
 
           {/* Action Button */}
           <div className="flex justify-center">
-            <GlassButton
-              className="font-semibold w-full"
-              size="sm"
-              variant="primary"
-              onClick={handleUseInOutfit}
-              borderRadius="10px"
-              blur="5px"
-              brightness={1.2}
-              glowColor="rgba(59, 130, 246, 0.5)"
-              glowIntensity={8}
-              borderColor="rgba(148, 163, 184, 0.3)"
-              borderWidth="1px"
-              textColor="rgba(19, 19, 19, 1)"
-              backgroundColor="rgb(216, 234, 254)"
-            >
-              <Sparkles className="w-4 h-4" />
-              Use in Outfit
-            </GlassButton>
+            {!item.isAnalyzed ? (
+              <GlassButton
+                className="font-semibold w-full"
+                size="sm"
+                variant="primary"
+                onClick={handleAnalyze}
+                disabled={isAnalyzing}
+                borderRadius="10px"
+                blur="5px"
+                brightness={1.2}
+                glowColor="rgba(147, 51, 234, 0.5)"
+                glowIntensity={8}
+                borderColor="rgba(168, 85, 247, 0.3)"
+                borderWidth="1px"
+                textColor="rgba(19, 19, 19, 1)"
+                backgroundColor="rgb(233, 213, 255)"
+              >
+                {isAnalyzing ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-purple-900/20 border-t-purple-900 rounded-full animate-spin" />
+                    Analyzing...
+                  </>
+                ) : (
+                  <>
+                    <Wand2 className="w-4 h-4" />
+                    AI Analysis
+                  </>
+                )}
+              </GlassButton>
+            ) : (
+              <GlassButton
+                className="font-semibold w-full"
+                size="sm"
+                variant="primary"
+                onClick={handleUseInOutfit}
+                borderRadius="10px"
+                blur="5px"
+                brightness={1.2}
+                glowColor="rgba(59, 130, 246, 0.5)"
+                glowIntensity={8}
+                borderColor="rgba(148, 163, 184, 0.3)"
+                borderWidth="1px"
+                textColor="rgba(19, 19, 19, 1)"
+                backgroundColor="rgb(216, 234, 254)"
+              >
+                <Sparkles className="w-4 h-4" />
+                Use in Outfit
+              </GlassButton>
+            )}
           </div>
         </div>
       </GlassCard>

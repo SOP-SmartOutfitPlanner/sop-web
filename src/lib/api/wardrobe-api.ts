@@ -40,8 +40,9 @@ export interface ApiWardrobeItem {
   userId: number;
   userDisplayName?: string;
   name: string;
-  categoryId: number;
-  categoryName: string;
+  categoryId?: number;
+  categoryName?: string;
+  category?: { id: number; name: string }; // Some endpoints return category as object
   color: string;
   aiDescription: string;
   brand?: string;
@@ -236,8 +237,18 @@ class WardrobeAPI {
    * Get specific wardrobe item
    */
   async getItem(id: number): Promise<ApiWardrobeItem> {
-    const response = await apiClient.get(`/items/${id}`);
-    return response.data.data;
+    const response = await apiClient.get<{
+      statusCode: number;
+      message: string;
+      data: ApiWardrobeItem;
+    }>(`/items/${id}`);
+
+    // Handle both direct data and nested data structure
+    if (response.data) {
+      return response.data;
+    }
+
+    return response as unknown as ApiWardrobeItem;
   }
 
   /**

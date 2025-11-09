@@ -49,6 +49,8 @@ interface WardrobeStore {
   // Selection mode
   toggleSelectionMode: () => void;
   setSelectionMode: (mode: boolean) => void;
+  // AI Analysis
+  analyzeItem: (id: string) => Promise<void>;
   // Reset
   resetStore: () => void;
 }
@@ -500,6 +502,44 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
     }
   },
 
+  // AI Analysis for single item
+  analyzeItem: async (id: string) => {
+    try {
+      const numericId = parseInt(id);
+
+      // Call AI analysis API
+      const confidenceScores = await wardrobeAPI.analyzeItems([numericId]);
+
+      // Fetch updated item data
+      const updatedApiItem = await wardrobeAPI.getItem(numericId);
+      const updatedItem = apiItemToWardrobeItem(updatedApiItem);
+
+      // Update local state
+      set((state) => {
+        const newItems = state.items.map((item) =>
+          item.id === id ? updatedItem : item
+        );
+        const newRawItems = state.rawApiItems.map((item) =>
+          item.id === numericId ? updatedApiItem : item
+        );
+        const filtered = filterItems(
+          newItems,
+          state.filters,
+          state.searchQuery
+        );
+        const sorted = sortItems(filtered, state.sortBy);
+        return {
+          items: newItems,
+          rawApiItems: newRawItems,
+          filteredItems: sorted,
+        };
+      });
+    } catch (error) {
+      console.error("Failed to analyze item:", error);
+      throw error;
+    }
+  },
+
   // Reset store to initial state (for logout)
   resetStore: () => {
     set({
@@ -608,7 +648,7 @@ const apiItemToWardrobeItem = (apiItem: ApiWardrobeItem): WardrobeItem => {
     return seasons;
   };
 
-  const type = getTypeFromCategory(apiItem.categoryName);
+  const type = getTypeFromCategory(apiItem.categoryName || apiItem.category?.name || "");
   const seasons = parseSeasons(apiItem.weatherSuitable);
   const occasions: ("casual" | "formal" | "sport" | "travel")[] = ["casual"]; // Default to casual
 
@@ -657,8 +697,8 @@ const apiItemToWardrobeItem = (apiItem: ApiWardrobeItem): WardrobeItem => {
     styles: apiItem.styles,
     // Additional fields for ItemCard compatibility
     category: {
-      id: apiItem.categoryId,
-      name: apiItem.categoryName,
+      id: apiItem.categoryId || apiItem.category?.id || 0,
+      name: apiItem.categoryName || apiItem.category?.name || "Uncategorized",
     },
     color: apiItem.color || "",
     season: seasons[0],

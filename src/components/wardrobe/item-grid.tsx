@@ -42,6 +42,7 @@ export function ItemGrid({
     error: storeError,
     fetchItems,
     deleteItem,
+    analyzeItem,
     selectedItems: storeSelectedItems,
     toggleItemSelection,
     isSelectionMode,
@@ -94,6 +95,14 @@ export function ItemGrid({
     } else {
       // TODO: Implement default use in outfit functionality
       console.log("Use in outfit:", item);
+    }
+  };
+
+  const handleAnalyze = async (id: string) => {
+    try {
+      await analyzeItem(id);
+    } catch (error) {
+      console.error("Failed to analyze item:", error);
     }
   };
 
@@ -182,6 +191,7 @@ export function ItemGrid({
               onEdit={handleEdit}
               onDelete={handleDelete}
               onUseInOutfit={handleUseInOutfit}
+              onAnalyze={handleAnalyze}
               showCheckbox={showCheckboxes || isSelectionMode}
             />
           </motion.div>

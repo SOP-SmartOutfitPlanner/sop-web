@@ -250,7 +250,7 @@ export function WardrobeHeader({
               glowIntensity={8}
               borderColor={activeFiltersCount > 0 ? "rgba(59,130,246,0.5)" : "rgba(255,255,255,0.28)"}
               borderWidth="1px"
-              textColor="#000"
+              textColor="#ffffffff"
               className="px-4 h-12 font-semibold relative"
               displacementScale={10}
             >
@@ -280,7 +280,7 @@ export function WardrobeHeader({
             glowIntensity={8}
             borderColor="rgba(255,255,255,0.28)"
             borderWidth="1px"
-            textColor="#000"
+            textColor="#ffffffff"
             className="px-4 h-12 font-semibold"
             displacementScale={10}
           >
