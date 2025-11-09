@@ -68,6 +68,7 @@ export default function AdminOccasionsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(10);
 
   // Form states
   const [formName, setFormName] = useState("");

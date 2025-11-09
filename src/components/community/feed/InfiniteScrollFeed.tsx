@@ -1,39 +1,42 @@
 "use client";
 
-import { useEffect, useRef, useMemo, useState, useCallback } from "react";
-import { motion } from "framer-motion";
-import { Loader2 } from "lucide-react";
-import { EnhancedPostCard } from "@/components/community/post/EnhancedPostCard";
+import { useEffect, useRef, useMemo, useCallback, useState } from "react";
 import { PostSkeleton } from "./PostSkeleton";
 import { useFeed } from "@/hooks/useFeed";
-import { apiPostToPost } from "@/types/community";
+import { Post, apiPostToPost } from "@/types/community";
 import { useAuthStore } from "@/store/auth-store";
-import { communityAPI } from "@/lib/api/community-api";
-import { toast } from "sonner";
+import { useFeedFollowStatus } from "@/hooks/community/useFeedFollowStatus";
+import {
+  FeedLoading,
+  FeedError,
+  FeedEmpty,
+  FeedEndIndicator,
+  FeedLoadingMore,
+} from "./FeedStates";
+import { FeedPostList } from "./FeedPostList";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { EditPostDialog } from "@/components/community/EditPostDialog";
 
 interface InfiniteScrollFeedProps {
   searchQuery?: string;
-  selectedTag?: string;
-  timeFilter?: string;
-  activeTab?: string;
 }
 
 /**
  * Infinite scroll feed component similar to TikTok/Instagram/Facebook
- * Uses React Query's useInfiniteQuery with intersection observer
+ * ✅ OPTIMIZED:
+ * - Extracted follow status logic to custom hook
+ * - Separated state components for cleaner code
+ * - Separated post list rendering
+ * - Better performance with memoization
+ * - Single responsibility principle
  */
 export function InfiniteScrollFeed({
   searchQuery = "",
-  selectedTag = "",
-  timeFilter = "all",
-  activeTab = "latest",
 }: InfiniteScrollFeedProps) {
   const { user } = useAuthStore();
   const observerTarget = useRef<HTMLDivElement>(null);
-  
-  // Track following status for each user
-  const [followingStatus, setFollowingStatus] = useState<Record<string, boolean>>({});
-  
+  const [editingPost, setEditingPost] = useState<Post | null>(null);
+
   const {
     posts,
     isLoading,
@@ -44,92 +47,27 @@ export function InfiniteScrollFeed({
     fetchNextPage,
     toggleLike,
     reportPost,
-  } = useFeed(10); // 10 posts per page
+    deletePost,
+    refetch,
+  } = useFeed(10);
 
-  // Handle follow toggle
-  const handleFollow = useCallback(async (targetUserId: string) => {
-    if (!user?.id) {
-      toast.error("Vui lòng đăng nhập để follow");
-      return;
-    }
-
-    try {
-      const followerId = parseInt(user.id);
-      const followingId = parseInt(targetUserId);
-
-      // Optimistic update
-      setFollowingStatus((prev) => ({ ...prev, [targetUserId]: true }));
-
-      const response = await communityAPI.toggleFollow(followerId, followingId);
-
-      if (response.message?.includes("Follow user successfully")) {
-        toast.success("Đã theo dõi");
-      }
-    } catch (error) {
-      console.error("Error following user:", error);
-      // Rollback
-      setFollowingStatus((prev) => ({ ...prev, [targetUserId]: false }));
-      toast.error("Không thể theo dõi");
-    }
-  }, [user]);
-
-  // Fetch follow status for all unique users in posts
-  useEffect(() => {
-    const fetchFollowStatuses = async () => {
-      if (!user?.id || posts.length === 0) return;
-
-      try {
-        const currentUserId = parseInt(user.id);
-        
-        // Get unique user IDs from posts (exclude own posts)
-        const uniqueUserIds = Array.from(
-          new Set(
-            posts
-              .map((post) => post.userId)
-              .filter((userId) => userId !== currentUserId)
-          )
-        );
-
-        // Fetch follow status for each unique user
-        const statusPromises = uniqueUserIds.map(async (targetUserId) => {
-          try {
-            const status = await communityAPI.getFollowStatus(currentUserId, targetUserId);
-            return { userId: targetUserId.toString(), status };
-          } catch (error) {
-            console.error(`Error fetching follow status for user ${targetUserId}:`, error);
-            return { userId: targetUserId.toString(), status: false };
-          }
-        });
-
-        const statuses = await Promise.all(statusPromises);
-        
-        // Build status map
-        const statusMap: Record<string, boolean> = {};
-        statuses.forEach(({ userId, status }) => {
-          statusMap[userId] = status;
-        });
-
-        setFollowingStatus(statusMap);
-      } catch (error) {
-        console.error('Error fetching follow statuses:', error);
-      }
-    };
-
-    fetchFollowStatuses();
-  }, [posts, user]);
+  // Custom hook for follow status management
+  const { followingStatus, handleFollow } = useFeedFollowStatus(
+    posts,
+    user?.id
+  );
 
   // Intersection Observer for infinite scroll
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        // When the sentinel div is visible and we have more pages
         if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
           fetchNextPage();
         }
       },
       {
-        threshold: 0.1, // Trigger when 10% visible
-        rootMargin: "100px", // Start loading 100px before reaching the bottom
+        threshold: 0.1,
+        rootMargin: "100px",
       }
     );
 
@@ -145,10 +83,9 @@ export function InfiniteScrollFeed({
     };
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  // ✅ OPTIMIZED: Memoize filtered posts - only recompute when dependencies change
+  // Memoize filtered posts
   const filteredPosts = useMemo(() => {
     return posts.filter((post) => {
-      // Search filter
       if (searchQuery) {
         const matchesSearch =
           post.body.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -157,46 +94,16 @@ export function InfiniteScrollFeed({
           );
         if (!matchesSearch) return false;
       }
-
-      // Tag filter
-      if (selectedTag && !post.hashtags.some((tag) => tag.name === selectedTag)) {
-        return false;
-      }
-
-      // Time filter
-      if (timeFilter !== "all") {
-        const now = new Date();
-        const postDate = new Date(post.createdAt);
-        const diffMs = now.getTime() - postDate.getTime();
-        
-        const filterTime =
-          timeFilter === "week"
-            ? 7 * 24 * 60 * 60 * 1000
-            : timeFilter === "month"
-            ? 30 * 24 * 60 * 60 * 1000
-            : 24 * 60 * 60 * 1000; // today
-
-        if (diffMs > filterTime) return false;
-      }
-
       return true;
     });
-  }, [posts, searchQuery, selectedTag, timeFilter]);
+  }, [posts, searchQuery]);
 
-  // ✅ OPTIMIZED: Memoize sorted posts - only resort when filtered posts or tab changes
+  // Memoize sorted posts
   const sortedPosts = useMemo(() => {
     return [...filteredPosts].sort((a, b) => {
-      if (activeTab === "trending") {
-        // Sort by engagement (likes + comments * 2)
-        const scoreA = a.likeCount + a.commentCount * 2;
-        const scoreB = b.likeCount + b.commentCount * 2;
-        return scoreB - scoreA;
-      } else {
-        // Sort by date (latest first)
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      }
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
-  }, [filteredPosts, activeTab]);
+  }, [filteredPosts]);
 
   // Get current user for EnhancedPostCard
   const currentUser = user
@@ -207,155 +114,88 @@ export function InfiniteScrollFeed({
       }
     : { id: "0", name: "Guest", avatar: undefined };
 
+  // Handle report
+  const handleReport = useCallback(
+    (postId: number, reason: string) => {
+      if (!user) return;
+      reportPost({
+        postId,
+        userId: parseInt(user.id),
+        reason,
+      });
+    },
+    [user, reportPost]
+  );
+
+  // Handle edit post
+  const handleEditPost = useCallback(
+    (post: Post) => {
+      setEditingPost(post);
+    },
+    []
+  );
+
   // Loading state
   if (isLoading) {
     return (
-      <div className="space-y-6">
+      <FeedLoading>
         {[1, 2, 3].map((i) => (
           <PostSkeleton key={i} />
         ))}
-      </div>
+      </FeedLoading>
     );
   }
 
   // Error state
   if (isError) {
-    return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <div className="text-red-500 mb-4">
-          <svg
-            className="w-16 h-16 mx-auto"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-            />
-          </svg>
-        </div>
-        <h3 className="text-xl font-bricolage font-bold mb-2">
-          Failed to load feed
-        </h3>
-        <p className="text-muted-foreground mb-4">
-          {error?.message || "Something went wrong"}
-        </p>
-      </div>
-    );
+    return <FeedError message={error?.message} />;
   }
 
   // Empty state
   if (sortedPosts.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <div className="text-muted-foreground mb-4">
-          <svg
-            className="w-16 h-16 mx-auto"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
-            />
-          </svg>
-        </div>
-        <h3 className="text-xl font-bricolage font-bold mb-2">No posts found</h3>
-        <p className="text-muted-foreground">
-          {searchQuery || selectedTag
-            ? "Try adjusting your filters"
-            : "Be the first to share something!"}
-        </p>
-      </div>
-    );
+    return <FeedEmpty searchQuery={searchQuery} />;
   }
 
   return (
     <div className="space-y-6">
-      {/* Feed metadata */}
-      {/* {metadata && (
-        <div className="text-sm text-muted-foreground text-center py-2">
-          Showing {sortedPosts.length} of {metadata.totalCount} posts
-        </div>
-      )} */}
-
       {/* Posts */}
-      {sortedPosts.map((post, index) => {
-        // Transform CommunityPost to UI Post format
-        const uiPost = apiPostToPost(post);
-        const isFollowing = followingStatus[post.userId] ?? false;
-        
-        return (
-          <motion.div
-            key={post.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: index * 0.05 }}
-          >
-            <EnhancedPostCard
-              post={uiPost}
-              currentUser={currentUser}
-              onLike={() => toggleLike(post.id)}
-              onReport={(reason) => {
-                if (!user) return;
-                reportPost({
-                  postId: post.id,
-                  userId: parseInt(user.id),
-                  reason,
-                });
-              }}
-              onFollow={handleFollow}
-              isFollowing={isFollowing}
-            />
-          </motion.div>
-        );
-      })}
+      <FeedPostList
+        posts={sortedPosts.map(apiPostToPost)}
+        currentUser={currentUser}
+        followingStatus={followingStatus}
+        onLike={(postId) =>
+          toggleLike(typeof postId === "string" ? parseInt(postId) : postId)
+        }
+        onReport={handleReport}
+        onFollow={handleFollow}
+        onDeletePost={async (postId) => deletePost(postId)}
+        onEditPost={handleEditPost}
+      />
 
       {/* Intersection observer sentinel */}
       <div ref={observerTarget} className="h-10" />
 
-      {/* Loading next page indicator */}
-      {isFetchingNextPage && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="flex items-center justify-center py-8"
-        >
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          <span className="ml-3 text-muted-foreground">Loading more posts...</span>
-        </motion.div>
-      )}
+      {/* Loading more posts */}
+      {isFetchingNextPage && <FeedLoadingMore />}
 
-      {/* End of feed indicator */}
-      {!hasNextPage && sortedPosts.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="text-center py-8 text-muted-foreground"
-        >
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted/50">
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-            <span className="font-medium">You&apos;re all caught up!</span>
-          </div>
-        </motion.div>
+      {/* End of feed */}
+      {!hasNextPage && sortedPosts.length > 0 && <FeedEndIndicator />}
+
+      {/* Edit Post Dialog */}
+      {editingPost && (
+        <Dialog open={!!editingPost} onOpenChange={(open) => !open && setEditingPost(null)}>
+          <DialogContent className="max-h-[90vh] overflow-y-auto p-0">
+            <EditPostDialog
+              post={editingPost}
+              onSuccess={async () => {
+                setEditingPost(null);
+                // Refetch the feed to show updated post
+                await refetch();
+              }}
+              onClose={() => setEditingPost(null)}
+            />
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

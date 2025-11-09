@@ -18,44 +18,78 @@ export function PostActions({
 }: PostActionsProps) {
   return (
     <div className="space-y-3">
-      {/* Stats */}
-      <div className="flex items-center justify-between text-sm text-muted-foreground">
-        <div className="flex items-center gap-1">
-          <div className="flex -space-x-1">
-            <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center border-2 border-background">
-              <Heart className="w-3 h-3 text-white fill-white" />
+      {/* Stats - Only show if there are likes or comments */}
+      {(likeCount > 0 || commentCount > 0) && (
+        <div className="flex items-center justify-between gap-3 px-2 py-2">
+          {/* Likes Badge */}
+          {likeCount > 0 && (
+            <div className="flex items-center gap-2 group">
+              <div className="relative flex -space-x-1">
+                <div className="relative w-7 h-7 rounded-full bg-gradient-to-br from-red-500 to-pink-500 flex items-center justify-center border-2 border-background shadow-lg shadow-red-500/50 group-hover:shadow-red-500/80 transition-shadow">
+                  <Heart className="w-3.5 h-3.5 text-white fill-white" />
+                </div>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm font-bold text-white">
+                  {likeCount}
+                </span>
+                <span className="text-xs text-blue-200/70 font-medium">
+                  {likeCount === 1 ? "like" : "likes"}
+                </span>
+              </div>
             </div>
-          </div>
-          <span className="ml-1">{likeCount} {likeCount === 1 ? 'like' : 'likes'}</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <span>{commentCount} {commentCount === 1 ? 'comment' : 'comments'}</span>
-        </div>
-      </div>
+          )}
 
-      {/* Action Buttons */}
-      <div className="border-y py-1">
-        <div className="flex items-center justify-around">
+          {/* Comments Badge */}
+          {commentCount > 0 && (
+            <div className="flex items-center gap-2 group ml-auto">
+              <div className="relative flex">
+                <div className="relative w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center border-2 border-background shadow-lg shadow-blue-500/50 group-hover:shadow-blue-500/80 transition-shadow">
+                  <MessageCircle className="w-3.5 h-3.5 text-white" />
+                </div>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm font-bold text-white">
+                  {commentCount}
+                </span>
+                <span className="text-xs text-blue-200/70 font-medium">
+                  {/* {commentCount === 1 ? "comment" : "comments"} */}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Action Buttons - Separate Dark Glass Block */}
+      <div className="border-t border-white/10 py-3 px-4 mt-auto backdrop-blur-lg bg-gradient-to-r from-cyan-950/55 via-blue-950/55 to-indigo-950/95 rounded-b-3xl">
+        <div className="flex items-center justify-around gap-2">
           <Button
             variant="ghost"
             size="sm"
             onClick={onLike}
-            className={`flex-1 gap-2 hover:bg-muted transition-colors rounded-md ${
-              isLiked ? "text-red-500" : "text-muted-foreground"
+            className={`flex-1 gap-2 font-semibold transition-all duration-300 rounded-lg ${
+              isLiked
+                ? "text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                : "text-cyan-300 hover:text-cyan-200 hover:bg-cyan-500/10"
             }`}
           >
-            <Heart className={`w-5 h-5 ${isLiked ? "fill-current" : ""}`} />
-            <span className="font-medium">Like</span>
+            <Heart
+              className={`w-5 h-5 transition-all ${
+                isLiked ? "fill-current scale-110" : ""
+              }`}
+            />
+            <span>Like</span>
           </Button>
 
           <Button
             variant="ghost"
             size="sm"
             onClick={onComment}
-            className="flex-1 gap-2 text-muted-foreground hover:bg-muted transition-colors rounded-md"
+            className="flex-1 gap-2 font-semibold text-blue-300 hover:text-blue-200 hover:bg-blue-500/10 transition-all duration-300 rounded-lg"
           >
             <MessageCircle className="w-5 h-5" />
-            <span className="font-medium">Comment</span>
+            <span>Comment</span>
           </Button>
         </div>
       </div>

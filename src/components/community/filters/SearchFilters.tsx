@@ -1,103 +1,34 @@
-import { Search, X, Calendar } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 interface SearchFiltersProps {
   searchQuery: string;
-  selectedTag: string;
-  timeFilter: string;
   onSearchChange: (query: string) => void;
-  onTagChange: (tag: string) => void;
-  onTimeFilterChange: (filter: string) => void;
-  onClearAll: () => void;
 }
 
 export function SearchFilters({
   searchQuery,
-  selectedTag,
-  timeFilter,
   onSearchChange,
-  onTagChange,
-  onTimeFilterChange,
-  onClearAll
 }: SearchFiltersProps) {
-  const hasActiveFilters = searchQuery || selectedTag || timeFilter !== 'all';
-
   return (
     <div className="space-y-4">
-      {/* Search and Time Filter */}
       <div className="flex gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Search posts... (Cmd+K)"
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-10"
-          />
+        <div className="relative flex-1 group">
+          {/* Glass background */}
+          <div className="absolute inset-0 bg-gradient-to-r from-cyan-300/10 via-blue-300/5 to-indigo-300/10 rounded-2xl blur-md opacity-0 group-focus-within:opacity-100 transition-opacity duration-300" />
+          
+          {/* Input container */}
+          <div className="relative backdrop-blur-md bg-gradient-to-r from-cyan-400/15 via-blue-400/10 to-indigo-400/15 border-2 border-cyan-400/25 group-focus-within:border-cyan-400/50 rounded-2xl transition-all duration-300 shadow-lg shadow-cyan-500/10 group-focus-within:shadow-cyan-500/30">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-cyan-300 transition-colors duration-300" />
+            <Input
+              placeholder="Search posts... (Cmd+K)"
+              value={searchQuery}
+              onChange={(e) => onSearchChange(e.target.value)}
+              className="pl-12 bg-transparent border-0 text-white placeholder:text-blue-200/50 focus:outline-none focus:ring-0 font-medium"
+            />
+          </div>
         </div>
-        <Select value={timeFilter} onValueChange={onTimeFilterChange}>
-          <SelectTrigger className="w-48">
-            <Calendar className="w-4 h-4 mr-2" />
-            <SelectValue placeholder="Time filter" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All time</SelectItem>
-            <SelectItem value="week">This week</SelectItem>
-            <SelectItem value="month">This month</SelectItem>
-            <SelectItem value="today">Today</SelectItem>
-          </SelectContent>
-        </Select>
       </div>
-
-      {/* Active Filters */}
-      {hasActiveFilters && (
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm text-muted-foreground">Active filters:</span>
-          
-          {searchQuery && (
-            <Badge variant="secondary" className="gap-1">
-              Search: &quot;{searchQuery}&quot;
-              <X 
-                className="w-3 h-3 cursor-pointer hover:text-destructive" 
-                onClick={() => onSearchChange('')}
-              />
-            </Badge>
-          )}
-          
-          {selectedTag && (
-            <Badge variant="secondary" className="gap-1">
-              #{selectedTag}
-              <X 
-                className="w-3 h-3 cursor-pointer hover:text-destructive" 
-                onClick={() => onTagChange('')}
-              />
-            </Badge>
-          )}
-          
-          {timeFilter !== 'all' && (
-            <Badge variant="secondary" className="gap-1">
-              {timeFilter === 'week' ? 'This week' : timeFilter === 'month' ? 'This month' : 'Today'}
-              <X 
-                className="w-3 h-3 cursor-pointer hover:text-destructive" 
-                onClick={() => onTimeFilterChange('all')}
-              />
-            </Badge>
-          )}
-          
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={onClearAll}
-            className="h-6 px-2 text-xs text-muted-foreground hover:text-destructive"
-          >
-            Clear all
-          </Button>
-        </div>
-      )}
     </div>
   );
 }
-

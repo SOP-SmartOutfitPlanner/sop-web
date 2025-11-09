@@ -23,16 +23,9 @@ export default function Community() {
 
   // Filter state management
   const {
-    activeTab,
-    selectedTag,
     searchQuery,
     debouncedSearchQuery, // ✅ Get debounced version
-    timeFilter,
-    setActiveTab,
-    setSelectedTag,
     setSearchQuery,
-    setTimeFilter,
-    clearAllFilters,
   } = useCommunityFilters();
 
   // Post creation
@@ -67,24 +60,13 @@ export default function Community() {
 
       {/* All filters grouped together */}
       <CommunityFilters
-        activeTab={activeTab}
-        selectedTag={selectedTag}
         searchQuery={searchQuery}
-        timeFilter={timeFilter}
-        onTabChange={setActiveTab}
-        onTagClick={setSelectedTag}
         onSearchChange={setSearchQuery}
-        onTagChange={setSelectedTag}
-        onTimeFilterChange={setTimeFilter}
-        onClearAll={clearAllFilters}
       />
 
       {/* Infinite scroll feed - Uses debounced search for performance */}
       <InfiniteScrollFeed
         searchQuery={debouncedSearchQuery}
-        selectedTag={selectedTag}
-        timeFilter={timeFilter}
-        activeTab={activeTab}
       />
     </CommunityLayout>
   );

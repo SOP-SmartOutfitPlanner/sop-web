@@ -39,7 +39,11 @@ export default function ResetPasswordPage() {
       setValue("email", storedEmail);
       setValue("resetToken", storedToken);
     } else {
-      toast.error("Phiên đặt lại mật khẩu không hợp lệ");
+      toast.error(
+        errors instanceof ApiError
+          ? errors.message
+          : "Invalid password reset session"
+      );
       router.push("/forgot-password");
     }
   }, [router, setValue]);
@@ -151,4 +155,3 @@ export default function ResetPasswordPage() {
     </PasswordResetLayout>
   );
 }
-
