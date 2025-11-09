@@ -353,9 +353,16 @@ export function AddItemWizard({ open, onOpenChange, editMode, editItemId, editIt
         { id: loadingToast }
       );
 
-      // Refresh wardrobe items
+      // Fetch each manually categorized item and add to store
       const state = useWardrobeStore.getState();
-      await state.fetchItems();
+      for (const itemId of result.itemIds) {
+        try {
+          const item = await wardrobeAPI.getItem(itemId);
+          state.addItemOptimistic(item);
+        } catch (error) {
+          console.error(`Failed to fetch item ${itemId}:`, error);
+        }
+      }
 
       // Merge all uploaded item IDs (from auto + manual)
       const allItemIds = [...uploadedItemIds, ...result.itemIds];
@@ -456,9 +463,16 @@ export function AddItemWizard({ open, onOpenChange, editMode, editItemId, editIt
           { id: loadingToast }
         );
 
-        // Refresh wardrobe items
+        // Fetch each uploaded item individually and add to store
         const state = useWardrobeStore.getState();
-        await state.fetchItems();
+        for (const itemId of response.itemIds) {
+          try {
+            const item = await wardrobeAPI.getItem(itemId);
+            state.addItemOptimistic(item);
+          } catch (error) {
+            console.error(`Failed to fetch item ${itemId}:`, error);
+          }
+        }
 
         // Store uploaded item IDs and go directly to AI analysis
         setUploadedItemIds(response.itemIds);
