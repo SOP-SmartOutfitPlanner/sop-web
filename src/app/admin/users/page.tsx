@@ -23,7 +23,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { useAdminUsers } from "@/hooks/useAdminUsers";
+import { useAdminUsers } from "@/hooks/admin/useAdminUsers";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format } from "date-fns";
 import {

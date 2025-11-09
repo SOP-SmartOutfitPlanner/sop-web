@@ -30,6 +30,7 @@ export interface WizardFormData {
   // IDs for relational data
   styleIds?: number[];
   occasionIds?: number[];
+  seasonIds?: number[];
 }
 
 export interface ColorOption {
@@ -71,10 +72,9 @@ export function transformWizardDataToAPI(
     ? JSON.stringify(formData.colors)
     : JSON.stringify([{ name: 'Unknown', hex: '#808080' }]);
 
-  // Join seasons - MUST NOT BE EMPTY (backend constraint)
-  const weatherString = formData.seasons.length > 0
-    ? formData.seasons.join(', ')
-    : 'All Season'; // Fallback instead of empty string
+  // Use weatherSuitable from AI analysis (e.g., "Transitional", "Hot", "Cold")
+  // This is the actual weather suitability detected by AI, not seasons
+  const weatherSuitable = formData.weatherSuitable?.trim() || 'All Season';
 
   // Process tags (occasions field removed as it's not supported by API)
   const tagString = formData.tags.length > 0 
@@ -111,14 +111,14 @@ export function transformWizardDataToAPI(
     aiDescription,
     brand: formData.brand || undefined,
     imgUrl,
-    weatherSuitable: weatherString,
+    weatherSuitable: weatherSuitable,
     condition: formData.condition || 'New',
     pattern: truncate(formData.pattern || 'Solid', 100),
     fabric: truncate(formData.fabric || 'Cotton', 100),
     tag: tagString,
     styleIds: formData.styleIds || undefined,
     occasionIds: formData.occasionIds || undefined,
-    seasonIds: undefined,
+    seasonIds: formData.seasonIds || undefined,
   } as CreateWardrobeItemRequest;
 
   return payload;
@@ -215,9 +215,15 @@ export function apiItemToFormData(apiItem: ApiWardrobeItem): Partial<WizardFormD
     }
   }
 
-  // Parse seasons from comma-separated weatherSuitable string
-  const seasons: string[] = apiItem.weatherSuitable
-    ? apiItem.weatherSuitable.split(',').map((s: string) => s.trim())
+  // Parse seasons from API seasons array (NOT from weatherSuitable!)
+  // weatherSuitable is a separate field (e.g., "Transitional", "Hot", "Cold")
+  const seasons: string[] = apiItem.seasons
+    ? apiItem.seasons.map((s) => s.name)
+    : [];
+
+  // Extract seasonIds from seasons array
+  const seasonIds: number[] = apiItem.seasons
+    ? apiItem.seasons.map((s) => s.id)
     : [];
 
   // Parse tags from comma-separated tag string
@@ -238,7 +244,7 @@ export function apiItemToFormData(apiItem: ApiWardrobeItem): Partial<WizardFormD
     ? apiItem.occasions.map((occasion) => occasion.id)
     : [];
 
-  return {
+  const formData = {
     name: apiItem.name || '',
     categoryId: apiItem.categoryId || 0,
     categoryName: apiItem.categoryName || '',
@@ -256,7 +262,10 @@ export function apiItemToFormData(apiItem: ApiWardrobeItem): Partial<WizardFormD
     uploadedImageURL: apiItem.imgUrl || '', // Use same image for both
     styleIds,
     occasionIds,
+    seasonIds,
   };
+
+  return formData;
 }
 
 /**

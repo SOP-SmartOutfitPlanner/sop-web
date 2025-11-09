@@ -12,9 +12,9 @@ export function SubmitButton({ isLoading, type }: SubmitButtonProps) {
       {isLoading ? (
         <div className="h-4 w-4 animate-spin" />
       ) : type === "login" ? (
-        "Đăng nhập"
+        "Log in"
       ) : (
-        "Đăng ký"
+        "Register"
       )}
     </Button>
   );

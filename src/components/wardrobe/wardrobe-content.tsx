@@ -1,6 +1,6 @@
 "use client";
 
-import { ItemGrid } from "./item-grid";
+import { ItemGrid } from "./grids/ItemGrid";
 import { WardrobeItem } from "@/types";
 
 interface WardrobeContentProps {

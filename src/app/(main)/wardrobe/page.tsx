@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { WardrobeHeader } from "@/components/wardrobe/wardrobe-header";
+import { WardrobeHeader } from "@/components/wardrobe/header/WardrobeHeader";
 import { WardrobeContent } from "@/components/wardrobe/wardrobe-content";
 import { WardrobeStats } from "@/components/wardrobe/wardrobe-stats";
 import { ErrorDisplay } from "@/components/common/error-display";
