@@ -46,7 +46,8 @@ interface ItemCardProps {
     id?: number;
     imgUrl: string;
     name: string;
-    categoryName: string;
+    categoryName?: string;
+    category?: { id: number; name: string };
   };
   isSelected: boolean;
   onToggle: (id: number) => void;
@@ -111,7 +112,7 @@ const AnalysisItemCard = memo(({ item, isSelected, onToggle }: ItemCardProps) =>
 
           {/* Category */}
           <span className="px-1.5 py-0.5 rounded-full bg-white/10 border border-white/20 text-white/70 text-[9px] font-medium truncate text-center">
-            {item.categoryName}
+            {item.categoryName || item.category?.name || "Uncategorized"}
           </span>
         </div>
       </div>
@@ -493,7 +494,7 @@ export function AddItemWizard({ open, onOpenChange, editMode, editItemId, editIt
     <>
       {/* Backdrop */}
       <div
-        className="fixed h-full inset-0 bg-black/50 backdrop-blur-sm z-50 overflow-hidden overscroll-none touch-none"
+        className="fixed h-full inset-0 bg-black/50 backdrop-blur-sm z-50 overflow-hidden overscroll-none"
         style={{ position: 'fixed', inset: 0 }}
         onClick={() => {
           if (!isUploading && !isAnalyzing && !isCategorizing) {
@@ -548,7 +549,7 @@ export function AddItemWizard({ open, onOpenChange, editMode, editItemId, editIt
             </div>
 
             {/* Content Container */}
-            <div className="flex-1 px-12 py-4 overflow-hidden min-h-0">
+            <div className="flex-1 px-12 py-4 overflow-hidden min-h-0 flex flex-col">
               <AnimatePresence mode="wait">
                 {currentStep === STEP.UPLOAD && (
                   <motion.div
@@ -557,7 +558,7 @@ export function AddItemWizard({ open, onOpenChange, editMode, editItemId, editIt
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
                     transition={{ duration: 0.3 }}
-                    className="h-full"
+                    className="flex-1 overflow-hidden"
                   >
                     <StepPhotoAI
                       onFilesSelect={handleFilesSelect}
@@ -573,10 +574,10 @@ export function AddItemWizard({ open, onOpenChange, editMode, editItemId, editIt
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
                     transition={{ duration: 0.3 }}
-                    className="h-full flex flex-col"
+                    className="flex-1 overflow-hidden flex flex-col"
                   >
                     {/* Categorization Header */}
-                    <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center justify-between mb-4 flex-shrink-0">
                       <div className="flex items-center gap-3">
                         <AlertCircle className="w-6 h-6 text-orange-400" />
                         <span className="font-bricolage text-lg text-white font-semibold">
@@ -586,8 +587,8 @@ export function AddItemWizard({ open, onOpenChange, editMode, editItemId, editIt
                     </div>
 
                     {/* Items Grid */}
-                    <div className="flex-1 overflow-hidden">
-                      <div className="grid grid-cols-5 gap-4 h-full">
+                    <div className="flex-1 overflow-y-auto min-h-0 wizard-scrollbar">
+                      <div className="grid grid-cols-5 gap-4">
                         {failedItems.map((item, index) => (
                           <ManualCategorizeCard
                             key={`failed-${index}`}
@@ -609,10 +610,10 @@ export function AddItemWizard({ open, onOpenChange, editMode, editItemId, editIt
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
                     transition={{ duration: 0.3 }}
-                    className="h-full flex flex-col"
+                    className="flex-1 overflow-hidden flex flex-col"
                   >
                     {/* Selection Header */}
-                    <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center justify-between mb-4 flex-shrink-0">
                       <div className="flex items-center gap-3">
                         <Sparkles className="w-6 h-6 text-yellow-400" />
                         <span className="font-bricolage text-lg text-white font-semibold">
@@ -632,8 +633,8 @@ export function AddItemWizard({ open, onOpenChange, editMode, editItemId, editIt
                     </div>
 
                     {/* Items Grid */}
-                    <div className="flex-1 overflow-hidden">
-                      <div className="grid grid-cols-5 gap-4 h-full">
+                    <div className="flex-1 overflow-y-auto min-h-0 hide-scrollbar" data-lenis-prevent>
+                      <div className="grid grid-cols-5 gap-4">
                         {uploadedItems.map((item) => (
                           <AnalysisItemCard
                             key={item.id}

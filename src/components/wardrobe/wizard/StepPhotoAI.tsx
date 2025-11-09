@@ -210,8 +210,11 @@ export function StepPhotoAI({
               </button>
             </div>
 
-            {/* Image Grid - Fixed height to fit in dialog */}
-            <div className="flex-shrink-0 mb-2">
+            {/* Image Grid - Scrollable container */}
+            <div
+              className="flex-1 mb-2 overflow-y-auto overflow-x-hidden min-h-0 hide-scrollbar"
+              data-lenis-prevent
+            >
               <div className="grid grid-cols-5 gap-2">
                 <AntImage.PreviewGroup>
                   {imageFiles.map((imageFile, index) => (

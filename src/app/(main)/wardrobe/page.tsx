@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { toast } from "sonner";
 import { WardrobeHeader } from "@/components/wardrobe/wardrobe-header";
 import { WardrobeContent } from "@/components/wardrobe/wardrobe-content";
 import { WardrobeStats } from "@/components/wardrobe/wardrobe-stats";
@@ -12,7 +11,6 @@ import { useWardrobeStore } from "@/store/wardrobe-store";
 import { useAuthStore } from "@/store/auth-store";
 import { WardrobeFilters } from "@/types/wardrobe";
 import { WardrobeItem } from "@/types";
-import { ApiWardrobeItem, wardrobeAPI } from "@/lib/api/wardrobe-api";
 
 // Dynamic import for heavy wizard component
 const AddItemWizard = dynamic(
@@ -32,14 +30,32 @@ const AddItemWizard = dynamic(
   }
 );
 
+// Dynamic import for edit item dialog
+const EditItemDialog = dynamic(
+  () =>
+    import("@/components/wardrobe/EditItemDialog").then((mod) => ({
+      default: mod.EditItemDialog,
+    })),
+  {
+    loading: () => (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <span className="ml-2 text-sm text-muted-foreground">
+          Loading editor...
+        </span>
+      </div>
+    ),
+  }
+);
+
 export default function WardrobePage() {
   const router = useRouter();
   const [isAddItemOpen, setIsAddItemOpen] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   // Edit mode state
-  const [editItem, setEditItem] = useState<ApiWardrobeItem | null>(null);
-  const isEditMode = !!editItem;
+  const [isEditItemOpen, setIsEditItemOpen] = useState(false);
+  const [editItemId, setEditItemId] = useState<number | null>(null);
 
   const { isAuthenticated, user } = useAuthStore();
 
@@ -48,38 +64,20 @@ export default function WardrobePage() {
     isLoading,
     error,
     items,
-    getRawItemById, // Get raw API item helper
     filters,
     setFilters: setStoreFilters,
   } = useWardrobeStore();
 
   // Handlers - ALL hooks must be called before conditional returns
-  const handleEditItem = async (item: WardrobeItem) => {
-    try {
-      // Get raw API item from store (includes styles & occasions)
-      const rawItem = getRawItemById(parseInt(item.id));
+  const handleEditItem = (item: WardrobeItem) => {
+    setEditItemId(parseInt(item.id));
+    setIsEditItemOpen(true);
+  };
 
-      if (!rawItem) {
-        // Fallback: fetch from API if not in store
-        const response = await wardrobeAPI.getItem(parseInt(item.id));
-
-        if (!response) {
-          throw new Error("Item not found");
-        }
-
-        setEditItem(response);
-      } else {
-        setEditItem(rawItem);
-      }
-
-      // Small delay to ensure state is updated
-      setTimeout(() => {
-        setIsAddItemOpen(true);
-      }, 100);
-    } catch (error) {
-      console.error("❌ Failed to fetch item for edit:", error);
-      toast.error("Failed to load item details. Please try again.");
-    }
+  const handleItemUpdated = async () => {
+    // Refresh wardrobe items after successful edit
+    const state = useWardrobeStore.getState();
+    await state.fetchItems();
   };
 
   const handleFiltersChange = (newFilters: WardrobeFilters) => {
@@ -88,7 +86,8 @@ export default function WardrobePage() {
 
   // Prevent scrolling when dialog is open
   useEffect(() => {
-    if (isAddItemOpen) {
+    const isAnyDialogOpen = isAddItemOpen || isEditItemOpen;
+    if (isAnyDialogOpen) {
       // Stop Lenis smooth scrolling
       const html = document.documentElement;
       html.classList.add("lenis-stopped");
@@ -124,7 +123,7 @@ export default function WardrobePage() {
       document.body.style.width = "";
       document.body.style.top = "";
     };
-  }, [isAddItemOpen]);
+  }, [isAddItemOpen, isEditItemOpen]);
 
   // Redirect to login if not authenticated (useEffect AFTER all other hooks)
   useEffect(() => {
@@ -172,24 +171,30 @@ export default function WardrobePage() {
         <WardrobeContent onEditItem={handleEditItem} />
 
         {/* Wardrobe Statistics at Bottom */}
-        <WardrobeStats />
+        {/* <WardrobeStats /> */}
 
         {/* Add Item Wizard */}
         <AddItemWizard
           open={isAddItemOpen}
-          onOpenChange={(open) => {
-            setIsAddItemOpen(open);
-            if (!open) {
-              // Delay clearing edit state until after dialog close animation
-              setTimeout(() => {
-                setEditItem(null);
-              }, 300);
-            }
-          }}
-          editMode={isEditMode}
-          editItemId={editItem?.id}
-          editItem={editItem || undefined}
+          onOpenChange={setIsAddItemOpen}
         />
+
+        {/* Edit Item Dialog */}
+        {editItemId && (
+          <EditItemDialog
+            open={isEditItemOpen}
+            onOpenChange={(open) => {
+              setIsEditItemOpen(open);
+              if (!open) {
+                setTimeout(() => {
+                  setEditItemId(null);
+                }, 300);
+              }
+            }}
+            itemId={editItemId}
+            onItemUpdated={handleItemUpdated}
+          />
+        )}
       </div>
     </div>
   );
