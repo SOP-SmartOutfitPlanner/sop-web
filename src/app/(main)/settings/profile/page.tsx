@@ -18,8 +18,12 @@ export default function ProfileSettingsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Edit Profile</h1>
-        <p className="text-muted-foreground">Manage your profile information</p>
+        <h1 className="font-dela-gothic text-2xl md:text-3xl lg:text-4xl leading-tight">
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-cyan-200">
+            Edit Profile
+          </span>
+        </h1>
+        <p className="text-lg text-blue-100 mt-2">Manage your profile information</p>
       </div>
 
       <ProfileEditForm />

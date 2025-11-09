@@ -27,12 +27,14 @@ export function CommunityHeader({
   return (
     <div className="flex items-center justify-between">
       <div>
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
-          Style Community
+        <h1 className="font-dela-gothic text-2xl md:text-3xl lg:text-4xl leading-tight">
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-cyan-200">
+            Style Community
+          </span>
+          <p className="text-lg text-blue-100 mt-1">
+            Discover, share, and get inspired by fashion looks
+          </p>
         </h1>
-        <p className="text-lg text-muted-foreground mt-1">
-          Discover, share, and get inspired by fashion looks
-        </p>
       </div>
 
       <Dialog open={isNewPostOpen} onOpenChange={onNewPostOpenChange}>

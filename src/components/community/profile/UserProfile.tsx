@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth-store";
 import { communityAPI } from "@/lib/api/community-api";
 import { toast } from "sonner";
+import { AnimatedBackground } from "@/components/ui/animated-background";
 import { EnhancedPostCard } from "@/components/community/post/EnhancedPostCard";
 import { FollowersModal } from "./FollowersModal";
 import { ProfileHeader } from "./ProfileHeader";
@@ -127,60 +128,63 @@ export function UserProfile({ userId }: UserProfileProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#F5F8FF] via-[#F5F8FF] to-[#EAF0FF]">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <ProfileHeader
-          userName={userProfile.name}
-          onBack={() => router.back()}
-        />
+    <>
+      <AnimatedBackground />
+      <div className="min-h-screen relative z-0 pt-32">
+        <div className="max-w-4xl mx-auto">
+          {/* Header */}
+          <ProfileHeader
+            userName={userProfile.name}
+            onBack={() => router.back()}
+          />
 
-        {/* Profile Info */}
-        <ProfileInfo
-          userProfile={userProfile}
-          isOwnProfile={isOwnProfile}
-          isFollowing={isFollowing}
-          onFollowToggle={handleFollowToggleWithUpdate}
-          onMessage={handleMessage}
-          onShare={handleShare}
-          onFollowersClick={() => setFollowersModalOpen(true)}
-          onFollowingClick={() => setFollowingModalOpen(true)}
-        />
+          {/* Profile Info */}
+          <ProfileInfo
+            userProfile={userProfile}
+            isOwnProfile={isOwnProfile}
+            isFollowing={isFollowing}
+            onFollowToggle={handleFollowToggleWithUpdate}
+            onMessage={handleMessage}
+            onShare={handleShare}
+            onFollowersClick={() => setFollowersModalOpen(true)}
+            onFollowingClick={() => setFollowingModalOpen(true)}
+          />
 
-        {/* Feed */}
-        <div className="border-t border-border">
-          {posts.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20">
-              <p className="text-muted-foreground">Chưa có bài viết nào</p>
-            </div>
-          ) : (
-            <div className="space-y-4 p-4">
-              {posts.map((post) => (
-                <EnhancedPostCard
-                  key={post.id}
-                  post={post}
-                  currentUser={{
-                    id: userProfile.id,
-                    name: userProfile.name,
-                    avatar: userProfile.avatar,
-                  }}
-                  onLike={() => handleLike(parseInt(post.id))}
-                  onReport={handleReportPost}
-                  onEditPost={isOwnProfile ? () => handleEditPost(post) : undefined}
-                />
-              ))}
-
-              {/* Infinite scroll trigger */}
-              <div
-                ref={observerTarget}
-                className="h-10 flex items-center justify-center"
-              >
-                {isFetching && (
-                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                )}
+          {/* Feed */}
+          <div className="border-t border-border">
+            {posts.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20">
+                <p className="text-muted-foreground">Chưa có bài viết nào</p>
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="space-y-4 p-4">
+                {posts.map((post) => (
+                  <EnhancedPostCard
+                    key={post.id}
+                    post={post}
+                    currentUser={{
+                      id: userProfile.id,
+                      name: userProfile.name,
+                      avatar: userProfile.avatar,
+                    }}
+                    onLike={() => handleLike(parseInt(post.id))}
+                    onReport={handleReportPost}
+                    onEditPost={isOwnProfile ? () => handleEditPost(post) : undefined}
+                  />
+                ))}
+
+                {/* Infinite scroll trigger */}
+                <div
+                  ref={observerTarget}
+                  className="h-10 flex items-center justify-center"
+                >
+                  {isFetching && (
+                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -219,6 +223,6 @@ export function UserProfile({ userId }: UserProfileProps) {
           </DialogContent>
         </Dialog>
       )}
-    </div>
+    </>
   );
 }

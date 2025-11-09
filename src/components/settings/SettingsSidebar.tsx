@@ -17,7 +17,7 @@ export function SettingsSidebar() {
 
   return (
     <div className="md:col-span-1">
-      <div className="bg-white rounded-lg shadow-sm p-4 space-y-2 sticky top-24">
+      <div className="bg-white rounded-lg shadow-sm p-4 space-y-2 sticky top-66">
         {settingsMenu.map(({ href, label, icon: Icon }) => {
           const isActive = pathname === href;
           return (
@@ -40,4 +40,3 @@ export function SettingsSidebar() {
     </div>
   );
 }
-
