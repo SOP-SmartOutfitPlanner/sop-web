@@ -75,17 +75,20 @@ export function PostHeader({
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-3">
         <Link href={`/community/profile/${user.id}`}>
-          <Avatar className="w-10 h-10 cursor-pointer hover:opacity-80 transition-opacity">
-            {user.avatar && <AvatarImage src={user.avatar} alt={user.name} />}
-            <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white font-semibold">
-              {user.name.charAt(0).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
+          <div className="relative group">
+            <Avatar className="w-12 h-12 cursor-pointer transition-all duration-300 ring-2 ring-cyan-400/0 group-hover:ring-cyan-400/50 shadow-lg group-hover:shadow-cyan-500/30">
+              {user.avatar && <AvatarImage src={user.avatar} alt={user.name} />}
+              <AvatarFallback className="bg-gradient-to-br from-cyan-400 to-blue-500 text-white font-semibold text-lg">
+                {user.name.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div className="absolute inset-0 rounded-full bg-cyan-400/0 group-hover:bg-cyan-400/10 transition-colors duration-300" />
+          </div>
         </Link>
         <div>
           <div className="flex items-center gap-2 flex-wrap">
             <Link href={`/community/profile/${user.id}`}>
-              <p className="font-medium text-foreground hover:underline cursor-pointer">
+              <p className="font-semibold text-foreground hover:underline cursor-pointer bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 to-blue-300">
                 {user.name}
               </p>
             </Link>
