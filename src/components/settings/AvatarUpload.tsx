@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Upload, X } from "lucide-react";
 import { useAuthStore } from "@/store/auth-store";
 import { toast } from "sonner";
+import Image from "next/image";
 
 export function AvatarUpload() {
   const { user } = useAuthStore();
@@ -68,10 +69,7 @@ export function AvatarUpload() {
       {/* Avatar Preview */}
       <div className="flex items-center gap-6">
         <Avatar className="w-20 h-20">
-          <AvatarImage
-            src={preview || user?.avatar}
-            alt={user?.displayName}
-          />
+          <AvatarImage src={preview || user?.avatar} alt={user?.displayName} />
           <AvatarFallback className="text-2xl font-bold bg-gradient-to-br from-primary to-accent text-white">
             {user?.displayName?.charAt(0).toUpperCase()}
           </AvatarFallback>
@@ -108,11 +106,7 @@ export function AvatarUpload() {
 
         {preview && (
           <>
-            <Button
-              type="button"
-              onClick={handleUpload}
-              disabled={isUploading}
-            >
+            <Button type="button" onClick={handleUpload} disabled={isUploading}>
               {isUploading ? "Uploading..." : "Confirm"}
             </Button>
             <Button
@@ -130,9 +124,11 @@ export function AvatarUpload() {
       {preview && (
         <div className="mt-4 p-4 bg-muted rounded-lg">
           <p className="text-sm font-medium mb-2">Preview</p>
-          <img
+          <Image
             src={preview}
             alt="Preview"
+            width={128}
+            height={128}
             className="w-32 h-32 rounded-lg object-cover"
           />
         </div>
@@ -140,4 +136,3 @@ export function AvatarUpload() {
     </div>
   );
 }
-

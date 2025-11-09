@@ -14,6 +14,9 @@ import { useUserProfile } from "@/hooks/community/useUserProfile";
 import { useUserPosts } from "@/hooks/community/useUserPosts";
 import { useFollowUser } from "@/hooks/community/useFollowUser";
 import { useState } from "react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { EditPostDialog } from "@/components/community/EditPostDialog";
+import { Post } from "@/types/community";
 
 interface UserProfileProps {
   userId: string;
@@ -30,13 +33,14 @@ export function UserProfile({ userId }: UserProfileProps) {
   const { user: currentUser } = useAuthStore();
   const [followersModalOpen, setFollowersModalOpen] = useState(false);
   const [followingModalOpen, setFollowingModalOpen] = useState(false);
+  const [editingPost, setEditingPost] = useState<Post | null>(null);
 
   const isOwnProfile = currentUser?.id?.toString() === userId;
 
   // Custom hooks
   const { userProfile, isLoading, refreshCounts, setUserProfile } =
     useUserProfile(userId);
-  const { posts, isInitialLoading, isFetching, observerTarget, handleLike } =
+  const { posts, isInitialLoading, isFetching, observerTarget, handleLike, refetch } =
     useUserPosts(userId, currentUser?.id);
   const { isFollowing, setIsFollowing, toggleFollow } = useFollowUser(
     userId,
@@ -74,12 +78,16 @@ export function UserProfile({ userId }: UserProfileProps) {
     toast.success("Đã copy link profile");
   };
 
-  const handleReportPost = (reason: string) => {
+  const handleReportPost = () => {
     if (!currentUser?.id) {
       toast.error("Vui lòng đăng nhập");
       return;
     }
     toast.success("Cảm ơn bạn đã báo cáo");
+  };
+
+  const handleEditPost = (post: Post) => {
+    setEditingPost(post);
   };
 
   const handleFollowToggleWithUpdate = async () => {
@@ -158,6 +166,7 @@ export function UserProfile({ userId }: UserProfileProps) {
                   }}
                   onLike={() => handleLike(parseInt(post.id))}
                   onReport={handleReportPost}
+                  onEditPost={isOwnProfile ? () => handleEditPost(post) : undefined}
                 />
               ))}
 
@@ -193,6 +202,23 @@ export function UserProfile({ userId }: UserProfileProps) {
         onFollowChange={refreshCounts}
         isOwnProfile={isOwnProfile}
       />
+
+      {/* Edit Post Dialog */}
+      {editingPost && (
+        <Dialog open={!!editingPost} onOpenChange={(open) => !open && setEditingPost(null)}>
+          <DialogContent className="max-h-[90vh] overflow-y-auto p-0">
+            <EditPostDialog
+              post={editingPost}
+              onSuccess={async () => {
+                setEditingPost(null);
+                // Refetch posts to show updated post
+                await refetch();
+              }}
+              onClose={() => setEditingPost(null)}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

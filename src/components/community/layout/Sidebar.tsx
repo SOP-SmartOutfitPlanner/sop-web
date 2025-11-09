@@ -44,7 +44,6 @@ export function Sidebar() {
           isLoading={isLoading}
           isLoggedIn={!!currentUser}
           onFollow={handleFollow}
-          onMessage={handleMessageStylist}
         />
       </Card>
 

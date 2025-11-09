@@ -19,7 +19,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import { CommunityUser } from "@/types/community";
 import { formatDistanceToNow } from "date-fns";
-import { MessageCircle, MoreHorizontal, Star, Trophy, Trash2 } from "lucide-react";
+import {
+  MessageCircle,
+  MoreHorizontal,
+  Star,
+  Trophy,
+  Trash2,
+  Edit,
+} from "lucide-react";
 import { useState } from "react";
 
 interface PostHeaderProps {
@@ -33,6 +40,7 @@ interface PostHeaderProps {
   onReport: (reason: string) => void;
   onFollow?: () => void;
   onDelete?: () => Promise<void>;
+  onEdit?: () => void;
 }
 
 export function PostHeader({
@@ -46,6 +54,7 @@ export function PostHeader({
   onReport,
   onFollow,
   onDelete,
+  onEdit,
 }: PostHeaderProps) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -67,9 +76,7 @@ export function PostHeader({
       <div className="flex items-center gap-3">
         <Link href={`/community/profile/${user.id}`}>
           <Avatar className="w-10 h-10 cursor-pointer hover:opacity-80 transition-opacity">
-            {user.avatar && (
-              <AvatarImage src={user.avatar} alt={user.name} />
-            )}
+            {user.avatar && <AvatarImage src={user.avatar} alt={user.name} />}
             <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white font-semibold">
               {user.name.charAt(0).toUpperCase()}
             </AvatarFallback>
@@ -144,6 +151,12 @@ export function PostHeader({
                 Message author
               </DropdownMenuItem>
             )}
+            {isOwnPost && onEdit && (
+              <DropdownMenuItem onClick={onEdit}>
+                <Edit className="w-4 h-4 mr-2" />
+                Edit post
+              </DropdownMenuItem>
+            )}
             {isOwnPost && onDelete && (
               <DropdownMenuItem
                 onClick={() => setIsDeleteDialogOpen(true)}
@@ -163,12 +176,16 @@ export function PostHeader({
       </div>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete post</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this post? This action cannot be undone.
+              Are you sure you want to delete this post? This action cannot be
+              undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex gap-3">

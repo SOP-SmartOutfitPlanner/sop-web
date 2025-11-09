@@ -40,8 +40,10 @@ export function CommunityHeader({
           <ShareLookButton3D />
         </DialogTrigger>
 
-        <DialogContent className="max-w-2xl">
-          <NewPostDialog onCreatePost={onCreatePost} />
+        <DialogContent className="max-w-2xl max-h-[90vh] !overflow-hidden flex flex-col">
+          <div className="flex-1 overflow-y-auto">
+            <NewPostDialog onCreatePost={onCreatePost} />
+          </div>
         </DialogContent>
       </Dialog>
     </div>

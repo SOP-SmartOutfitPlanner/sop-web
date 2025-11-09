@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { communityAPI } from "@/lib/api/community-api";
+import { communityAPI, CommunityPost } from "@/lib/api/community-api";
 import { apiPostToPost, Post } from "@/types/community";
 import { toast } from "sonner";
 
@@ -26,7 +26,7 @@ export function useUserPosts(userId: string, currentUserId?: string) {
           pageSize
         );
 
-        const mappedPosts = postsResponse.data.map((post: any) =>
+        const mappedPosts = postsResponse.data.map((post: CommunityPost) =>
           apiPostToPost(post)
         );
 
@@ -61,7 +61,7 @@ export function useUserPosts(userId: string, currentUserId?: string) {
         pageSize
       );
 
-      const newPosts = postsResponse.data.map((post: any) =>
+      const newPosts = postsResponse.data.map((post: CommunityPost) =>
         apiPostToPost(post)
       );
 
@@ -76,7 +76,7 @@ export function useUserPosts(userId: string, currentUserId?: string) {
     } finally {
       setIsFetching(false);
     }
-  }, [userId, currentPage, pageSize, isFetching, hasMore, currentUserId]);
+  }, [userId, currentPage, pageSize, isFetching, hasMore]);
 
   // Intersection observer
   useEffect(() => {
@@ -89,13 +89,14 @@ export function useUserPosts(userId: string, currentUserId?: string) {
       { threshold: 0.1 }
     );
 
-    if (observerTarget.current) {
-      observer.observe(observerTarget.current);
+    const currentTarget = observerTarget.current;
+    if (currentTarget) {
+      observer.observe(currentTarget);
     }
 
     return () => {
-      if (observerTarget.current) {
-        observer.unobserve(observerTarget.current);
+      if (currentTarget) {
+        observer.unobserve(currentTarget);
       }
     };
   }, [fetchMorePosts, hasMore, isFetching]);
@@ -136,6 +137,31 @@ export function useUserPosts(userId: string, currentUserId?: string) {
     [currentUserId]
   );
 
+  const refetch = useCallback(async () => {
+    try {
+      setIsInitialLoading(true);
+      const numericUserId = parseInt(userId, 10);
+
+      const postsResponse = await communityAPI.getPostsByUser(
+        numericUserId,
+        1,
+        pageSize
+      );
+
+      const mappedPosts = postsResponse.data.map((post: CommunityPost) =>
+        apiPostToPost(post)
+      );
+
+      setPosts(mappedPosts);
+      setHasMore(postsResponse.metaData.hasNext);
+      setCurrentPage(1);
+    } catch (error) {
+      console.error("Error refetching posts:", error);
+    } finally {
+      setIsInitialLoading(false);
+    }
+  }, [userId]);
+
   return {
     posts,
     isInitialLoading,
@@ -143,5 +169,6 @@ export function useUserPosts(userId: string, currentUserId?: string) {
     hasMore,
     observerTarget,
     handleLike,
+    refetch,
   };
 }

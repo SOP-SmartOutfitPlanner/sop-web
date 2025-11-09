@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuthStore } from "@/store/auth-store";
 import { userAPI } from "@/lib/api/user-api";
 import { OnboardingDialog } from "@/components/wardrobe/onboarding-dialog";
@@ -12,7 +12,7 @@ import { OnboardingDialog } from "@/components/wardrobe/onboarding-dialog";
 export function OnboardingProvider({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, user, isInitialized, isFirstTime, setIsFirstTime } = useAuthStore();
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
-  const [isChecking, setIsChecking] = useState(false);
+  const isCheckingRef = useRef(false);
 
   useEffect(() => {
     // Only check onboarding when:
@@ -20,7 +20,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     // 2. User is authenticated
     // 3. User exists
     // 4. We haven't already checked
-    if (!isInitialized || !isAuthenticated || !user || isChecking) {
+    if (!isInitialized || !isAuthenticated || !user || isCheckingRef.current) {
       return;
     }
 
@@ -32,7 +32,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
 
     // Otherwise, check with the API
     const checkOnboarding = async () => {
-      setIsChecking(true);
+      isCheckingRef.current = true;
       try {
         const profileResponse = await userAPI.getUserProfile();
         const needsOnboarding = profileResponse.data.isFirstTime;
@@ -44,7 +44,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
       } catch (error) {
         console.error("Failed to check onboarding status:", error);
       } finally {
-        setIsChecking(false);
+        isCheckingRef.current = false;
       }
     };
 

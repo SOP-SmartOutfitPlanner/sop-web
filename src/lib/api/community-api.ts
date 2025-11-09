@@ -220,6 +220,24 @@ class CommunityAPI {
   }
 
   /**
+   * Update a post
+   */
+  async updatePost(postId: number, formData: FormData): Promise<CommunityPost> {
+    const apiResponse = await apiClient.put<ApiResponse<CommunityPost>>(
+      `${this.BASE_PATH}/${postId}`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+
+    // API returns { statusCode, message, data: CommunityPost }
+    return apiResponse.data;
+  }
+
+  /**
    * Delete a post
    */
   async deletePost(postId: number): Promise<void> {
