@@ -2,12 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { 
-  LayoutDashboard, 
-  Users, 
-  Shirt, 
-  Settings, 
-  BarChart3,
+import {
+  LayoutDashboard,
+  Users,
+  Shirt,
   Tags,
   Shield
 } from "lucide-react";

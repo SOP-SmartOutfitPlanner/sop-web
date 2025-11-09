@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { WardrobeHeader } from "@/components/wardrobe/header/WardrobeHeader";
 import { WardrobeContent } from "@/components/wardrobe/wardrobe-content";
-import { WardrobeStats } from "@/components/wardrobe/wardrobe-stats";
 import { ErrorDisplay } from "@/components/common/error-display";
+import { AnalysisToast } from "@/components/wardrobe/wizard/AnalysisToast";
 import { useWardrobeStore } from "@/store/wardrobe-store";
 import { useAuthStore } from "@/store/auth-store";
 import { WardrobeFilters } from "@/types/wardrobe";
@@ -48,6 +48,24 @@ const EditItemDialog = dynamic(
   }
 );
 
+// Dynamic import for view item dialog
+const ViewItemDialog = dynamic(
+  () =>
+    import("@/components/wardrobe/ViewItemDialog").then((mod) => ({
+      default: mod.ViewItemDialog,
+    })),
+  {
+    loading: () => (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <span className="ml-2 text-sm text-muted-foreground">
+          Loading...
+        </span>
+      </div>
+    ),
+  }
+);
+
 export default function WardrobePage() {
   const router = useRouter();
   const [isAddItemOpen, setIsAddItemOpen] = useState(false);
@@ -56,6 +74,10 @@ export default function WardrobePage() {
   // Edit mode state
   const [isEditItemOpen, setIsEditItemOpen] = useState(false);
   const [editItemId, setEditItemId] = useState<number | null>(null);
+
+  // View mode state
+  const [isViewItemOpen, setIsViewItemOpen] = useState(false);
+  const [viewItemId, setViewItemId] = useState<number | null>(null);
 
   const { isAuthenticated, user } = useAuthStore();
 
@@ -66,12 +88,29 @@ export default function WardrobePage() {
     items,
     filters,
     setFilters: setStoreFilters,
+    analyzingItem,
+    analysisProgress,
   } = useWardrobeStore();
 
   // Handlers - ALL hooks must be called before conditional returns
+  const handleViewItem = (item: WardrobeItem) => {
+    setViewItemId(parseInt(item.id));
+    setIsViewItemOpen(true);
+  };
+
   const handleEditItem = (item: WardrobeItem) => {
     setEditItemId(parseInt(item.id));
     setIsEditItemOpen(true);
+  };
+
+  const handleEditFromView = () => {
+    if (viewItemId) {
+      setIsViewItemOpen(false);
+      setTimeout(() => {
+        setEditItemId(viewItemId);
+        setIsEditItemOpen(true);
+      }, 100);
+    }
   };
 
   const handleItemUpdated = async () => {
@@ -86,7 +125,7 @@ export default function WardrobePage() {
 
   // Prevent scrolling when dialog is open
   useEffect(() => {
-    const isAnyDialogOpen = isAddItemOpen || isEditItemOpen;
+    const isAnyDialogOpen = isAddItemOpen || isEditItemOpen || isViewItemOpen;
     if (isAnyDialogOpen) {
       // Stop Lenis smooth scrolling
       const html = document.documentElement;
@@ -123,7 +162,7 @@ export default function WardrobePage() {
       document.body.style.width = "";
       document.body.style.top = "";
     };
-  }, [isAddItemOpen, isEditItemOpen]);
+  }, [isAddItemOpen, isEditItemOpen, isViewItemOpen]);
 
   // Redirect to login if not authenticated (useEffect AFTER all other hooks)
   useEffect(() => {
@@ -168,7 +207,7 @@ export default function WardrobePage() {
         />
 
         {/* Main Content */}
-        <WardrobeContent onEditItem={handleEditItem} />
+        <WardrobeContent onEditItem={handleEditItem} onViewItem={handleViewItem} />
 
         {/* Wardrobe Statistics at Bottom */}
         {/* <WardrobeStats /> */}
@@ -178,6 +217,23 @@ export default function WardrobePage() {
           open={isAddItemOpen}
           onOpenChange={setIsAddItemOpen}
         />
+
+        {/* View Item Dialog */}
+        {viewItemId && (
+          <ViewItemDialog
+            open={isViewItemOpen}
+            onOpenChange={(open) => {
+              setIsViewItemOpen(open);
+              if (!open) {
+                setTimeout(() => {
+                  setViewItemId(null);
+                }, 300);
+              }
+            }}
+            itemId={viewItemId}
+            onEdit={handleEditFromView}
+          />
+        )}
 
         {/* Edit Item Dialog */}
         {editItemId && (
@@ -195,6 +251,14 @@ export default function WardrobePage() {
             onItemUpdated={handleItemUpdated}
           />
         )}
+
+        {/* Analysis Toast */}
+        <AnalysisToast
+          isVisible={!!analyzingItem}
+          progress={analysisProgress}
+          imageUrl={analyzingItem?.imageUrl}
+          itemName={analyzingItem?.name}
+        />
       </div>
     </div>
   );
