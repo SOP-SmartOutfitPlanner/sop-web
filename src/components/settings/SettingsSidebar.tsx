@@ -17,21 +17,21 @@ export function SettingsSidebar() {
 
   return (
     <div className="md:col-span-1">
-      <div className="bg-white rounded-lg shadow-sm p-4 space-y-2 sticky top-66">
+      <div className="backdrop-blur-md bg-gradient-to-br from-cyan-950/40 via-blue-950/30 to-indigo-950/40 border-2 border-cyan-400/25 rounded-2xl p-4 space-y-2 top-66 shadow-lg shadow-cyan-500/10">
         {settingsMenu.map(({ href, label, icon: Icon }) => {
           const isActive = pathname === href;
           return (
             <Link key={href} href={href}>
               <div
                 className={cn(
-                  "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
+                  "flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300",
                   isActive
-                    ? "bg-primary text-primary-foreground"
-                    : "text-foreground hover:bg-muted"
+                    ? "bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg shadow-cyan-500/30"
+                    : "text-cyan-200 hover:bg-cyan-400/10 hover:text-cyan-100"
                 )}
               >
                 <Icon className="w-5 h-5" />
-                <span className="font-medium">{label}</span>
+                <span className="font-semibold">{label}</span>
               </div>
             </Link>
           );

@@ -40,21 +40,21 @@ export function FollowersList({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+        <Loader2 className="w-6 h-6 animate-spin text-cyan-400/50" />
       </div>
     );
   }
 
   if (users.length === 0) {
     return (
-      <div className="text-center py-12 text-muted-foreground">
+      <div className="text-center py-12 text-blue-200/60">
         {type === "followers" ? "No followers yet" : "Not following anyone"}
       </div>
     );
   }
 
   return (
-    <div className="divide-y">
+    <div className="divide-y divide-cyan-400/10">
       {users.map((user) => {
         const isCurrentUser = currentUserId === user.userId.toString();
         const isFollowing = followingStatus[user.userId];

@@ -50,29 +50,29 @@ export function FollowersModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md p-0 gap-0">
-        <DialogHeader className="px-4 py-3 border-b">
-          <DialogTitle className="text-center">
+      <DialogContent className="sm:max-w-md p-0 gap-0 backdrop-blur-xl bg-gradient-to-br from-cyan-950/60 via-blue-950/50 to-indigo-950/60 border-2 border-cyan-400/25 shadow-2xl shadow-cyan-500/20">
+        <DialogHeader className="px-4 py-4 border-b border-cyan-400/10">
+          <DialogTitle className="text-center text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-200 to-blue-200">
             {type === "followers" ? "Followers" : "Following"}
           </DialogTitle>
         </DialogHeader>
 
         {/* Search Bar */}
-        <div className="px-4 py-2 border-b">
+        <div className="px-4 py-3 border-b border-cyan-400/10">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cyan-300/60" />
             <Input
               type="text"
               placeholder="Search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-muted/50 border-0"
+              className="pl-10 bg-cyan-950/30 border border-cyan-400/20 hover:border-cyan-400/40 text-white placeholder:text-cyan-300/50 focus:placeholder:text-cyan-300/70 rounded-lg transition-all focus:ring-2 focus:ring-cyan-400/30"
             />
           </div>
         </div>
 
         {/* User List */}
-        <div className="max-h-[400px] overflow-y-auto">
+        <div className="max-h-[480px] overflow-y-auto">
           <FollowersList
             users={filteredUsers}
             isLoading={isLoading}

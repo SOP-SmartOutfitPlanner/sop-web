@@ -68,16 +68,16 @@ export function AvatarUpload() {
     <div className="space-y-4">
       {/* Avatar Preview */}
       <div className="flex items-center gap-6">
-        <Avatar className="w-20 h-20">
+        <Avatar className="w-20 h-20 ring-2 ring-cyan-400/30">
           <AvatarImage src={preview || user?.avatar} alt={user?.displayName} />
-          <AvatarFallback className="text-2xl font-bold bg-gradient-to-br from-primary to-accent text-white">
+          <AvatarFallback className="text-2xl font-bold bg-gradient-to-br from-cyan-400 to-blue-500 text-white">
             {user?.displayName?.charAt(0).toUpperCase()}
           </AvatarFallback>
         </Avatar>
 
         <div className="space-y-2">
-          <p className="text-sm font-medium">{user?.displayName}</p>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-sm font-semibold text-white">{user?.displayName}</p>
+          <p className="text-xs text-blue-200/60">
             JPG, PNG or GIF (Max 5MB)
           </p>
         </div>
@@ -96,9 +96,9 @@ export function AvatarUpload() {
       <div className="flex gap-2">
         <Button
           type="button"
-          variant="outline"
           onClick={() => fileInputRef.current?.click()}
           disabled={isUploading}
+          className="bg-gradient-to-r from-cyan-600 to-blue-600 text-white hover:from-cyan-700 hover:to-blue-700 shadow-lg shadow-cyan-500/30 font-semibold"
         >
           <Upload className="w-4 h-4 mr-2" />
           Change Photo
@@ -106,14 +106,19 @@ export function AvatarUpload() {
 
         {preview && (
           <>
-            <Button type="button" onClick={handleUpload} disabled={isUploading}>
+            <Button 
+              type="button" 
+              onClick={handleUpload} 
+              disabled={isUploading}
+              className="bg-gradient-to-r from-cyan-600 to-blue-600 text-white hover:from-cyan-700 hover:to-blue-700 shadow-lg shadow-cyan-500/30 font-semibold"
+            >
               {isUploading ? "Uploading..." : "Confirm"}
             </Button>
             <Button
               type="button"
-              variant="outline"
               onClick={handleRemove}
               disabled={isUploading}
+              className="border-2 border-cyan-400/30 text-cyan-200 hover:bg-cyan-400/10 hover:border-cyan-400/60 font-semibold"
             >
               <X className="w-4 h-4" />
             </Button>
@@ -122,14 +127,14 @@ export function AvatarUpload() {
       </div>
 
       {preview && (
-        <div className="mt-4 p-4 bg-muted rounded-lg">
-          <p className="text-sm font-medium mb-2">Preview</p>
+        <div className="mt-4 p-4 backdrop-blur-md bg-cyan-950/30 border border-cyan-400/20 rounded-lg">
+          <p className="text-sm font-semibold text-white mb-2">Preview</p>
           <Image
             src={preview}
             alt="Preview"
             width={128}
             height={128}
-            className="w-32 h-32 rounded-lg object-cover"
+            className="w-32 h-32 rounded-lg object-cover ring-2 ring-cyan-400/30"
           />
         </div>
       )}
