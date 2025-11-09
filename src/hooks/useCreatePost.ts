@@ -12,7 +12,7 @@ interface CreatePostData {
 
 /**
  * Custom hook to handle post creation logic
- * Handles image upload to MinIO then creates post with URLs
+ * API handles the image upload directly via multipart/form-data
  */
 export function useCreatePost() {
   const { user } = useAuthStore();
@@ -31,31 +31,18 @@ export function useCreatePost() {
       setUploadProgress(0);
 
       try {
-        let imageUrls: string[] = [];
-
-        // Step 1: Upload images to MinIO if any
-        if (postData.files && postData.files.length > 0) {
-          //   toast.loading("Uploading images...", { id: "upload-images" });
-
-          try {
-            imageUrls = await communityAPI.uploadMultipleImages(postData.files);
-            // toast.success(`${imageUrls.length} image(s) uploaded!`, { id: "upload-images" });
-          } catch (error) {
-            console.error("Error uploading images:", error);
-            toast.error("Failed to upload images", { id: "upload-images" });
-            return false;
-          }
-        }
-
-        // Step 2: Create post with image URLs
+        // API handles everything in one request: multipart/form-data
+        // - Accepts raw File objects
+        // - Uploads images internally  
+        // - Returns post with image URLs from API
         await communityAPI.createPost({
           userId: parseInt(user.id),
           body: postData.caption,
           hashtags: postData.tags,
-          imageUrls: imageUrls, // Use URLs from MinIO
+          images: postData.files || [], // Pass raw files directly
         });
 
-        // Step 3: Invalidate queries to refetch posts
+        // Invalidate queries to refetch posts
         queryClient.invalidateQueries({ 
           queryKey: ["posts", "all", user.id] 
         });

@@ -8,9 +8,26 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { CommunityUser } from "@/types/community";
 import { formatDistanceToNow } from "date-fns";
-import { MessageCircle, MoreHorizontal, Star, Trophy } from "lucide-react";
+import {
+  MessageCircle,
+  MoreHorizontal,
+  Star,
+  Trophy,
+  Trash2,
+  Edit,
+} from "lucide-react";
+import { useState } from "react";
 
 interface PostHeaderProps {
   user: CommunityUser;
@@ -22,6 +39,8 @@ interface PostHeaderProps {
   onMessageAuthor: () => void;
   onReport: (reason: string) => void;
   onFollow?: () => void;
+  onDelete?: () => Promise<void>;
+  onEdit?: () => void;
 }
 
 export function PostHeader({
@@ -34,15 +53,30 @@ export function PostHeader({
   onMessageAuthor,
   onReport,
   onFollow,
+  onDelete,
+  onEdit,
 }: PostHeaderProps) {
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteConfirm = async () => {
+    if (!onDelete) return;
+
+    try {
+      setIsDeleting(true);
+      await onDelete();
+      setIsDeleteDialogOpen(false);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-3">
         <Link href={`/community/profile/${user.id}`}>
           <Avatar className="w-10 h-10 cursor-pointer hover:opacity-80 transition-opacity">
-            {user.avatar && (
-              <AvatarImage src={user.avatar} alt={user.name} />
-            )}
+            {user.avatar && <AvatarImage src={user.avatar} alt={user.name} />}
             <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white font-semibold">
               {user.name.charAt(0).toUpperCase()}
             </AvatarFallback>
@@ -111,18 +145,61 @@ export function PostHeader({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            {isAuthorStylist && (
+            {isAuthorStylist && !isOwnPost && (
               <DropdownMenuItem onClick={onMessageAuthor}>
                 <MessageCircle className="w-4 h-4 mr-2" />
                 Message author
               </DropdownMenuItem>
             )}
-            <DropdownMenuItem onClick={() => onReport("inappropriate")}>
-              Report
-            </DropdownMenuItem>
+            {isOwnPost && onEdit && (
+              <DropdownMenuItem onClick={onEdit}>
+                <Edit className="w-4 h-4 mr-2" />
+                Edit post
+              </DropdownMenuItem>
+            )}
+            {isOwnPost && onDelete && (
+              <DropdownMenuItem
+                onClick={() => setIsDeleteDialogOpen(true)}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete post
+              </DropdownMenuItem>
+            )}
+            {!isOwnPost && (
+              <DropdownMenuItem onClick={() => onReport("inappropriate")}>
+                Report
+              </DropdownMenuItem>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete post</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this post? This action cannot be
+              undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex gap-3">
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

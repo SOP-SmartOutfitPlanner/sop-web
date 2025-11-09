@@ -4,6 +4,7 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { NewPostDialog } from "../NewPostDialog";
+import ShareLookButton3D from "@/components/ui/ShareLookButton3D";
 
 interface CommunityHeaderProps {
   isNewPostOpen: boolean;
@@ -36,13 +37,13 @@ export function CommunityHeader({
 
       <Dialog open={isNewPostOpen} onOpenChange={onNewPostOpenChange}>
         <DialogTrigger asChild>
-          <Button className="bg-gradient-to-r from-primary to-accent hover:shadow-lg hover:shadow-primary/25 transition-all duration-200">
-            <Plus className="w-5 h-5 mr-2" />
-            Share Look
-          </Button>
+          <ShareLookButton3D />
         </DialogTrigger>
-        <DialogContent className="max-w-2xl">
-          <NewPostDialog onCreatePost={onCreatePost} />
+
+        <DialogContent className="max-w-2xl max-h-[90vh] !overflow-hidden flex flex-col">
+          <div className="flex-1 overflow-y-auto">
+            <NewPostDialog onCreatePost={onCreatePost} />
+          </div>
         </DialogContent>
       </Dialog>
     </div>

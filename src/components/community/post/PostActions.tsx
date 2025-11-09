@@ -18,20 +18,29 @@ export function PostActions({
 }: PostActionsProps) {
   return (
     <div className="space-y-3">
-      {/* Stats */}
-      <div className="flex items-center justify-between text-sm text-muted-foreground">
-        <div className="flex items-center gap-1">
-          <div className="flex -space-x-1">
-            <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center border-2 border-background">
-              <Heart className="w-3 h-3 text-white fill-white" />
+      {/* Stats - Only show if there are likes or comments */}
+      {(likeCount > 0 || commentCount > 0) && (
+        <div className="flex items-center justify-between text-sm text-muted-foreground">
+          {/* Likes - Only show if likeCount > 0 */}
+          {likeCount > 0 && (
+            <div className="flex items-center gap-1">
+              <div className="flex -space-x-1">
+                <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center border-2 border-background">
+                  <Heart className="w-3 h-3 text-white fill-white" />
+                </div>
+              </div>
+              <span className="ml-1">{likeCount} {likeCount === 1 ? 'like' : 'likes'}</span>
             </div>
-          </div>
-          <span className="ml-1">{likeCount} {likeCount === 1 ? 'like' : 'likes'}</span>
+          )}
+          
+          {/* Comments - Only show if commentCount > 0 */}
+          {commentCount > 0 && (
+            <div className="flex items-center gap-3">
+              <span>{commentCount} {commentCount === 1 ? 'comment' : 'comments'}</span>
+            </div>
+          )}
         </div>
-        <div className="flex items-center gap-3">
-          <span>{commentCount} {commentCount === 1 ? 'comment' : 'comments'}</span>
-        </div>
-      </div>
+      )}
 
       {/* Action Buttons */}
       <div className="border-y py-1">
