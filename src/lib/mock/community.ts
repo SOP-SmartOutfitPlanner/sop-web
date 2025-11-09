@@ -38,7 +38,9 @@ export function addPost(postData: Omit<Post, 'id' | 'likes' | 'timestamp'>): Pos
   return newPost;
 }
 
-export function likePost(postId: string, userId: string): boolean {
+export function likePost(postId: string): boolean {
+  // userId parameter removed as it's not currently used
+  // Will be added back when implementing user-specific like tracking
   const post = posts.find(p => p.id === postId);
   if (post) {
     post.likes += 1;

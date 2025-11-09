@@ -76,8 +76,6 @@ const FABRIC_OPTIONS = [
   "Blend",
 ];
 
-const CONDITION_OPTIONS = ["New", "Like New", "Good", "Fair", "Worn"];
-
 export function EditItemDialog({
   open,
   onOpenChange,

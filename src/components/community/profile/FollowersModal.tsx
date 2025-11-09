@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -43,26 +43,7 @@ export function FollowersModal({
   const [isLoading, setIsLoading] = useState(false);
   const [followingStatus, setFollowingStatus] = useState<Record<number, boolean>>({});
 
-  useEffect(() => {
-    if (isOpen) {
-      fetchUsers();
-    }
-  }, [isOpen, userId, type]);
-
-  useEffect(() => {
-    if (searchQuery) {
-      const filtered = users.filter(
-        (user) =>
-          user.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          user.bio?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      setFilteredUsers(filtered);
-    } else {
-      setFilteredUsers(users);
-    }
-  }, [searchQuery, users]);
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       setIsLoading(true);
       
@@ -118,7 +99,26 @@ export function FollowersModal({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [userId, type, currentUser]);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchUsers();
+    }
+  }, [isOpen, fetchUsers]);
+
+  useEffect(() => {
+    if (searchQuery) {
+      const filtered = users.filter(
+        (user) =>
+          user.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          user.bio?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredUsers(filtered);
+    } else {
+      setFilteredUsers(users);
+    }
+  }, [searchQuery, users]);
 
   const handleFollowToggle = async (targetUserId: number) => {
     if (!currentUser?.id) {
@@ -165,7 +165,8 @@ export function FollowersModal({
   };
 
   const handleRemove = async (targetUserId: number) => {
-    // TODO: Implement remove follower API
+    // TODO: Implement remove follower API with targetUserId
+    console.log("Remove user:", targetUserId);
     toast.info("Chức năng đang phát triển");
   };
 

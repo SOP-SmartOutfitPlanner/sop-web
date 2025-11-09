@@ -39,14 +39,12 @@ export function WizardStepRenderer({
   status,
   // Photo step
   previewUrl,
-  selectedFile,
   onFileSelect,
   onClearFile,
   // Form data
   formData,
   aiSuggestions,
   updateFormData,
-  setAiSuggestions,
   // Crop step
   onCropComplete,
   onSkipCrop,

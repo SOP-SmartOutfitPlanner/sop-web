@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { communityAPI } from "@/lib/api/community-api";
 import { useAuthStore } from "@/store/auth-store";
 import { ApiComment } from "@/types/community";

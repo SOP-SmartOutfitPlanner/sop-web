@@ -5,12 +5,13 @@ import { WardrobeItem } from "@/types";
 
 interface WardrobeContentProps {
   onEditItem?: (item: WardrobeItem) => void;
+  onViewItem?: (item: WardrobeItem) => void;
 }
 
-export function WardrobeContent({ onEditItem }: WardrobeContentProps) {
+export function WardrobeContent({ onEditItem, onViewItem }: WardrobeContentProps) {
   return (
     <div className="w-full">
-      <ItemGrid onEditItem={onEditItem} />
+      <ItemGrid onEditItem={onEditItem} onViewItem={onViewItem} />
     </div>
   );
 }

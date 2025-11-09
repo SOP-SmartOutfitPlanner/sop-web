@@ -44,7 +44,6 @@ export function InfiniteScrollFeed({
     fetchNextPage,
     toggleLike,
     reportPost,
-    metadata,
   } = useFeed(10); // 10 posts per page
 
   // Handle follow toggle

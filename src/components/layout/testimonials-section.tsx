@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Star } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -68,10 +69,11 @@ export default function TestimonialsSection() {
             ease: "easeInOut"
           }}
         >
-          <img
+          <Image
             src="/hat.png"
             alt="Dress decoration"
-            style={{ width: '500px', height: '500px' }}
+            width={500}
+            height={500}
             className="opacity-40 drop-shadow-2xl filter blur-[0.5px]"
           />
         </motion.div>

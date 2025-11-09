@@ -5,7 +5,6 @@
 
 import { apiClient } from "./client";
 import type { ApiResponse } from "@/lib/types/api.types";
-import { ApiItemsResponse, ApiWardrobeItem } from "./wardrobe-api";
 import { ItemsListRequest, ItemsListResponse } from "@/types/item";
 import { 
   OccasionsListRequest, 

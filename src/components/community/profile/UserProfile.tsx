@@ -1,10 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
 import {
   ArrowLeft,
-  MessageCircle,
   Grid3x3,
   User,
   Share2,
