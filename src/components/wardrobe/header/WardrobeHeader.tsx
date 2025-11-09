@@ -1,13 +1,12 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { Loader2, Plus, Filter } from "lucide-react";
 import { Input as AntInput, ConfigProvider, Badge, Popover } from "antd";
 import { Checkbox } from "@/components/ui/checkbox";
 import GlassButton from "@/components/ui/glass-button";
 import { WardrobeFilters } from "@/types/wardrobe";
 import { WardrobeItem } from "@/types";
-import { useMemo, useCallback, memo } from "react";
+import { useMemo, useCallback, memo, useState, useEffect } from "react";
 import { getUniqueColorsFromItems } from "@/lib/mock/collections";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -147,22 +146,53 @@ const FilterPanel = memo(function FilterPanel({
 });
 
 function useFilterCount(filters: WardrobeFilters) {
-  return [
-    filters.types?.length,
-    filters.seasons?.length,
-    filters.occasions?.length,
-    filters.colors?.length,
-  ].filter(Boolean).length;
+  return useMemo(() => {
+    return [
+      filters.types?.length,
+      filters.seasons?.length,
+      filters.occasions?.length,
+      filters.colors?.length,
+    ].filter(Boolean).length;
+  }, [filters.types?.length, filters.seasons?.length, filters.occasions?.length, filters.colors?.length]);
 }
 
-export function WardrobeHeader({
+// Debounce hook
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+
+export const WardrobeHeader = memo(function WardrobeHeader({
   onAddItem,
   isLoading = false,
   filters,
   onFiltersChange,
   wardrobeItems,
 }: WardrobeHeaderProps) {
+  const [searchValue, setSearchValue] = useState(filters.q || "");
+  const debouncedSearchValue = useDebounce(searchValue, 300);
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+
   const activeFiltersCount = useFilterCount(filters);
+
+  // Update filters when debounced search value changes
+  useEffect(() => {
+    if (debouncedSearchValue !== filters.q) {
+      onFiltersChange({ ...filters, q: debouncedSearchValue || undefined });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearchValue]); // Intentionally limited dependencies to avoid infinite loop
 
   const toggleFilterArray = useCallback(
     (key: keyof WardrobeFilters, value: string) => {
@@ -185,7 +215,12 @@ export function WardrobeHeader({
     });
   }, [filters, onFiltersChange]);
 
-  const handleSearch = useCallback((value: string) => {
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchValue(e.target.value);
+  }, []);
+
+  const handleSearchSubmit = useCallback((value: string) => {
+    setSearchValue(value);
     onFiltersChange({ ...filters, q: value || undefined });
   }, [filters, onFiltersChange]);
 
@@ -216,9 +251,9 @@ export function WardrobeHeader({
             placeholder="Search your wardrobe..."
             allowClear
             size="large"
-            value={filters.q}
-            onChange={(e) => handleSearch(e.target.value)}
-            onSearch={handleSearch}
+            value={searchValue}
+            onChange={handleSearchChange}
+            onSearch={handleSearchSubmit}
             style={{
               flex: 1,
               height: '48px',
@@ -229,30 +264,32 @@ export function WardrobeHeader({
 
         {/* Filter Button */}
         <Popover
-          content={
+          content={isPopoverOpen ? (
             <FilterPanel
               filters={filters}
               onToggleFilterArray={toggleFilterArray}
               onClearAll={clearAllFilters}
               wardrobeItems={wardrobeItems}
             />
-          }
+          ) : null}
           trigger="click"
           placement="bottomRight"
+          open={isPopoverOpen}
+          onOpenChange={setIsPopoverOpen}
         >
-          <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.98 }}>
+          <div className="glass-button-hover">
             <GlassButton
               variant="custom"
               borderRadius="14px"
-              blur="10px"
+              blur="8px"
               brightness={1.12}
               glowColor={activeFiltersCount > 0 ? "rgba(59,130,246,0.45)" : "rgba(255,255,255,0.3)"}
-              glowIntensity={8}
+              glowIntensity={6}
               borderColor={activeFiltersCount > 0 ? "rgba(59,130,246,0.5)" : "rgba(255,255,255,0.28)"}
               borderWidth="1px"
               textColor="#ffffffff"
               className="px-4 h-12 font-semibold relative"
-              displacementScale={10}
+              displacementScale={5}
             >
               <Filter className="mr-2 h-4 w-4" />
               Filter
@@ -264,25 +301,25 @@ export function WardrobeHeader({
                 />
               )}
             </GlassButton>
-          </motion.div>
+          </div>
         </Popover>
 
         {/* Add Item Button */}
-        <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.98 }}>
+        <div className="glass-button-hover">
           <GlassButton
             onClick={onAddItem}
             disabled={isLoading}
             variant="custom"
             borderRadius="14px"
-            blur="10px"
+            blur="8px"
             brightness={1.12}
             glowColor="rgba(59,130,246,0.45)"
-            glowIntensity={8}
+            glowIntensity={6}
             borderColor="rgba(255,255,255,0.28)"
             borderWidth="1px"
             textColor="#ffffffff"
             className="px-4 h-12 font-semibold"
-            displacementScale={10}
+            displacementScale={5}
           >
             {isLoading ? (
               <>
@@ -296,8 +333,20 @@ export function WardrobeHeader({
               </>
             )}
           </GlassButton>
-        </motion.div>
+        </div>
       </div>
+
+      <style jsx>{`
+        .glass-button-hover {
+          transition: transform 0.2s ease;
+        }
+        .glass-button-hover:hover {
+          transform: scale(1.04);
+        }
+        .glass-button-hover:active {
+          transform: scale(0.98);
+        }
+      `}</style>
     </div>
   );
-}
+});

@@ -13,7 +13,6 @@ import {
   CreditCard,
   Heart,
   Users,
-  Trophy,
   Image as ImgIcon,
   MessageSquare,
 } from "lucide-react";

@@ -57,6 +57,9 @@ export interface ApiWardrobeItem {
   id?: number; // Optional as it might not be present in all responses
   createdAt?: string;
   updatedAt?: string;
+  // AI analysis fields
+  aiConfidence?: number;
+  isAnalyzed?: boolean;
   // Relational arrays
   styles?: Array<{ id: number; name: string }>;
   occasions?: Array<{ id: number; name: string }>;
@@ -404,15 +407,20 @@ class WardrobeAPI {
 
 
   /**
-   * Get all available styles
+   * Get all available styles (only system-created)
    */
   async getStyles(): Promise<
     { id: number; name: string; description?: string }[]
   > {
     try {
       const response = await apiClient.get("/styles?take-all=true");
-      const styles = response.data?.data || [];
-      return styles;
+      const allStyles = response.data?.data || [];
+      // Filter only SYSTEM-created styles
+      const systemStyles = allStyles.filter(
+        (style: { id: number; name: string; description?: string; createdBy?: string }) =>
+          style.createdBy === "SYSTEM"
+      );
+      return systemStyles;
     } catch (error) {
       console.error("❌ Failed to fetch styles:", error);
       return [];

@@ -1,7 +1,6 @@
 "use client";
 
-import { Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { NewPostDialog } from "../NewPostDialog";
 import ShareLookButton3D from "@/components/ui/ShareLookButton3D";

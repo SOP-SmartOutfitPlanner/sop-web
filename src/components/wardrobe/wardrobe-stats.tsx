@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Package, Shirt, User } from "lucide-react";
+import { Package, Shirt } from "lucide-react";
 import GlassCard from "@/components/ui/glass-card";
 import { wardrobeAPI } from "@/lib/api/wardrobe-api";
 import { Skeleton } from "../ui/skeleton";

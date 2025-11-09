@@ -20,6 +20,7 @@ interface GridProps {
   onEditItem?: (item: WardrobeItem) => void;
   onDeleteItem?: (id: string) => void;
   onUseInOutfit?: (item: WardrobeItem) => void;
+  onViewItem?: (item: WardrobeItem) => void;
   showCheckboxes?: boolean;
   emptyMessage?: string;
 }
@@ -33,6 +34,7 @@ export function ItemGrid({
   onEditItem,
   onDeleteItem,
   onUseInOutfit,
+  onViewItem,
   showCheckboxes = false,
   emptyMessage = "No items found",
 }: GridProps) {
@@ -95,6 +97,12 @@ export function ItemGrid({
     } else {
       // TODO: Implement default use in outfit functionality
       console.log("Use in outfit:", item);
+    }
+  };
+
+  const handleView = (item: WardrobeItem) => {
+    if (onViewItem) {
+      onViewItem(item);
     }
   };
 
@@ -192,6 +200,7 @@ export function ItemGrid({
               onDelete={handleDelete}
               onUseInOutfit={handleUseInOutfit}
               onAnalyze={handleAnalyze}
+              onView={handleView}
               showCheckbox={showCheckboxes || isSelectionMode}
             />
           </motion.div>

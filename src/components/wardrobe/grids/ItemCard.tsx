@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, memo, useCallback } from "react";
 import Image from "next/image";
 import { MoreVertical, Edit, Trash2, Sparkles, Flower2, Sun, Leaf, Snowflake, Wand2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -23,10 +23,11 @@ interface ItemCardProps {
   onDelete?: (id: string) => void;
   onUseInOutfit?: (item: WardrobeItem) => void;
   onAnalyze?: (id: string) => void;
+  onView?: (item: WardrobeItem) => void;
   showCheckbox?: boolean;
 }
 
-export function ItemCard({
+export const ItemCard = memo(function ItemCard({
   item,
   isSelected = false,
   onSelect,
@@ -34,20 +35,22 @@ export function ItemCard({
   onDelete,
   onUseInOutfit,
   onAnalyze,
+  onView,
   showCheckbox = false,
 }: ItemCardProps) {
   const [isHovered, setIsHovered] = useState(false);
-
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-  const handleCheckboxChange = (checked: boolean) => {
+  const handleCheckboxChange = useCallback((checked: boolean) => {
     onSelect?.(item.id, checked);
-  };
+  }, [item.id, onSelect]);
 
-  const handleEdit = () => onEdit?.(item);
-  const handleDelete = () => onDelete?.(item.id);
-  const handleUseInOutfit = () => onUseInOutfit?.(item);
-  const handleAnalyze = async () => {
+  const handleEdit = useCallback(() => onEdit?.(item), [item, onEdit]);
+  const handleDelete = useCallback(() => onDelete?.(item.id), [item.id, onDelete]);
+  const handleUseInOutfit = useCallback(() => onUseInOutfit?.(item), [item, onUseInOutfit]);
+  const handleView = useCallback(() => onView?.(item), [item, onView]);
+  const handleAnalyze = useCallback(async (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     if (isAnalyzing) return;
     setIsAnalyzing(true);
     try {
@@ -55,7 +58,12 @@ export function ItemCard({
     } finally {
       setIsAnalyzing(false);
     }
-  };
+  }, [isAnalyzing, item.id, onAnalyze]);
+
+  const handleUseInOutfitClick = useCallback((e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    onUseInOutfit?.(item);
+  }, [item, onUseInOutfit]);
 
   // Get unique colors from item
   const colors = item.colors?.slice(0, 4) || [];
@@ -108,8 +116,8 @@ export function ItemCard({
             <button
               className={cn(
                 "p-2 rounded-lg",
-                "bg-white/20 backdrop-blur-md border border-white/30",
-                "text-white hover:bg-white/30 hover:border-white/40",
+                "bg-white/30 border border-white/30",
+                "text-white hover:bg-white/40 hover:border-white/40",
                 "shadow-lg shadow-white/10",
                 "transition-all duration-200",
                 isHovered ? "opacity-100" : "opacity-0"
@@ -141,27 +149,19 @@ export function ItemCard({
       <GlassCard
         padding="16px"
         borderRadius="24px"
-        blur="12px"
-        brightness={1.1}
-        glowColor={isSelected ? "rgba(34, 211, 238, 0.5)" : isHovered ? "rgba(34, 211, 238, 0.35)" : "rgba(34, 211, 238, 0.2)"}
-        borderColor={isSelected ? "rgba(34, 211, 238, 0.5)" : isHovered ? "rgba(34, 211, 238, 0.4)" : "rgba(255, 255, 255, 0.2)"}
-        borderWidth="3px"
+        blur="4px"
+        brightness={1.02}
+        glowColor={isSelected ? "rgba(34, 211, 238, 0.4)" : "rgba(34, 211, 238, 0.2)"}
+        borderColor={isSelected ? "rgba(34, 211, 238, 0.5)" : "rgba(255, 255, 255, 0.2)"}
+        borderWidth="2px"
         className={cn(
-          "relative h-full flex flex-col",
-          "bg-gradient-to-br from-cyan-300/30 via-blue-200/10 to-indigo-300/30",
-          "transition-all duration-300",
-          isHovered && [
-            "bg-gradient-to-br from-white/20 via-cyan-100/15 to-cyan-200/8",
-            "scale-[1.02]"
-          ],
-          isSelected && [
-            "gb-gradient-to-br from-cyan-400/20 via-cyan-300/15 to-white/10",
-            "ring-2 ring-cyan-400/50"
-          ]
+          "relative h-full flex flex-col item-card-transition cursor-pointer",
+          "bg-gradient-to-br from-cyan-300/20 via-blue-200/10 to-indigo-300/20",
+          isHovered && "item-card-hovered",
+          isSelected && "ring-2 ring-cyan-400/50"
         )}
+        onClick={handleView}
       >
-        {/* Inner gradient overlay for extra depth with cyan accent */}
-        <div className="absolute inset-0 rounded-3xl bg-gradient-to-t from-cyan-900/5 via-transparent to-white/5 pointer-events-none" />
 
         <div className="w-full flex flex-col flex-1 relative z-10">
           {/* Image Container */}
@@ -171,7 +171,7 @@ export function ItemCard({
             <div
               className={cn(
                 "absolute top-4 left-4 z-10",
-                "rounded-lg bg-black/50 backdrop-blur-md p-1.5",
+                "rounded-lg bg-black/70 p-1.5",
                 "transition-opacity duration-200",
                 isHovered || isSelected ? "opacity-100" : "opacity-0"
               )}
@@ -191,24 +191,8 @@ export function ItemCard({
               fill
               className="object-cover"
               sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.style.display = "none";
-                if (target.parentElement) {
-                  target.parentElement.innerHTML = `
-                      <div class="flex h-full w-full items-center justify-center bg-gradient-to-br from-white/5 to-white/[0.02]">
-                        <div class="text-center">
-                          <div class="mx-auto h-20 w-20 rounded-full bg-white/10 flex items-center justify-center mb-3 ring-1 ring-white/20">
-                            <span class="text-white/60 text-3xl font-semibold">
-                              ${item.name.charAt(0).toUpperCase()}
-                            </span>
-                          </div>
-                          <p class="text-sm text-white/40 font-medium">No image</p>
-                        </div>
-                      </div>
-                    `;
-                }
-              }}
+              priority={false}
+              loading="lazy"
             />
           </div>
 
@@ -298,10 +282,10 @@ export function ItemCard({
                 onClick={handleAnalyze}
                 disabled={isAnalyzing}
                 borderRadius="10px"
-                blur="5px"
-                brightness={1.2}
-                glowColor="rgba(147, 51, 234, 0.5)"
-                glowIntensity={8}
+                blur="4px"
+                brightness={1.1}
+                glowColor="rgba(147, 51, 234, 0.3)"
+                glowIntensity={4}
                 borderColor="rgba(168, 85, 247, 0.3)"
                 borderWidth="1px"
                 textColor="rgba(19, 19, 19, 1)"
@@ -324,12 +308,12 @@ export function ItemCard({
                 className="font-semibold w-full"
                 size="sm"
                 variant="primary"
-                onClick={handleUseInOutfit}
+                onClick={handleUseInOutfitClick}
                 borderRadius="10px"
-                blur="5px"
-                brightness={1.2}
-                glowColor="rgba(59, 130, 246, 0.5)"
-                glowIntensity={8}
+                blur="4px"
+                brightness={1.1}
+                glowColor="rgba(59, 130, 246, 0.3)"
+                glowIntensity={4}
                 borderColor="rgba(148, 163, 184, 0.3)"
                 borderWidth="1px"
                 textColor="rgba(19, 19, 19, 1)"
@@ -342,6 +326,16 @@ export function ItemCard({
           </div>
         </div>
       </GlassCard>
+
+      <style jsx>{`
+        :global(.item-card-transition) {
+          transition: box-shadow 0.2s ease;
+          will-change: box-shadow;
+        }
+        :global(.item-card-hovered) {
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+      `}</style>
     </div>
   );
-}
+});

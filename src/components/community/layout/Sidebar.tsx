@@ -7,7 +7,6 @@ import { UserMini } from "@/types/chat";
 import { useAuthStore } from "@/store/auth-store";
 import { useTopContributors } from "@/hooks/community/useTopContributors";
 import { TopContributorsList } from "./TopContributorsList";
-import { Contributor } from "./types";
 
 export function Sidebar() {
   const { user: currentUser } = useAuthStore();
@@ -17,17 +16,6 @@ export function Sidebar() {
 
   const [selectedStylist, setSelectedStylist] = useState<UserMini | null>(null);
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
-
-  const handleMessageStylist = (contributor: Contributor) => {
-    const stylistData: UserMini = {
-      id: contributor.userId.toString(),
-      name: contributor.displayName,
-      role: "stylist",
-      isOnline: Math.random() > 0.5,
-    };
-    setSelectedStylist(stylistData);
-    setIsChatModalOpen(true);
-  };
 
   return (
     <div className="space-y-6">

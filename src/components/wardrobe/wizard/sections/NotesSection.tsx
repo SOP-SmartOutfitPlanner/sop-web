@@ -4,17 +4,14 @@
  */
 
 import { motion } from "framer-motion";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { FORM_ANIMATIONS, FORM_FIELDS } from "../form-config";
+import { FORM_ANIMATIONS } from "../form-config";
 
 interface NotesSectionProps {
   notes: string;
   onNotesChange: (value: string) => void;
 }
 
-export function NotesSection({ notes, onNotesChange }: NotesSectionProps) {
+export function NotesSection({}: NotesSectionProps) {
   return (
     <motion.div variants={FORM_ANIMATIONS.item}>
       <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl">

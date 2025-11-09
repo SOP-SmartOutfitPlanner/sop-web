@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { UserPlus, MessageCircle } from "lucide-react";
+import { UserPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface Contributor {
