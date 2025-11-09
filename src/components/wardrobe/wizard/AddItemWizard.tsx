@@ -1,862 +1,776 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback, memo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Sparkles, X } from "lucide-react";
+import { Upload, X, Sparkles, CheckCircle2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { Image, Select } from "antd";
+import GlassButton from "@/components/ui/glass-button";
 import { useAuthStore } from "@/store/auth-store";
 import { useWardrobeStore } from "@/store/wardrobe-store";
-import { useUploadStore } from "@/store/upload-store";
-import { wardrobeAPI, type ApiWardrobeItem } from "@/lib/api/wardrobe-api";
-import { useWardrobeOptions } from "@/hooks/useWardrobeOptions";
-import {
-  transformWizardDataToAPI,
-  validateWizardFormData,
-  getUserIdFromAuth,
-  apiItemToFormData,
-  validateAIResponse,
-} from "@/lib/utils/wizard-transform";
+import { minioAPI } from "@/lib/api/minio-api";
+import { wardrobeAPI } from "@/lib/api/wardrobe-api";
+import { getUserIdFromAuth } from "@/lib/utils/wizard-transform";
 import { StepPhotoAI } from "./StepPhotoAI";
-import { ItemFormContent } from "./ItemFormContent";
-import ImageCropper from "./ImageCropper";
-import { STATUS, INITIAL_FORM_DATA, AI_ANALYSIS_CONFIG } from "./wizard-config";
-import type { StatusType } from "./wizard-config";
-import type { WizardFormData, AISuggestions } from "./types";
 
 interface AddItemWizardProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  initialFile?: File;
-  autoAnalyze?: boolean;
-  skipCrop?: boolean;
   editMode?: boolean;
   editItemId?: number;
-  editItem?: ApiWardrobeItem;
+  editItem?: {
+    id?: number;
+    imgUrl: string;
+    name: string;
+    categoryName: string;
+  };
 }
 
-export function AddItemWizard({
-  open,
-  onOpenChange,
-  initialFile,
-  autoAnalyze = true,
-  skipCrop = false,
-  editMode = false,
-  editItemId,
-  editItem,
-}: AddItemWizardProps) {
-  const [status, setStatus] = useState<StatusType>(STATUS.IDLE);
-  const [showConfirmClose, setShowConfirmClose] = useState(false);
-  const [hasChanges, setHasChanges] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formData, setFormData] = useState<WizardFormData>(INITIAL_FORM_DATA);
-  const [aiSuggestions, setAiSuggestions] = useState<AISuggestions | null>(
-    null
+const STEP = {
+  UPLOAD: 0,
+  MANUAL_CATEGORIZE: 1,
+  AI_ANALYSIS: 2,
+} as const;
+
+type Step = typeof STEP[keyof typeof STEP];
+
+interface FailedItem {
+  imageUrl: string;
+  reason: string;
+  categoryId?: number;
+}
+
+// Memoized item card to prevent unnecessary re-renders
+interface ItemCardProps {
+  item: {
+    id?: number;
+    imgUrl: string;
+    name: string;
+    categoryName?: string;
+    category?: { id: number; name: string };
+  };
+  isSelected: boolean;
+  onToggle: (id: number) => void;
+}
+
+const AnalysisItemCard = memo(({ item, isSelected, onToggle }: ItemCardProps) => {
+  const handleClick = () => {
+    if (item.id) onToggle(item.id);
+  };
+
+  return (
+    <div
+      onClick={handleClick}
+      className="group relative w-full flex flex-col cursor-pointer p-1"
+    >
+      {/* GlassCard wrapper */}
+      <div
+        className={
+          isSelected
+            ? "relative flex flex-col p-2 rounded-2xl transition-all duration-100 bg-gradient-to-br from-cyan-300/30 via-blue-200/10 to-indigo-300/30 backdrop-blur-md border-2 border-cyan-400/60 shadow-lg shadow-cyan-500/40 ring-2 ring-cyan-400/30 ring-offset-2 ring-offset-transparent"
+            : "relative flex flex-col p-2 rounded-2xl transition-all duration-100 bg-gradient-to-br from-cyan-300/30 via-blue-200/10 to-indigo-300/30 backdrop-blur-md border-2 border-white/20 hover:border-cyan-400/40"
+        }
+      >
+        {/* Selection Indicator */}
+        <div className={
+          isSelected
+            ? "absolute top-2 right-2 z-10 w-6 h-6 rounded-full flex items-center justify-center transition-all duration-100 border-2 bg-cyan-500 border-white/50 shadow-lg"
+            : "absolute top-2 right-2 z-10 w-6 h-6 rounded-full flex items-center justify-center transition-all duration-100 border-2 bg-white/20 backdrop-blur-md border-white/30"
+        }>
+          {isSelected && <CheckCircle2 className="w-4 h-4 text-white" />}
+        </div>
+
+        {/* Image Container */}
+        <div className="bg-white/5 rounded-lg aspect-square overflow-hidden relative mb-2">
+          <Image
+            src={item.imgUrl}
+            alt={item.name}
+            width="100%"
+            height="100%"
+            className="object-cover rounded-lg"
+            preview={false}
+            loading="lazy"
+            placeholder={false}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              display: 'block',
+              borderRadius: '0.5rem'
+            }}
+            wrapperClassName="w-full h-full"
+            rootClassName="w-full h-full !block"
+          />
+        </div>
+
+        {/* Item Details */}
+        <div className="flex flex-col px-1">
+          {/* Name */}
+          <h3 className="text-white font-semibold text-sm truncate mb-1">
+            {item.name}
+          </h3>
+
+          {/* Category */}
+          <span className="px-1.5 py-0.5 rounded-full bg-white/10 border border-white/20 text-white/70 text-[9px] font-medium truncate text-center">
+            {item.categoryName || item.category?.name || "Uncategorized"}
+          </span>
+        </div>
+      </div>
+    </div>
   );
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState("");
-  const [uploadTaskId, setUploadTaskId] = useState<string | null>(null);
+}, (prevProps, nextProps) => {
+  // Custom comparison: only re-render if isSelected changes or item.id changes
+  return prevProps.isSelected === nextProps.isSelected &&
+         prevProps.item.id === nextProps.item.id;
+});
+
+AnalysisItemCard.displayName = 'AnalysisItemCard';
+
+// Manual Categorize Card Component
+interface ManualCategorizeCardProps {
+  item: FailedItem;
+  index: number;
+  categories: { id: number; name: string }[];
+  onCategoryChange: (index: number, categoryId: number) => void;
+}
+
+const ManualCategorizeCard = memo(({ item, index, categories, onCategoryChange }: ManualCategorizeCardProps) => {
+  return (
+    <div className="group relative w-full flex flex-col p-1">
+      <div className="relative flex flex-col p-2 rounded-2xl transition-all duration-100 bg-gradient-to-br from-cyan-300/30 via-blue-200/10 to-indigo-300/30 backdrop-blur-md border-2 border-white/20">
+        {/* Alert Badge */}
+        <div className="absolute top-2 right-2 z-10">
+          <div className="w-6 h-6 rounded-full bg-orange-500/90 backdrop-blur-md border-2 border-white/50 flex items-center justify-center shadow-lg">
+            <AlertCircle className="w-4 h-4 text-white" />
+          </div>
+        </div>
+
+        {/* Image Container */}
+        <div className="bg-white/5 rounded-lg aspect-square overflow-hidden relative mb-2">
+          <Image
+            src={item.imageUrl}
+            alt={`Item ${index + 1}`}
+            width="100%"
+            height="100%"
+            className="object-cover rounded-lg"
+            preview={false}
+            loading="lazy"
+            placeholder={false}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              display: 'block',
+              borderRadius: '0.5rem'
+            }}
+            wrapperClassName="w-full h-full"
+            rootClassName="w-full h-full !block"
+          />
+        </div>
+
+        {/* Reason */}
+        <div className="px-1 mb-2">
+          <p className="text-xs text-orange-200/90 font-medium truncate">
+            {item.reason}
+          </p>
+        </div>
+
+        {/* Category Selector */}
+        <div className="px-1">
+          <Select
+            placeholder="Select category"
+            value={item.categoryId}
+            onChange={(value) => onCategoryChange(index, value)}
+            className="w-full"
+            size="small"
+            style={{ width: '100%' }}
+            dropdownStyle={{
+              background: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(12px)',
+            }}
+            options={categories.map(cat => ({
+              label: cat.name,
+              value: cat.id,
+            }))}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}, (prevProps, nextProps) => {
+  return prevProps.item.categoryId === nextProps.item.categoryId &&
+         prevProps.item.imageUrl === nextProps.item.imageUrl &&
+         prevProps.categories === nextProps.categories;
+});
+
+ManualCategorizeCard.displayName = 'ManualCategorizeCard';
+
+export function AddItemWizard({ open, onOpenChange, editMode, editItemId, editItem }: AddItemWizardProps) {
+  // Suppress unused variable warnings - edit mode is not yet implemented
+  void editMode;
+  void editItemId;
+  void editItem;
+
+  const [currentStep, setCurrentStep] = useState<Step>(STEP.UPLOAD);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadedItemIds, setUploadedItemIds] = useState<number[]>([]);
+  const [selectedItemsForAnalysis, setSelectedItemsForAnalysis] = useState<number[]>([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [failedItems, setFailedItems] = useState<FailedItem[]>([]);
+  const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
+  const [isCategorizing, setIsCategorizing] = useState(false);
 
   const { user } = useAuthStore();
-  const { addTask, updateTask, removeTask } = useUploadStore();
-  const { categories, styles, seasons, occasions } = useWardrobeOptions();
+  const { getRawItemById } = useWardrobeStore();
 
-  // Initialize form state on dialog open
+  // Fetch categories on mount
   useEffect(() => {
-    if (!open || status !== STATUS.IDLE) return;
+    const fetchCategories = async () => {
+      const cats = await wardrobeAPI.getCategories();
+      setCategories(cats);
+    };
+    fetchCategories();
+  }, []);
 
-    if (editMode && editItem) {
-      // Edit mode: load existing item data
-      const transformedData = apiItemToFormData(editItem);
-      const finalFormData = { ...INITIAL_FORM_DATA, ...transformedData };
-      setFormData(finalFormData);
-      setPreviewUrl(
-        transformedData.imageRemBgURL || transformedData.uploadedImageURL || ""
-      );
-      setStatus(STATUS.FORM);
-      setHasChanges(false);
-    } else {
-      // Create mode: reset to initial state
-      setFormData(INITIAL_FORM_DATA);
-      setAiSuggestions(null);
-      setSelectedFile(null);
-      setPreviewUrl("");
-    }
-  }, [open, editMode, editItem, status]);
-
-  // Reset form to initial state
+  // Reset and close
   const resetAndClose = useCallback(() => {
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl);
-    }
-
-    setStatus(STATUS.IDLE);
-    setSelectedFile(null);
-    setPreviewUrl("");
-    setFormData(INITIAL_FORM_DATA);
-    setAiSuggestions(null);
-    setHasChanges(false);
-    setShowConfirmClose(false);
-    setIsSubmitting(false);
-
+    setSelectedFiles([]);
+    setCurrentStep(STEP.UPLOAD);
+    setUploadedItemIds([]);
+    setSelectedItemsForAnalysis([]);
+    setFailedItems([]);
+    setIsUploading(false);
+    setIsAnalyzing(false);
+    setIsCategorizing(false);
     onOpenChange(false);
-  }, [onOpenChange, previewUrl]);
+  }, [onOpenChange]);
 
-  // Auto-save after AI analysis
-  const autoSaveAfterAnalysis = useCallback(
-    async (data: WizardFormData, taskId?: string | null) => {
-      try {
-        setIsSubmitting(true);
+  // Handle file selection from StepPhotoAI
+  const handleFilesSelect = (files: File[]) => {
+    setSelectedFiles(files);
+  };
 
-        const errors = validateWizardFormData(data);
+  // Handle clear files
+  const handleClearFiles = () => {
+    setSelectedFiles([]);
+  };
 
-        if (errors.length > 0) {
-          console.warn(`⚠️ [AUTO-SAVE] Validation failed:`, errors);
+  // Toggle item selection for AI analysis (memoized to prevent re-renders)
+  const toggleItemSelection = useCallback((itemId: number) => {
+    setSelectedItemsForAnalysis(prev =>
+      prev.includes(itemId)
+        ? prev.filter(id => id !== itemId)
+        : [...prev, itemId]
+    );
+  }, []);
 
-          // Update task to show manual edit needed
-          if (taskId) {
-            updateTask(taskId, {
-              progress: 80,
-              status: "analyzing",
-            });
-          }
-
-          // Show form for manual edit with helpful message
-          setStatus(STATUS.FORM);
-          setIsSubmitting(false);
-          toast.info("Please review and complete the missing information", {
-            description: errors.join(", "),
-          });
-          return;
-        }
-
-        const userId = await getUserIdFromAuth(user);
-
-        const payload = transformWizardDataToAPI(data, userId);
-        // Update task: saving
-        if (taskId) {
-          updateTask(taskId, {
-            progress: 90,
-            status: "uploading",
-          });
-        }
-
-        const response = await wardrobeAPI.createItem(payload);
-
-        if (!response) {
-          throw new Error("Failed to create item - no response from API");
-        }
-
-        // Update task: success with cached item data
-        if (taskId) {
-          updateTask(taskId, {
-            progress: 100,
-            status: "success",
-            createdItemId: response.id,
-            createdItemData: response,
-          });
-        }
-
-        // Set to SAVED to hide modal
-        setStatus(STATUS.SAVED);
-        setHasChanges(false);
-
-        // ⚡ Optimistic update: Add item to local state immediately
-        // No need to fetch all items again!
-        const state = useWardrobeStore.getState();
-        state.addItemOptimistic(response);
-
-        // Close modal after short delay
-        setTimeout(() => {
-          resetAndClose();
-        }, 500);
-      } catch (error) {
-        console.error("❌ [AUTO-SAVE] Error:", error);
-        console.error("❌ [AUTO-SAVE] Stack:", (error as Error)?.stack);
-
-        // Update task: error
-        if (taskId) {
-          updateTask(taskId, {
-            status: "error",
-            errorMessage: "Failed to save item",
-          });
-
-          // Auto-remove error task after 5 seconds
-          setTimeout(() => {
-            removeTask(taskId);
-          }, 5000);
-        }
-
-        // Show form for manual save if auto-save fails
-        setStatus(STATUS.FORM);
-        toast.error("Auto-save failed. Please review and save manually.");
-      } finally {
-        setIsSubmitting(false);
-      }
-    },
-    [user, resetAndClose, updateTask, removeTask]
-  );
-
-  // AI Analysis with retry logic
-  const analyzeImage = useCallback(
-    async (file: File, url: string, attempt = 1) => {
-      let currentTaskId = uploadTaskId;
-
-      try {
-        // Create upload task if it doesn't exist yet
-        if (!currentTaskId) {
-          const taskId = addTask({
-            fileName: file.name,
-            progress: 10,
-            status: "analyzing",
-            retryCount: attempt - 1,
-            isRetrying: attempt > 1,
-          });
-          currentTaskId = taskId;
-          setUploadTaskId(taskId);
-        }
-
-        // Update progress: start analysis
-        if (currentTaskId) {
-          updateTask(currentTaskId, {
-            progress: 20,
-            status: "analyzing",
-            retryCount: attempt - 1,
-            isRetrying: attempt > 1,
-          });
-        }
-
-        const result = await wardrobeAPI.getImageSummary(file);
-
-        // ✨ VALIDATE AI RESPONSE
-        const validation = validateAIResponse(result);
-
-        if (!validation.isValid) {
-          console.warn(
-            `⚠️ [AI Validation] FAILED - Missing fields:`,
-            validation.missingFields
-          );
-          console.warn(`⚠️ [AI Validation] Details:`, {
-            hasName: validation.details.hasName,
-            hasCategory: validation.details.hasCategory,
-            hasImage: validation.details.hasImage,
-            hasColors: validation.details.hasColors,
-            hasPattern: validation.details.hasPattern,
-            hasFabric: validation.details.hasFabric,
-            hasWeather: validation.details.hasWeather,
-          });
-
-          // Retry if not at max attempts
-          if (attempt < AI_ANALYSIS_CONFIG.MAX_RETRIES) {
-            if (currentTaskId) {
-              updateTask(currentTaskId, {
-                progress: 10,
-                status: "analyzing",
-                retryCount: attempt,
-                isRetrying: true,
-              });
-            }
-
-            setTimeout(() => {
-              analyzeImage(file, url, attempt + 1);
-            }, AI_ANALYSIS_CONFIG.RETRY_DELAY);
-            return;
-          } else {
-            console.error(
-              `❌ [AI Validation] Max retries reached with insufficient data`
-            );
-            throw new Error(
-              `AI analysis incomplete after ${
-                AI_ANALYSIS_CONFIG.MAX_RETRIES
-              } attempts. Missing: ${validation.missingFields.join(", ")}`
-            );
-          }
-        }
-
-        // Update progress: analysis complete
-        if (currentTaskId) {
-          updateTask(currentTaskId, {
-            progress: 60,
-            status: "analyzing",
-          });
-        }
-
-        setAiSuggestions(result);
-
-        const newFormData = {
-          uploadedImageURL: url,
-          imageRemBgURL: result.imageRemBgURL || url,
-          name: result.name || result.aiDescription || "",
-          colors: result.colors || [],
-          pattern: result.pattern || "",
-          fabric: result.fabric || "",
-          condition: result.condition || "New",
-          weatherSuitable: result.weatherSuitable || "",
-          notes: result.aiDescription || "",
-          categoryId: result.category?.id || 0,
-          categoryName: result.category?.name || "",
-          brand: "None", // AI doesn't detect brand
-          seasons:
-            result.seasons?.map((s: { id: number; name: string }) => s.name) ||
-            [],
-          seasonIds:
-            result.seasons?.map((s: { id: number; name: string }) => s.id) ||
-            [],
-          styleIds:
-            result.styles?.map(
-              (style: { id: number; name: string }) => style.id
-            ) || [],
-          occasionIds:
-            result.occasions?.map(
-              (occ: { id: number; name: string }) => occ.id
-            ) || [],
-          tags: [],
-          wornToday: false,
-        };
-
-        setFormData(newFormData);
-
-        // Update preview to show removed background image
-        if (result.imageRemBgURL) {
-          setPreviewUrl(result.imageRemBgURL);
-        }
-
-        // Update progress: preparing to save
-        if (currentTaskId) {
-          updateTask(currentTaskId, {
-            progress: 80,
-            status: "uploading",
-          });
-        }
-
-        // Auto-save after analysis completes
-        setTimeout(async () => {
-          await autoSaveAfterAnalysis(newFormData, currentTaskId);
-        }, 500);
-      } catch (error) {
-        console.error("❌ [AI Analysis] Exception caught:", error);
-
-        const isApiError = error instanceof Error && "statusCode" in error;
-        const statusCode = isApiError
-          ? (error as { statusCode?: number }).statusCode
-          : undefined;
-        const is400Error = statusCode === 400;
-
-        if (is400Error) {
-          console.error("❌ [AI Analysis] 400 Validation error - Not retrying");
-
-          const apiMessage =
-            error instanceof Error ? error.message : "Image validation failed";
-
-          if (currentTaskId) {
-            updateTask(currentTaskId, {
-              status: "error",
-              errorMessage: apiMessage,
-            });
-
-            setTimeout(() => {
-              if (currentTaskId) {
-                removeTask(currentTaskId);
-              }
-            }, 8000);
-          }
-
-          toast.error(apiMessage, {
-            duration: 6000,
-          });
-          setStatus(STATUS.PREVIEW);
-          return;
-        }
-
-        if (attempt < AI_ANALYSIS_CONFIG.MAX_RETRIES) {
-          if (currentTaskId) {
-            updateTask(currentTaskId, {
-              progress: 10,
-              status: "analyzing",
-              retryCount: attempt,
-              isRetrying: true,
-            });
-          }
-
-          setTimeout(() => {
-            analyzeImage(file, url, attempt + 1);
-          }, AI_ANALYSIS_CONFIG.RETRY_DELAY);
-        } else {
-          console.error("❌ [AI Analysis] Max retries reached");
-
-          if (currentTaskId) {
-            updateTask(currentTaskId, {
-              status: "error",
-              errorMessage: "Failed to analyze image after 5 attempts",
-            });
-
-            setTimeout(() => {
-              if (currentTaskId) {
-                removeTask(currentTaskId);
-              }
-            }, 5000);
-          }
-
-          toast.error(
-            "Failed to analyze image after 5 attempts. Please try again."
-          );
-          setStatus(STATUS.PREVIEW);
-        }
-      }
-    },
-    [autoSaveAfterAnalysis, addTask, updateTask, removeTask, uploadTaskId]
-  );
-
-  // Handle initialFile from GalleryPickerFlow
-  useEffect(() => {
-    if (initialFile && open) {
-      setSelectedFile(initialFile);
-      const url = URL.createObjectURL(initialFile);
-      setPreviewUrl(url);
-      setHasChanges(true);
-
-      // Auto-analyze or show preview based on settings
-      if (autoAnalyze && skipCrop) {
-        // Skip crop and go directly to analyzing
-        setStatus(STATUS.ANALYZING);
-
-        // Trigger analysis with retry logic
-        setTimeout(() => {
-          analyzeImage(initialFile, url);
-        }, 500);
-      } else if (skipCrop) {
-        // Skip crop, show preview with analyze button
-        setStatus(STATUS.PREVIEW);
-      } else {
-        // Show cropper
-        setStatus(STATUS.CROPPING);
-      }
-    }
-  }, [initialFile, open, autoAnalyze, skipCrop, analyzeImage]);
-
-  // Clear selected file
-  const handleClearFile = useCallback(() => {
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl);
-    }
-    setSelectedFile(null);
-    setPreviewUrl("");
-    setStatus(STATUS.IDLE);
-    setAiSuggestions(null);
-  }, [previewUrl]);
-
-  // Handle file selection - go to cropping
-  const handleFileSelect = useCallback(
-    (file: File) => {
-      // Revoke old URL to prevent memory leak
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
-      }
-      setSelectedFile(file);
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
-      setStatus(STATUS.CROPPING);
-      setHasChanges(true);
-    },
-    [previewUrl]
-  );
-
-  // Handle crop complete
-  const handleCropComplete = useCallback(
-    (croppedFile: File) => {
-      // Replace the selected file with cropped version
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
-      }
-
-      setSelectedFile(croppedFile);
-      const newUrl = URL.createObjectURL(croppedFile);
-      setPreviewUrl(newUrl);
-      setStatus(STATUS.PREVIEW);
-    },
-    [previewUrl]
-  );
-
-  // Handle crop cancel - go back to idle
-  const handleCropCancel = useCallback(() => {
-    handleClearFile();
-  }, [handleClearFile]);
-
-  // Handle dialog close with unsaved changes confirmation
-  const handleClose = useCallback(() => {
-    // If just saved, close immediately without confirmation
-    if (status === STATUS.SAVED) {
-      resetAndClose();
-      return;
-    }
-
-    if (hasChanges) {
-      setShowConfirmClose(true);
+  // Select/Deselect all items
+  const toggleSelectAll = () => {
+    if (selectedItemsForAnalysis.length === uploadedItemIds.length) {
+      setSelectedItemsForAnalysis([]);
     } else {
-      resetAndClose();
+      setSelectedItemsForAnalysis(uploadedItemIds);
     }
-  }, [hasChanges, status, resetAndClose]);
+  };
 
-  // Handle analyze button
-  const handleAnalyze = useCallback(async () => {
-    if (!selectedFile || !previewUrl) {
-      console.warn("No file selected for analysis");
+  // Handle AI analysis
+  const handleRunAnalysis = async () => {
+    if (selectedItemsForAnalysis.length === 0) {
+      toast.error("Please select at least one item for analysis");
       return;
     }
 
-    setStatus(STATUS.ANALYZING);
-
-    // Use retry logic
-    analyzeImage(selectedFile, previewUrl);
-  }, [selectedFile, previewUrl, analyzeImage]);
-
-  // Submit form to API
-  const handleSave = useCallback(async () => {
-    setIsSubmitting(true);
+    setIsAnalyzing(true);
+    const loadingToast = toast.loading(`Running AI analysis on ${selectedItemsForAnalysis.length} item${selectedItemsForAnalysis.length > 1 ? 's' : ''}...`);
 
     try {
-      const errors = validateWizardFormData(formData);
-      if (errors.length > 0) {
-        errors.forEach((error) => toast.error(error));
-        setIsSubmitting(false);
+      const confidenceScores = await wardrobeAPI.analyzeItems(selectedItemsForAnalysis);
+      toast.success(
+        `AI analysis complete for ${confidenceScores.length} item${confidenceScores.length > 1 ? 's' : ''}!`,
+        { id: loadingToast }
+      );
+
+      // Refresh wardrobe items to get updated analysis data
+      const state = useWardrobeStore.getState();
+      await state.fetchItems();
+
+      // Close wizard after successful analysis
+      setTimeout(() => {
+        resetAndClose();
+      }, 1000);
+    } catch (error) {
+      console.error("❌ AI analysis error:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to run AI analysis",
+        { id: loadingToast }
+      );
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  // Skip AI analysis
+  const handleSkipAnalysis = () => {
+    resetAndClose();
+  };
+
+  // Update category for a failed item
+  const updateFailedItemCategory = (index: number, categoryId: number) => {
+    setFailedItems(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], categoryId };
+      return updated;
+    });
+  };
+
+  // Handle manual categorization submission
+  const handleCategorizeSubmit = async () => {
+    // Validate all items have categories
+    const uncategorizedItems = failedItems.filter(item => !item.categoryId);
+    if (uncategorizedItems.length > 0) {
+      toast.error("Please select a category for all items");
+      return;
+    }
+
+    setIsCategorizing(true);
+    const loadingToast = toast.loading(`Categorizing ${failedItems.length} item${failedItems.length > 1 ? 's' : ''}...`);
+
+    try {
+      const userId = await getUserIdFromAuth(user);
+
+      // Submit to bulk manual API
+      const result = await wardrobeAPI.bulkUploadManual({
+        userId,
+        itemsUpload: failedItems.map(item => ({
+          imageURLs: item.imageUrl,
+          categoryId: item.categoryId!,
+        })),
+      });
+
+      toast.success(
+        `Successfully categorized ${result.itemIds.length} item${result.itemIds.length > 1 ? 's' : ''}!`,
+        { id: loadingToast }
+      );
+
+      // Refresh wardrobe items
+      const state = useWardrobeStore.getState();
+      await state.fetchItems();
+
+      // Merge all uploaded item IDs (from auto + manual)
+      const allItemIds = [...uploadedItemIds, ...result.itemIds];
+      setUploadedItemIds(allItemIds);
+      setSelectedItemsForAnalysis(allItemIds); // Pre-select all items
+
+      // Clear failed items and move to AI analysis
+      setFailedItems([]);
+      setCurrentStep(STEP.AI_ANALYSIS);
+    } catch (error) {
+      console.error("❌ Manual categorization error:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to categorize items",
+        { id: loadingToast }
+      );
+    } finally {
+      setIsCategorizing(false);
+    }
+  };
+
+  // Handle submit - upload all images
+  const handleSubmit = async () => {
+    if (selectedFiles.length === 0) {
+      toast.error("Please select at least one image");
+      return;
+    }
+
+    setIsUploading(true);
+    const loadingToast = toast.loading(`Uploading ${selectedFiles.length} image${selectedFiles.length > 1 ? 's' : ''}...`);
+
+    try {
+      const userId = await getUserIdFromAuth(user);
+
+      // Phase 1: Upload all images to MinIO
+      const bulkUploadResult = await minioAPI.uploadImagesBulk(selectedFiles);
+
+      // Extract successful URLs
+      const successfulUrls = bulkUploadResult.successfulUploads.map(upload => upload.downloadUrl);
+
+      // Handle failed uploads
+      if (bulkUploadResult.failedUploads.length > 0) {
+        console.warn(`⚠️ ${bulkUploadResult.failedUploads.length} files failed to upload:`, bulkUploadResult.failedUploads);
+        bulkUploadResult.failedUploads.forEach(failed => {
+          toast.error(`Failed to upload ${failed.fileName}: ${failed.reason}`);
+        });
+      }
+
+      // If no files uploaded successfully, stop here
+      if (successfulUrls.length === 0) {
+        toast.error("All files failed to upload. Please try again.", { id: loadingToast });
+        setIsUploading(false);
         return;
       }
 
-      const userId = await getUserIdFromAuth(user);
-      const payload = transformWizardDataToAPI(formData, userId);
+      toast.loading(`Creating ${successfulUrls.length} item${successfulUrls.length > 1 ? 's' : ''}...`, { id: loadingToast });
 
-      // Edit mode: update existing item
-      if (editMode && editItemId) {
-        await wardrobeAPI.updateItem(editItemId, payload);
+      // Phase 2: Bulk upload with auto categorization
+      const response = await wardrobeAPI.bulkUploadAuto({
+        userId,
+        imageURLs: successfulUrls,
+      });
 
-        // ⚡ Optimistic update for edit
-        const state = useWardrobeStore.getState();
-        await state.fetchItems(); // Refresh after edit to ensure consistency
+      const succeededCount = response.itemIds.length;
+      const hasFailedItems = response.failedItems && response.failedItems.length > 0;
 
-        toast.success("Item updated successfully!");
-      } else {
-        // Create mode: add new item
-        const response = await wardrobeAPI.createItem(payload);
-
-        // Update upload task if exists
-        if (uploadTaskId) {
-          updateTask(uploadTaskId, {
-            progress: 100,
-            status: "success",
-            createdItemId: response.id,
-            createdItemData: response,
-          });
-        }
-
-        // ⚡ Optimistic update: Add item immediately, no fetch needed!
-        const state = useWardrobeStore.getState();
-        state.addItemOptimistic(response);
-
-        toast.success("Item added successfully!");
+      // Case 1: All items failed (0 succeeded, all failed)
+      if (succeededCount === 0 && hasFailedItems) {
+        toast.warning(
+          `All ${response.failedItems!.length} item${response.failedItems!.length > 1 ? 's' : ''} couldn't be auto-categorized. Please categorize manually.`,
+          { id: loadingToast }
+        );
+        setFailedItems(response.failedItems!);
+        setCurrentStep(STEP.MANUAL_CATEGORIZE);
       }
+      // Case 2: Some succeeded, some failed (partial success)
+      else if (succeededCount > 0 && hasFailedItems) {
+        toast.success(
+          `Successfully added ${succeededCount} item${succeededCount > 1 ? 's' : ''}!`,
+          { id: loadingToast }
+        );
+        toast.warning(
+          `${response.failedItems!.length} item${response.failedItems!.length > 1 ? 's' : ''} couldn't be auto-categorized. Please categorize manually.`
+        );
 
-      // Show saved state
-      setStatus(STATUS.SAVED);
+        // Refresh wardrobe items
+        const state = useWardrobeStore.getState();
+        await state.fetchItems();
 
-      // Auto-close after showing success
-      setTimeout(() => {
-        resetAndClose();
-      }, 2000);
+        // Store uploaded item IDs
+        setUploadedItemIds(response.itemIds);
+        setFailedItems(response.failedItems!);
+        setCurrentStep(STEP.MANUAL_CATEGORIZE);
+      }
+      // Case 3: All succeeded (full success)
+      else if (succeededCount > 0) {
+        toast.success(
+          `Successfully added ${succeededCount} item${succeededCount > 1 ? 's' : ''}!`,
+          { id: loadingToast }
+        );
+
+        // Refresh wardrobe items
+        const state = useWardrobeStore.getState();
+        await state.fetchItems();
+
+        // Store uploaded item IDs and go directly to AI analysis
+        setUploadedItemIds(response.itemIds);
+        setSelectedItemsForAnalysis(response.itemIds); // Pre-select all items
+        setCurrentStep(STEP.AI_ANALYSIS);
+      }
+      // Case 4: Complete failure (shouldn't happen, but handle it)
+      else {
+        toast.error("Failed to create items. Please try again.", { id: loadingToast });
+      }
     } catch (error) {
-      console.error("❌ API Error:", error);
-
-      // Enhanced error message
-      let errorMessage = editMode
-        ? "Cannot update item. Please try again."
-        : "Cannot add item. Please try again.";
-
-      if (error instanceof Error) {
-        errorMessage = error.message;
-      }
-
-      // Check for specific error responses
-      if (typeof error === "object" && error !== null) {
-        const err = error as {
-          response?: { data?: { message?: string } };
-          message?: string;
-        };
-        if (err.response?.data?.message) {
-          errorMessage = err.response.data.message;
-        } else if (err.message) {
-          errorMessage = err.message;
-        }
-      }
-
-      toast.error(errorMessage);
-      setIsSubmitting(false);
+      console.error("❌ Upload error:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to upload images",
+        { id: loadingToast }
+      );
+    } finally {
+      setIsUploading(false);
     }
-  }, [
-    formData,
-    user,
-    resetAndClose,
-    editMode,
-    editItemId,
-    uploadTaskId,
-    updateTask,
-  ]);
+  };
 
-  // Update form data
-  const updateFormData = useCallback((updates: Partial<WizardFormData>) => {
-    setFormData((prev) => ({ ...prev, ...updates }));
-    setHasChanges(true);
-  }, []);
+  if (!open) return null;
 
-  // Handle cancel
-  const handleCancel = useCallback(() => {
-    if (status === STATUS.IDLE || !hasChanges) {
-      resetAndClose();
-    } else {
-      setShowConfirmClose(true);
-    }
-  }, [status, hasChanges, resetAndClose]);
+  // Get uploaded items data from store
+  const uploadedItems = uploadedItemIds
+    .map(id => getRawItemById(id))
+    .filter((item): item is NonNullable<typeof item> => item !== undefined);
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    if (!open) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        handleClose();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [open, handleClose]);
+  // Use Set for O(1) selection lookup instead of array includes
+  const selectedSet = new Set(selectedItemsForAnalysis);
 
   return (
     <>
-      <Dialog
-        open={open && status !== STATUS.ANALYZING && status !== STATUS.SAVED}
-        onOpenChange={(open) => !open && handleClose()}
-      >
-        <DialogContent
-          className="max-w-[95vw] sm:max-w-xl p-0 gap-0 max-h-[95vh] flex flex-col overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-white/10"
-          showCloseButton={false}
+      {/* Backdrop */}
+      <div
+        className="fixed h-full inset-0 bg-black/50 backdrop-blur-sm z-50 overflow-hidden overscroll-none"
+        style={{ position: 'fixed', inset: 0 }}
+        onClick={() => {
+          if (!isUploading && !isAnalyzing && !isCategorizing) {
+            resetAndClose();
+          }
+        }}
+      />
+
+      {/* Modal Container */}
+      <div className="fixed inset-0 z-[51] flex items-center justify-center p-4 pointer-events-none overflow-hidden">
+        <div
+          className="w-[1400px] max-w-[60vw] h-[85vh] rounded-3xl overflow-hidden shadow-2xl pointer-events-auto relative"
+          onClick={(e) => e.stopPropagation()}
         >
-          <DialogTitle className="sr-only">
-            {editMode ? "Edit Item" : "Add Item by Image"}
-          </DialogTitle>
-          <DialogDescription className="sr-only">
-            {editMode
-              ? "Update details for your wardrobe item"
-              : "Upload and analyze clothing items using AI"}
-          </DialogDescription>
+          {/* Full Background Container with Glassmorphism */}
+          <div className="absolute inset-0 bg-gradient-to-br bg-opacity-70 from-slate-900/50 via-blue-900/90 to-slate-900/50">
+            {/* Decorative Background Elements */}
+            <div className="absolute top-0 -right-32 w-[500px] h-[500px] bg-blue-200/30 rounded-full blur-3xl"></div>
+            <div className="absolute bottom-0 -left-32 w-[500px] h-[500px] bg-cyan-200/30 rounded-full blur-3xl"></div>
+          </div>
 
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(59,130,246,0.15),transparent_50%)]" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(147,51,234,0.1),transparent_50%)]" />
-          <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent,rgba(0,0,0,0.3))]" />
-
-          <div className="relative border-b border-white/10 bg-gradient-to-r from-black/40 via-black/30 to-black/40 backdrop-blur-xl px-6 sm:px-8 py-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <motion.div
-                  initial={{ rotate: -180, scale: 0 }}
-                  animate={{ rotate: 0, scale: 1 }}
-                  transition={{ type: "spring", duration: 0.6 }}
-                  className="p-2.5 rounded-xl bg-gradient-to-br from-blue-500/30 to-blue-600/30 ring-1 ring-blue-400/40 shadow-lg"
-                >
-                  <Sparkles className="w-5 h-5 text-blue-300" />
-                </motion.div>
+          <div className="relative z-10 h-full flex flex-col">
+            {/* Header */}
+            <div className="px-12 pt-8 pb-4">
+              <div className="flex items-center justify-between">
                 <div>
-                  <motion.h2
-                    initial={{ opacity: 0, x: -10 }}
+                  <h2 className="font-dela-gothic text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-cyan-200">
+                    {currentStep === STEP.UPLOAD
+                      ? "Add Items to Wardrobe"
+                      : currentStep === STEP.MANUAL_CATEGORIZE
+                      ? "Manual Categorization"
+                      : "AI Analysis"
+                    }
+                  </h2>
+                  <p className="font-bricolage text-lg text-gray-200 mt-2">
+                    {currentStep === STEP.UPLOAD
+                      ? "Upload up to 10 images to add to your wardrobe"
+                      : currentStep === STEP.MANUAL_CATEGORIZE
+                      ? "Select a category for each item that couldn't be auto-categorized"
+                      : "Select items to analyze with AI for detailed attributes"
+                    }
+                  </p>
+                </div>
+                <button
+                  onClick={resetAndClose}
+                  disabled={isUploading || isAnalyzing || isCategorizing}
+                  className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <X className="w-6 h-6 text-white" />
+                </button>
+              </div>
+            </div>
+
+            {/* Content Container */}
+            <div className="flex-1 px-12 py-4 overflow-hidden min-h-0 flex flex-col">
+              <AnimatePresence mode="wait">
+                {currentStep === STEP.UPLOAD && (
+                  <motion.div
+                    key="upload"
+                    initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="text-xl sm:text-2xl font-bold text-white"
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.3 }}
+                    className="flex-1 overflow-hidden"
                   >
-                    {editMode ? "Edit Item" : "Add Item by Image"}
-                  </motion.h2>
-                  <motion.p
-                    initial={{ opacity: 0, x: -10 }}
+                    <StepPhotoAI
+                      onFilesSelect={handleFilesSelect}
+                      onClearFiles={handleClearFiles}
+                    />
+                  </motion.div>
+                )}
+
+                {currentStep === STEP.MANUAL_CATEGORIZE && (
+                  <motion.div
+                    key="categorize"
+                    initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.3 }}
-                    className="text-sm text-white/50"
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.3 }}
+                    className="flex-1 overflow-hidden flex flex-col"
                   >
-                    {editMode
-                      ? "Update item details"
-                      : "AI-powered wardrobe analysis"}
-                  </motion.p>
+                    {/* Categorization Header */}
+                    <div className="flex items-center justify-between mb-4 flex-shrink-0">
+                      <div className="flex items-center gap-3">
+                        <AlertCircle className="w-6 h-6 text-orange-400" />
+                        <span className="font-bricolage text-lg text-white font-semibold">
+                          {failedItems.filter(item => item.categoryId).length} of {failedItems.length} items categorized
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Items Grid */}
+                    <div className="flex-1 overflow-y-auto min-h-0 wizard-scrollbar">
+                      <div className="grid grid-cols-5 gap-4">
+                        {failedItems.map((item, index) => (
+                          <ManualCategorizeCard
+                            key={`failed-${index}`}
+                            item={item}
+                            index={index}
+                            categories={categories}
+                            onCategoryChange={updateFailedItemCategory}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                {currentStep === STEP.AI_ANALYSIS && (
+                  <motion.div
+                    key="analysis"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.3 }}
+                    className="flex-1 overflow-hidden flex flex-col"
+                  >
+                    {/* Selection Header */}
+                    <div className="flex items-center justify-between mb-4 flex-shrink-0">
+                      <div className="flex items-center gap-3">
+                        <Sparkles className="w-6 h-6 text-yellow-400" />
+                        <span className="font-bricolage text-lg text-white font-semibold">
+                          {selectedItemsForAnalysis.length} of {uploadedItemIds.length} items selected
+                        </span>
+                      </div>
+                      <GlassButton
+                        onClick={toggleSelectAll}
+                        variant="custom"
+                        backgroundColor="rgba(255, 255, 255, 0.2)"
+                        borderColor="rgba(255, 255, 255, 0.4)"
+                        textColor="white"
+                        size="sm"
+                      >
+                        {selectedItemsForAnalysis.length === uploadedItemIds.length ? "Deselect All" : "Select All"}
+                      </GlassButton>
+                    </div>
+
+                    {/* Items Grid */}
+                    <div className="flex-1 overflow-y-auto min-h-0 hide-scrollbar" data-lenis-prevent>
+                      <div className="grid grid-cols-5 gap-4">
+                        {uploadedItems.map((item) => (
+                          <AnalysisItemCard
+                            key={item.id}
+                            item={item}
+                            isSelected={selectedSet.has(item.id!)}
+                            onToggle={toggleItemSelection}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Footer Actions */}
+            <div className="px-12 pb-8">
+              <div className="flex items-center justify-end">
+                <div className="flex items-center gap-4">
+                  {currentStep === STEP.UPLOAD ? (
+                    <>
+                      <GlassButton
+                        onClick={resetAndClose}
+                        disabled={isUploading}
+                        variant="custom"
+                        backgroundColor="rgba(255, 255, 255, 0.3)"
+                        borderColor="rgba(255, 255, 255, 0.5)"
+                        textColor="#374151"
+                        size="md"
+                      >
+                        <X className="w-5 h-5" />
+                        Cancel
+                      </GlassButton>
+
+                      <GlassButton
+                        onClick={handleSubmit}
+                        disabled={isUploading || selectedFiles.length === 0}
+                        variant="custom"
+                        backgroundColor="rgba(59, 130, 246, 0.6)"
+                        borderColor="rgba(59, 130, 246, 0.8)"
+                        textColor="white"
+                        size="md"
+                      >
+                        {isUploading ? (
+                          <>
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                            Uploading...
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="w-5 h-5" />
+                            Upload & Add to Wardrobe
+                          </>
+                        )}
+                      </GlassButton>
+                    </>
+                  ) : currentStep === STEP.MANUAL_CATEGORIZE ? (
+                    <>
+                      <GlassButton
+                        onClick={resetAndClose}
+                        disabled={isCategorizing}
+                        variant="custom"
+                        backgroundColor="rgba(255, 255, 255, 0.3)"
+                        borderColor="rgba(255, 255, 255, 0.5)"
+                        textColor="#374151"
+                        size="md"
+                      >
+                        <X className="w-5 h-5" />
+                        Cancel
+                      </GlassButton>
+
+                      <GlassButton
+                        onClick={handleCategorizeSubmit}
+                        disabled={isCategorizing || failedItems.some(item => !item.categoryId)}
+                        variant="custom"
+                        backgroundColor="rgba(59, 130, 246, 0.6)"
+                        borderColor="rgba(59, 130, 246, 0.8)"
+                        textColor="white"
+                        size="md"
+                      >
+                        {isCategorizing ? (
+                          <>
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                            Categorizing...
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle2 className="w-5 h-5" />
+                            Continue to AI Analysis
+                          </>
+                        )}
+                      </GlassButton>
+                    </>
+                  ) : (
+                    <>
+                      <GlassButton
+                        onClick={handleSkipAnalysis}
+                        disabled={isAnalyzing}
+                        variant="custom"
+                        backgroundColor="rgba(255, 255, 255, 0.3)"
+                        borderColor="rgba(255, 255, 255, 0.5)"
+                        textColor="#374151"
+                        size="md"
+                      >
+                        Skip Analysis
+                      </GlassButton>
+
+                      <GlassButton
+                        onClick={handleRunAnalysis}
+                        disabled={isAnalyzing || selectedItemsForAnalysis.length === 0}
+                        variant="custom"
+                        backgroundColor="rgba(59, 130, 246, 0.6)"
+                        borderColor="rgba(59, 130, 246, 0.8)"
+                        textColor="white"
+                        size="md"
+                      >
+                        {isAnalyzing ? (
+                          <>
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                            Analyzing...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-5 h-5" />
+                            Run AI Analysis ({selectedItemsForAnalysis.length})
+                          </>
+                        )}
+                      </GlassButton>
+                    </>
+                  )}
                 </div>
               </div>
-
-              <motion.button
-                onClick={handleClose}
-                whileHover={{
-                  scale: 1.1,
-                  backgroundColor: "rgba(255,255,255,0.15)",
-                }}
-                whileTap={{ scale: 0.9 }}
-                className="p-2.5 hover:bg-white/10 rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/70"
-                aria-label="Close modal"
-              >
-                <X className="w-5 h-5 text-white/90" />
-              </motion.button>
             </div>
           </div>
-
-          <div className="relative px-6 sm:px-8 py-8 max-h-[calc(95vh-6rem)] overflow-y-auto custom-scrollbar">
-            <AnimatePresence mode="wait">
-              {(status === STATUS.IDLE || status === STATUS.PREVIEW) && (
-                <motion.div
-                  key="upload"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  className="space-y-6"
-                >
-                  <StepPhotoAI
-                    formData={formData}
-                    updateFormData={updateFormData}
-                    aiSuggestions={aiSuggestions}
-                    setAiSuggestions={setAiSuggestions}
-                    onFileSelect={handleFileSelect}
-                    onClearFile={handleClearFile}
-                    selectedFile={selectedFile}
-                    previewUrl={previewUrl}
-                  />
-
-                  {status === STATUS.PREVIEW && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.2 }}
-                      className="flex justify-center gap-3"
-                    >
-                      <motion.button
-                        onClick={handleCancel}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        className="px-6 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/70"
-                      >
-                        Cancel
-                      </motion.button>
-                      <motion.button
-                        onClick={handleAnalyze}
-                        whileHover={{ scale: 1.05, y: -2 }}
-                        whileTap={{ scale: 0.95 }}
-                        className="px-8 py-3.5 rounded-xl bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 hover:from-blue-500 hover:via-blue-400 hover:to-blue-500 text-white font-semibold shadow-2xl shadow-blue-500/40 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/70 flex items-center gap-2"
-                      >
-                        <Sparkles className="w-5 h-5" />
-                        Upload & Analyze
-                      </motion.button>
-                    </motion.div>
-                  )}
-                </motion.div>
-              )}
-
-              {status === STATUS.CROPPING && (
-                <ImageCropper
-                  imageUrl={previewUrl}
-                  onCropComplete={handleCropComplete}
-                  onCancel={handleCropCancel}
-                />
-              )}
-
-              {status === STATUS.FORM && (
-                <motion.div
-                  key="form"
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.4 }}
-                >
-                  <ItemFormContent
-                    previewUrl={previewUrl}
-                    formData={formData}
-                    aiSuggestions={aiSuggestions}
-                    onFormDataChange={updateFormData}
-                    onSave={handleSave}
-                    onCancel={handleCancel}
-                    isSaving={isSubmitting}
-                    availableCategories={categories}
-                    availableStyles={styles}
-                    availableOccasions={occasions}
-                    availableSeasons={seasons}
-                  />
-                </motion.div>
-              )}
-
-              {status === STATUS.SAVED && (
-                <motion.div
-                  key="saved"
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="flex flex-col items-center justify-center min-h-[400px] text-center"
-                >
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-                    className="w-20 h-20 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center mb-6 shadow-2xl shadow-green-500/30"
-                  >
-                    <motion.svg
-                      initial={{ pathLength: 0 }}
-                      animate={{ pathLength: 1 }}
-                      transition={{
-                        delay: 0.4,
-                        duration: 0.5,
-                        ease: "easeInOut",
-                      }}
-                      className="w-10 h-10 text-white"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="3"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <motion.path d="M20 6L9 17l-5-5" />
-                    </motion.svg>
-                  </motion.div>
-                  <h2 className="text-3xl font-bold text-white mb-2">
-                    Item Saved!
-                  </h2>
-                  <p className="text-white/60">Added to your wardrobe</p>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <AlertDialog open={showConfirmClose} onOpenChange={setShowConfirmClose}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Cancel changes?</AlertDialogTitle>
-            <AlertDialogDescription>
-              You have unsaved changes. Are you sure you want to close?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Continue editing</AlertDialogCancel>
-            <AlertDialogAction onClick={resetAndClose}>
-              Cancel
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        </div>
+      </div>
     </>
   );
 }

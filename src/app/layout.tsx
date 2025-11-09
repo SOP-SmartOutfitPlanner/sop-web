@@ -10,6 +10,7 @@ import { AuthProvider } from "@/components/providers/auth-provider";
 import { GoogleAuthProvider } from "@/components/providers/google-oauth-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { OnboardingProvider } from "@/components/providers/onboarding-provider";
+import { LenisProvider } from "@/components/providers/lenis-provider";
 import { GlobalUploadToast } from "@/components/upload/GlobalUploadToast";
 import { GlobalEditModal } from "@/components/modals/GlobalEditModal";
 import "./globals.css";
@@ -52,18 +53,20 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${poppins.variable} ${bricolageGrotesque.variable} antialiased`}
         suppressHydrationWarning={true}
       >
-        <AuthProvider>
-          <QueryProvider>
-            <GoogleAuthProvider>
-              <OnboardingProvider>
-                {children}
-                <Toaster />
-                <GlobalUploadToast />
-                <GlobalEditModal />
-              </OnboardingProvider>
-            </GoogleAuthProvider>
-          </QueryProvider>
-        </AuthProvider>
+        <LenisProvider>
+          <AuthProvider>
+            <QueryProvider>
+              <GoogleAuthProvider>
+                <OnboardingProvider>
+                  {children}
+                  <Toaster />
+                  <GlobalUploadToast />
+                  <GlobalEditModal />
+                </OnboardingProvider>
+              </GoogleAuthProvider>
+            </QueryProvider>
+          </AuthProvider>
+        </LenisProvider>
       </body>
     </html>
   );

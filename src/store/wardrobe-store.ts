@@ -19,6 +19,15 @@ interface WardrobeStore {
   selectedItems: string[];
   isSelectionMode: boolean;
   hasInitialFetch: boolean;
+  // Pagination
+  currentPage: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrevious: boolean;
+  setPage: (page: number) => void;
+  setPageSize: (size: number) => void;
   getRawItemById: (id: number) => ApiWardrobeItem | undefined; // Helper to get raw item
   addItem: (item: CreateWardrobeItemRequest) => Promise<void>;
   addItemOptimistic: (apiItem: ApiWardrobeItem) => void; // ⚡ Optimistic update
@@ -40,6 +49,8 @@ interface WardrobeStore {
   // Selection mode
   toggleSelectionMode: () => void;
   setSelectionMode: (mode: boolean) => void;
+  // AI Analysis
+  analyzeItem: (id: string) => Promise<void>;
   // Reset
   resetStore: () => void;
 }
@@ -87,8 +98,10 @@ const filterItems = (
     if (
       filters.occasions?.length &&
       !filters.occasions.some((o) =>
-        item.occasions?.includes(
-          o as "casual" | "smart" | "formal" | "sport" | "travel"
+        item.occasions?.some(occasion =>
+          typeof occasion === 'string'
+            ? occasion === o
+            : occasion.name?.toLowerCase() === o.toLowerCase()
         )
       )
     )
@@ -96,13 +109,10 @@ const filterItems = (
 
     // Collection filter - based on occasions or tags
     if (filters.collectionId && filters.collectionId !== "all") {
-      const hasOccasion = item.occasions?.includes(
-        filters.collectionId as
-          | "casual"
-          | "smart"
-          | "formal"
-          | "sport"
-          | "travel"
+      const hasOccasion = item.occasions?.some(occasion =>
+        typeof occasion === 'string'
+          ? occasion === filters.collectionId
+          : occasion.name?.toLowerCase() === filters.collectionId?.toLowerCase()
       );
       const hasTag = item.tags?.includes(filters.collectionId);
 
@@ -117,14 +127,18 @@ const filterItems = (
     if (
       filters.seasons?.length &&
       !filters.seasons.some((s) =>
-        item.seasons?.includes(s as "spring" | "summer" | "fall" | "winter")
+        item.seasons?.some(season =>
+          typeof season === 'string'
+            ? season === s
+            : season.name?.toLowerCase() === s.toLowerCase()
+        )
       )
     )
       return false;
     if (
       filters.colors?.length &&
       !filters.colors.some((c) =>
-        item.colors?.some((ic) => ic.toLowerCase().includes(c.toLowerCase()))
+        item.colors?.some((ic) => ic.name.toLowerCase().includes(c.toLowerCase()))
       )
     )
       return false;
@@ -174,6 +188,13 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
   selectedItems: [],
   isSelectionMode: false,
   hasInitialFetch: false,
+  // Pagination state
+  currentPage: 1,
+  pageSize: 15,
+  totalCount: 0,
+  totalPages: 0,
+  hasNext: false,
+  hasPrevious: false,
 
   // Helper to get raw API item by ID
   getRawItemById: (id: number) => {
@@ -181,21 +202,25 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
     return state.rawApiItems.find((item) => item.id === id);
   },
 
-  // Fetch items from API
+  // Fetch items from API with pagination
   fetchItems: async () => {
     set({ isLoading: true, error: null });
     try {
-      const apiItems = await wardrobeAPI.getItems();
-      const items = apiItems.map(apiItemToWardrobeItem);
       const state = get();
+      const response = await wardrobeAPI.getItems(state.currentPage, state.pageSize);
+      const items = response.data.map(apiItemToWardrobeItem);
       const filtered = filterItems(items, state.filters, state.searchQuery);
       const sorted = sortItems(filtered, state.sortBy);
       set({
         items,
-        rawApiItems: apiItems, // Store raw API items
+        rawApiItems: response.data, // Store raw API items
         isLoading: false,
         filteredItems: sorted,
         hasInitialFetch: true,
+        totalCount: response.metaData.totalCount,
+        totalPages: response.metaData.totalPages,
+        hasNext: response.metaData.hasNext,
+        hasPrevious: response.metaData.hasPrevious,
       });
     } catch (error) {
       console.error("Failed to fetch items:", error);
@@ -204,6 +229,17 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
         error: error instanceof Error ? error.message : "Failed to fetch items",
       });
     }
+  },
+
+  // Pagination actions
+  setPage: (page: number) => {
+    set({ currentPage: page });
+    get().fetchItems();
+  },
+
+  setPageSize: (size: number) => {
+    set({ pageSize: size, currentPage: 1 }); // Reset to page 1 when changing page size
+    get().fetchItems();
   },
 
   // Add new item via API
@@ -277,7 +313,7 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
       // Convert WardrobeItem fields to API format
       const apiUpdateData: Partial<CreateWardrobeItemRequest> = {
         name: updatedData.name,
-        color: updatedData.color || updatedData.colors?.[0],
+        color: updatedData.color || (typeof updatedData.colors?.[0] === 'object' ? updatedData.colors[0].name : updatedData.colors?.[0]),
         brand: updatedData.brand,
         imgUrl: updatedData.imageUrl,
         // Add other necessary fields as needed
@@ -466,6 +502,44 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
     }
   },
 
+  // AI Analysis for single item
+  analyzeItem: async (id: string) => {
+    try {
+      const numericId = parseInt(id);
+
+      // Call AI analysis API
+      const confidenceScores = await wardrobeAPI.analyzeItems([numericId]);
+
+      // Fetch updated item data
+      const updatedApiItem = await wardrobeAPI.getItem(numericId);
+      const updatedItem = apiItemToWardrobeItem(updatedApiItem);
+
+      // Update local state
+      set((state) => {
+        const newItems = state.items.map((item) =>
+          item.id === id ? updatedItem : item
+        );
+        const newRawItems = state.rawApiItems.map((item) =>
+          item.id === numericId ? updatedApiItem : item
+        );
+        const filtered = filterItems(
+          newItems,
+          state.filters,
+          state.searchQuery
+        );
+        const sorted = sortItems(filtered, state.sortBy);
+        return {
+          items: newItems,
+          rawApiItems: newRawItems,
+          filteredItems: sorted,
+        };
+      });
+    } catch (error) {
+      console.error("Failed to analyze item:", error);
+      throw error;
+    }
+  },
+
   // Reset store to initial state (for logout)
   resetStore: () => {
     set({
@@ -479,6 +553,12 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
       isSelectionMode: false,
       hasInitialFetch: false,
       searchQuery: "",
+      currentPage: 1,
+      pageSize: 15,
+      totalCount: 0,
+      totalPages: 0,
+      hasNext: false,
+      hasPrevious: false,
     });
   },
 }));
@@ -535,8 +615,9 @@ const apiItemToWardrobeItem = (apiItem: ApiWardrobeItem): WardrobeItem => {
 
   // Parse weather suitable for seasons
   const parseSeasons = (
-    weatherSuitable: string
+    weatherSuitable: string | null
   ): ("spring" | "summer" | "fall" | "winter")[] => {
+    if (!weatherSuitable) return ["summer"]; // Default if null
     const weather = weatherSuitable.toLowerCase();
     const seasons: ("spring" | "summer" | "fall" | "winter")[] = [];
 
@@ -567,9 +648,31 @@ const apiItemToWardrobeItem = (apiItem: ApiWardrobeItem): WardrobeItem => {
     return seasons;
   };
 
-  const type = getTypeFromCategory(apiItem.categoryName);
+  const type = getTypeFromCategory(apiItem.categoryName || apiItem.category?.name || "");
   const seasons = parseSeasons(apiItem.weatherSuitable);
   const occasions: ("casual" | "formal" | "sport" | "travel")[] = ["casual"]; // Default to casual
+
+  // Parse color JSON string into ColorInfo array
+  const parseColors = (colorString: string | null): Array<{ name: string; hex: string }> => {
+    if (!colorString) return [];
+
+    try {
+      const parsed = JSON.parse(colorString);
+      if (Array.isArray(parsed)) {
+        return parsed.map(c => ({
+          name: c.name || "Unknown",
+          hex: c.hex || "#808080"
+        }));
+      }
+    } catch {
+      // If not JSON, treat as legacy plain text color name
+      return [{ name: colorString, hex: "#808080" }];
+    }
+
+    return [];
+  };
+
+  const colors = parseColors(apiItem.color);
 
   const converted: WardrobeItem = {
     id: apiItem.id?.toString() || `${apiItem.userId}-${Date.now()}`, // Generate ID if not present
@@ -577,18 +680,27 @@ const apiItemToWardrobeItem = (apiItem: ApiWardrobeItem): WardrobeItem => {
     name: apiItem.name,
     type: type,
     imageUrl: apiItem.imgUrl,
-    brand: apiItem.brand || "",
-    colors: [apiItem.color], // Single color to array
-    seasons: seasons,
-    occasions: occasions,
+    brand: apiItem.brand || undefined,
+    colors: colors,
+    seasons: apiItem.seasons || seasons,
+    occasions: apiItem.occasions || occasions,
     status: "active", // Default status
-    frequencyWorn: apiItem.frequencyWorn || "",
+    frequencyWorn: apiItem.frequencyWorn || undefined,
+    // Additional fields from API
+    aiDescription: apiItem.aiDescription,
+    weatherSuitable: apiItem.weatherSuitable || undefined,
+    condition: apiItem.condition || undefined,
+    pattern: apiItem.pattern || undefined,
+    fabric: apiItem.fabric || undefined,
+    isAnalyzed: (apiItem as { isAnalyzed?: boolean }).isAnalyzed,
+    aiConfidence: (apiItem as { aiConfidence?: number }).aiConfidence,
+    styles: apiItem.styles,
     // Additional fields for ItemCard compatibility
     category: {
-      id: apiItem.categoryId,
-      name: apiItem.categoryName,
+      id: apiItem.categoryId || apiItem.category?.id || 0,
+      name: apiItem.categoryName || apiItem.category?.name || "Uncategorized",
     },
-    color: apiItem.color,
+    color: apiItem.color || "",
     season: seasons[0],
     createdAt: apiItem.createdAt || new Date().toISOString(),
     updatedAt: apiItem.updatedAt || new Date().toISOString(),

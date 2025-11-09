@@ -30,6 +30,34 @@
   scrollbar-color: rgba(255, 255, 255, 0.15) rgba(255, 255, 255, 0.05);
 }
 
+/* Wizard Scrollbar - Blue/Cyan Theme */
+.wizard-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.wizard-scrollbar::-webkit-scrollbar-track {
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 3px;
+}
+
+.wizard-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(59, 130, 246, 0.6), rgba(6, 182, 212, 0.6));
+  border-radius: 3px;
+  transition: all 0.3s ease;
+}
+
+.wizard-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(59, 130, 246, 0.8), rgba(6, 182, 212, 0.8));
+  box-shadow: 0 0 6px rgba(6, 182, 212, 0.5);
+}
+
+/* Firefox scrollbar */
+.wizard-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(59, 130, 246, 0.6) rgba(59, 130, 246, 0.1);
+}
+
 /* Hide scrollbar but allow scrolling */
 .hide-scrollbar {
   scrollbar-width: none;
@@ -156,8 +184,47 @@
   * {
     @apply border-border;
   }
+
+  html {
+    /* Hide scrollbar for Chrome, Safari and Opera */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  }
+
+  html.lenis, html.lenis body {
+    height: auto;
+  }
+
+  .lenis.lenis-smooth {
+    scroll-behavior: auto !important;
+  }
+
+  .lenis.lenis-smooth [data-lenis-prevent] {
+    overscroll-behavior: contain;
+  }
+
+  .lenis.lenis-stopped {
+    overflow: hidden;
+  }
+
+  .lenis.lenis-scrolling iframe {
+    pointer-events: none;
+  }
+
+  html, body {
+    /* Hide scrollbar for Chrome, Safari and Opera */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  }
+
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
+
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-bricolage-grotesque);
   }
 }
 
@@ -165,6 +232,7 @@
 .font-bricolage {
   font-family: var(--font-bricolage-grotesque);
 }
+
 
 /* Word-by-word animation */
 @keyframes word-appear {
@@ -200,4 +268,94 @@
 
 .animate-word-wipe {
   animation: word-wipe 0.5s ease-out forwards;
+}
+
+/* Ant Design Pagination Custom Styling */
+.antd-pagination {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.antd-pagination .ant-pagination-item {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.antd-pagination .ant-pagination-item:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(34, 211, 238, 0.4);
+  transform: translateY(-2px);
+}
+
+.antd-pagination .ant-pagination-item-active {
+  background: rgba(34, 211, 238, 0.2);
+  border-color: rgba(34, 211, 238, 0.5);
+}
+
+.antd-pagination .ant-pagination-item a {
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+}
+
+.antd-pagination .ant-pagination-item-active a {
+  color: rgb(34, 211, 238);
+}
+
+.antd-pagination .ant-pagination-prev,
+.antd-pagination .ant-pagination-next {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.antd-pagination .ant-pagination-prev:hover,
+.antd-pagination .ant-pagination-next:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(34, 211, 238, 0.4);
+}
+
+.antd-pagination .ant-pagination-prev button,
+.antd-pagination .ant-pagination-next button {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.antd-pagination .ant-pagination-disabled button {
+  color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.antd-pagination .ant-pagination-jump-prev,
+.antd-pagination .ant-pagination-jump-next {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.antd-pagination .ant-pagination-options {
+  margin-left: 8px;
+}
+
+.antd-pagination .ant-select-selector {
+  background: rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.antd-pagination .ant-select-selector:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border-color: rgba(34, 211, 238, 0.4) !important;
+}
+
+.antd-pagination .ant-select-arrow {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.antd-pagination .ant-pagination-total-text {
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
 }

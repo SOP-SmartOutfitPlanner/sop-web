@@ -64,14 +64,12 @@ export function WizardStepRenderer({
   if (status === "idle" || status === "preview") {
     return (
       <StepPhotoAI
-        formData={formData}
-        updateFormData={updateFormData}
-        aiSuggestions={aiSuggestions}
-        setAiSuggestions={setAiSuggestions}
-        onFileSelect={onFileSelect}
-        onClearFile={onClearFile}
-        selectedFile={selectedFile}
-        previewUrl={previewUrl}
+        onFilesSelect={(files) => {
+          if (files.length > 0) {
+            onFileSelect(files[0]);
+          }
+        }}
+        onClearFiles={onClearFile}
       />
     );
   }

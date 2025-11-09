@@ -82,7 +82,7 @@ export function useAdvancedSearch(
       
       // Add colors
       if (item.colors) {
-        item.colors.forEach(color => suggestions.add(color));
+        item.colors.forEach(color => suggestions.add(color.name));
       }
       
       // Add tags
@@ -142,7 +142,7 @@ export function useCategorizedSearch(items: WardrobeItem[], searchQuery: string)
         categories.brandMatches.push(result);
       }
       // Color matches
-      else if (item.colors?.some(color => color.toLowerCase().includes(query))) {
+      else if (item.colors?.some(color => color.name.toLowerCase().includes(query))) {
         categories.colorMatches.push(result);
       }
       // Other matches

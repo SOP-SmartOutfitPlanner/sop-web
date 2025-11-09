@@ -44,7 +44,6 @@ export default function LandingFooter() {
             <h4 className="font-bricolage font-bold text-white mb-4">Product</h4>
             <ul className="space-y-3 font-bricolage text-blue-100/70 text-sm">
               <li><a href="#features-section" className="hover:text-cyan-300 transition-colors flex items-center gap-2">
-                <ArrowRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
                 Features
               </a></li>
               <li><a href="#pricing-section" className="hover:text-cyan-300 transition-colors">Pricing</a></li>

@@ -86,9 +86,9 @@ export function useWardrobeStats(): WardrobeStats {
         if (!colorAgg[key]) colorAgg[key] = { name, hex, count: 0 };
         colorAgg[key].count += 1;
       } else if (item.colors && item.colors.length > 0) {
-        item.colors.forEach((nameStr) => {
-          const name = String(nameStr).toLowerCase();
-          const hex = colorMap[name] || '#6B7280';
+        item.colors.forEach((colorInfo) => {
+          const name = colorInfo.name.toLowerCase();
+          const hex = colorInfo.hex || '#6B7280';
           const key = `${name}|${hex}`;
           if (!colorAgg[key]) colorAgg[key] = { name, hex, count: 0 };
           colorAgg[key].count += 1;
