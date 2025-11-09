@@ -61,10 +61,14 @@ export function PostCardContainer({
         borderRadius="24px"
         blur="12px"
         brightness={1.1}
-        glowColor={isHovered ? "rgba(34, 211, 238, 0.35)" : "rgba(34, 211, 238, 0.2)"}
-        borderColor={isHovered ? "rgba(34, 211, 238, 0.4)" : "rgba(255, 255, 255, 0.2)"}
+        glowColor={
+          isHovered ? "rgba(34, 211, 238, 0.35)" : "rgba(34, 211, 238, 0.2)"
+        }
+        borderColor={
+          isHovered ? "rgba(34, 211, 238, 0.4)" : "rgba(255, 255, 255, 0.2)"
+        }
         borderWidth="2px"
-        className="relative overflow-hidden bg-gradient-to-br from-cyan-300/30 via-blue-200/10 to-indigo-300/30 transition-all duration-300 group"
+        className="relative overflow-hidden bg-gradient-to-br from-cyan-300/30 via-blue-200/10 to-indigo-300/30 transition-all duration-300 group shadow-lg shadow-cyan-500/10 hover:shadow-cyan-500/20"
       >
         {/* Inner gradient overlay for depth */}
         <div className="absolute inset-0 rounded-3xl bg-gradient-to-t from-cyan-900/5 via-transparent to-white/5 pointer-events-none" />
@@ -92,10 +96,7 @@ export function PostCardContainer({
 
           {/* Image */}
           {images.length > 0 && (
-            <div
-              className="mx-4 mb-4 cursor-pointer"
-              onClick={onImageClick}
-            >
+            <div className="mx-4 mb-4 cursor-pointer" onClick={onImageClick}>
               <PostImage images={images} onDoubleClick={onDoubleClick} />
             </div>
           )}
@@ -115,4 +116,3 @@ export function PostCardContainer({
     </div>
   );
 }
-

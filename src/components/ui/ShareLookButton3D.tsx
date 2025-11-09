@@ -36,42 +36,43 @@ const ShareLookButton3D = React.forwardRef<HTMLButtonElement, Props>(
           ].join(" ")}
           {...props}
         >
-          {/* BACK PLATE: gradient xanh đậm + ring tối nhẹ + bóng xa mềm */}
+          {/* BACK PLATE: gradient cyan/blue + enhanced glow + shadow */}
           <span
             aria-hidden="true"
             className={[
               "absolute inset-0 rounded-[1.15rem]",
-              "bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900",
+              "bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600",
               "origin-[100%_100%] rotate-[4deg]",
               "transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
               "group-hover:[transform:translate3d(-6px,-6px,6px)_rotate(7deg)]",
-              "shadow-[0_10px_30px_rgba(2,6,23,0.28)]",
-              "ring-1 ring-black/15",
+              "shadow-[0_10px_30px_rgba(34,211,238,0.35)]",
+              "group-hover:shadow-[0_15px_45px_rgba(34,211,238,0.45)]",
+              "ring-1 ring-cyan-400/30 group-hover:ring-cyan-400/50",
               "motion-reduce:transform-none",
             ].join(" ")}
           />
 
-          {/* FRONT GLASS: blur + ring trắng trong + inner highlight + chống banding */}
+          {/* FRONT GLASS: blur + cyan glow + inner highlight + chống banding */}
           <span
             aria-hidden="true"
             className={[
               "absolute inset-0 rounded-2xl",
-              "bg-white/12 backdrop-blur-xl [-webkit-backdrop-filter:blur(20px)]",
-              "ring-1 ring-white/20",
+              "bg-gradient-to-r from-cyan-300/15 to-blue-300/15 backdrop-blur-xl [-webkit-backdrop-filter:blur(20px)]",
+              "ring-1 ring-cyan-300/30 group-hover:ring-cyan-300/50",
               // inner highlights for crisp glass edge
-              "shadow-[inset_0_0_0.5px_rgba(255,255,255,0.5),inset_0_-10px_24px_rgba(2,6,23,0.08)]",
+              "shadow-[inset_0_0_0.5px_rgba(34,211,238,0.6),inset_0_-10px_24px_rgba(34,211,238,0.1)]",
               "transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
               "group-hover:[transform:translateZ(9px)]",
               "motion-reduce:transform-none",
-              // radial specular highlight (subtle)
+              // radial specular highlight with cyan glow
               "before:absolute before:inset-0 before:rounded-2xl",
-              "before:bg-[radial-gradient(120%_120%_at_30%_0%,rgba(255,255,255,0.18),rgba(255,255,255,0)_60%)]",
+              "before:bg-[radial-gradient(120%_120%_at_30%_0%,rgba(34,211,238,0.25),rgba(34,211,238,0)_60%)]",
               "before:pointer-events-none",
               // ultra-light noise to break gradient banding
               "after:absolute after:inset-0 after:rounded-2xl after:opacity-[0.03]",
               "after:bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22><rect width=%2224%22 height=%2224%22 fill=%22%23fff%22 opacity=%220.04%22/></svg>')]",
-              // outer glow on hover (very subtle)
-              "group-hover:shadow-[0_0_24px_4px_rgba(37,99,235,0.15)]",
+              // outer glow on hover (cyan)
+              "group-hover:shadow-[0_0_32px_8px_rgba(34,211,238,0.35)]",
             ].join(" ")}
           />
 

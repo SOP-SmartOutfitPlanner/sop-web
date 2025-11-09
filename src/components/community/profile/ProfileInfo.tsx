@@ -48,29 +48,32 @@ export function ProfileInfo({
   ];
 
   return (
-    <div className="px-4 py-6">
+    <div className="px-4 py-8 space-y-6">
       {/* Avatar + Stats Row */}
-      <div className="flex items-center gap-6 mb-5">
+      <div className="flex items-center gap-8 mb-6">
         {/* Avatar */}
-        <Avatar className="w-20 h-20 md:w-24 md:h-24">
-          <AvatarImage src={userProfile.avatar} alt={userProfile.name} />
-          <AvatarFallback className="text-2xl font-bold bg-gradient-to-br from-primary to-accent text-white">
-            {userProfile.name.charAt(0)}
-          </AvatarFallback>
-        </Avatar>
+        <div className="relative group">
+          <Avatar className="w-24 h-24 md:w-28 md:h-28 ring-4 ring-cyan-400/30 group-hover:ring-cyan-400/50 transition-all shadow-lg shadow-cyan-500/20">
+            <AvatarImage src={userProfile.avatar} alt={userProfile.name} />
+            <AvatarFallback className="text-4xl font-bold bg-gradient-to-br from-cyan-400 to-blue-500 text-white">
+              {userProfile.name.charAt(0).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          <div className="absolute inset-0 rounded-full bg-cyan-400/0 group-hover:bg-cyan-400/10 transition-colors" />
+        </div>
 
         {/* Stats */}
-        <div className="flex-1 grid grid-cols-3 gap-3">
+        <div className="flex-1 grid grid-cols-3 gap-4">
           {stats.map(({ k, v, onClick }) => (
             <button
               key={k}
               onClick={onClick}
-              className="rounded-2xl   py-3 text-center hover:shadow-md transition-shadow"
+              className="rounded-2xl p-3 bg-gradient-to-br from-cyan-400/10 to-blue-400/10 hover:from-cyan-400/20 hover:to-blue-400/20 border border-cyan-400/20 hover:border-cyan-400/40 transition-all duration-300 shadow-lg shadow-cyan-500/10 hover:shadow-cyan-500/20 group cursor-pointer"
             >
-              <div className="text-lg font-semibold text-slate-900">
+              <div className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-200 to-blue-200">
                 {k === "followers" ? v.toLocaleString() : v}
               </div>
-              <div className="text-[11px] tracking-wide uppercase text-slate-600">
+              <div className="text-[10px] tracking-widest uppercase text-blue-200/70 font-semibold group-hover:text-blue-200 transition-colors">
                 {k}
               </div>
             </button>
@@ -78,14 +81,18 @@ export function ProfileInfo({
         </div>
       </div>
 
-      {/* Bio */}
-      <div className="space-y-1 mb-4">
-        <div className="font-semibold text-sm">{userProfile.name}</div>
+      {/* Bio Section */}
+      <div className="space-y-3 mb-6">
+        <div className="font-bold text-xl bg-clip-text text-transparent bg-gradient-to-r from-cyan-200 to-blue-200">
+          {userProfile.name}
+        </div>
         {userProfile.bio && (
-          <div className="text-sm whitespace-pre-wrap">{userProfile.bio}</div>
+          <div className="text-sm text-blue-100/80 leading-relaxed whitespace-pre-wrap">
+            {userProfile.bio}
+          </div>
         )}
         {userProfile.location && (
-          <div className="text-sm text-muted-foreground">
+          <div className="text-sm text-blue-200/70 flex items-center gap-2">
             📍 {userProfile.location}
           </div>
         )}
@@ -97,41 +104,40 @@ export function ProfileInfo({
           <>
             <Button
               onClick={onFollowToggle}
-              variant={isFollowing ? "outline" : "default"}
-              className="flex-1 h-8 text-sm font-semibold"
+              className={`flex-1 h-10 text-sm font-semibold rounded-lg transition-all duration-300 ${
+                isFollowing
+                  ? "bg-gradient-to-r from-cyan-500/40 to-blue-500/40 text-white border border-cyan-400/50 hover:from-cyan-500/60 hover:to-blue-500/60 hover:border-cyan-400/70 hover:shadow-lg hover:shadow-cyan-500/30"
+                  : "bg-gradient-to-r from-cyan-600 to-blue-600 text-white hover:from-cyan-700 hover:to-blue-700 hover:shadow-lg hover:shadow-cyan-500/40"
+              }`}
             >
               {isFollowing ? "Following" : "Follow"}
             </Button>
             <Button
               onClick={onMessage}
-              variant="outline"
-              className="flex-1 h-8 text-sm font-semibold"
+              className="flex-1 h-10 text-sm font-semibold rounded-lg bg-gradient-to-r from-cyan-500/40 to-blue-500/40 text-white border border-cyan-400/50 hover:from-cyan-500/60 hover:to-blue-500/60 hover:border-cyan-400/70 hover:shadow-lg hover:shadow-cyan-500/30 transition-all duration-300"
             >
               Message
             </Button>
             <Button
               onClick={onShare}
-              variant="outline"
-              size="icon"
-              className="h-8 w-8"
+              className="h-10 w-10 rounded-lg bg-gradient-to-r from-cyan-500/40 to-blue-500/40 text-cyan-200 border border-cyan-400/50 hover:from-cyan-500/60 hover:to-blue-500/60 hover:border-cyan-400/70 hover:shadow-lg hover:shadow-cyan-500/30 transition-all duration-300 p-0 flex items-center justify-center"
             >
-              <Share2 className="w-4 h-4" />
+              <Share2 className="w-5 h-5" />
             </Button>
           </>
         ) : (
           <>
             <Button
               onClick={() => router.push("/settings/profile")}
-              className="flex-1 h-8 text-sm font-semibold"
+              className="flex-1 h-10 text-sm font-semibold rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 text-white hover:from-cyan-700 hover:to-blue-700 hover:shadow-lg hover:shadow-cyan-500/40 transition-all duration-300"
             >
-              Edit profile
+              Edit Profile
             </Button>
             <Button
               onClick={onShare}
-              variant="outline"
-              className="flex-1 h-8 text-sm font-semibold"
+              className="flex-1 h-10 text-sm font-semibold rounded-lg bg-gradient-to-r from-cyan-500/40 to-blue-500/40 text-white border border-cyan-400/50 hover:from-cyan-500/60 hover:to-blue-500/60 hover:border-cyan-400/70 hover:shadow-lg hover:shadow-cyan-500/30 transition-all duration-300"
             >
-              Share profile
+              Share Profile
             </Button>
           </>
         )}

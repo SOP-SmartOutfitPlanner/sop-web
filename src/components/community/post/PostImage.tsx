@@ -40,8 +40,20 @@ export function PostImage({ images, onDoubleClick }: PostImageProps) {
           : "bg-gradient-to-br from-cyan-300/10 via-blue-300/5 to-indigo-300/10 border-2 border-cyan-400/20"
       }`} />
 
-      {/* Background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-muted/30 to-background z-0" />
+      {/* Background gradient - Transitions to white on hover */}
+      <div className={`absolute inset-0 z-0 transition-all duration-300 ${
+        isHovered
+          ? "bg-gradient-to-br from-white/80 via-blue-50/60 to-cyan-50/50"
+          : "bg-gradient-to-br from-muted/30 to-background"
+      }`} />
+      
+      {/* Premium white glass overlay on hover */}
+      <div className={`absolute inset-0 rounded-3xl backdrop-blur-sm pointer-events-none transition-all duration-300 z-[5] ${
+        isHovered
+          ? "bg-gradient-to-br from-white/20 via-blue-100/10 to-cyan-100/10"
+          : "bg-transparent"
+      }`} />
+      
       <div className="relative w-full h-full z-10">
         <Image
           src={images[currentIndex]}

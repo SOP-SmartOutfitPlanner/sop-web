@@ -54,7 +54,7 @@ export function PostActions({
       )}
 
       {/* Action Buttons */}
-      <div className="border-y border-cyan-400/20 py-2">
+      <div className="border-t border-cyan-400/15 py-2 mt-2">
         <div className="flex items-center justify-around gap-2">
           <Button
             variant="ghost"
