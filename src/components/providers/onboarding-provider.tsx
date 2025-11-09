@@ -27,10 +27,11 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     // If we already know the user is first time from the store, show modal immediately
     if (isFirstTime) {
       setIsOnboardingOpen(true);
+      setHasChecked(true);
       return;
     }
 
-    // Otherwise, check with the API
+    // Otherwise, check with the API (only once)
     const checkOnboarding = async () => {
       isCheckingRef.current = true;
       try {
