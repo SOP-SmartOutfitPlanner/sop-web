@@ -5,8 +5,13 @@ import { X, Save, Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Image, Select, ColorPicker, TreeSelect } from "antd";
 import type { Color } from "antd/es/color-picker";
-import type { DefaultOptionType } from "antd/es/select";
+import type { DataNode } from "antd/es/tree";
 import GlassButton from "@/components/ui/glass-button";
+
+interface TreeNodeData extends DataNode {
+  value?: number;
+  children?: TreeNodeData[];
+}
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { wardrobeAPI } from "@/lib/api/wardrobe-api";
@@ -88,7 +93,7 @@ export function EditItemDialog({
   const [formData, setFormData] = useState<EditFormData | null>(null);
 
   // Options from API
-  const [categoryTreeData, setCategoryTreeData] = useState<DefaultOptionType[]>([]);
+  const [categoryTreeData, setCategoryTreeData] = useState<TreeNodeData[]>([]);
   const [styles, setStyles] = useState<{ id: number; name: string }[]>([]);
   const [occasions, setOccasions] = useState<{ id: number; name: string }[]>([]);
   const [seasons, setSeasons] = useState<{ id: number; name: string }[]>([]);
@@ -160,10 +165,12 @@ export function EditItemDialog({
       const treeDataPromises = rootCategories.map(async (cat) => {
         const children = await wardrobeAPI.getCategoriesByParent(cat.id);
         return {
+          key: cat.id,
           value: cat.id,
           title: cat.name,
           isLeaf: children.length === 0,
           children: children.map((child) => ({
+            key: child.id,
             value: child.id,
             title: child.name,
             isLeaf: true,
@@ -426,7 +433,8 @@ export function EditItemDialog({
                             categoryId: value,
                           });
                         }}
-                        treeData={categoryTreeData}
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        treeData={categoryTreeData as unknown as any[]}
                         className="w-full"
                         size="large"
                         placeholder="Select category"

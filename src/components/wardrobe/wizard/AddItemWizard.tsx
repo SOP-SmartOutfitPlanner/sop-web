@@ -5,8 +5,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Upload, X, Sparkles, CheckCircle2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Image, TreeSelect } from "antd";
-import type { DefaultOptionType } from "antd/es/select";
+import type { DataNode } from "antd/es/tree";
 import GlassButton from "@/components/ui/glass-button";
+
+interface TreeNodeData extends DataNode {
+  value?: number;
+  children?: TreeNodeData[];
+}
 import { useAuthStore } from "@/store/auth-store";
 import { useWardrobeStore } from "@/store/wardrobe-store";
 import { minioAPI } from "@/lib/api/minio-api";
@@ -131,9 +136,9 @@ AnalysisItemCard.displayName = 'AnalysisItemCard';
 interface ManualCategorizeCardProps {
   item: FailedItem;
   index: number;
-  categoryTreeData: DefaultOptionType[];
+  categoryTreeData: TreeNodeData[];
   onCategoryChange: (index: number, categoryId: number) => void;
-  onLoadCategoryChildren: (node: DefaultOptionType) => Promise<void>;
+  onLoadCategoryChildren: (node: TreeNodeData) => Promise<void>;
 }
 
 const ManualCategorizeCard = memo(({ item, index, categoryTreeData, onCategoryChange, onLoadCategoryChildren }: ManualCategorizeCardProps) => {
@@ -184,8 +189,10 @@ const ManualCategorizeCard = memo(({ item, index, categoryTreeData, onCategoryCh
             placeholder="Select category"
             value={item.categoryId}
             onChange={(value) => onCategoryChange(index, value)}
-            loadData={onLoadCategoryChildren}
-            treeData={categoryTreeData}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            loadData={onLoadCategoryChildren as unknown as (node: any) => Promise<void>}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            treeData={categoryTreeData as unknown as any[]}
             treeDefaultExpandAll
             className="w-full"
             size="small"
@@ -227,7 +234,7 @@ export function AddItemWizard({ open, onOpenChange, editMode, editItemId, editIt
   const [selectedItemsForAnalysis, setSelectedItemsForAnalysis] = useState<number[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [failedItems, setFailedItems] = useState<FailedItem[]>([]);
-  const [categoryTreeData, setCategoryTreeData] = useState<DefaultOptionType[]>([]);
+  const [categoryTreeData, setCategoryTreeData] = useState<TreeNodeData[]>([]);
   const [isCategorizing, setIsCategorizing] = useState(false);
 
   const { user } = useAuthStore();
@@ -237,7 +244,8 @@ export function AddItemWizard({ open, onOpenChange, editMode, editItemId, editIt
   useEffect(() => {
     const fetchCategories = async () => {
       const rootCategories = await wardrobeAPI.getRootCategories();
-      const treeData: DefaultOptionType[] = rootCategories.map((cat) => ({
+      const treeData: TreeNodeData[] = rootCategories.map((cat) => ({
+        key: cat.id,
         value: cat.id,
         title: cat.name,
         isLeaf: false,
@@ -248,13 +256,14 @@ export function AddItemWizard({ open, onOpenChange, editMode, editItemId, editIt
   }, []);
 
   // Load category children dynamically
-  const onLoadCategoryChildren = useCallback(async (node: DefaultOptionType): Promise<void> => {
+  const onLoadCategoryChildren = useCallback(async (node: TreeNodeData): Promise<void> => {
     if (node.children) {
       return;
     }
 
     const children = await wardrobeAPI.getCategoriesByParent(node.value as number);
-    const childNodes: DefaultOptionType[] = children.map((cat) => ({
+    const childNodes: TreeNodeData[] = children.map((cat) => ({
+      key: cat.id,
       value: cat.id,
       title: cat.name,
       isLeaf: true,
@@ -267,10 +276,10 @@ export function AddItemWizard({ open, onOpenChange, editMode, editItemId, editIt
 
   // Helper to update tree data
   const updateTreeData = (
-    list: DefaultOptionType[],
+    list: TreeNodeData[],
     key: number,
-    children: DefaultOptionType[]
-  ): DefaultOptionType[] => {
+    children: TreeNodeData[]
+  ): TreeNodeData[] => {
     return list.map((node) => {
       if (node.value === key) {
         return { ...node, children };
