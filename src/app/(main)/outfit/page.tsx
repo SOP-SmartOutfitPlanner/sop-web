@@ -1,15 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
-import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import GlassButton from "@/components/ui/glass-button";
 import { OutfitGrid } from "@/components/outfit/OutfitGrid";
 import { OutfitFilters } from "@/components/outfit/OutfitFilters";
 import { CreateOutfitDialog } from "@/components/outfit/CreateOutfitDialog";
 import { EditOutfitDialog } from "@/components/outfit/EditOutfitDialog";
+import { ViewOutfitDialog } from "@/components/outfit/ViewOutfitDialog";
 import { useOutfits, useDeleteOutfit } from "@/hooks/useOutfits";
 import { useOutfitStore } from "@/store/outfit-store";
 import { wardrobeAPI } from "@/lib/api/wardrobe-api";
@@ -21,7 +21,9 @@ export default function OutfitPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [editingOutfit, setEditingOutfit] = useState<Outfit | null>(null);
+  const [viewingOutfit, setViewingOutfit] = useState<Outfit | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const pageSize = 12;
 
   const { isAuthenticated, user } = useAuthStore();
@@ -53,22 +55,27 @@ export default function OutfitPage() {
   const metaData = data?.data?.metaData;
   const wardrobeItems = wardrobeData?.data || [];
 
-  const handleEditOutfit = (outfit: Outfit) => {
+  const handleEditOutfit = useCallback((outfit: Outfit) => {
     setEditingOutfit(outfit);
     setIsEditDialogOpen(true);
-  };
+  }, []);
 
-  const handleDeleteOutfit = (outfitId: number) => {
+  const handleViewOutfit = useCallback((outfit: Outfit) => {
+    setViewingOutfit(outfit);
+    setIsViewDialogOpen(true);
+  }, []);
+
+  const handleDeleteOutfit = useCallback((outfitId: number) => {
     if (!confirm("Are you sure you want to delete this outfit?")) {
       return;
     }
 
     deleteOutfit(outfitId);
-  };
+  }, [deleteOutfit]);
 
   // Prevent scrolling when dialog is open
   useEffect(() => {
-    if (isCreateDialogOpen || isEditDialogOpen) {
+    if (isCreateDialogOpen || isEditDialogOpen || isViewDialogOpen) {
       // Stop Lenis smooth scrolling
       const html = document.documentElement;
       html.classList.add("lenis-stopped");
@@ -104,7 +111,7 @@ export default function OutfitPage() {
       document.body.style.width = "";
       document.body.style.top = "";
     };
-  }, [isCreateDialogOpen, isEditDialogOpen]);
+  }, [isCreateDialogOpen, isEditDialogOpen, isViewDialogOpen]);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -177,6 +184,7 @@ export default function OutfitPage() {
           isLoading={isLoading}
           onEditOutfit={handleEditOutfit}
           onDeleteOutfit={handleDeleteOutfit}
+          onViewOutfit={handleViewOutfit}
         />
 
         {/* Pagination */}
@@ -219,6 +227,15 @@ export default function OutfitPage() {
           onOpenChange={setIsEditDialogOpen}
           outfitId={editingOutfit?.id || null}
           wardrobeItems={wardrobeItems}
+        />
+
+        {/* View Outfit Dialog */}
+        <ViewOutfitDialog
+          open={isViewDialogOpen}
+          onOpenChange={setIsViewDialogOpen}
+          outfit={viewingOutfit}
+          onEdit={handleEditOutfit}
+          onDelete={handleDeleteOutfit}
         />
       </div>
     </div>

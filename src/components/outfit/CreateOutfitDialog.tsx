@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, memo, useEffect } from "react";
+import { useState, memo, useEffect, useCallback, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -114,15 +114,15 @@ export function CreateOutfitDialog({
   const [description, setDescription] = useState("");
   const [nameError, setNameError] = useState("");
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setName("");
     setDescription("");
     setNameError("");
     clearSelectedItems();
     onOpenChange(false);
-  };
+  }, [clearSelectedItems, onOpenChange]);
 
-  const toggleSelectAll = () => {
+  const toggleSelectAll = useCallback(() => {
     if (selectedItemIds.length === wardrobeItems.length) {
       clearSelectedItems();
     } else {
@@ -132,9 +132,9 @@ export function CreateOutfitDialog({
         }
       });
     }
-  };
+  }, [selectedItemIds.length, wardrobeItems, clearSelectedItems, toggleItemSelection]);
 
-  const handleSubmit = () => {
+  const handleSubmit = useCallback(() => {
     // Validation
     if (!name.trim()) {
       setNameError("Outfit name is required");
@@ -162,7 +162,10 @@ export function CreateOutfitDialog({
         },
       }
     );
-  };
+  }, [name, description, selectedItemIds, createOutfit, handleClose]);
+
+  // Memoize selected set for O(1) lookup
+  const selectedSet = useMemo(() => new Set(selectedItemIds), [selectedItemIds]);
 
   // Prevent scrolling when dialog is open
   useEffect(() => {
@@ -197,9 +200,6 @@ export function CreateOutfitDialog({
   }, [open]);
 
   if (!open) return null;
-
-  // Use Set for O(1) selection lookup
-  const selectedSet = new Set(selectedItemIds);
 
   return (
     <>

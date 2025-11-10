@@ -1,12 +1,25 @@
 "use client";
 
+import { memo, useCallback } from "react";
 import { Search, Heart, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import GlassButton from "@/components/ui/glass-button";
 import { useOutfitStore } from "@/store/outfit-store";
 
-export function OutfitFilters() {
+const OutfitFiltersComponent = () => {
   const { searchQuery, setSearchQuery, showFavorites, setShowFavorites } = useOutfitStore();
+
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  }, [setSearchQuery]);
+
+  const handleClearSearch = useCallback(() => {
+    setSearchQuery("");
+  }, [setSearchQuery]);
+
+  const handleToggleFavorites = useCallback(() => {
+    setShowFavorites(!showFavorites);
+  }, [showFavorites, setShowFavorites]);
 
   return (
     <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center">
@@ -17,12 +30,12 @@ export function OutfitFilters() {
           type="text"
           placeholder="Search outfits..."
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={handleSearchChange}
           className="pl-10 pr-10"
         />
         {searchQuery && (
           <button
-            onClick={() => setSearchQuery("")}
+            onClick={handleClearSearch}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
           >
             <X className="w-5 h-5" />
@@ -35,7 +48,7 @@ export function OutfitFilters() {
         <GlassButton
           variant={showFavorites ? "primary" : "secondary"}
           size="md"
-          onClick={() => setShowFavorites(!showFavorites)}
+          onClick={handleToggleFavorites}
           className="gap-2"
         >
           <Heart
@@ -46,4 +59,7 @@ export function OutfitFilters() {
       </div>
     </div>
   );
-}
+};
+
+// Memoize filters to prevent unnecessary re-renders
+export const OutfitFilters = memo(OutfitFiltersComponent);

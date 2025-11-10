@@ -11,6 +11,9 @@ export function useOutfits(params: GetOutfitsRequest) {
     queryKey: ["outfits", params],
     queryFn: () => outfitAPI.getOutfits(params),
     staleTime: 1000 * 60 * 5, // 5 minutes
+    gcTime: 1000 * 60 * 10, // 10 minutes cache
+    refetchOnWindowFocus: false, // Don't refetch on window focus
+    refetchOnMount: false, // Don't refetch on mount if data exists
   });
 }
 
@@ -23,6 +26,8 @@ export function useOutfit(id: number | null) {
     queryFn: () => outfitAPI.getOutfit(id!),
     enabled: id !== null,
     staleTime: 1000 * 60 * 5, // 5 minutes
+    gcTime: 1000 * 60 * 10, // 10 minutes cache
+    refetchOnWindowFocus: false,
   });
 }
 

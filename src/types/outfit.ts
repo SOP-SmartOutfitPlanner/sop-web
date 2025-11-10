@@ -37,6 +37,11 @@ export interface GetOutfitsResponse {
         metaData: MetaData;
     }
 }
+export interface GetOutfitByIdResponse {
+    statusCode: number;
+    message: string;
+    data: Outfit;
+}
 
 export interface GetOutfitsFavoriteResponse {
     statusCode: number;

@@ -1,6 +1,7 @@
 import { 
   CreateOutfitRequest, 
   CreateOutfitResponse, 
+  GetOutfitByIdResponse, 
   GetOutfitsFavoriteResponse, 
   GetOutfitsRequest, 
   GetOutfitsResponse,
@@ -55,11 +56,7 @@ class OutfitAPI {
    * @returns Promise<Outfit>
    */
   async getOutfit(id: number): Promise<Outfit> {
-    const response = await apiClient.get<{
-      statusCode: number;
-      message: string;
-      data: Outfit;
-    }>(`/outfits/${id}`);
+    const response = await apiClient.get<GetOutfitByIdResponse>(`/outfits/${id}`);
 
     if (response.statusCode !== 200) {
       throw new Error(response.message || "Failed to fetch outfit");

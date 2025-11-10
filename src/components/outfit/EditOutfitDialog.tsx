@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, memo, useEffect } from "react";
+import { useState, memo, useEffect, useCallback, useMemo } from "react";
 import { X, Sparkles, CheckCircle2, Loader2 } from "lucide-react";
 import { Image } from "antd";
 import GlassButton from "@/components/ui/glass-button";
@@ -119,15 +119,22 @@ export function EditOutfitDialog({
     }
   }, [outfitData, open, setSelectedItems]);
 
-  const handleClose = () => {
-    setName("");
-    setDescription("");
-    setNameError("");
-    clearSelectedItems();
-    onOpenChange(false);
-  };
+  // Reset form when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setName("");
+      setDescription("");
+      setNameError("");
+      clearSelectedItems();
+    }
+  }, [open, clearSelectedItems]);
 
-  const toggleSelectAll = () => {
+  const handleClose = useCallback(() => {
+    onOpenChange(false);
+    // Form will be reset by useEffect when open becomes false
+  }, [onOpenChange]);
+
+  const toggleSelectAll = useCallback(() => {
     if (selectedItemIds.length === wardrobeItems.length) {
       clearSelectedItems();
     } else {
@@ -137,9 +144,9 @@ export function EditOutfitDialog({
         }
       });
     }
-  };
+  }, [selectedItemIds.length, wardrobeItems, clearSelectedItems, toggleItemSelection]);
 
-  const handleSubmit = () => {
+  const handleSubmit = useCallback(() => {
     if (!outfitId) return;
 
     // Validation
@@ -172,7 +179,10 @@ export function EditOutfitDialog({
         },
       }
     );
-  };
+  }, [outfitId, name, description, selectedItemIds, updateOutfit, handleClose]);
+
+  // Memoize selected set for O(1) lookup
+  const selectedSet = useMemo(() => new Set(selectedItemIds), [selectedItemIds]);
 
   // Prevent scrolling when dialog is open
   useEffect(() => {
@@ -208,8 +218,22 @@ export function EditOutfitDialog({
 
   if (!open) return null;
 
-  // Use Set for O(1) selection lookup
-  const selectedSet = new Set(selectedItemIds);
+  // Show loading state while fetching outfit data
+  if (isLoadingOutfit) {
+    return (
+      <>
+        <div className="fixed h-full inset-0 bg-black/50 backdrop-blur-sm z-50" />
+        <div className="fixed inset-0 z-51 flex items-center justify-center">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-2xl">
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+              <p className="text-gray-600 dark:text-gray-300 font-poppins">Loading outfit...</p>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
