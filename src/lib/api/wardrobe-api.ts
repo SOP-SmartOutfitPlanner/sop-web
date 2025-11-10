@@ -132,9 +132,20 @@ export interface CreateWardrobeItemRequest extends ItemCreateModel {
 
 class WardrobeAPI {
   /**
-   * Get all wardrobe items for current user with pagination
+   * Get all wardrobe items for current user with pagination and filters
    */
-  async getItems(pageIndex: number = 1, pageSize: number = 10): Promise<ApiItemsResponse> {
+  async getItems(
+    pageIndex: number = 1,
+    pageSize: number = 10,
+    filters?: {
+      isAnalyzed?: boolean;
+      categoryId?: number;
+      seasonId?: number;
+      styleId?: number;
+      occasionId?: number;
+      sortByDate?: 'asc' | 'desc';
+    }
+  ): Promise<ApiItemsResponse> {
     // Get userId from localStorage token
     const userId = this.getUserIdFromToken();
 
@@ -150,6 +161,32 @@ class WardrobeAPI {
           hasPrevious: false,
         },
       };
+    }
+
+    // Build query parameters
+    const params: Record<string, string | number | boolean> = {
+      "page-index": pageIndex,
+      "page-size": pageSize,
+    };
+
+    // Add optional filter parameters
+    if (filters?.isAnalyzed !== undefined) {
+      params.IsAnalyzed = filters.isAnalyzed;
+    }
+    if (filters?.categoryId !== undefined) {
+      params.CategoryId = filters.categoryId;
+    }
+    if (filters?.seasonId !== undefined) {
+      params.SeasonId = filters.seasonId;
+    }
+    if (filters?.styleId !== undefined) {
+      params.StyleId = filters.styleId;
+    }
+    if (filters?.occasionId !== undefined) {
+      params.OccasionId = filters.occasionId;
+    }
+    if (filters?.sortByDate) {
+      params.SortByDate = filters.sortByDate === 'asc' ? 0 : 1; // 0 = asc, 1 = desc
     }
 
     // New endpoint: /items/user/{userId} with pagination params
@@ -168,10 +205,7 @@ class WardrobeAPI {
         };
       };
     }>(`/items/user/${userId}`, {
-      params: {
-        "page-index": pageIndex,
-        "page-size": pageSize,
-      },
+      params,
     });
 
     // API returns { statusCode, message, data: { data: [...], metaData: {...} } }
@@ -471,6 +505,55 @@ class WardrobeAPI {
       return categories;
     } catch (error) {
       console.error("❌ Failed to fetch categories:", error);
+      return [];
+    }
+  }
+
+  /**
+   * Get root categories (top-level categories)
+   */
+  async getRootCategories(
+    pageIndex: number = 1,
+    pageSize: number = 100
+  ): Promise<{ id: number; name: string; parentId?: number; parentName?: string }[]> {
+    try {
+      const response = await apiClient.get("/categories/root", {
+        params: {
+          "page-index": pageIndex,
+          "page-size": pageSize,
+        },
+      });
+
+      // API returns { data: [...], metaData: {...} }
+      const categories = response.data?.data || [];
+      return categories;
+    } catch (error) {
+      console.error("❌ Failed to fetch root categories:", error);
+      return [];
+    }
+  }
+
+  /**
+   * Get categories by parent ID
+   */
+  async getCategoriesByParent(
+    parentId: number,
+    pageIndex: number = 1,
+    pageSize: number = 100
+  ): Promise<{ id: number; name: string; parentId?: number; parentName?: string }[]> {
+    try {
+      const response = await apiClient.get(`/categories/parent/${parentId}`, {
+        params: {
+          "page-index": pageIndex,
+          "page-size": pageSize,
+        },
+      });
+
+      // API returns { data: [...], metaData: {...} }
+      const categories = response.data?.data || [];
+      return categories;
+    } catch (error) {
+      console.error("❌ Failed to fetch categories by parent:", error);
       return [];
     }
   }

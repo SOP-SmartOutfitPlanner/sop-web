@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { WardrobeHeader } from "@/components/wardrobe/header/WardrobeHeader";
 import { WardrobeContent } from "@/components/wardrobe/wardrobe-content";
@@ -9,6 +9,7 @@ import { ErrorDisplay } from "@/components/common/error-display";
 import { AnalysisToast } from "@/components/wardrobe/wizard/AnalysisToast";
 import { useWardrobeStore } from "@/store/wardrobe-store";
 import { useAuthStore } from "@/store/auth-store";
+import { useScrollLock } from "@/hooks/useScrollLock";
 import { WardrobeFilters } from "@/types/wardrobe";
 import { WardrobeItem } from "@/types";
 
@@ -66,8 +67,10 @@ const ViewItemDialog = dynamic(
   }
 );
 
-export default function WardrobePage() {
+// Separate component for handling search params
+function WardrobePageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isAddItemOpen, setIsAddItemOpen] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
@@ -121,48 +124,88 @@ export default function WardrobePage() {
 
   const handleFiltersChange = (newFilters: WardrobeFilters) => {
     setStoreFilters(newFilters);
-  };
 
-  // Prevent scrolling when dialog is open
-  useEffect(() => {
-    const isAnyDialogOpen = isAddItemOpen || isEditItemOpen || isViewItemOpen;
-    if (isAnyDialogOpen) {
-      // Stop Lenis smooth scrolling
-      const html = document.documentElement;
-      html.classList.add("lenis-stopped");
-
-      // Prevent body scroll
-      document.body.style.overflow = "hidden";
-      document.body.style.position = "fixed";
-      document.body.style.width = "100%";
-      document.body.style.top = `-${window.scrollY}px`;
-    } else {
-      // Re-enable Lenis smooth scrolling
-      const html = document.documentElement;
-      html.classList.remove("lenis-stopped");
-
-      // Restore body scroll and scroll position
-      const scrollY = document.body.style.top;
-      document.body.style.overflow = "";
-      document.body.style.position = "";
-      document.body.style.width = "";
-      document.body.style.top = "";
-
-      if (scrollY) {
-        window.scrollTo(0, parseInt(scrollY || "0") * -1);
-      }
+    // Update URL query parameters
+    const params = new URLSearchParams();
+    if (newFilters.isAnalyzed !== undefined) {
+      params.set('isAnalyzed', newFilters.isAnalyzed.toString());
+    }
+    if (newFilters.categoryId) {
+      params.set('categoryId', newFilters.categoryId.toString());
+    }
+    if (newFilters.seasonId) {
+      params.set('seasonId', newFilters.seasonId.toString());
+    }
+    if (newFilters.styleId) {
+      params.set('styleId', newFilters.styleId.toString());
+    }
+    if (newFilters.occasionId) {
+      params.set('occasionId', newFilters.occasionId.toString());
+    }
+    if (newFilters.sortByDate) {
+      params.set('sortByDate', newFilters.sortByDate);
     }
 
-    // Cleanup on unmount
-    return () => {
-      const html = document.documentElement;
-      html.classList.remove("lenis-stopped");
-      document.body.style.overflow = "";
-      document.body.style.position = "";
-      document.body.style.width = "";
-      document.body.style.top = "";
-    };
-  }, [isAddItemOpen, isEditItemOpen, isViewItemOpen]);
+    // Update URL without reloading
+    const newUrl = params.toString() ? `?${params.toString()}` : '/wardrobe';
+    router.replace(newUrl, { scroll: false });
+  };
+
+  // Initialize filters from URL query parameters
+  useEffect(() => {
+    if (searchParams) {
+      const urlFilters: WardrobeFilters = { ...filters };
+
+      const isAnalyzed = searchParams.get('isAnalyzed');
+      if (isAnalyzed !== null) {
+        urlFilters.isAnalyzed = isAnalyzed === 'true';
+      }
+
+      const categoryId = searchParams.get('categoryId');
+      if (categoryId) {
+        urlFilters.categoryId = parseInt(categoryId);
+      }
+
+      const seasonId = searchParams.get('seasonId');
+      if (seasonId) {
+        urlFilters.seasonId = parseInt(seasonId);
+      }
+
+      const styleId = searchParams.get('styleId');
+      if (styleId) {
+        urlFilters.styleId = parseInt(styleId);
+      }
+
+      const occasionId = searchParams.get('occasionId');
+      if (occasionId) {
+        urlFilters.occasionId = parseInt(occasionId);
+      }
+
+      const sortByDate = searchParams.get('sortByDate');
+      if (sortByDate === 'asc' || sortByDate === 'desc') {
+        urlFilters.sortByDate = sortByDate;
+      }
+
+      // Only update if filters changed
+      const hasFiltersChanged =
+        urlFilters.isAnalyzed !== filters.isAnalyzed ||
+        urlFilters.categoryId !== filters.categoryId ||
+        urlFilters.seasonId !== filters.seasonId ||
+        urlFilters.styleId !== filters.styleId ||
+        urlFilters.occasionId !== filters.occasionId ||
+        urlFilters.sortByDate !== filters.sortByDate;
+
+      if (hasFiltersChanged) {
+        setStoreFilters(urlFilters);
+      }
+    }
+    // Only run on mount or when searchParams change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  // Prevent scrolling when dialog is open
+  const isAnyDialogOpen = isAddItemOpen || isEditItemOpen || isViewItemOpen;
+  useScrollLock(isAnyDialogOpen);
 
   // Redirect to login if not authenticated (useEffect AFTER all other hooks)
   useEffect(() => {
@@ -261,5 +304,21 @@ export default function WardrobePage() {
         />
       </div>
     </div>
+  );
+}
+
+// Export default component with Suspense boundary
+export default function WardrobePage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading wardrobe...</p>
+        </div>
+      </div>
+    }>
+      <WardrobePageContent />
+    </Suspense>
   );
 }

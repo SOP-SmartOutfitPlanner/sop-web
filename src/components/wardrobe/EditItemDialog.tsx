@@ -3,9 +3,15 @@
 import { useState, useEffect, useCallback } from "react";
 import { X, Save, Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
-import { Image, Select, ColorPicker } from "antd";
+import { Image, Select, ColorPicker, TreeSelect } from "antd";
 import type { Color } from "antd/es/color-picker";
+import type { DataNode } from "antd/es/tree";
 import GlassButton from "@/components/ui/glass-button";
+
+interface TreeNodeData extends DataNode {
+  value?: number;
+  children?: TreeNodeData[];
+}
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { wardrobeAPI } from "@/lib/api/wardrobe-api";
@@ -87,7 +93,7 @@ export function EditItemDialog({
   const [formData, setFormData] = useState<EditFormData | null>(null);
 
   // Options from API
-  const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
+  const [categoryTreeData, setCategoryTreeData] = useState<TreeNodeData[]>([]);
   const [styles, setStyles] = useState<{ id: number; name: string }[]>([]);
   const [occasions, setOccasions] = useState<{ id: number; name: string }[]>([]);
   const [seasons, setSeasons] = useState<{ id: number; name: string }[]>([]);
@@ -147,15 +153,34 @@ export function EditItemDialog({
 
   const fetchOptions = async () => {
     try {
-      const [categoriesData, stylesData, occasionsData, seasonsData] =
+      const [rootCategories, stylesData, occasionsData, seasonsData] =
         await Promise.all([
-          wardrobeAPI.getCategories(),
+          wardrobeAPI.getRootCategories(),
           wardrobeAPI.getStyles(),
           wardrobeAPI.getOccasions(),
           wardrobeAPI.getSeasons(),
         ]);
 
-      setCategories(categoriesData);
+      // Build tree structure for categories - load all children for proper display
+      const treeDataPromises = rootCategories.map(async (cat) => {
+        const children = await wardrobeAPI.getCategoriesByParent(cat.id);
+        return {
+          key: cat.id,
+          value: cat.id,
+          title: cat.name,
+          isLeaf: children.length === 0,
+          children: children.map((child) => ({
+            key: child.id,
+            value: child.id,
+            title: child.name,
+            isLeaf: true,
+          })),
+        };
+      });
+
+      const treeData = await Promise.all(treeDataPromises);
+
+      setCategoryTreeData(treeData);
       setStyles(stylesData);
       setOccasions(occasionsData);
       setSeasons(seasonsData);
@@ -163,6 +188,7 @@ export function EditItemDialog({
       console.error("Failed to fetch options:", error);
     }
   };
+
 
   const handleSave = async () => {
     if (!formData) return;
@@ -398,7 +424,8 @@ export function EditItemDialog({
                       <Label className="text-lg font-medium text-white mb-1.5 block">
                         Category
                       </Label>
-                      <Select
+                      <TreeSelect
+                        showSearch
                         value={formData.categoryId}
                         onChange={(value) => {
                           setFormData({
@@ -406,13 +433,20 @@ export function EditItemDialog({
                             categoryId: value,
                           });
                         }}
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        treeData={categoryTreeData as unknown as any[]}
                         className="w-full"
                         size="large"
                         placeholder="Select category"
-                        options={categories.map((cat) => ({
-                          label: cat.name,
-                          value: cat.id,
-                        }))}
+                        filterTreeNode={(search, item) =>
+                          (item.title as string)
+                            .toLowerCase()
+                            .includes(search.toLowerCase())
+                        }
+                        dropdownStyle={{
+                          maxHeight: 300,
+                          overflow: "auto",
+                        }}
                       />
                     </div>
 

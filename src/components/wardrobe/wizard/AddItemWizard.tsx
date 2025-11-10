@@ -4,8 +4,14 @@ import { useState, useCallback, memo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Upload, X, Sparkles, CheckCircle2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
-import { Image, Select } from "antd";
+import { Image, TreeSelect } from "antd";
+import type { DataNode } from "antd/es/tree";
 import GlassButton from "@/components/ui/glass-button";
+
+interface TreeNodeData extends DataNode {
+  value?: number;
+  children?: TreeNodeData[];
+}
 import { useAuthStore } from "@/store/auth-store";
 import { useWardrobeStore } from "@/store/wardrobe-store";
 import { minioAPI } from "@/lib/api/minio-api";
@@ -130,11 +136,12 @@ AnalysisItemCard.displayName = 'AnalysisItemCard';
 interface ManualCategorizeCardProps {
   item: FailedItem;
   index: number;
-  categories: { id: number; name: string }[];
+  categoryTreeData: TreeNodeData[];
   onCategoryChange: (index: number, categoryId: number) => void;
+  onLoadCategoryChildren: (node: TreeNodeData) => Promise<void>;
 }
 
-const ManualCategorizeCard = memo(({ item, index, categories, onCategoryChange }: ManualCategorizeCardProps) => {
+const ManualCategorizeCard = memo(({ item, index, categoryTreeData, onCategoryChange, onLoadCategoryChildren }: ManualCategorizeCardProps) => {
   return (
     <div className="group relative w-full flex flex-col p-1">
       <div className="relative flex flex-col p-2 rounded-2xl transition-all duration-100 bg-gradient-to-br from-cyan-300/30 via-blue-200/10 to-indigo-300/30 backdrop-blur-md border-2 border-white/20">
@@ -177,21 +184,30 @@ const ManualCategorizeCard = memo(({ item, index, categories, onCategoryChange }
 
         {/* Category Selector */}
         <div className="px-1">
-          <Select
+          <TreeSelect
+            showSearch
             placeholder="Select category"
             value={item.categoryId}
             onChange={(value) => onCategoryChange(index, value)}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            loadData={onLoadCategoryChildren as unknown as (node: any) => Promise<void>}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            treeData={categoryTreeData as unknown as any[]}
+            treeDefaultExpandAll
             className="w-full"
             size="small"
             style={{ width: '100%' }}
             dropdownStyle={{
               background: 'rgba(255, 255, 255, 0.95)',
               backdropFilter: 'blur(12px)',
+              maxHeight: 300,
+              overflow: 'auto',
             }}
-            options={categories.map(cat => ({
-              label: cat.name,
-              value: cat.id,
-            }))}
+            filterTreeNode={(search, item) =>
+              (item.title as string)
+                .toLowerCase()
+                .includes(search.toLowerCase())
+            }
           />
         </div>
       </div>
@@ -200,7 +216,7 @@ const ManualCategorizeCard = memo(({ item, index, categories, onCategoryChange }
 }, (prevProps, nextProps) => {
   return prevProps.item.categoryId === nextProps.item.categoryId &&
          prevProps.item.imageUrl === nextProps.item.imageUrl &&
-         prevProps.categories === nextProps.categories;
+         prevProps.categoryTreeData === nextProps.categoryTreeData;
 });
 
 ManualCategorizeCard.displayName = 'ManualCategorizeCard';
@@ -218,7 +234,7 @@ export function AddItemWizard({ open, onOpenChange, editMode, editItemId, editIt
   const [selectedItemsForAnalysis, setSelectedItemsForAnalysis] = useState<number[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [failedItems, setFailedItems] = useState<FailedItem[]>([]);
-  const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
+  const [categoryTreeData, setCategoryTreeData] = useState<TreeNodeData[]>([]);
   const [isCategorizing, setIsCategorizing] = useState(false);
 
   const { user } = useAuthStore();
@@ -227,11 +243,56 @@ export function AddItemWizard({ open, onOpenChange, editMode, editItemId, editIt
   // Fetch categories on mount
   useEffect(() => {
     const fetchCategories = async () => {
-      const cats = await wardrobeAPI.getCategories();
-      setCategories(cats);
+      const rootCategories = await wardrobeAPI.getRootCategories();
+      const treeData: TreeNodeData[] = rootCategories.map((cat) => ({
+        key: cat.id,
+        value: cat.id,
+        title: cat.name,
+        isLeaf: false,
+      }));
+      setCategoryTreeData(treeData);
     };
     fetchCategories();
   }, []);
+
+  // Load category children dynamically
+  const onLoadCategoryChildren = useCallback(async (node: TreeNodeData): Promise<void> => {
+    if (node.children) {
+      return;
+    }
+
+    const children = await wardrobeAPI.getCategoriesByParent(node.value as number);
+    const childNodes: TreeNodeData[] = children.map((cat) => ({
+      key: cat.id,
+      value: cat.id,
+      title: cat.name,
+      isLeaf: true,
+    }));
+
+    setCategoryTreeData((origin) =>
+      updateTreeData(origin, node.value as number, childNodes)
+    );
+  }, []);
+
+  // Helper to update tree data
+  const updateTreeData = (
+    list: TreeNodeData[],
+    key: number,
+    children: TreeNodeData[]
+  ): TreeNodeData[] => {
+    return list.map((node) => {
+      if (node.value === key) {
+        return { ...node, children };
+      }
+      if (node.children) {
+        return {
+          ...node,
+          children: updateTreeData(node.children, key, children),
+        };
+      }
+      return node;
+    });
+  };
 
   // Reset and close
   const resetAndClose = useCallback(() => {
@@ -608,8 +669,9 @@ export function AddItemWizard({ open, onOpenChange, editMode, editItemId, editIt
                             key={`failed-${index}`}
                             item={item}
                             index={index}
-                            categories={categories}
+                            categoryTreeData={categoryTreeData}
                             onCategoryChange={updateFailedItemCategory}
+                            onLoadCategoryChildren={onLoadCategoryChildren}
                           />
                         ))}
                       </div>
