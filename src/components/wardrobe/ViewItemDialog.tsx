@@ -64,7 +64,7 @@ export function ViewItemDialog({
 
       setItemData({
         name: item.name || "",
-        category: item.category?.name || "N/A",
+        category: item.categoryName || "N/A",
         colors: parsedColors,
         brand: item.brand || "N/A",
         frequencyWorn: item.frequencyWorn || "N/A",

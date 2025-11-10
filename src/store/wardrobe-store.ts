@@ -207,12 +207,27 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
     return state.rawApiItems.find((item) => item.id === id);
   },
 
-  // Fetch items from API with pagination
+  // Fetch items from API with pagination and filters
   fetchItems: async () => {
     set({ isLoading: true, error: null });
     try {
       const state = get();
-      const response = await wardrobeAPI.getItems(state.currentPage, state.pageSize);
+
+      // Build API filter parameters from current filters
+      const apiFilters = {
+        isAnalyzed: state.filters.isAnalyzed,
+        categoryId: state.filters.categoryId,
+        seasonId: state.filters.seasonId,
+        styleId: state.filters.styleId,
+        occasionId: state.filters.occasionId,
+        sortByDate: state.filters.sortByDate,
+      };
+
+      const response = await wardrobeAPI.getItems(
+        state.currentPage,
+        state.pageSize,
+        apiFilters
+      );
       const items = response.data.map(apiItemToWardrobeItem);
       const filtered = filterItems(items, state.filters, state.searchQuery);
       const sorted = sortItems(filtered, state.sortBy);
@@ -396,15 +411,19 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
   },
 
   // Filter functionality
-  setFilters: (filters) =>
+  setFilters: (filters) => {
     set((state) => {
       const filtered = filterItems(state.items, filters, state.searchQuery);
       const sorted = sortItems(filtered, state.sortBy);
       return {
         filters,
         filteredItems: sorted,
+        currentPage: 1, // Reset to first page when filters change
       };
-    }),
+    });
+    // Fetch new items from API with updated filters
+    get().fetchItems();
+  },
 
   clearFilters: () =>
     set((state) => {

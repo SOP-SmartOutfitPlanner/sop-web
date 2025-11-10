@@ -8,6 +8,13 @@ export interface WardrobeFilters {
   seasons?: Season[];
   occasions?: Occasion[];
   colors?: string[];
+  // API Query Parameters
+  isAnalyzed?: boolean;
+  categoryId?: number;
+  seasonId?: number;
+  styleId?: number;
+  occasionId?: number;
+  sortByDate?: 'asc' | 'desc';
 }
 
 export interface Collection {
