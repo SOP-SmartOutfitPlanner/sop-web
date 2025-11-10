@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, memo, useMemo } from "react";
+import { useEffect, memo, useMemo } from "react";
 import { X, Heart, Edit, Trash2, Calendar, User } from "lucide-react";
 import { Image } from "antd";
 import GlassButton from "@/components/ui/glass-button";
@@ -17,7 +17,7 @@ interface ViewOutfitDialogProps {
 }
 
 // Memoized item card for performance
-const ItemCard = memo(({ item, outfitId }: { item: any; outfitId: number }) => (
+const ItemCard = memo(({ item, outfitId }: { item: Outfit['items'][number]; outfitId: number }) => (
   <div
     key={`${outfitId}-${item.itemId || item.id}`}
     className="relative flex flex-col p-2 rounded-2xl transition-all duration-100 bg-linear-to-br from-cyan-300/30 via-blue-200/10 to-indigo-300/30 backdrop-blur-md border-2 border-white/20"
@@ -146,7 +146,7 @@ const ViewOutfitDialogComponent = ({
   const formattedDate = useMemo(() => {
     if (!outfit) return "";
     return format(new Date(outfit.createdDate), "MMMM d, yyyy");
-  }, [outfit?.createdDate]);
+  }, [outfit]);
 
   if (!open || !outfit) return null;
 
