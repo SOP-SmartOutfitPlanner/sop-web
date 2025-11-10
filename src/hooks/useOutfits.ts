@@ -1,0 +1,178 @@
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { outfitAPI } from "@/lib/api/outfit-api";
+import { GetOutfitsRequest, CreateOutfitRequest, Outfit } from "@/types/outfit";
+
+/**
+ * Hook to fetch outfits with pagination
+ */
+export function useOutfits(params: GetOutfitsRequest) {
+  return useQuery({
+    queryKey: ["outfits", params],
+    queryFn: () => outfitAPI.getOutfits(params),
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+}
+
+/**
+ * Hook to fetch a single outfit by ID
+ */
+export function useOutfit(id: number | null) {
+  return useQuery({
+    queryKey: ["outfit", id],
+    queryFn: () => outfitAPI.getOutfit(id!),
+    enabled: id !== null,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+}
+
+/**
+ * Hook to create a new outfit
+ */
+export function useCreateOutfit() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: CreateOutfitRequest) => outfitAPI.createOutfit(data),
+    onSuccess: (response) => {
+      toast.success(response.message || "Outfit created successfully!");
+      // Invalidate queries to refetch outfits
+      queryClient.invalidateQueries({ queryKey: ["outfits"] });
+    },
+    onError: (error: Error) => {
+      console.error("Failed to create outfit:", error);
+      toast.error(error.message || "Failed to create outfit");
+    },
+  });
+}
+
+/**
+ * Hook to update an existing outfit
+ */
+export function useUpdateOutfit() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<CreateOutfitRequest> }) => 
+      outfitAPI.updateOutfit(id, data),
+    onSuccess: (response, variables) => {
+      toast.success(response.message || "Outfit updated successfully!");
+      // Invalidate both list and detail queries
+      queryClient.invalidateQueries({ queryKey: ["outfits"] });
+      queryClient.invalidateQueries({ queryKey: ["outfit", variables.id] });
+    },
+    onError: (error: Error) => {
+      console.error("Failed to update outfit:", error);
+      toast.error(error.message || "Failed to update outfit");
+    },
+  });
+}
+
+/**
+ * Hook to delete an outfit
+ */
+export function useDeleteOutfit() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (outfitId: number) => outfitAPI.deleteOutfit(outfitId),
+    onMutate: async (outfitId) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["outfits"] });
+
+      // Snapshot previous value
+      const previousData = queryClient.getQueriesData({ queryKey: ["outfits"] });
+
+      // Optimistically remove from cache
+      queryClient.setQueriesData<{ data: { data: Outfit[] } }>(
+        { queryKey: ["outfits"] },
+        (old) => {
+          if (!old?.data?.data) return old;
+
+          return {
+            ...old,
+            data: {
+              ...old.data,
+              data: old.data.data.filter((outfit) => outfit.id !== outfitId),
+            },
+          };
+        }
+      );
+
+      return { previousData };
+    },
+    onSuccess: () => {
+      toast.success("Outfit deleted successfully!");
+    },
+    onError: (error: Error, outfitId, context) => {
+      // Rollback on error
+      if (context?.previousData) {
+        context.previousData.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+      console.error("Failed to delete outfit:", error);
+      toast.error(error.message || "Failed to delete outfit");
+    },
+    onSettled: () => {
+      // Refetch to ensure data is in sync
+      queryClient.invalidateQueries({ queryKey: ["outfits"] });
+    },
+  });
+}
+
+/**
+ * Hook to toggle favorite status of an outfit
+ */
+export function useSaveFavoriteOutfit() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (outfitId: number) => outfitAPI.toggleFavorite(outfitId),
+    onMutate: async (outfitId) => {
+      // Optimistic update
+      await queryClient.cancelQueries({ queryKey: ["outfits"] });
+
+      const previousData = queryClient.getQueriesData({ queryKey: ["outfits"] });
+
+      // Update cached data optimistically
+      queryClient.setQueriesData<{ data: { data: Outfit[] } }>(
+        { queryKey: ["outfits"] },
+        (old) => {
+          if (!old?.data?.data) return old;
+
+          return {
+            ...old,
+            data: {
+              ...old.data,
+              data: old.data.data.map((outfit) =>
+                outfit.id === outfitId
+                  ? { ...outfit, isFavorite: !outfit.isFavorite }
+                  : outfit
+              ),
+            },
+          };
+        }
+      );
+
+      return { previousData };
+    },
+    onSuccess: (response) => {
+      toast.success("Favorite status updated!");
+    },
+    onError: (error: Error, outfitId, context) => {
+      // Rollback on error
+      if (context?.previousData) {
+        context.previousData.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+      console.error("Failed to update favorite:", error);
+      toast.error("Failed to update favorite status");
+    },
+    onSettled: () => {
+      // Refetch to ensure data is in sync
+      queryClient.invalidateQueries({ queryKey: ["outfits"] });
+    },
+  });
+}
