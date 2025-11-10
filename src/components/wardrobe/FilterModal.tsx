@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { X, Filter as FilterIcon } from "lucide-react";
 import { TreeSelect, Select } from "antd";
-import type { DefaultOptionType } from "antd/es/select";
+import type { DataNode } from "antd/es/tree";
 import GlassButton from "@/components/ui/glass-button";
 import { Label } from "@/components/ui/label";
 import { WardrobeFilters } from "@/types/wardrobe";
@@ -17,11 +17,9 @@ export interface FilterModalProps {
   onApplyFilters: (filters: WardrobeFilters) => void;
 }
 
-interface TreeNode extends DefaultOptionType {
-  value: number;
-  title: string;
-  children?: TreeNode[];
-  isLeaf?: boolean;
+interface TreeNodeData extends DataNode {
+  value?: number;
+  children?: TreeNodeData[];
 }
 
 export function FilterModal({
@@ -31,7 +29,7 @@ export function FilterModal({
   onApplyFilters,
 }: FilterModalProps) {
   const [localFilters, setLocalFilters] = useState<WardrobeFilters>(filters);
-  const [categoryTreeData, setCategoryTreeData] = useState<TreeNode[]>([]);
+  const [categoryTreeData, setCategoryTreeData] = useState<TreeNodeData[]>([]);
   const [seasons, setSeasons] = useState<{ id: number; name: string }[]>([]);
   const [styles, setStyles] = useState<{ id: number; name: string }[]>([]);
   const [occasions, setOccasions] = useState<{ id: number; name: string }[]>([]);
@@ -53,12 +51,24 @@ export function FilterModal({
             wardrobeAPI.getOccasions(),
           ]);
 
-          // Build tree structure for categories
-          const treeData: TreeNode[] = rootCategories.map((cat) => ({
-            value: cat.id,
-            title: cat.name,
-            isLeaf: false,
-          }));
+          // Build tree structure for categories - load all children for proper display
+          const treeDataPromises = rootCategories.map(async (cat) => {
+            const children = await wardrobeAPI.getCategoriesByParent(cat.id);
+            return {
+              key: cat.id,
+              value: cat.id,
+              title: cat.name,
+              isLeaf: children.length === 0,
+              children: children.map((child) => ({
+                key: child.id,
+                value: child.id,
+                title: child.name,
+                isLeaf: true,
+              })),
+            };
+          });
+
+          const treeData = await Promise.all(treeDataPromises);
 
           setCategoryTreeData(treeData);
           setSeasons(seasonsData);
@@ -81,43 +91,6 @@ export function FilterModal({
     }
   }, [open, filters]);
 
-  // Load category children dynamically
-  const onLoadCategoryChildren = async (node: TreeNode): Promise<void> => {
-    if (node.children) {
-      return;
-    }
-
-    const children = await wardrobeAPI.getCategoriesByParent(node.value);
-    const childNodes: TreeNode[] = children.map((cat) => ({
-      value: cat.id,
-      title: cat.name,
-      isLeaf: true, // Assuming 2-level hierarchy
-    }));
-
-    setCategoryTreeData((origin) =>
-      updateTreeData(origin, node.value, childNodes)
-    );
-  };
-
-  // Helper to update tree data
-  const updateTreeData = (
-    list: TreeNode[],
-    key: number,
-    children: TreeNode[]
-  ): TreeNode[] => {
-    return list.map((node) => {
-      if (node.value === key) {
-        return { ...node, children };
-      }
-      if (node.children) {
-        return {
-          ...node,
-          children: updateTreeData(node.children, key, children),
-        };
-      }
-      return node;
-    });
-  };
 
   const handleApply = useCallback(() => {
     onApplyFilters(localFilters);
@@ -208,9 +181,8 @@ export function FilterModal({
                       onChange={(value) =>
                         setLocalFilters({ ...localFilters, categoryId: value || undefined })
                       }
-                      loadData={onLoadCategoryChildren}
-                      treeData={categoryTreeData}
-                      treeDefaultExpandAll
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      treeData={categoryTreeData as unknown as any[]}
                       allowClear
                       loading={isLoading}
                       size="large"
