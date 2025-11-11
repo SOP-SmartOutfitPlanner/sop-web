@@ -19,11 +19,13 @@ export function useUserPosts(userId: string, currentUserId?: string) {
       try {
         setIsInitialLoading(true);
         const numericUserId = parseInt(userId, 10);
+        const numericCurrentUserId = currentUserId ? parseInt(currentUserId, 10) : undefined;
 
         const postsResponse = await communityAPI.getPostsByUser(
           numericUserId,
           1,
-          pageSize
+          pageSize,
+          numericCurrentUserId
         );
 
         const mappedPosts = postsResponse.data.map((post: CommunityPost) =>
@@ -44,7 +46,7 @@ export function useUserPosts(userId: string, currentUserId?: string) {
     };
 
     fetchInitialPosts();
-  }, [userId]);
+  }, [userId, currentUserId]);
 
   // Fetch more posts
   const fetchMorePosts = useCallback(async () => {
@@ -54,11 +56,13 @@ export function useUserPosts(userId: string, currentUserId?: string) {
       setIsFetching(true);
       const nextPage = currentPage + 1;
       const numericUserId = parseInt(userId, 10);
+      const numericCurrentUserId = currentUserId ? parseInt(currentUserId, 10) : undefined;
 
       const postsResponse = await communityAPI.getPostsByUser(
         numericUserId,
         nextPage,
-        pageSize
+        pageSize,
+        numericCurrentUserId
       );
 
       const newPosts = postsResponse.data.map((post: CommunityPost) =>
@@ -76,7 +80,34 @@ export function useUserPosts(userId: string, currentUserId?: string) {
     } finally {
       setIsFetching(false);
     }
-  }, [userId, currentPage, pageSize, isFetching, hasMore]);
+  }, [userId, currentPage, pageSize, isFetching, hasMore, currentUserId]);
+
+  // Listen for follow status changes from other components
+  useEffect(() => {
+    const handleFollowStatusChange = (event: Event) => {
+      const customEvent = event as CustomEvent<{
+        userId: number;
+        isFollowing: boolean;
+      }>;
+      const { userId: followedUserId, isFollowing: newFollowStatus } = customEvent.detail;
+
+      // If the followed user is the profile owner, update all posts
+      if (followedUserId === parseInt(userId)) {
+        setPosts((prev) =>
+          prev.map((post) => ({
+            ...post,
+            isFollowing: newFollowStatus,
+          }))
+        );
+      }
+    };
+
+    window.addEventListener("followStatusChanged", handleFollowStatusChange);
+
+    return () => {
+      window.removeEventListener("followStatusChanged", handleFollowStatusChange);
+    };
+  }, [userId]);
 
   // Intersection observer
   useEffect(() => {
@@ -141,11 +172,13 @@ export function useUserPosts(userId: string, currentUserId?: string) {
     try {
       setIsInitialLoading(true);
       const numericUserId = parseInt(userId, 10);
+      const numericCurrentUserId = currentUserId ? parseInt(currentUserId, 10) : undefined;
 
       const postsResponse = await communityAPI.getPostsByUser(
         numericUserId,
         1,
-        pageSize
+        pageSize,
+        numericCurrentUserId
       );
 
       const mappedPosts = postsResponse.data.map((post: CommunityPost) =>
@@ -160,7 +193,7 @@ export function useUserPosts(userId: string, currentUserId?: string) {
     } finally {
       setIsInitialLoading(false);
     }
-  }, [userId]);
+  }, [userId, currentUserId]);
 
   return {
     posts,

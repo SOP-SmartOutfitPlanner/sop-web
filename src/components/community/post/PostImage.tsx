@@ -36,15 +36,15 @@ export function PostImage({ images, onDoubleClick }: PostImageProps) {
       {/* Glass border effect */}
       <div className={`absolute inset-0 rounded-3xl pointer-events-none transition-all duration-300 ${
         isHovered
-          ? "bg-gradient-to-br from-cyan-300/20 via-blue-300/10 to-indigo-300/20 border-2 border-cyan-400/50 shadow-lg shadow-cyan-500/30"
-          : "bg-gradient-to-br from-cyan-300/10 via-blue-300/5 to-indigo-300/10 border-2 border-cyan-400/20"
+          ? "bg-gradient-to-br from-cyan-400/10 via-blue-400/5 to-indigo-400/10 border-2 border-cyan-400/30 shadow-lg shadow-cyan-500/20"
+          : "bg-transparent border-2 border-cyan-400/15"
       }`} />
 
-      {/* Background gradient - Transitions to white on hover */}
+      {/* Background gradient - Dark and transparent */}
       <div className={`absolute inset-0 z-0 transition-all duration-300 ${
         isHovered
-          ? "bg-gradient-to-br from-white/80 via-blue-50/60 to-cyan-50/50"
-          : "bg-gradient-to-br from-muted/30 to-background"
+          ? "bg-slate-950/20"
+          : "bg-slate-950/10"
       }`} />
       
       {/* Premium white glass overlay on hover */}
@@ -96,7 +96,7 @@ export function PostImage({ images, onDoubleClick }: PostImageProps) {
 
       {/* Dot indicators */}
       {hasMultiple && (
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex gap-2 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-sm border border-white/10">
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex gap-2 px-3 py-1.5 rounded-full bg-black/20 backdrop-blur-sm border border-white/5">
           {images.map((_, index) => (
             <button
               key={index}
@@ -106,8 +106,8 @@ export function PostImage({ images, onDoubleClick }: PostImageProps) {
               }}
               className={`rounded-full transition-all duration-300 ${
                 index === currentIndex
-                  ? "bg-cyan-400 w-2.5 h-2.5 shadow-lg shadow-cyan-500/50"
-                  : "bg-white/40 w-2 h-2 hover:bg-white/60"
+                  ? "bg-cyan-400 w-2.5 h-2.5 shadow-lg shadow-cyan-500/40"
+                  : "bg-white/30 w-2 h-2 hover:bg-white/50"
               }`}
             />
           ))}

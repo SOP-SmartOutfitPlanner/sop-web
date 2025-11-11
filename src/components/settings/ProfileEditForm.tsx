@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useAuthStore } from "@/store/auth-store";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,8 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { AvatarUpload } from "./AvatarUpload";
 import { cn } from "@/lib/utils";
+import { userAPI } from "@/lib/api/user-api";
+import type { UserProfileResponse, Job, StyleOption } from "@/types/user";
 
 interface ProfileFormData {
   displayName: string;
@@ -17,19 +19,139 @@ interface ProfileFormData {
   bio: string;
   location: string;
   dob?: string;
-  gender?: string;
+  gender?: string | number;
   jobId?: number;
 }
 
 export function ProfileEditForm() {
   const { user } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingData, setIsLoadingData] = useState(true);
   const [selectedColors, setSelectedColors] = useState<Set<string>>(new Set());
-  const [selectedAvoidedColors, setSelectedAvoidedColors] = useState<Set<string>>(new Set());
+  const [selectedAvoidedColors, setSelectedAvoidedColors] = useState<
+    Set<string>
+  >(new Set());
   const [selectedStyles, setSelectedStyles] = useState<Set<string>>(new Set());
+  const [userData, setUserData] = useState<UserProfileResponse | null>(null);
+
+  // Available options from API
+  const [availableJobs, setAvailableJobs] = useState<Job[]>([]);
+  const [availableStyles, setAvailableStyles] = useState<StyleOption[]>([]);
+  const [availableColors] = useState<string[]>([
+    "Yellow",
+    "Maroon",
+    "Red",
+    "Blue",
+    "Green",
+    "Purple",
+    "Black",
+    "White",
+    "Gray",
+    "Brown",
+    "Pink",
+    "Orange",
+  ]);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = useForm<ProfileFormData>({
+    defaultValues: {
+      displayName: "",
+      email: "",
+      bio: "",
+      location: "",
+      dob: "",
+      gender: "Unknown",
+    },
+  });
+
+  // Load user data and available options from API
+  useEffect(() => {
+    const loadUserData = async () => {
+      if (!user?.id) {
+        setIsLoadingData(false);
+        return;
+      }
+
+      try {
+        setIsLoadingData(true);
+        const userId =
+          typeof user.id === "string" ? parseInt(user.id, 10) : user.id;
+
+        // Fetch user data and available options in parallel
+        const [userResponse, jobsResponse, stylesResponse] = await Promise.all([
+          userAPI.getUserById(userId),
+          userAPI.getJobs({ "take-all": true }),
+          userAPI.getStyles({ "take-all": true }),
+        ]);
+
+        // Extract user data (apiClient returns { statusCode, message, data: UserProfileResponse })
+        const userData = (userResponse as { data: UserProfileResponse }).data;
+
+        // Extract available options from API responses
+        // Handle different response structures (direct array, nested data.data, or wrapped in data)
+        let jobs: unknown[] = [];
+        let styles: unknown[] = [];
+
+        const jobsData = jobsResponse as { data?: { data?: unknown[] } | unknown[] };
+        const stylesData = stylesResponse as { data?: { data?: unknown[] } | unknown[] };
+
+        if (Array.isArray(jobsResponse)) {
+          jobs = jobsResponse;
+        } else if (jobsData.data && typeof jobsData.data === 'object' && 'data' in jobsData.data && Array.isArray(jobsData.data.data)) {
+          jobs = jobsData.data.data;
+        } else if (Array.isArray(jobsData.data)) {
+          jobs = jobsData.data;
+        }
+
+        if (Array.isArray(stylesResponse)) {
+          styles = stylesResponse;
+        } else if (stylesData.data && typeof stylesData.data === 'object' && 'data' in stylesData.data && Array.isArray(stylesData.data.data)) {
+          styles = stylesData.data.data;
+        } else if (Array.isArray(stylesData.data)) {
+          styles = stylesData.data;
+        }
+
+        setAvailableJobs(Array.isArray(jobs) ? jobs as Job[] : []);
+        setAvailableStyles(Array.isArray(styles) ? styles as StyleOption[] : []);
+
+        setUserData(userData);
+
+        // Initialize form with API data
+        reset({
+          displayName: userData.displayName || "",
+          email: userData.email || "",
+          bio: userData.bio || "",
+          location: userData.location || "",
+          dob: userData.dob || "",
+          gender: userData.gender || 0,
+          jobId: userData.jobId || 2,
+        });
+
+        // Initialize color preferences
+        setSelectedColors(new Set(userData.preferedColor || []));
+        setSelectedAvoidedColors(new Set(userData.avoidedColor || []));
+
+        // Initialize style preferences
+        const styleNames =
+          (userData as { userStyles?: Array<{ styleName: string }> }).userStyles?.map((s) => s.styleName) || [];
+        setSelectedStyles(new Set(styleNames));
+      } catch (error) {
+        console.error("Error loading user data:", error);
+        toast.error("Failed to load profile data");
+      } finally {
+        setIsLoadingData(false);
+      }
+    };
+
+    loadUserData();
+  }, [user?.id, reset]);
 
   const toggleColor = (color: string) => {
-    setSelectedColors(prev => {
+    setSelectedColors((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(color)) {
         newSet.delete(color);
@@ -41,7 +163,7 @@ export function ProfileEditForm() {
   };
 
   const toggleAvoidedColor = (color: string) => {
-    setSelectedAvoidedColors(prev => {
+    setSelectedAvoidedColors((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(color)) {
         newSet.delete(color);
@@ -53,7 +175,7 @@ export function ProfileEditForm() {
   };
 
   const toggleStyle = (style: string) => {
-    setSelectedStyles(prev => {
+    setSelectedStyles((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(style)) {
         newSet.delete(style);
@@ -64,24 +186,20 @@ export function ProfileEditForm() {
     });
   };
 
-  const { register, handleSubmit, formState: { errors } } = useForm<ProfileFormData>({
-    defaultValues: {
-      displayName: user?.displayName || "",
-      email: user?.email || "",
-      bio: "",
-      location: "",
-      dob: "",
-      gender: "Unknown",
-    },
-  });
-
   const onSubmit = async (data: ProfileFormData) => {
     if (!user?.id) return;
 
     try {
       setIsLoading(true);
+
       // TODO: Call API to update profile
-      // await userAPI.updateUserProfile(data);
+      // await userAPI.updateUserProfile({
+      //   ...data,
+      //   preferedColor: Array.from(selectedColors),
+      //   avoidedColor: Array.from(selectedAvoidedColors),
+      //   styleIds: Array.from(selectedStyles),
+      // });
+
       toast.success("Profile updated successfully");
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -91,28 +209,41 @@ export function ProfileEditForm() {
     }
   };
 
+  if (isLoadingData) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-8 h-8 animate-spin text-cyan-400" />
+          <p className="text-slate-300">Loading profile data...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       {/* Avatar Section */}
-      <div className="backdrop-blur-md bg-gradient-to-br from-cyan-950/40 via-blue-950/30 to-indigo-950/40 border-2 border-cyan-400/25 rounded-2xl p-6 shadow-lg shadow-cyan-500/10">
-        <h2 className="text-lg font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-cyan-200 to-blue-200">Profile Picture</h2>
+      <div className="backdrop-blur-xl bg-slate-950/40 border border-slate-700/30 rounded-2xl p-6 shadow-lg shadow-slate-900/20 transition-all duration-300 hover:border-slate-700/50 hover:shadow-slate-900/40">
+        <h2 className="text-lg font-bold mb-4 text-white">Profile Picture</h2>
         <AvatarUpload />
       </div>
 
       {/* Basic Information */}
-      <div className="backdrop-blur-md bg-gradient-to-br from-cyan-950/40 via-blue-950/30 to-indigo-950/40 border-2 border-cyan-400/25 rounded-2xl p-6 shadow-lg shadow-cyan-500/10">
-        <h2 className="text-lg font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-cyan-200 to-blue-200">Basic Information</h2>
+      <div className="backdrop-blur-xl bg-slate-950/40 border border-slate-700/30 rounded-2xl p-6 shadow-lg shadow-slate-900/20 transition-all duration-300 hover:border-slate-700/50 hover:shadow-slate-900/40">
+        <h2 className="text-lg font-bold mb-4 text-white">Basic Information</h2>
         <div className="space-y-4">
           {/* Display Name */}
           <div>
-            <label className="block text-sm font-semibold mb-2 text-white">Display Name</label>
+            <label className="block text-sm font-semibold mb-2 text-white">
+              Display Name
+            </label>
             <Input
               {...register("displayName", {
                 required: "Display name is required",
               })}
               placeholder="Your name"
               disabled
-              className="bg-cyan-950/30 border-2 border-cyan-400/20 text-white placeholder:text-cyan-300/50 rounded-lg focus:ring-2 focus:ring-cyan-400/30 disabled:opacity-60"
+              className="bg-slate-900/50 border border-slate-700/30 text-white placeholder:text-slate-500 rounded-lg focus:ring-2 focus:ring-cyan-400/30 disabled:opacity-60"
             />
             {errors.displayName && (
               <p className="text-sm text-red-400 mt-1">
@@ -123,15 +254,17 @@ export function ProfileEditForm() {
 
           {/* Email */}
           <div>
-            <label className="block text-sm font-semibold mb-2 text-white">Email</label>
+            <label className="block text-sm font-semibold mb-2 text-white">
+              Email
+            </label>
             <div className="flex items-center gap-2">
               <Input
                 {...register("email")}
                 placeholder="your@email.com"
                 disabled
-                className="flex-1 bg-cyan-950/30 border-2 border-cyan-400/20 text-white placeholder:text-cyan-300/50 rounded-lg focus:ring-2 focus:ring-cyan-400/30 disabled:opacity-60"
+                className="flex-1 bg-slate-900/50 border border-slate-700/30 text-white placeholder:text-slate-500 rounded-lg focus:ring-2 focus:ring-cyan-400/30 disabled:opacity-60"
               />
-              <span className="px-3 py-2 rounded-lg bg-gradient-to-r from-cyan-500/30 to-emerald-500/30 text-cyan-200 text-sm font-semibold border border-cyan-400/30">
+              <span className="px-3 py-2 rounded-lg bg-emerald-500/20 text-emerald-200 text-sm font-semibold border border-emerald-400/30">
                 ✓ Verified
               </span>
             </div>
@@ -139,92 +272,118 @@ export function ProfileEditForm() {
 
           {/* Bio */}
           <div>
-            <label className="block text-sm font-semibold mb-2 text-white">Bio</label>
+            <label className="block text-sm font-semibold mb-2 text-white">
+              Bio
+            </label>
             <Textarea
               {...register("bio")}
               placeholder="Tell us about yourself..."
               rows={4}
-              className="resize-none bg-cyan-950/30 border-2 border-cyan-400/20 text-white placeholder:text-cyan-300/50 rounded-lg focus:ring-2 focus:ring-cyan-400/30"
+              className="resize-none bg-slate-900/50 border border-slate-700/30 text-white placeholder:text-slate-500 rounded-lg focus:ring-2 focus:ring-cyan-400/30"
             />
-            <p className="text-xs text-blue-200/60 mt-1">Max 500 characters</p>
+            <p className="text-xs text-slate-400 mt-1">Max 500 characters</p>
           </div>
 
           {/* Location */}
           <div>
-            <label className="block text-sm font-semibold mb-2 text-white">Location</label>
+            <label className="block text-sm font-semibold mb-2 text-white">
+              Location
+            </label>
             <Input
               {...register("location")}
               placeholder="City, Country"
-              className="bg-cyan-950/30 border-2 border-cyan-400/20 text-white placeholder:text-cyan-300/50 rounded-lg focus:ring-2 focus:ring-cyan-400/30"
+              className="bg-slate-900/50 border border-slate-700/30 text-white placeholder:text-slate-500 rounded-lg focus:ring-2 focus:ring-cyan-400/30"
             />
           </div>
         </div>
       </div>
 
       {/* Personal Information */}
-      <div className="backdrop-blur-md bg-gradient-to-br from-cyan-950/40 via-blue-950/30 to-indigo-950/40 border-2 border-cyan-400/25 rounded-2xl p-6 shadow-lg shadow-cyan-500/10">
-        <h2 className="text-lg font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-cyan-200 to-blue-200">Personal Information</h2>
+      <div className="backdrop-blur-xl bg-slate-950/40 border border-slate-700/30 rounded-2xl p-6 shadow-lg shadow-slate-900/20 transition-all duration-300 hover:border-slate-700/50 hover:shadow-slate-900/40">
+        <h2 className="text-lg font-bold mb-4 text-white">
+          Personal Information
+        </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Date of Birth */}
           <div>
-            <label className="block text-sm font-semibold mb-2 text-white">Date of Birth</label>
+            <label className="block text-sm font-semibold mb-2 text-white">
+              Date of Birth
+            </label>
             <Input
               {...register("dob")}
               type="date"
-              className="bg-cyan-950/30 border-2 border-cyan-400/20 text-white rounded-lg focus:ring-2 focus:ring-cyan-400/30"
+              className="bg-slate-900/50 border border-slate-700/30 text-white rounded-lg focus:ring-2 focus:ring-cyan-400/30"
             />
           </div>
 
           {/* Gender */}
           <div>
-            <label className="block text-sm font-semibold mb-2 text-white">Gender</label>
+            <label className="block text-sm font-semibold mb-2 text-white">
+              Gender
+            </label>
             <select
               {...register("gender")}
-              className="w-full px-3 py-2 border-2 border-cyan-400/20 rounded-lg bg-cyan-950/30 text-white focus:ring-2 focus:ring-cyan-400/30"
+              className="w-full px-3 py-2 border border-slate-700/30 rounded-lg bg-slate-900/50 text-white focus:ring-2 focus:ring-cyan-400/30"
             >
-              <option value="Unknown" className="bg-slate-900">Prefer not to say</option>
-              <option value="Male" className="bg-slate-900">Male</option>
-              <option value="Female" className="bg-slate-900">Female</option>
-              <option value="Other" className="bg-slate-900">Other</option>
+              <option value="Unknown" className="bg-slate-800">
+                Prefer not to say
+              </option>
+              <option value="Male" className="bg-slate-800">
+                Male
+              </option>
+              <option value="Female" className="bg-slate-800">
+                Female
+              </option>
+              <option value="Other" className="bg-slate-800">
+                Other
+              </option>
             </select>
           </div>
         </div>
       </div>
 
       {/* Job Information */}
-      <div className="backdrop-blur-md bg-gradient-to-br from-cyan-950/40 via-blue-950/30 to-indigo-950/40 border-2 border-cyan-400/25 rounded-2xl p-6 shadow-lg shadow-cyan-500/10">
-        <h2 className="text-lg font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-cyan-200 to-blue-200">Occupation</h2>
+      <div className="backdrop-blur-xl bg-slate-950/40 border border-slate-700/30 rounded-2xl p-6 shadow-lg shadow-slate-900/20 transition-all duration-300 hover:border-slate-700/50 hover:shadow-slate-900/40">
+        <h2 className="text-lg font-bold mb-4 text-white">Occupation</h2>
         <div>
-          <label className="block text-sm font-semibold mb-2 text-white">Job</label>
+          <label className="block text-sm font-semibold mb-2 text-white">
+            Job
+          </label>
           <select
             {...register("jobId", { valueAsNumber: true })}
-            className="w-full px-3 py-2 border-2 border-cyan-400/20 rounded-lg bg-cyan-950/30 text-white focus:ring-2 focus:ring-cyan-400/30"
+            className="w-full px-3 py-2 border border-slate-700/30 rounded-lg bg-slate-900/50 text-white focus:ring-2 focus:ring-cyan-400/30"
           >
-            <option value={2} className="bg-slate-900">Student</option>
-            <option value={1} className="bg-slate-900">Professional</option>
-            <option value={3} className="bg-slate-900">Freelancer</option>
-            <option value={4} className="bg-slate-900">Business Owner</option>
-            <option value={5} className="bg-slate-900">Other</option>
+            <option value="" className="bg-slate-800">
+              Select a job...
+            </option>
+            {availableJobs.map((job) => (
+              <option key={job.id} value={job.id} className="bg-slate-800">
+                {job.name}
+              </option>
+            ))}
           </select>
-          <p className="text-xs text-blue-200/60 mt-2">
+          <p className="text-xs text-slate-400 mt-2">
             Tell others what you do to help them understand your style interests
           </p>
         </div>
       </div>
 
       {/* Color Preferences */}
-      <div className="backdrop-blur-md bg-gradient-to-br from-cyan-950/40 via-blue-950/30 to-indigo-950/40 border-2 border-cyan-400/25 rounded-2xl p-6 shadow-lg shadow-cyan-500/10">
-        <h2 className="text-lg font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-cyan-200 to-blue-200">Color Preferences</h2>
-        <p className="text-sm text-blue-200/70 mb-4">
-          Help us personalize recommendations by selecting colors you prefer and avoid
+      <div className="backdrop-blur-xl bg-slate-950/40 border border-slate-700/30 rounded-2xl p-6 shadow-lg shadow-slate-900/20 transition-all duration-300 hover:border-slate-700/50 hover:shadow-slate-900/40">
+        <h2 className="text-lg font-bold mb-4 text-white">Color Preferences</h2>
+        <p className="text-sm text-slate-400 mb-4">
+          Help us personalize recommendations by selecting colors you prefer and
+          avoid
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Preferred Colors */}
           <div>
-            <label className="block text-sm font-semibold mb-3 text-white">Preferred Colors</label>
+            <label className="block text-sm font-semibold mb-3 text-white">
+              Preferred Colors
+            </label>
             <div className="space-y-2">
               <div className="flex flex-wrap gap-2">
-                {["Yellow", "Maroon", "Red", "Blue", "Green"].map((color) => {
+                {availableColors.map((color) => {
                   const isSelected = selectedColors.has(color);
                   return (
                     <button
@@ -232,10 +391,10 @@ export function ProfileEditForm() {
                       type="button"
                       onClick={() => toggleColor(color)}
                       className={cn(
-                        "px-3 py-1.5 rounded-full border-2 transition-all text-sm font-medium",
+                        "px-3 py-1.5 rounded-full border transition-all text-sm font-medium",
                         isSelected
-                          ? "border-cyan-400/80 bg-cyan-500/30 text-cyan-100 shadow-lg shadow-cyan-500/30"
-                          : "border-cyan-400/30 text-cyan-200 hover:border-cyan-400/60 hover:bg-cyan-400/10"
+                          ? "border-cyan-400/60 bg-cyan-500/20 text-cyan-100 shadow-lg shadow-cyan-500/20"
+                          : "border-slate-600/40 text-slate-300 hover:border-cyan-400/50 hover:bg-cyan-500/10"
                       )}
                     >
                       {color}
@@ -248,10 +407,12 @@ export function ProfileEditForm() {
 
           {/* Avoided Colors */}
           <div>
-            <label className="block text-sm font-semibold mb-3 text-white">Avoided Colors</label>
+            <label className="block text-sm font-semibold mb-3 text-white">
+              Avoided Colors
+            </label>
             <div className="space-y-2">
               <div className="flex flex-wrap gap-2">
-                {["Blue", "White", "Gray", "Black", "Brown"].map((color) => {
+                {availableColors.map((color) => {
                   const isSelected = selectedAvoidedColors.has(color);
                   return (
                     <button
@@ -259,10 +420,10 @@ export function ProfileEditForm() {
                       type="button"
                       onClick={() => toggleAvoidedColor(color)}
                       className={cn(
-                        "px-3 py-1.5 rounded-full border-2 transition-all text-sm font-medium",
+                        "px-3 py-1.5 rounded-full border transition-all text-sm font-medium",
                         isSelected
-                          ? "border-red-400/80 bg-red-500/30 text-red-100 shadow-lg shadow-red-500/30"
-                          : "border-red-400/30 text-red-200 hover:border-red-400/60 hover:bg-red-400/10"
+                          ? "border-red-400/60 bg-red-500/20 text-red-100 shadow-lg shadow-red-500/20"
+                          : "border-slate-600/40 text-slate-300 hover:border-red-400/50 hover:bg-red-500/10"
                       )}
                     >
                       {color}
@@ -276,34 +437,28 @@ export function ProfileEditForm() {
       </div>
 
       {/* Style Preferences */}
-      <div className="backdrop-blur-md bg-gradient-to-br from-cyan-950/40 via-blue-950/30 to-indigo-950/40 border-2 border-cyan-400/25 rounded-2xl p-6 shadow-lg shadow-cyan-500/10">
-        <h2 className="text-lg font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-cyan-200 to-blue-200">My Styles</h2>
-        <p className="text-sm text-blue-200/70 mb-4">
+      <div className="backdrop-blur-xl bg-slate-950/40 border border-slate-700/30 rounded-2xl p-6 shadow-lg shadow-slate-900/20 transition-all duration-300 hover:border-slate-700/50 hover:shadow-slate-900/40">
+        <h2 className="text-lg font-bold mb-4 text-white">My Styles</h2>
+        <p className="text-sm text-slate-400 mb-4">
           Select styles that match your personal aesthetic
         </p>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {[
-            "Business Casual",
-            "Business Formal",
-            "Casual",
-            "Preppy",
-            "Athleisure",
-            "Bohemian",
-          ].map((style) => {
-            const isSelected = selectedStyles.has(style);
+          {availableStyles.map((style) => {
+            const isSelected = selectedStyles.has(style.name);
             return (
               <button
-                key={style}
+                key={style.id}
                 type="button"
-                onClick={() => toggleStyle(style)}
+                onClick={() => toggleStyle(style.name)}
                 className={cn(
-                  "px-4 py-2.5 rounded-lg border-2 transition-all text-sm font-semibold",
+                  "px-4 py-2.5 rounded-lg border transition-all text-sm font-semibold",
                   isSelected
-                    ? "border-cyan-400/80 bg-cyan-500/30 text-cyan-100 shadow-lg shadow-cyan-500/30"
-                    : "border-cyan-400/30 text-cyan-200 hover:border-cyan-400/60 hover:bg-cyan-400/10"
+                    ? "border-cyan-400/60 bg-cyan-500/20 text-cyan-100 shadow-lg shadow-cyan-500/20"
+                    : "border-slate-600/40 text-slate-300 hover:border-cyan-400/50 hover:bg-cyan-500/10"
                 )}
+                title={style.description}
               >
-                {style}
+                {style.name}
               </button>
             );
           })}
@@ -315,7 +470,7 @@ export function ProfileEditForm() {
         <Button
           type="submit"
           disabled={isLoading}
-          className="flex-1 md:flex-none bg-gradient-to-r from-cyan-600 to-blue-600 text-white hover:from-cyan-700 hover:to-blue-700 shadow-lg shadow-cyan-500/30 font-semibold"
+          className="flex-1 md:flex-none bg-gradient-to-r from-cyan-600 to-blue-600 text-white hover:from-cyan-700 hover:to-blue-700 shadow-lg shadow-cyan-500/20 font-semibold transition-all"
         >
           {isLoading ? (
             <>
@@ -326,11 +481,14 @@ export function ProfileEditForm() {
             "Save Changes"
           )}
         </Button>
-        <Button type="button" variant="outline" className="flex-1 md:flex-none border-2 border-cyan-400/30 text-cyan-200 hover:bg-cyan-400/10 hover:border-cyan-400/60 font-semibold">
+        <Button
+          type="button"
+          variant="outline"
+          className="flex-1 md:flex-none bg-transparent border border-white/20 text-slate-300 hover:bg-white/10 hover:text-white hover:border-white/40 font-semibold transition-all"
+        >
           Cancel
         </Button>
       </div>
     </form>
   );
 }
-

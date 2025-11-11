@@ -24,7 +24,7 @@ export function CommunityLayout({ children }: CommunityLayoutProps) {
             <div className="flex-1 space-y-6">{children}</div>
 
             {/* Sidebar - Shows on medium screens and up */}
-            <aside className="hidden md:block md:w-[340px] md:flex-shrink-0 top-24 self-start">
+            <aside className="sticky top-15 self-start hidden md:block md:w-[340px] md:flex-shrink-0">
               <Sidebar />
             </aside>
           </div>

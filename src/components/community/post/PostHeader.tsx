@@ -88,7 +88,7 @@ export function PostHeader({
         <div>
           <div className="flex items-center gap-2 flex-wrap">
             <Link href={`/community/profile/${user.id}`}>
-              <p className="font-semibold hover:underline cursor-pointer bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 to-blue-300">
+              <p className="font-semibold text-white hover:text-white/80 hover:underline cursor-pointer transition-colors">
                 {user.name}
               </p>
             </Link>
@@ -124,7 +124,7 @@ export function PostHeader({
               </Badge>
             )}
           </div>
-          <p className="text-sm text-blue-200/80 font-medium">
+          <p className="text-sm text-slate-400 font-medium">
             {timestamp
               ? formatDistanceToNow(new Date(timestamp), { addSuffix: true })
               : "Recently"}

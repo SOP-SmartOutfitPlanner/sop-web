@@ -80,8 +80,6 @@ export function UserProfilePosts({ userId, userName }: UserProfilePostsProps) {
               }}
               onLike={() => handleLike(parseInt(post.id))}
               onReport={() => {}}
-              onFollow={() => {}}
-              isFollowing={false}
               onEditPost={(post) => {
                 console.log("Edit post:", post);
                 // TODO: Open edit dialog with post data

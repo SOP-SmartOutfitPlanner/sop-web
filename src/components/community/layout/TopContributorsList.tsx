@@ -8,6 +8,7 @@ interface TopContributorsListProps {
   contributors: Contributor[];
   isLoading: boolean;
   isLoggedIn: boolean;
+  currentUserId?: string;
   onFollow: (contributor: Contributor) => void;
 }
 
@@ -15,6 +16,7 @@ export function TopContributorsList({
   contributors,
   isLoading,
   isLoggedIn,
+  currentUserId,
   onFollow,
 }: TopContributorsListProps) {
   if (isLoading) {
@@ -41,6 +43,7 @@ export function TopContributorsList({
           contributor={contributor}
           index={index}
           isLoggedIn={isLoggedIn}
+          currentUserId={currentUserId}
           onFollow={onFollow}
         />
       ))}

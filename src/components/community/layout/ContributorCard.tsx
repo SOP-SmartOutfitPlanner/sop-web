@@ -18,6 +18,7 @@ interface ContributorCardProps {
   contributor: Contributor;
   index: number;
   isLoggedIn: boolean;
+  currentUserId?: string;
   onFollow: (contributor: Contributor) => void;
 }
 
@@ -25,18 +26,23 @@ export function ContributorCard({
   contributor,
   index,
   isLoggedIn,
+  currentUserId,
   onFollow,
 }: ContributorCardProps) {
   const router = useRouter();
 
+  // Check if this contributor is the current user (don't show follow button for self)
+  const isCurrentUser =
+    currentUserId && contributor.userId === parseInt(currentUserId);
+
   return (
-    <div className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-cyan-400/5 to-blue-400/5 hover:from-cyan-400/10 hover:to-blue-400/10 border border-cyan-400/10 hover:border-cyan-400/20 transition-all duration-300">
+    <div className="flex items-center justify-between p-3 rounded-lg bg-slate-900/30 hover:bg-slate-900/50 border border-slate-700/20 hover:border-slate-700/40 transition-all duration-300">
       {/* Profile Info */}
       <div className="flex items-center gap-3">
         <div className="relative">
           {/* Avatar */}
           <Avatar
-            className="w-9 h-9 cursor-pointer ring-2 ring-cyan-400/30 hover:ring-cyan-400/50 transition-all"
+            className="w-9 h-9 cursor-pointer ring-2 ring-cyan-400/20 hover:ring-cyan-400/40 transition-all"
             onClick={() =>
               router.push(`/community/profile/${contributor.userId}`)
             }
@@ -63,25 +69,32 @@ export function ContributorCard({
         {/* Name & Post Count */}
         <div>
           <Link href={`/community/profile/${contributor.userId}`}>
-            <p className="font-semibold text-sm bg-clip-text text-transparent bg-gradient-to-r from-cyan-100 to-blue-100 hover:underline cursor-pointer">
+            <p className="font-semibold text-sm text-white hover:text-white/80 hover:underline cursor-pointer transition-colors">
               {contributor.displayName}
             </p>
           </Link>
-          <p className="text-xs text-blue-200/70">
+          <p className="text-xs text-slate-400">
             {contributor.postCount}{" "}
             {contributor.postCount === 1 ? "post" : "posts"}
           </p>
         </div>
       </div>
 
-      {/* Actions */}
+      {/* Actions - Follow Button */}
+      {/* 
+        Logic:
+        - If contributor is current user: Don't show button (can't follow yourself)
+        - If not following (isFollowing=false): Show "Follow" button with UserPlus icon
+        - If already following (isFollowing=true): Don't show button
+        - GUEST mode: Show "Follow" button, clicking will prompt login
+      */}
       <div className="flex gap-1">
-        {isLoggedIn && !contributor.isFollowing && (
+        {!isCurrentUser && !contributor.isFollowing && (
           <Button
             size="sm"
-            className="h-7 px-2 bg-gradient-to-r from-cyan-500/60 to-blue-500/60 hover:from-cyan-500/80 hover:to-blue-500/80 text-white border border-cyan-400/30 hover:border-cyan-400/50 hover:shadow-lg hover:shadow-cyan-500/30 transition-all rounded-md"
+            className="h-7 px-2 bg-cyan-500/20 hover:bg-cyan-500/30 text-white border border-cyan-400/20 hover:border-cyan-400/40 hover:shadow-lg hover:shadow-cyan-500/20 transition-all rounded-md"
             onClick={() => onFollow(contributor)}
-            title="Follow"
+            title={isLoggedIn ? "Follow" : "Login to follow"}
           >
             <UserPlus className="w-3 h-3" />
           </Button>

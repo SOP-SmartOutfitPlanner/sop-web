@@ -62,8 +62,10 @@ export function useFeed(pageSize: number = 10) {
       return undefined; // No more pages
     },
     initialPageParam: 1,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 30, // 30 seconds
     gcTime: 1000 * 60 * 10, // 10 minutes
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
   });
 
   // Flatten all pages into single array of posts
