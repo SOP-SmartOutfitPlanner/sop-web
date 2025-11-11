@@ -29,7 +29,7 @@ export default function Community() {
   } = useCommunityFilters();
 
   // Post creation
-  const { createPost } = useCreatePost();
+  const { createPost, isCreating } = useCreatePost();
   const [isNewPostOpen, setIsNewPostOpen] = useState(false);
 
   // Handle post creation and close dialog
@@ -56,6 +56,7 @@ export default function Community() {
         isNewPostOpen={isNewPostOpen}
         onNewPostOpenChange={setIsNewPostOpen}
         onCreatePost={handleCreatePost}
+        isSubmitting={isCreating}
       />
 
       {/* All filters grouped together */}

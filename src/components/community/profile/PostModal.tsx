@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import Image from "next/image";
 import {
   Heart,
@@ -36,7 +37,8 @@ interface PostModalProps {
  */
 export function PostModal({ post, isOpen, onClose, onLike }: PostModalProps) {
   const { user } = useAuthStore();
-  
+  const commentInputRef = useRef<HTMLInputElement>(null);
+
   // Use custom hook for modal logic
   const {
     currentImageIndex,
@@ -48,6 +50,11 @@ export function PostModal({ post, isOpen, onClose, onLike }: PostModalProps) {
     handleNextImage,
     handlePrevImage,
   } = usePostModal({ post, isOpen });
+
+  const handleCommentButtonClick = () => {
+    commentInputRef.current?.focus();
+    commentInputRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  };
 
   const handlePostComment = async (comment: string) => {
     if (!user) {
@@ -68,10 +75,8 @@ export function PostModal({ post, isOpen, onClose, onLike }: PostModalProps) {
         new CustomEvent("refreshComments", { detail: { postId: post.id } })
       );
 
-      // Show API message
-      if (response.comment) {
-        toast.success(response.comment);
-      }
+      // Show API message or default success message
+      toast.success(response.message || "Comment posted successfully");
     } catch (error) {
       console.error("Error posting comment:", error);
       const errorMessage =
@@ -83,7 +88,11 @@ export function PostModal({ post, isOpen, onClose, onLike }: PostModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
-        className="!max-w-[1200px] !w-[90vw] !h-[85vh] !p-0 !gap-0 backdrop-blur-2xl bg-gradient-to-br from-cyan-400/15 via-blue-400/10 to-indigo-400/15 border-2 border-cyan-400/25 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-3xl overflow-hidden flex flex-col"
+        className={`!p-0 !gap-0 backdrop-blur-2xl bg-slate-950/60 border border-cyan-400/15 shadow-[0_8px_32px_rgba(0,0,0,0.4)] rounded-3xl overflow-hidden flex flex-col ${
+          hasMultipleImages || currentImage
+            ? "!max-w-[1200px] !w-[90vw] !h-[85vh]"
+            : "!max-w-[700px] !w-[90vw] !h-auto"
+        }`}
         aria-describedby={undefined}
         showCloseButton={false}
       >
@@ -92,126 +101,148 @@ export function PostModal({ post, isOpen, onClose, onLike }: PostModalProps) {
           {post.userDisplayName}&apos;s post
         </DialogTitle>
 
-        <div className="flex flex-1 h-full w-full min-h-0 overflow-hidden rounded-3xl">
-          {/* Left: Image */}
-          <div className="flex-1 relative flex items-center justify-center overflow-hidden bg-gradient-to-br from-cyan-900/20 via-blue-900/10 to-indigo-900/5 px-2 rounded-l-3xl">
-            {currentImage ? (
-              <>
-                <div className="relative w-full h-full flex items-center justify-center">
-                  <Image
-                    src={currentImage}
-                    alt={post.caption}
-                    width={1080}
-                    height={1080}
-                    className="w-full h-full object-cover"
-                    priority
-                  />
-                </div>
+        <div
+          className={`flex flex-1 min-h-0 overflow-hidden rounded-3xl ${
+            hasMultipleImages || currentImage ? "h-full w-full" : "flex-col"
+          }`}
+        >
+          {/* Left: Image - Only show if has images */}
+          {(hasMultipleImages || currentImage) && (
+            <div className="flex-1 relative flex items-center justify-center overflow-hidden bg-slate-950/30 rounded-l-3xl">
+              {currentImage ? (
+                <>
+                  <div className="relative w-full h-full flex items-center justify-center">
+                    <Image
+                      src={currentImage}
+                      alt={post.caption}
+                      width={1080}
+                      height={1080}
+                      className="w-full h-full object-cover"
+                      priority
+                    />
+                  </div>
 
-                {/* Image navigation */}
-                {hasMultipleImages && (
-                  <>
-                    {currentImageIndex > 0 && (
-                      <button
-                        onClick={handlePrevImage}
-                        className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500/60 to-blue-500/60 hover:from-cyan-500/80 hover:to-blue-500/80 flex items-center justify-center z-10 transition-all shadow-lg shadow-cyan-500/40 hover:shadow-cyan-500/60 backdrop-blur-sm border border-cyan-400/30 hover:border-cyan-400/50 text-white"
-                      >
-                        <svg
-                          className="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
+                  {/* Image navigation */}
+                  {hasMultipleImages && (
+                    <>
+                      {currentImageIndex > 0 && (
+                        <button
+                          onClick={handlePrevImage}
+                          className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500/60 to-blue-500/60 hover:from-cyan-500/80 hover:to-blue-500/80 flex items-center justify-center z-10 transition-all shadow-lg shadow-cyan-500/40 hover:shadow-cyan-500/60 backdrop-blur-sm border border-cyan-400/30 hover:border-cyan-400/50 text-white"
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M15 19l-7-7 7-7"
-                          />
-                        </svg>
-                      </button>
-                    )}
-                    {currentImageIndex < post.images.length - 1 && (
-                      <button
-                        onClick={handleNextImage}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500/60 to-blue-500/60 hover:from-cyan-500/80 hover:to-blue-500/80 flex items-center justify-center z-10 transition-all shadow-lg shadow-cyan-500/40 hover:shadow-cyan-500/60 backdrop-blur-sm border border-cyan-400/30 hover:border-cyan-400/50 text-white"
-                      >
-                        <svg
-                          className="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
+                          <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M15 19l-7-7 7-7"
+                            />
+                          </svg>
+                        </button>
+                      )}
+                      {currentImageIndex < post.images.length - 1 && (
+                        <button
+                          onClick={handleNextImage}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500/60 to-blue-500/60 hover:from-cyan-500/80 hover:to-blue-500/80 flex items-center justify-center z-10 transition-all shadow-lg shadow-cyan-500/40 hover:shadow-cyan-500/60 backdrop-blur-sm border border-cyan-400/30 hover:border-cyan-400/50 text-white"
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M9 5l7 7-7 7"
-                          />
-                        </svg>
-                      </button>
-                    )}
+                          <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                        </button>
+                      )}
 
-                    {/* Dots indicator */}
-                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-sm border border-white/10">
-                      {post.images.map((_, index) => (
-                        <div
-                          key={index}
-                          className={`rounded-full transition-all duration-300 ${
-                            index === currentImageIndex
-                              ? "bg-cyan-400 w-2.5 h-2.5 shadow-lg shadow-cyan-500/50"
-                              : "bg-white/40 w-2 h-2 hover:bg-white/60"
-                          }`}
-                        />
-                      ))}
-                    </div>
-                  </>
-                )}
-              </>
-            ) : (
-              <div className="text-white">No image</div>
-            )}
-          </div>
+                      {/* Dots indicator */}
+                      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 px-3 py-1.5 rounded-full bg-black/20 backdrop-blur-sm border border-white/5">
+                        {post.images.map((_, index) => (
+                          <div
+                            key={index}
+                            className={`rounded-full transition-all duration-300 ${
+                              index === currentImageIndex
+                                ? "bg-cyan-400 w-2.5 h-2.5 shadow-lg shadow-cyan-500/40"
+                                : "bg-white/30 w-2 h-2 hover:bg-white/50"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </>
+              ) : (
+                <div className="text-white">No image</div>
+              )}
+            </div>
+          )}
 
           {/* Right: Post info and comments */}
-          <div className="w-[450px] min-w-[450px] flex flex-col border-l border-cyan-400/20 flex-shrink-0 bg-gradient-to-b from-cyan-400/5 to-blue-400/5 rounded-r-3xl">
-            {/* Caption & Comments */}
-            <div className="flex-1 overflow-y-auto px-4 flex flex-col">
-              {/* Post Header with Avatar */}
-              <div className="flex items-center justify-between py-4 px-0 border-b border-cyan-400/5 group">
-                <div className="flex items-center gap-3">
-                  <Avatar className="w-10 h-10 ring-2 ring-cyan-400/30 hover:ring-cyan-400/50 transition-all">
-                    {userAvatarUrl && (
-                      <AvatarImage
-                        src={userAvatarUrl}
-                        alt={post.userDisplayName || "User"}
-                      />
-                    )}
-                    <AvatarFallback className="text-xs font-semibold bg-gradient-to-br from-cyan-400 to-blue-500 text-white">
-                      {post.userDisplayName?.charAt(0)?.toUpperCase() ||
-                        post.userId.toString().charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <div className="font-semibold text-sm bg-clip-text text-transparent bg-gradient-to-r from-cyan-200 to-blue-200">
-                      {post.userDisplayName}
-                    </div>
-                    <div className="text-xs text-blue-200/70 font-medium">
-                      {formatDistanceToNow(new Date(post.timestamp), {
-                        addSuffix: true,
-                        locale: vi,
-                      })}
-                    </div>
+          <div
+            className={`flex flex-col border-l border-slate-700/30 flex-shrink-0 bg-slate-900/40 ${
+              hasMultipleImages || currentImage
+                ? "w-[450px] min-w-[450px] rounded-r-3xl"
+                : "w-full rounded-3xl"
+            }`}
+          >
+            {/* HEADER: Avatar + Name + Time */}
+            <div className="flex items-center justify-between py-4 px-4 border-b border-slate-700/20 group flex-shrink-0">
+              <div className="flex items-center gap-3">
+                <Avatar className="w-10 h-10 ring-2 ring-cyan-400/30 hover:ring-cyan-400/50 transition-all">
+                  {userAvatarUrl && (
+                    <AvatarImage
+                      src={userAvatarUrl}
+                      alt={post.userDisplayName || "User"}
+                    />
+                  )}
+                  <AvatarFallback className="text-xs font-semibold bg-gradient-to-br from-cyan-400 to-blue-500 text-white">
+                    {post.userDisplayName?.charAt(0)?.toUpperCase() ||
+                      post.userId.toString().charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <div className="font-semibold text-sm text-white">
+                    {post.userDisplayName}
+                  </div>
+                  <div className="text-xs text-slate-400 font-medium">
+                    {formatDistanceToNow(new Date(post.timestamp), {
+                      addSuffix: true,
+                      locale: vi,
+                    })}
                   </div>
                 </div>
-                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-cyan-400/20 transition-colors">
-                  <MoreHorizontal className="w-5 h-5 text-cyan-300" />
-                </Button>
               </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 hover:bg-cyan-400/20 transition-colors"
+              >
+                <MoreHorizontal className="w-5 h-5 text-cyan-300" />
+              </Button>
+            </div>
 
+            {/* BODY: Caption + Interactions + Comments */}
+            <div className="flex-1 overflow-y-auto px-4 flex flex-col min-h-0">
               {/* Caption Content */}
-              <div className="py-3">
-                <p className="text-white font-medium leading-relaxed">
+              <div className="py-4 border-b border-slate-700/20">
+                <p
+                  className={`text-white font-medium leading-relaxed ${
+                    post.caption && post.caption.length < 100
+                      ? "text-lg"
+                      : "text-base"
+                  }`}
+                >
                   {post.caption}
                 </p>
 
@@ -221,7 +252,7 @@ export function PostModal({ post, isOpen, onClose, onLike }: PostModalProps) {
                     {post.tags.map((tag, index) => (
                       <span
                         key={`${tag.id}-${index}`}
-                        className="text-xs px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/15 border border-white/20 hover:border-white/40 text-white font-semibold transition-all duration-300 cursor-pointer backdrop-blur-sm hover:shadow-lg hover:shadow-cyan-500/20"
+                        className="text-xs px-3 py-1 rounded-full bg-slate-800/25 hover:bg-slate-800/40 border border-slate-400/45 hover:border-cyan-400/50 text-slate-200 hover:text-cyan-300 font-medium transition-all duration-300 cursor-pointer"
                       >
                         #{tag.name}
                       </span>
@@ -230,8 +261,45 @@ export function PostModal({ post, isOpen, onClose, onLike }: PostModalProps) {
                 )}
               </div>
 
+              {/* Interactions Bar */}
+              <div className="py-3 border-b border-slate-700/20">
+                {/* Action buttons */}
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex gap-4">
+                    <button
+                      onClick={onLike}
+                      className="p-2 rounded-lg hover:bg-cyan-500/10 transition-all"
+                    >
+                      <Heart
+                        className={`w-6 h-6 ${
+                          post.isLiked
+                            ? "fill-red-500 text-red-500"
+                            : "text-white hover:text-cyan-300"
+                        }`}
+                      />
+                    </button>
+                    <button 
+                      onClick={handleCommentButtonClick}
+                      className="p-2 rounded-lg hover:bg-cyan-500/10 transition-all text-white hover:text-cyan-300"
+                    >
+                      <MessageCircle className="w-6 h-6" />
+                    </button>
+                    <button className="p-2 rounded-lg hover:bg-cyan-500/10 transition-all text-white hover:text-cyan-300">
+                      <Share2 className="w-6 h-6" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Like count */}
+                <div>
+                  <div className="font-semibold text-sm text-white">
+                    {post.likes} {post.likes === 1 ? "like" : "likes"}
+                  </div>
+                </div>
+              </div>
+
               {/* Comments Section */}
-              <div className="py-4">
+              <div className="py-4 flex-1 min-h-0">
                 <CommentSection
                   postId={post.id}
                   commentCount={commentCount}
@@ -240,54 +308,16 @@ export function PostModal({ post, isOpen, onClose, onLike }: PostModalProps) {
               </div>
             </div>
 
-            {/* Actions */}
-            <div className="border-t border-cyan-400/5 bg-gradient-to-r from-cyan-400/5 to-blue-400/5">
-              {/* Action buttons */}
-              <div className="flex items-center justify-between px-4 py-3 border-b border-cyan-400/3">
-                <div className="flex gap-4">
-                  <button
-                    onClick={onLike}
-                    className="p-2 rounded-lg hover:bg-cyan-400/20 transition-all hover:text-cyan-300"
-                  >
-                    <Heart
-                      className={`w-6 h-6 ${
-                        post.isLiked ? "fill-red-500 text-red-500" : "text-cyan-300"
-                      }`}
-                    />
-                  </button>
-                  <button className="p-2 rounded-lg hover:bg-cyan-400/20 transition-all text-cyan-300 hover:text-cyan-200">
-                    <MessageCircle className="w-6 h-6" />
-                  </button>
-                  <button className="p-2 rounded-lg hover:bg-cyan-400/20 transition-all text-cyan-300 hover:text-cyan-200">
-                    <Share2 className="w-6 h-6" />
-                  </button>
-                </div>
-                <button className="p-2 rounded-lg hover:bg-cyan-400/20 transition-all text-cyan-300 hover:text-cyan-200">
-                  <Bookmark className="w-6 h-6" />
-                </button>
-              </div>
-
-              {/* Like count */}
-              <div className="px-4 py-3">
-                <div className="font-semibold text-sm bg-clip-text text-transparent bg-gradient-to-r from-cyan-200 to-blue-200">
-                  {post.likes} {post.likes === 1 ? "like" : "likes"}
-                </div>
-                <div className="text-xs text-blue-200/60 mt-1">
-                  {formatDistanceToNow(new Date(post.timestamp), {
-                    addSuffix: true,
-                    locale: vi,
-                  })}
-                </div>
-              </div>
-
-              {/* Comment input */}
-              {user && (
+            {/* FOOTER (Sticky): Comment Input */}
+            {user && (
+              <div className="border-t border-slate-700/20 bg-slate-900/30 flex-shrink-0 px-4 py-3">
                 <CommentInput
+                  ref={commentInputRef}
                   userName={user.displayName || user.email || "User"}
                   onSubmit={handlePostComment}
                 />
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       </DialogContent>

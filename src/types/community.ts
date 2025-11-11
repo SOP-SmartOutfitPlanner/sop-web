@@ -11,6 +11,7 @@ export interface Post {
   tags: Hashtag[];
   likes: number;
   isLiked?: boolean; // Whether current user has liked this post
+  isFollowing?: boolean; // Whether current user is following this post author
   comments: Comment[];
   commentCount: number; // Comment count from API
   timestamp: string;
@@ -89,14 +90,16 @@ export function apiPostToPost(apiPost: CommunityPost): Post {
     id: apiPost.id.toString(),
     userId: apiPost.userId.toString(),
     userDisplayName: apiPost.userDisplayName, // Added: Post author's display name
-    userAvatar: apiPost.userAvatarUrl,
-    userAvatarUrl: apiPost.userAvatarUrl, // Avatar URL from API
+    userAvatar: apiPost.avatarUrl || apiPost.userAvatarUrl,
+    userAvatarUrl: apiPost.avatarUrl || apiPost.userAvatarUrl, // Avatar URL from API (prefer avatarUrl from new API)
+    userRole: apiPost.role, // User role: USER | STYLIST | ADMIN
     image: fullImageUrls[0] || "", // Keep first image for backward compatibility
     images: fullImageUrls, // Full array of all images
     caption: apiPost.body,
     tags: apiPost.hashtags,
     likes: apiPost.likeCount,
     isLiked: apiPost.isLiked, // Whether current user has liked this post
+    isFollowing: apiPost.isFollowing, // Whether current user is following this post author
     comments: [], // Comments will be loaded separately
     commentCount: apiPost.commentCount, // Comment count from API
     timestamp: apiPost.createdAt,

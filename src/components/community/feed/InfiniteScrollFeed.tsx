@@ -5,7 +5,6 @@ import { PostSkeleton } from "./PostSkeleton";
 import { useFeed } from "@/hooks/useFeed";
 import { Post, apiPostToPost } from "@/types/community";
 import { useAuthStore } from "@/store/auth-store";
-import { useFeedFollowStatus } from "@/hooks/community/useFeedFollowStatus";
 import {
   FeedLoading,
   FeedError,
@@ -50,12 +49,6 @@ export function InfiniteScrollFeed({
     deletePost,
     refetch,
   } = useFeed(10);
-
-  // Custom hook for follow status management
-  const { followingStatus, handleFollow } = useFeedFollowStatus(
-    posts,
-    user?.id
-  );
 
   // Intersection Observer for infinite scroll
   useEffect(() => {
@@ -162,12 +155,10 @@ export function InfiniteScrollFeed({
       <FeedPostList
         posts={sortedPosts.map(apiPostToPost)}
         currentUser={currentUser}
-        followingStatus={followingStatus}
         onLike={(postId) =>
           toggleLike(typeof postId === "string" ? parseInt(postId) : postId)
         }
         onReport={handleReport}
-        onFollow={handleFollow}
         onDeletePost={async (postId) => deletePost(postId)}
         onEditPost={handleEditPost}
       />
@@ -184,7 +175,10 @@ export function InfiniteScrollFeed({
       {/* Edit Post Dialog */}
       {editingPost && (
         <Dialog open={!!editingPost} onOpenChange={(open) => !open && setEditingPost(null)}>
-          <DialogContent className="max-h-[90vh] overflow-y-auto p-0">
+          <DialogContent 
+            showCloseButton={false}
+            className="max-w-2xl max-h-[90vh] !overflow-hidden p-0 flex flex-col backdrop-blur-xl bg-gradient-to-br from-cyan-950/60 via-blue-950/50 to-indigo-950/60 border-2 border-cyan-400/25 shadow-2xl shadow-cyan-500/20"
+          >
             <EditPostDialog
               post={editingPost}
               onSuccess={async () => {

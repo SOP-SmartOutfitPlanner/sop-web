@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { communityAPI } from "@/lib/api/community-api";
 import { toast } from "sonner";
 
@@ -9,6 +10,7 @@ export function useFollowUser(
 ) {
   const [isFollowing, setIsFollowing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const queryClient = useQueryClient();
 
   const toggleFollow = useCallback(async () => {
     if (!currentUserId) {
@@ -35,6 +37,21 @@ export function useFollowUser(
         toast.success(response.message);
       }
 
+      // Broadcast to other components
+      window.dispatchEvent(
+        new CustomEvent("followStatusChanged", {
+          detail: {
+            userId: followingId,
+            isFollowing: !prevFollowingState,
+          },
+        })
+      );
+
+      // Invalidate React Query cache to refetch posts with updated isFollowing
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+      queryClient.invalidateQueries({ queryKey: ["userPosts"] });
+      queryClient.invalidateQueries({ queryKey: ["user-profile"] });
+
       // Refresh counts if callback provided
       if (onFollowChange) {
         onFollowChange();
@@ -49,7 +66,7 @@ export function useFollowUser(
     } finally {
       setIsLoading(false);
     }
-  }, [currentUserId, targetUserId, isFollowing, onFollowChange]);
+  }, [currentUserId, targetUserId, isFollowing, onFollowChange, queryClient]);
 
   return {
     isFollowing,

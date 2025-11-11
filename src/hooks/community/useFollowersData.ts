@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { communityAPI } from "@/lib/api/community-api";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/auth-store";
@@ -28,6 +29,7 @@ export function useFollowersData({
   isOwnProfile = false,
 }: UseFollowersDataProps) {
   const { user: currentUser } = useAuthStore();
+  const queryClient = useQueryClient();
   const [users, setUsers] = useState<FollowerUser[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<FollowerUser[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -136,6 +138,21 @@ export function useFollowersData({
           toast.success(response.message);
         }
 
+        // Broadcast to other components
+        window.dispatchEvent(
+          new CustomEvent("followStatusChanged", {
+            detail: {
+              userId: targetUserId,
+              isFollowing: !isFollowing,
+            },
+          })
+        );
+
+        // 🔄 Invalidate React Query cache to refetch posts with updated isFollowing
+        queryClient.invalidateQueries({ queryKey: ["posts"] });
+        queryClient.invalidateQueries({ queryKey: ["userPosts"] });
+        queryClient.invalidateQueries({ queryKey: ["user-profile"] });
+
         // Remove from following list if unfollowing
         if (!isFollowing === false && type === "following") {
           setUsers((prev) => prev.filter((u) => u.userId !== targetUserId));
@@ -153,7 +170,7 @@ export function useFollowersData({
         toast.error(errorMessage);
       }
     },
-    [currentUser?.id, followingStatus, type]
+    [currentUser?.id, followingStatus, type, queryClient]
   );
 
   return {

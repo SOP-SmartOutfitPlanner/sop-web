@@ -23,6 +23,7 @@ export function useCreatePost() {
   const createPost = useCallback(
     async (postData: CreatePostData) => {
       if (!user) {
+        console.error("No user found");
         toast.error("Please login to create a post");
         return false;
       }
@@ -33,9 +34,9 @@ export function useCreatePost() {
       try {
         // API handles everything in one request: multipart/form-data
         // - Accepts raw File objects
-        // - Uploads images internally  
+        // - Uploads images internally
         // - Returns post with image URLs from API
-        await communityAPI.createPost({
+        const response = await communityAPI.createPost({
           userId: parseInt(user.id),
           body: postData.caption,
           hashtags: postData.tags,
@@ -43,8 +44,8 @@ export function useCreatePost() {
         });
 
         // Invalidate queries to refetch posts
-        queryClient.invalidateQueries({ 
-          queryKey: ["posts", "all", user.id] 
+        queryClient.invalidateQueries({
+          queryKey: ["posts", "all", user.id],
         });
 
         toast.success("Post created!", {
@@ -55,7 +56,8 @@ export function useCreatePost() {
       } catch (error) {
         console.error("Error creating post:", error);
         toast.error("Failed to create post", {
-          description: "Please try again",
+          description:
+            error instanceof Error ? error.message : "Please try again",
         });
         return false;
       } finally {

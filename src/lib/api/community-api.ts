@@ -10,7 +10,9 @@ export interface CommunityPost {
   id: number;
   userId: number;
   userDisplayName: string;
-  userAvatarUrl?: string;
+  avatarUrl?: string | null; // Avatar URL from API (can be null)
+  userAvatarUrl?: string; // Keep for backward compatibility
+  role?: string; // User role: "USER" | "STYLIST" | "ADMIN"
   body: string; // Same as "Body" in API request
   hashtags: Hashtag[];
   images: string[]; // Array of URLs from API
@@ -19,6 +21,7 @@ export interface CommunityPost {
   likeCount: number;
   commentCount: number;
   isLiked: boolean; // User's like status
+  isFollowing: boolean; // Follow status - if logged in, shows if current user follows this post author
   // Note: Caption is sometimes used instead of body in responses
   caption?: string;
 }
@@ -56,6 +59,10 @@ class CommunityAPI {
   /**
    * Get all posts with pagination
    * API Response: { data: [...], metaData: {...} }
+   * 
+   * Note: Token is automatically sent via apiClient interceptor
+   * - With token: Returns isLiked and isFollowing based on current user
+   * - Without token (GUEST): Returns isLiked=false and isFollowing=false for all
    */
   async getAllPosts(
     userId?: number,
@@ -64,7 +71,7 @@ class CommunityAPI {
   ): Promise<FeedResponse> {
     const response = await apiClient.get(this.BASE_PATH, {
       params: {
-        ...(userId && { userId }), // Add userId if provided to get isLiked status
+        ...(userId && { userId }), // Optional: userId for additional filtering
         "page-index": page,
         "page-size": pageSize,
       },
@@ -108,14 +115,20 @@ class CommunityAPI {
   /**
    * Get posts by specific user
    * API: GET /posts/user/{userId}
+   * @param userId - The user whose posts to fetch
+   * @param page - Page number
+   * @param pageSize - Items per page
+   * @param currentUserId - Optional: Current logged-in user ID to get isFollowing status
    */
   async getPostsByUser(
     userId: number,
     page: number = 1,
-    pageSize: number = 10
+    pageSize: number = 10,
+    currentUserId?: number
   ): Promise<FeedResponse> {
     const response = await apiClient.get(`${this.BASE_PATH}/user/${userId}`, {
       params: {
+        ...(currentUserId && { userId: currentUserId }), // Add userId param to get follow status
         "page-index": page,
         "page-size": pageSize,
       },
@@ -266,8 +279,8 @@ class CommunityAPI {
     userId: number;
     comment: string;
     parentCommentId?: number | null;
-  }): Promise<ApiComment> {
-    const apiResponse = await apiClient.post<ApiResponse<ApiComment>>(
+  }): Promise<{ statusCode: number; message: string; data: ApiComment }> {
+    const response = await apiClient.post(
       "/comment-posts",
       {
         postId: data.postId,
@@ -276,7 +289,8 @@ class CommunityAPI {
         parentCommentId: data.parentCommentId || null,
       }
     );
-    return apiResponse.data;
+    // Return full response including message
+    return response.data;
   }
 
   /**
@@ -323,6 +337,30 @@ class CommunityAPI {
     }>(`/comment-posts/parent/${parentCommentId}`);
 
     return response.data.data;
+  }
+
+  /**
+   * Delete a comment
+   * API: DELETE /comment-posts/{commentId}
+   * Only the comment owner can delete their own comment
+   */
+  async deleteComment(commentId: number) {
+    const response = await apiClient.delete(`/comment-posts/${commentId}`);
+    return response.data;
+  }
+
+  /**
+   * Update a comment
+   * API: PUT /comment-posts/{commentId}
+   * Body: { comment: string }
+   * Only the comment owner can update their own comment
+   */
+  async updateComment(commentId: number, comment: string): Promise<ApiComment> {
+    const response = await apiClient.put<ApiResponse<ApiComment>>(
+      `/comment-posts/${commentId}`,
+      { comment }
+    );
+    return response.data;
   }
 
   /**
@@ -565,9 +603,17 @@ class CommunityAPI {
 
   /**
    * Get top contributors
-   * API: GET /posts/top-contributors?userId={optional}
+   * API: GET /posts/top-contributors?userId={optional}&take-all={optional}
    * Response: { statusCode, message, data: { data: [{ userId, displayName, avatarUrl, postCount, isFollowing }], metaData: {...} } }
-   * userId is optional - if provided, includes follow status for logged-in user
+   * 
+   * Usage:
+   * - GUEST mode (no userId): Returns all contributors with isFollowing=false for all
+   * - Logged in (with userId): Returns contributors with accurate isFollowing status
+   *   - isFollowing=true: Current user is already following this contributor
+   *   - isFollowing=false: Current user is NOT following this contributor
+   * 
+   * @param userId - Optional. Current user's ID to check follow status
+   * @returns Array of contributors with follow status
    */
   async getTopContributors(userId?: number) {
     try {
@@ -575,6 +621,7 @@ class CommunityAPI {
       const response = await apiClient.get("/posts/top-contributors", {
         params,
       });
+
       if (response.data?.data?.data && Array.isArray(response.data.data.data)) {
         return response.data.data.data;
       }

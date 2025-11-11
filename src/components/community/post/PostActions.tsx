@@ -33,7 +33,7 @@ export function PostActions({
                 <span className="text-sm font-bold text-white">
                   {likeCount}
                 </span>
-                <span className="text-xs text-blue-200/70 font-medium">
+                <span className="text-xs text-slate-400 font-medium">
                   {likeCount === 1 ? "like" : "likes"}
                 </span>
               </div>
@@ -52,7 +52,7 @@ export function PostActions({
                 <span className="text-sm font-bold text-white">
                   {commentCount}
                 </span>
-                <span className="text-xs text-blue-200/70 font-medium">
+                <span className="text-xs text-slate-400 font-medium">
                   {/* {commentCount === 1 ? "comment" : "comments"} */}
                 </span>
               </div>
@@ -62,7 +62,7 @@ export function PostActions({
       )}
 
       {/* Action Buttons - Separate Dark Glass Block */}
-      <div className="border-t border-white/10 py-3 px-4 mt-auto backdrop-blur-lg bg-gradient-to-r from-cyan-950/55 via-blue-950/55 to-indigo-950/95 rounded-b-3xl">
+      <div className="border-t border-slate-700/30 py-3 px-4 mt-auto backdrop-blur-lg bg-slate-900/40 rounded-b-3xl">
         <div className="flex items-center justify-around gap-2">
           <Button
             variant="ghost"
@@ -71,7 +71,7 @@ export function PostActions({
             className={`flex-1 gap-2 font-semibold transition-all duration-300 rounded-lg ${
               isLiked
                 ? "text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                : "text-cyan-300 hover:text-cyan-200 hover:bg-cyan-500/10"
+                : "text-white hover:text-cyan-300 hover:bg-cyan-500/10"
             }`}
           >
             <Heart
@@ -86,7 +86,7 @@ export function PostActions({
             variant="ghost"
             size="sm"
             onClick={onComment}
-            className="flex-1 gap-2 font-semibold text-blue-300 hover:text-blue-200 hover:bg-blue-500/10 transition-all duration-300 rounded-lg"
+            className="flex-1 gap-2 font-semibold text-white hover:text-cyan-300 hover:bg-cyan-500/10 transition-all duration-300 rounded-lg"
           >
             <MessageCircle className="w-5 h-5" />
             <span>Comment</span>
