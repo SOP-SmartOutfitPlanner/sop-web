@@ -73,12 +73,10 @@ export function ItemGrid({
   }, [externalItems, hasInitialFetch, filteredItems, fetchItems]);
 
   const handleDelete = async (id: string) => {
-    if (window.confirm("Are you sure you want to delete this item?")) {
-      if (onDeleteItem) {
-        onDeleteItem(id);
-      } else {
-        await deleteItem(id);
-      }
+    if (onDeleteItem) {
+      onDeleteItem(id);
+    } else {
+      await deleteItem(id);
     }
   };
 
