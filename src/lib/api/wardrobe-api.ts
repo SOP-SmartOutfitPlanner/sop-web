@@ -596,6 +596,46 @@ class WardrobeAPI {
       };
     }
   }
+
+  /**
+   * Split outfit image into multiple clothing items
+   * Uploads an image containing multiple items and receives split images
+   *
+   * Response format (200 OK):
+   * { statusCode: 200, message: "Successfully split image",
+   *   data: [{ category: string, url: string, fileName: string }] }
+   *
+   * Response format (400 Bad Request):
+   * { statusCode: 400, message: "Failed to split image" }
+   */
+  async splitOutfitImage(file: File): Promise<{
+    category: string;
+    url: string;
+    fileName: string;
+  }[]> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await apiClient.post<{
+      statusCode: number;
+      message: string;
+      data: Array<{
+        category: string;
+        url: string;
+        fileName: string;
+      }>;
+    }>('/items/split-item', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+
+    if (response.statusCode !== 200) {
+      throw new Error(response.message || 'Failed to split image');
+    }
+
+    return response.data;
+  }
 }
 
 export const wardrobeAPI = new WardrobeAPI();
