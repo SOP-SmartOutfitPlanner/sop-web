@@ -5,7 +5,7 @@ import { X, Heart, Edit, Trash2, Calendar, User } from "lucide-react";
 import { Image } from "antd";
 import GlassButton from "@/components/ui/glass-button";
 import { Outfit } from "@/types/outfit";
-import { useSaveFavoriteOutfit } from "@/hooks/useOutfits";
+import { useSaveFavoriteOutfit, useOutfit } from "@/hooks/useOutfits";
 import { format } from "date-fns";
 
 interface ViewOutfitDialogProps {
@@ -75,11 +75,17 @@ ItemCard.displayName = 'ViewOutfitItemCard';
 const ViewOutfitDialogComponent = ({
   open,
   onOpenChange,
-  outfit,
+  outfit: initialOutfit,
   onEdit,
   onDelete,
 }: ViewOutfitDialogProps) => {
   const { mutate: toggleFavorite, isPending } = useSaveFavoriteOutfit();
+  
+  // Fetch real-time outfit data from React Query cache
+  const { data: latestOutfit } = useOutfit(initialOutfit?.id || null);
+  
+  // Use latest data from cache, fallback to initial prop
+  const outfit = latestOutfit || initialOutfit;
 
   const handleClose = () => {
     onOpenChange(false);

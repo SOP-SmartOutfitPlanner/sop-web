@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, memo, useCallback } from "react";
+import { useState, memo, useCallback, MouseEvent } from "react";
 import { motion } from "framer-motion";
 import { Heart, Calendar, User, Trash2, Edit } from "lucide-react";
 import { Outfit } from "@/types/outfit";
@@ -21,19 +21,19 @@ const OutfitCardComponent = ({ outfit, onView, onEdit, onDelete }: OutfitCardPro
   const { mutate: toggleFavorite, isPending } = useSaveFavoriteOutfit();
   const [isHovered, setIsHovered] = useState(false);
 
-  const handleFavoriteClick = useCallback((e: React.MouseEvent) => {
+  const handleFavoriteClick = useCallback((e: MouseEvent) => {
     e.stopPropagation();
     toggleFavorite(outfit.id);
   }, [toggleFavorite, outfit.id]);
 
-  const handleEditClick = useCallback((e: React.MouseEvent) => {
+  const handleEditClick = useCallback((e: MouseEvent) => {
     e.stopPropagation();
     if (onEdit) {
       onEdit(outfit);
     }
   }, [onEdit, outfit]);
 
-  const handleDeleteClick = useCallback((e: React.MouseEvent) => {
+  const handleDeleteClick = useCallback((e: MouseEvent) => {
     e.stopPropagation();
     if (onDelete) {
       onDelete(outfit.id);
@@ -187,15 +187,28 @@ const OutfitCardComponent = ({ outfit, onView, onEdit, onDelete }: OutfitCardPro
 
 // Memoize component to prevent unnecessary re-renders
 export const OutfitCard = memo(OutfitCardComponent, (prevProps, nextProps) => {
-  return (
-    prevProps.outfit.id === nextProps.outfit.id &&
-    prevProps.outfit.name === nextProps.outfit.name &&
-    prevProps.outfit.description === nextProps.outfit.description &&
-    prevProps.outfit.isFavorite === nextProps.outfit.isFavorite &&
-    prevProps.outfit.isSaved === nextProps.outfit.isSaved &&
-    prevProps.outfit.items.length === nextProps.outfit.items.length &&
-    prevProps.onView === nextProps.onView &&
-    prevProps.onEdit === nextProps.onEdit &&
-    prevProps.onDelete === nextProps.onDelete
-  );
+  // If any of these change, re-render
+  if (
+    prevProps.outfit.id !== nextProps.outfit.id ||
+    prevProps.outfit.name !== nextProps.outfit.name ||
+    prevProps.outfit.description !== nextProps.outfit.description ||
+    prevProps.outfit.isFavorite !== nextProps.outfit.isFavorite ||
+    prevProps.outfit.isSaved !== nextProps.outfit.isSaved ||
+    prevProps.outfit.items.length !== nextProps.outfit.items.length ||
+    prevProps.outfit.createdDate !== nextProps.outfit.createdDate ||
+    prevProps.outfit.userDisplayName !== nextProps.outfit.userDisplayName
+  ) {
+    return false; // Props changed, should re-render
+  }
+  
+  // Handlers comparison
+  if (
+    prevProps.onView !== nextProps.onView ||
+    prevProps.onEdit !== nextProps.onEdit ||
+    prevProps.onDelete !== nextProps.onDelete
+  ) {
+    return false;
+  }
+  
+  return true; // Props are equal, skip re-render
 });

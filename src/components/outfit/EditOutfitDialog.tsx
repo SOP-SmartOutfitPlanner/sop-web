@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, memo, useEffect, useCallback, useMemo } from "react";
-import { X, Sparkles, CheckCircle2, Loader2 } from "lucide-react";
+import { X, Sparkles, CheckCircle2, Loader2, Filter as FilterIcon } from "lucide-react";
 import { Image } from "antd";
 import GlassButton from "@/components/ui/glass-button";
 import { useUpdateOutfit, useOutfit } from "@/hooks/useOutfits";
 import { useOutfitStore } from "@/store/outfit-store";
 import { ApiWardrobeItem } from "@/lib/api/wardrobe-api";
+import { FilterModal } from "@/components/wardrobe/FilterModal";
+import { WardrobeFilters } from "@/types/wardrobe";
 
 interface EditOutfitDialogProps {
   open: boolean;
@@ -43,10 +45,10 @@ const ItemCard = memo(({ item, isSelected, onToggle }: ItemCardProps) => {
         {/* Selection Indicator */}
         <div className={
           isSelected
-            ? "absolute top-2 right-2 z-10 w-6 h-6 rounded-full flex items-center justify-center transition-all duration-100 border-2 bg-cyan-500 border-white/50 shadow-lg"
-            : "absolute top-2 right-2 z-10 w-6 h-6 rounded-full flex items-center justify-center transition-all duration-100 border-2 bg-white/20 backdrop-blur-md border-white/30"
+            ? "absolute top-2 right-2 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 border-2 bg-cyan-500 border-white shadow-xl scale-100"
+            : "absolute top-2 right-2 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 border-2 bg-white/20 backdrop-blur-md border-white/40 scale-90 opacity-60 group-hover:opacity-100 group-hover:scale-100"
         }>
-          {isSelected && <CheckCircle2 className="w-4 h-4 text-white" />}
+          {isSelected && <CheckCircle2 className="w-5 h-5 text-white" />}
         </div>
 
         {/* Image Container */}
@@ -75,12 +77,12 @@ const ItemCard = memo(({ item, isSelected, onToggle }: ItemCardProps) => {
         {/* Item Details */}
         <div className="flex flex-col px-1">
           {/* Name */}
-          <h3 className="text-white font-semibold text-sm truncate mb-1">
+          <h3 className="text-white font-semibold text-base truncate mb-1.5">
             {item.name}
           </h3>
 
           {/* Category */}
-          <span className="px-1.5 py-0.5 rounded-full bg-white/10 border border-white/20 text-white/70 text-[9px] font-medium truncate text-center">
+          <span className="px-2 py-1 rounded-full bg-white/10 border border-white/20 text-white/70 text-xs font-medium truncate text-center">
             {item.categoryName || item.category?.name || "Uncategorized"}
           </span>
         </div>
@@ -107,6 +109,34 @@ export function EditOutfitDialog({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [nameError, setNameError] = useState("");
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [filters, setFilters] = useState<WardrobeFilters>({});
+
+  // Filter items based on selected filters
+  const filteredWardrobeItems = useMemo(() => {
+    let items = wardrobeItems;
+
+    if (filters.categoryId) {
+      items = items.filter(item => item.categoryId === filters.categoryId);
+    }
+    if (filters.seasonId) {
+      items = items.filter(item => 
+        item.seasons?.some(s => s.id === filters.seasonId)
+      );
+    }
+    if (filters.styleId) {
+      items = items.filter(item => 
+        item.styles?.some(s => s.id === filters.styleId)
+      );
+    }
+    if (filters.occasionId) {
+      items = items.filter(item => 
+        item.occasions?.some(o => o.id === filters.occasionId)
+      );
+    }
+
+    return items;
+  }, [wardrobeItems, filters]);
 
   // Initialize form with outfit data
   useEffect(() => {
@@ -125,6 +155,7 @@ export function EditOutfitDialog({
       setName("");
       setDescription("");
       setNameError("");
+      setFilters({});
       clearSelectedItems();
     }
   }, [open, clearSelectedItems]);
@@ -135,16 +166,16 @@ export function EditOutfitDialog({
   }, [onOpenChange]);
 
   const toggleSelectAll = useCallback(() => {
-    if (selectedItemIds.length === wardrobeItems.length) {
+    if (selectedItemIds.length === filteredWardrobeItems.length) {
       clearSelectedItems();
     } else {
-      wardrobeItems.forEach(item => {
+      filteredWardrobeItems.forEach(item => {
         if (item.id && !selectedItemIds.includes(item.id)) {
           toggleItemSelection(item.id);
         }
       });
     }
-  }, [selectedItemIds.length, wardrobeItems, clearSelectedItems, toggleItemSelection]);
+  }, [selectedItemIds.length, filteredWardrobeItems, clearSelectedItems, toggleItemSelection]);
 
   const handleSubmit = useCallback(() => {
     if (!outfitId) return;
@@ -251,7 +282,7 @@ export function EditOutfitDialog({
       {/* Modal Container */}
       <div className="fixed inset-0 z-51 flex items-center justify-center p-4 pointer-events-none overflow-hidden">
         <div
-          className="w-[1400px] max-w-[60vw] h-[85vh] rounded-3xl overflow-hidden shadow-2xl pointer-events-auto relative"
+          className="w-[95vw] max-w-[1600px] h-[92vh] rounded-3xl overflow-hidden shadow-2xl pointer-events-auto relative"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Full Background Container with Glassmorphism */}
@@ -263,13 +294,13 @@ export function EditOutfitDialog({
 
           <div className="relative z-10 h-full flex flex-col">
             {/* Header */}
-            <div className="px-12 pt-8 pb-4">
+            <div className="px-8 pt-6 pb-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="font-dela-gothic text-4xl font-bold bg-clip-text text-transparent bg-linear-to-r from-white via-blue-100 to-cyan-200">
+                  <h2 className="font-dela-gothic text-3xl font-bold bg-clip-text text-transparent bg-linear-to-r from-white via-blue-100 to-cyan-200">
                     Edit Outfit
                   </h2>
-                  <p className="font-bricolage text-lg text-gray-200 mt-2">
+                  <p className="font-bricolage text-base text-gray-200 mt-1">
                     Update your outfit details and items
                   </p>
                 </div>
@@ -284,7 +315,7 @@ export function EditOutfitDialog({
             </div>
 
             {/* Content Container */}
-            <div className="flex-1 px-12 py-4 overflow-hidden min-h-0 flex flex-col">
+            <div className="flex-1 px-8 py-3 overflow-hidden min-h-0 flex flex-col">
               {isLoadingOutfit ? (
                 <div className="flex-1 flex items-center justify-center">
                   <div className="text-center">
@@ -294,78 +325,102 @@ export function EditOutfitDialog({
                 </div>
               ) : (
                 <>
-                  {/* Form Fields */}
-                  <div className="shrink-0 mb-6 space-y-4">
-                    <div>
-                      <label htmlFor="outfit-name" className="block text-sm font-medium text-white mb-2">
-                        Outfit Name *
-                      </label>
-                      <input
-                        id="outfit-name"
-                        type="text"
-                        value={name}
-                        onChange={(e) => {
-                          setName(e.target.value);
-                          setNameError("");
-                        }}
-                        placeholder="e.g., Casual Summer Look"
-                        className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-cyan-400/50 focus:border-cyan-400/50 transition-all"
-                      />
-                      {nameError && (
-                        <p className="text-sm text-red-400 mt-2">{nameError}</p>
-                      )}
-                    </div>
+                  {/* Form Fields - Compact */}
+                  <div className="shrink-0 mb-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="outfit-name" className="block text-sm font-medium text-white mb-1.5">
+                          Outfit Name *
+                        </label>
+                        <input
+                          id="outfit-name"
+                          type="text"
+                          value={name}
+                          onChange={(e) => {
+                            setName(e.target.value);
+                            setNameError("");
+                          }}
+                          placeholder="e.g., Casual Summer Look"
+                          className="w-full px-3 py-2.5 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-cyan-400/50 focus:border-cyan-400/50 transition-all text-sm"
+                        />
+                        {nameError && (
+                          <p className="text-xs text-red-400 mt-1">{nameError}</p>
+                        )}
+                      </div>
 
-                    <div>
-                      <label htmlFor="outfit-description" className="block text-sm font-medium text-white mb-2">
-                        Description (Optional)
-                      </label>
-                      <textarea
-                        id="outfit-description"
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        placeholder="Describe this outfit..."
-                        rows={2}
-                        className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-cyan-400/50 focus:border-cyan-400/50 transition-all resize-none"
-                      />
+                      <div>
+                        <label htmlFor="outfit-description" className="block text-sm font-medium text-white mb-1.5">
+                          Description (Optional)
+                        </label>
+                        <input
+                          id="outfit-description"
+                          type="text"
+                          value={description}
+                          onChange={(e) => setDescription(e.target.value)}
+                          placeholder="Describe this outfit..."
+                          className="w-full px-3 py-2.5 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-cyan-400/50 focus:border-cyan-400/50 transition-all text-sm"
+                        />
+                      </div>
                     </div>
                   </div>
 
                   {/* Selection Header */}
-                  <div className="flex items-center justify-between mb-4 shrink-0">
+                  <div className="flex items-center justify-between mb-3 shrink-0">
                     <div className="flex items-center gap-3">
-                      <Sparkles className="w-6 h-6 text-yellow-400" />
-                      <span className="font-bricolage text-lg text-white font-semibold">
-                        {selectedItemIds.length} of {wardrobeItems.length} items selected
+                      <Sparkles className="w-5 h-5 text-yellow-400" />
+                      <span className="font-bricolage text-base text-white font-semibold">
+                        {selectedItemIds.length} of {filteredWardrobeItems.length} items selected
                       </span>
+                      {Object.keys(filters).length > 0 && (
+                        <span className="px-2.5 py-1 rounded-full bg-cyan-500/20 border border-cyan-400/40 text-cyan-200 text-xs font-medium">
+                          {Object.keys(filters).length} filter{Object.keys(filters).length > 1 ? 's' : ''} active
+                        </span>
+                      )}
                     </div>
-                    <GlassButton
-                      onClick={toggleSelectAll}
-                      variant="custom"
-                      backgroundColor="rgba(255, 255, 255, 0.2)"
-                      borderColor="rgba(255, 255, 255, 0.4)"
-                      textColor="white"
-                      size="sm"
-                    >
-                      {selectedItemIds.length === wardrobeItems.length ? "Deselect All" : "Select All"}
-                    </GlassButton>
+                    <div className="flex gap-2">
+                      <GlassButton
+                        onClick={() => setIsFilterOpen(true)}
+                        variant="custom"
+                        backgroundColor="rgba(255, 255, 255, 0.15)"
+                        borderColor="rgba(255, 255, 255, 0.3)"
+                        textColor="white"
+                        size="sm"
+                      >
+                        <FilterIcon className="w-4 h-4" />
+                        Filter
+                      </GlassButton>
+                      <GlassButton
+                        onClick={toggleSelectAll}
+                        variant="custom"
+                        backgroundColor="rgba(255, 255, 255, 0.2)"
+                        borderColor="rgba(255, 255, 255, 0.4)"
+                        textColor="white"
+                        size="sm"
+                      >
+                        {selectedItemIds.length === filteredWardrobeItems.length ? "Deselect All" : "Select All"}
+                      </GlassButton>
+                    </div>
                   </div>
 
                   {/* Items Grid */}
                   <div className="flex-1 overflow-y-auto min-h-0 hide-scrollbar" data-lenis-prevent>
-                    {wardrobeItems.length === 0 ? (
+                    {filteredWardrobeItems.length === 0 ? (
                       <div className="flex items-center justify-center h-full">
                         <div className="text-center">
                           <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/10 flex items-center justify-center">
                             <Sparkles className="w-8 h-8 text-white/50" />
                           </div>
-                          <p className="text-white/70 font-bricolage text-lg">No wardrobe items found</p>
-                          <p className="text-white/50 text-sm mt-1">Add items to your wardrobe first</p>
+                          <p className="text-white/70 font-bricolage text-lg">
+                            {Object.keys(filters).length > 0 ? "No items match your filters" : "No wardrobe items found"}
+                          </p>
+                          <p className="text-white/50 text-sm mt-1">
+                            {Object.keys(filters).length > 0 ? "Try adjusting your filters" : "Add items to your wardrobe first"}
+                          </p>
                         </div>
                       </div>
                     ) : (
-                      <div className="grid grid-cols-5 gap-4">
-                        {wardrobeItems.map((item) => (
+                      <div className="grid grid-cols-4 gap-5">
+                        {filteredWardrobeItems.map((item) => (
                           <ItemCard
                             key={item.id}
                             item={item}
@@ -381,7 +436,7 @@ export function EditOutfitDialog({
             </div>
 
             {/* Footer Actions */}
-            <div className="px-12 pb-8">
+            <div className="px-8 pb-6">
               <div className="flex items-center justify-end">
                 <div className="flex items-center gap-4">
                   <GlassButton
@@ -424,6 +479,14 @@ export function EditOutfitDialog({
           </div>
         </div>
       </div>
+
+      {/* Filter Modal */}
+      <FilterModal
+        open={isFilterOpen}
+        onOpenChange={setIsFilterOpen}
+        filters={filters}
+        onApplyFilters={setFilters}
+      />
     </>
   );
 }
