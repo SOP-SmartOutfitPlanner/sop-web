@@ -30,6 +30,7 @@ import { NavbarAuthSection } from "@/components/layout/navbar-auth-section";
 // -------------------- nav data --------------------
 const mainNavigationItems = [
   { path: "/wardrobe", label: "Wardrobe", icon: Shirt, enabled: true },
+  { path: "/outfit", label: "Outfit", icon: Sparkles, enabled: true },
   { path: "/suggest", label: "Suggest", icon: Sparkles, enabled: false },
   { path: "/daily", label: "Daily", icon: Calendar, enabled: false },
   { path: "/weekly", label: "Weekly", icon: CalendarDays, enabled: false },
