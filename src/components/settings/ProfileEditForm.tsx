@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { AvatarUpload } from "./AvatarUpload";
 import { cn } from "@/lib/utils";
+import { userAPI } from "@/lib/api/user-api";
 import type { UserProfileResponse, Job, StyleOption } from "@/types/user";
 
 interface ProfileFormData {

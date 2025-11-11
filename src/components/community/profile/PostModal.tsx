@@ -18,6 +18,7 @@ import { vi } from "date-fns/locale";
 import CommentSection from "@/components/community/comment/CommentSection";
 import { CommentInput } from "@/components/community/comment/CommentInput";
 import { useAuthStore } from "@/store/auth-store";
+import { useScrollLock } from "@/hooks/useScrollLock";
 import { communityAPI } from "@/lib/api/community-api";
 import { toast } from "sonner";
 import { usePostModal } from "@/hooks/community/usePostModal";
@@ -38,6 +39,9 @@ interface PostModalProps {
 export function PostModal({ post, isOpen, onClose, onLike }: PostModalProps) {
   const { user } = useAuthStore();
   const commentInputRef = useRef<HTMLInputElement>(null);
+
+  // Lock body scroll when modal is open
+  useScrollLock(isOpen);
 
   // Use custom hook for modal logic
   const {

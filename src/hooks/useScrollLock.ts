@@ -9,30 +9,39 @@ import { useEffect } from "react";
 export function useScrollLock(isLocked: boolean) {
   useEffect(() => {
     if (isLocked) {
+      // Save current scroll position
+      const scrollY = window.scrollY;
+
       // Stop Lenis smooth scrolling
       const html = document.documentElement;
       html.classList.add("lenis-stopped");
+      html.style.overflow = "hidden";
 
-      // Prevent body scroll
-      document.body.style.overflow = "hidden";
-      document.body.style.position = "fixed";
-      document.body.style.width = "100%";
-      document.body.style.top = `-${window.scrollY}px`;
+      // Prevent body scroll with !important level specificity
+      document.body.style.setProperty("overflow", "hidden", "important");
+      document.body.style.setProperty("position", "fixed", "important");
+      document.body.style.setProperty("width", "100%", "important");
+      document.body.style.setProperty("top", `-${scrollY}px`, "important");
+      document.body.style.setProperty("left", "0", "important");
+      document.body.style.setProperty("right", "0", "important");
     } else {
       // Re-enable Lenis smooth scrolling
       const html = document.documentElement;
       html.classList.remove("lenis-stopped");
+      html.style.overflow = "";
 
-      // Restore body scroll and scroll position
-      const scrollY = document.body.style.top;
-      document.body.style.overflow = "";
-      document.body.style.position = "";
-      document.body.style.width = "";
-      document.body.style.top = "";
+      // // Restore body scroll and scroll position
+      // const scrollY = document.body.style.top;
+      // document.body.style.removeProperty("overflow");
+      // document.body.style.removeProperty("position");
+      // document.body.style.removeProperty("width");
+      // document.body.style.removeProperty("top");
+      // document.body.style.removeProperty("left");
+      // document.body.style.removeProperty("right");
 
-      if (scrollY) {
-        window.scrollTo(0, parseInt(scrollY || "0") * -1);
-      }
+      // if (scrollY) {
+      //   window.scrollTo(0, parseInt(scrollY || "0") * -1);
+      // }
     }
 
     // Cleanup on unmount

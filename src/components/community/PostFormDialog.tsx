@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuthStore } from "@/store/auth-store";
+import { useScrollLock } from "@/hooks/useScrollLock";
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -33,6 +34,8 @@ export function PostFormDialog({
   const { user } = useAuthStore();
 
   // Lock body scroll when dialog is open
+  useScrollLock(isOpen);
+
   const [selectedImages, setSelectedImages] = useState<string[]>(
     mode === "edit" && post ? post.images || [] : []
   );
