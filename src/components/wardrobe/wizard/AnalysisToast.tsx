@@ -1,20 +1,23 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Sparkles } from "lucide-react";
+import Image from "next/image";
 
 interface AnalysisToastProps {
   isVisible: boolean;
   progress: number;
   retryCount?: number;
   isRetrying?: boolean;
+  imageUrl?: string;
+  itemName?: string;
 }
 
 export function AnalysisToast({
   isVisible,
   progress,
-  retryCount = 0,
-  isRetrying = false,
+  imageUrl,
+  itemName,
 }: AnalysisToastProps) {
   return (
     <AnimatePresence>
@@ -26,7 +29,21 @@ export function AnalysisToast({
           transition={{ type: "spring", damping: 25, stiffness: 300 }}
           className="fixed bottom-6 right-6 z-[9999] pointer-events-auto"
         >
-          <div className="bg-gradient-to-br from-slate-900/95 via-slate-800/95 to-slate-900/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-blue-500/20 p-6 min-w-[360px]">
+          <div className="bg-gradient-to-br from-slate-900/95 via-slate-800/95 to-slate-900/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-blue-500/20 p-6 min-w-[360px] max-w-[400px]">
+            {/* Image Preview */}
+            {imageUrl && (
+              <div className="mb-4 relative h-32 rounded-xl overflow-hidden bg-slate-800/50">
+                <Image
+                  src={imageUrl}
+                  alt={itemName || "Item being analyzed"}
+                  fill
+                  className="object-cover"
+                  sizes="400px"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent" />
+              </div>
+            )}
+
             {/* Header */}
             <div className="flex items-center gap-4 mb-4">
               <motion.div

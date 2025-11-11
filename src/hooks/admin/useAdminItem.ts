@@ -25,8 +25,9 @@ export function useDeleteItem() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (itemId: number) => {
+    mutationFn: () => {
       // TODO: Add delete item API endpoint when available
+      // itemId parameter will be added when implementing the API
       throw new Error("Delete item API not implemented yet");
     },
     onSuccess: () => {

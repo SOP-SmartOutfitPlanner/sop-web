@@ -3,7 +3,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
-import { useModalState } from "@/hooks/common/useModalState";
 import { useFollowersData } from "@/hooks/community/useFollowersData";
 import { FollowersList } from "@/components/community/followers/FollowersList";
 import { useAuthStore } from "@/store/auth-store";
@@ -29,7 +28,6 @@ export function FollowersModal({
   onClose,
   userId,
   type,
-  onFollowChange,
   isOwnProfile = false,
 }: FollowersModalProps) {
   const { user: currentUser } = useAuthStore();

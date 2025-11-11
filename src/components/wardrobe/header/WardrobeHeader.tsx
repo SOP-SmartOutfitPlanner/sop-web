@@ -1,16 +1,12 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { Loader2, Plus, Filter } from "lucide-react";
-import { Input as AntInput, ConfigProvider, Badge, Popover } from "antd";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Loader2, Plus, Filter, SortAsc, SortDesc } from "lucide-react";
+import { Input as AntInput, ConfigProvider, Badge } from "antd";
 import GlassButton from "@/components/ui/glass-button";
 import { WardrobeFilters } from "@/types/wardrobe";
 import { WardrobeItem } from "@/types";
-import { useMemo, useCallback, memo } from "react";
-import { getUniqueColorsFromItems } from "@/lib/mock/collections";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { useMemo, useCallback, memo, useState, useEffect } from "react";
+import { FilterModal } from "@/components/wardrobe/FilterModal";
 
 const { Search } = AntInput;
 
@@ -19,173 +15,61 @@ interface WardrobeHeaderProps {
   isLoading?: boolean;
   filters: WardrobeFilters;
   onFiltersChange: (filters: WardrobeFilters) => void;
-  wardrobeItems: WardrobeItem[];
+  wardrobeItems?: WardrobeItem[];
 }
 
-// Filter Options Constants
-const FILTER_OPTIONS = {
-  types: [
-    { value: "top", label: "Tops" },
-    { value: "bottom", label: "Bottoms" },
-    { value: "shoes", label: "Shoes" },
-    { value: "outer", label: "Outerwear" },
-    { value: "accessory", label: "Accessories" },
-  ] as const,
 
-  seasons: [
-    { value: "spring", label: "Spring" },
-    { value: "summer", label: "Summer" },
-    { value: "fall", label: "Fall" },
-    { value: "winter", label: "Winter" },
-  ] as const,
+// Debounce hook
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
 
-  occasions: [
-    { value: "casual", label: "Casual" },
-    { value: "smart", label: "Smart" },
-    { value: "formal", label: "Formal" },
-    { value: "sport", label: "Sport" },
-    { value: "travel", label: "Travel" },
-  ] as const,
-} as const;
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
 
-// Filter Panel Component
-const FilterPanel = memo(function FilterPanel({
-  filters,
-  onToggleFilterArray,
-  onClearAll,
-  wardrobeItems,
-}: {
-  filters: WardrobeFilters;
-  onToggleFilterArray: (key: keyof WardrobeFilters, value: string) => void;
-  onClearAll: () => void;
-  wardrobeItems: WardrobeItem[];
-}) {
-  const availableColors = useMemo(() =>
-    getUniqueColorsFromItems(wardrobeItems),
-    [wardrobeItems]
-  );
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
 
-  return (
-    <div className="space-y-4 w-80">
-      <div className="flex items-center justify-between">
-        <h4 className="font-medium">Filter Items</h4>
-        <Button variant="ghost" size="sm" onClick={onClearAll}>
-          Clear all
-        </Button>
-      </div>
-
-      {/* Types */}
-      <div>
-        <label className="text-sm font-medium mb-2 block">Type</label>
-        <div className="grid grid-cols-2 gap-2">
-          {FILTER_OPTIONS.types.map((type) => (
-            <div key={type.value} className="flex items-center space-x-2">
-              <Checkbox
-                checked={filters.types?.includes(type.value) || false}
-                onCheckedChange={() => onToggleFilterArray("types", type.value)}
-              />
-              <span className="text-sm">{type.label}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Seasons */}
-      <div>
-        <label className="text-sm font-medium mb-2 block">Season</label>
-        <div className="grid grid-cols-2 gap-2">
-          {FILTER_OPTIONS.seasons.map((season) => (
-            <div key={season.value} className="flex items-center space-x-2">
-              <Checkbox
-                checked={filters.seasons?.includes(season.value) || false}
-                onCheckedChange={() => onToggleFilterArray("seasons", season.value)}
-              />
-              <span className="text-sm">{season.label}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Occasions */}
-      <div>
-        <label className="text-sm font-medium mb-2 block">Occasion</label>
-        <div className="grid grid-cols-2 gap-2">
-          {FILTER_OPTIONS.occasions.map((occasion) => (
-            <div key={occasion.value} className="flex items-center space-x-2">
-              <Checkbox
-                checked={filters.occasions?.includes(occasion.value) || false}
-                onCheckedChange={() => onToggleFilterArray("occasions", occasion.value)}
-              />
-              <span className="text-sm">{occasion.label}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Colors */}
-      <div>
-        <label className="text-sm font-medium mb-2 block">Colors</label>
-        <div className="grid grid-cols-4 gap-2">
-          {availableColors.map((colorOption) => (
-            <button
-              key={colorOption.value}
-              onClick={() => onToggleFilterArray("colors", colorOption.value)}
-              className={cn(
-                "w-8 h-8 rounded-full border-2 transition-all",
-                filters.colors?.includes(colorOption.value)
-                  ? "border-primary scale-110"
-                  : "border-border hover:scale-105"
-              )}
-              style={{ backgroundColor: colorOption.value }}
-              title={colorOption.label}
-            />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-});
-
-function useFilterCount(filters: WardrobeFilters) {
-  return [
-    filters.types?.length,
-    filters.seasons?.length,
-    filters.occasions?.length,
-    filters.colors?.length,
-  ].filter(Boolean).length;
+  return debouncedValue;
 }
 
-export function WardrobeHeader({
+export const WardrobeHeader = memo(function WardrobeHeader({
   onAddItem,
   isLoading = false,
   filters,
   onFiltersChange,
   wardrobeItems,
 }: WardrobeHeaderProps) {
-  const activeFiltersCount = useFilterCount(filters);
+  const [searchValue, setSearchValue] = useState(filters.q || "");
+  const debouncedSearchValue = useDebounce(searchValue, 300);
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
-  const toggleFilterArray = useCallback(
-    (key: keyof WardrobeFilters, value: string) => {
-      const currentArray = (filters[key] as string[]) || [];
-      const newArray = currentArray.includes(value)
-        ? currentArray.filter((item) => item !== value)
-        : [...currentArray, value];
-      onFiltersChange({ ...filters, [key]: newArray.length > 0 ? newArray : undefined });
-    },
-    [filters, onFiltersChange]
-  );
+  const activeFiltersCount = useMemo(() => {
+    return [
+      filters.categoryId !== undefined ? 1 : 0,
+      filters.seasonId !== undefined ? 1 : 0,
+      filters.styleId !== undefined ? 1 : 0,
+      filters.occasionId !== undefined ? 1 : 0,
+    ].reduce((a, b) => a + b, 0);
+  }, [filters.categoryId, filters.seasonId, filters.styleId, filters.occasionId]);
 
-  const clearAllFilters = useCallback(() => {
-    onFiltersChange({
-      ...filters,
-      types: undefined,
-      seasons: undefined,
-      occasions: undefined,
-      colors: undefined,
-    });
-  }, [filters, onFiltersChange]);
+  // Update filters when debounced search value changes
+  useEffect(() => {
+    if (debouncedSearchValue !== filters.q) {
+      onFiltersChange({ ...filters, q: debouncedSearchValue || undefined });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearchValue]); // Intentionally limited dependencies to avoid infinite loop
 
-  const handleSearch = useCallback((value: string) => {
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchValue(e.target.value);
+  }, []);
+
+  const handleSearchSubmit = useCallback((value: string) => {
+    setSearchValue(value);
     onFiltersChange({ ...filters, q: value || undefined });
   }, [filters, onFiltersChange]);
 
@@ -216,9 +100,9 @@ export function WardrobeHeader({
             placeholder="Search your wardrobe..."
             allowClear
             size="large"
-            value={filters.q}
-            onChange={(e) => handleSearch(e.target.value)}
-            onSearch={handleSearch}
+            value={searchValue}
+            onChange={handleSearchChange}
+            onSearch={handleSearchSubmit}
             style={{
               flex: 1,
               height: '48px',
@@ -227,62 +111,97 @@ export function WardrobeHeader({
           />
         </ConfigProvider>
 
+        {/* Sort by Date Buttons */}
+        <div className="glass-button-hover">
+          <GlassButton
+            onClick={() => onFiltersChange({
+              ...filters,
+              sortByDate: filters.sortByDate === "desc" ? undefined : "desc"
+            })}
+            variant="custom"
+            borderRadius="14px"
+            blur="8px"
+            brightness={filters.sortByDate === "desc" ? 1.3 : 1.12}
+            glowColor={filters.sortByDate === "desc" ? "rgba(59,130,246,0.7)" : "rgba(255,255,255,0.3)"}
+            glowIntensity={filters.sortByDate === "desc" ? 10 : 6}
+            borderColor={filters.sortByDate === "desc" ? "rgba(59,130,246,0.9)" : "rgba(255,255,255,0.28)"}
+            borderWidth={filters.sortByDate === "desc" ? "2px" : "1px"}
+            backgroundColor={filters.sortByDate === "desc" ? "rgba(20, 105, 241, 0.86)" : undefined}
+            textColor="#ffffffff"
+            className="px-3 h-12 font-semibold"
+            displacementScale={5}
+          >
+            <SortDesc className={`h-4 w-4 ${filters.sortByDate === "desc" ? "drop-shadow-[0_0_8px_rgba(59,130,246,0.8)]" : ""}`} />
+          </GlassButton>
+        </div>
+
+        <div className="glass-button-hover">
+          <GlassButton
+            onClick={() => onFiltersChange({
+              ...filters,
+              sortByDate: filters.sortByDate === "asc" ? undefined : "asc"
+            })}
+            variant="custom"
+            borderRadius="14px"
+            blur="8px"
+            brightness={filters.sortByDate === "asc" ? 1.3 : 1.12}
+            glowColor={filters.sortByDate === "asc" ? "rgba(59,130,246,0.7)" : "rgba(255,255,255,0.3)"}
+            glowIntensity={filters.sortByDate === "asc" ? 10 : 6}
+            borderColor={filters.sortByDate === "asc" ? "rgba(59,130,246,0.9)" : "rgba(255,255,255,0.28)"}
+            borderWidth={filters.sortByDate === "asc" ? "2px" : "1px"}
+            backgroundColor={filters.sortByDate === "asc" ? "rgba(20, 105, 241, 0.86)" : undefined}
+            textColor="#ffffffff"
+            className="px-3 h-12 font-semibold"
+            displacementScale={5}
+          >
+            <SortAsc className={`h-4 w-4 ${filters.sortByDate === "asc" ? "drop-shadow-[0_0_8px_rgba(59,130,246,0.8)]" : ""}`} />
+          </GlassButton>
+        </div>
+
         {/* Filter Button */}
-        <Popover
-          content={
-            <FilterPanel
-              filters={filters}
-              onToggleFilterArray={toggleFilterArray}
-              onClearAll={clearAllFilters}
-              wardrobeItems={wardrobeItems}
-            />
-          }
-          trigger="click"
-          placement="bottomRight"
-        >
-          <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.98 }}>
-            <GlassButton
-              variant="custom"
-              borderRadius="14px"
-              blur="10px"
-              brightness={1.12}
-              glowColor={activeFiltersCount > 0 ? "rgba(59,130,246,0.45)" : "rgba(255,255,255,0.3)"}
-              glowIntensity={8}
-              borderColor={activeFiltersCount > 0 ? "rgba(59,130,246,0.5)" : "rgba(255,255,255,0.28)"}
-              borderWidth="1px"
-              textColor="#ffffffff"
-              className="px-4 h-12 font-semibold relative"
-              displacementScale={10}
-            >
-              <Filter className="mr-2 h-4 w-4" />
-              Filter
-              {activeFiltersCount > 0 && (
-                <Badge
-                  count={activeFiltersCount}
-                  className="ml-2"
-                  style={{ backgroundColor: '#3b82f6' }}
-                />
-              )}
-            </GlassButton>
-          </motion.div>
-        </Popover>
+        <div className="glass-button-hover">
+          <GlassButton
+            onClick={() => setIsFilterModalOpen(true)}
+            variant="custom"
+            borderRadius="14px"
+            blur="8px"
+            brightness={1.12}
+            glowColor={activeFiltersCount > 0 ? "rgba(59,130,246,0.45)" : "rgba(255,255,255,0.3)"}
+            glowIntensity={6}
+            borderColor={activeFiltersCount > 0 ? "rgba(59,130,246,0.5)" : "rgba(255,255,255,0.28)"}
+            borderWidth="1px"
+            textColor="#ffffffff"
+            className="px-4 h-12 font-semibold relative"
+            displacementScale={5}
+          >
+            <Filter className="mr-2 h-4 w-4" />
+            Filter
+            {activeFiltersCount > 0 && (
+              <Badge
+                count={activeFiltersCount}
+                className="ml-2"
+                style={{ backgroundColor: '#3b82f6' }}
+              />
+            )}
+          </GlassButton>
+        </div>
 
         {/* Add Item Button */}
-        <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.98 }}>
+        <div className="glass-button-hover">
           <GlassButton
             onClick={onAddItem}
             disabled={isLoading}
             variant="custom"
             borderRadius="14px"
-            blur="10px"
+            blur="8px"
             brightness={1.12}
             glowColor="rgba(59,130,246,0.45)"
-            glowIntensity={8}
+            glowIntensity={6}
             borderColor="rgba(255,255,255,0.28)"
             borderWidth="1px"
             textColor="#ffffffff"
             className="px-4 h-12 font-semibold"
-            displacementScale={10}
+            displacementScale={5}
           >
             {isLoading ? (
               <>
@@ -296,8 +215,28 @@ export function WardrobeHeader({
               </>
             )}
           </GlassButton>
-        </motion.div>
+        </div>
       </div>
+
+      <style jsx>{`
+        .glass-button-hover {
+          transition: transform 0.2s ease;
+        }
+        .glass-button-hover:hover {
+          transform: scale(1.04);
+        }
+        .glass-button-hover:active {
+          transform: scale(0.98);
+        }
+      `}</style>
+
+      {/* Filter Modal */}
+      <FilterModal
+        open={isFilterModalOpen}
+        onOpenChange={setIsFilterModalOpen}
+        filters={filters}
+        onApplyFilters={onFiltersChange}
+      />
     </div>
   );
-}
+});

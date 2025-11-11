@@ -2,10 +2,16 @@
 
 import { useState, useCallback, memo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Upload, X, Sparkles, CheckCircle2, AlertCircle } from "lucide-react";
+import { Upload, X, Sparkles, CheckCircle2, AlertCircle, Images, Shirt } from "lucide-react";
 import { toast } from "sonner";
-import { Image, Select } from "antd";
+import { Image, TreeSelect } from "antd";
+import type { DataNode } from "antd/es/tree";
 import GlassButton from "@/components/ui/glass-button";
+
+interface TreeNodeData extends DataNode {
+  value?: number;
+  children?: TreeNodeData[];
+}
 import { useAuthStore } from "@/store/auth-store";
 import { useWardrobeStore } from "@/store/wardrobe-store";
 import { minioAPI } from "@/lib/api/minio-api";
@@ -27,12 +33,22 @@ interface AddItemWizardProps {
 }
 
 const STEP = {
-  UPLOAD: 0,
-  MANUAL_CATEGORIZE: 1,
-  AI_ANALYSIS: 2,
+  MODE_SELECTION: 0,
+  UPLOAD: 1,
+  SPLIT_SELECTION: 2,
+  MANUAL_CATEGORIZE: 3,
+  AI_ANALYSIS: 4,
 } as const;
 
 type Step = typeof STEP[keyof typeof STEP];
+
+type UploadMode = 'multiple' | 'outfit';
+
+interface SplitImage {
+  category: string;
+  url: string;
+  fileName: string;
+}
 
 interface FailedItem {
   imageUrl: string;
@@ -130,11 +146,12 @@ AnalysisItemCard.displayName = 'AnalysisItemCard';
 interface ManualCategorizeCardProps {
   item: FailedItem;
   index: number;
-  categories: { id: number; name: string }[];
+  categoryTreeData: TreeNodeData[];
   onCategoryChange: (index: number, categoryId: number) => void;
+  onLoadCategoryChildren: (node: TreeNodeData) => Promise<void>;
 }
 
-const ManualCategorizeCard = memo(({ item, index, categories, onCategoryChange }: ManualCategorizeCardProps) => {
+const ManualCategorizeCard = memo(({ item, index, categoryTreeData, onCategoryChange, onLoadCategoryChildren }: ManualCategorizeCardProps) => {
   return (
     <div className="group relative w-full flex flex-col p-1">
       <div className="relative flex flex-col p-2 rounded-2xl transition-all duration-100 bg-gradient-to-br from-cyan-300/30 via-blue-200/10 to-indigo-300/30 backdrop-blur-md border-2 border-white/20">
@@ -177,21 +194,30 @@ const ManualCategorizeCard = memo(({ item, index, categories, onCategoryChange }
 
         {/* Category Selector */}
         <div className="px-1">
-          <Select
+          <TreeSelect
+            showSearch
             placeholder="Select category"
             value={item.categoryId}
             onChange={(value) => onCategoryChange(index, value)}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            loadData={onLoadCategoryChildren as unknown as (node: any) => Promise<void>}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            treeData={categoryTreeData as unknown as any[]}
+            treeDefaultExpandAll
             className="w-full"
             size="small"
             style={{ width: '100%' }}
             dropdownStyle={{
               background: 'rgba(255, 255, 255, 0.95)',
               backdropFilter: 'blur(12px)',
+              maxHeight: 300,
+              overflow: 'auto',
             }}
-            options={categories.map(cat => ({
-              label: cat.name,
-              value: cat.id,
-            }))}
+            filterTreeNode={(search, item) =>
+              (item.title as string)
+                .toLowerCase()
+                .includes(search.toLowerCase())
+            }
           />
         </div>
       </div>
@@ -200,7 +226,7 @@ const ManualCategorizeCard = memo(({ item, index, categories, onCategoryChange }
 }, (prevProps, nextProps) => {
   return prevProps.item.categoryId === nextProps.item.categoryId &&
          prevProps.item.imageUrl === nextProps.item.imageUrl &&
-         prevProps.categories === nextProps.categories;
+         prevProps.categoryTreeData === nextProps.categoryTreeData;
 });
 
 ManualCategorizeCard.displayName = 'ManualCategorizeCard';
@@ -211,14 +237,18 @@ export function AddItemWizard({ open, onOpenChange, editMode, editItemId, editIt
   void editItemId;
   void editItem;
 
-  const [currentStep, setCurrentStep] = useState<Step>(STEP.UPLOAD);
+  const [currentStep, setCurrentStep] = useState<Step>(STEP.MODE_SELECTION);
+  const [uploadMode, setUploadMode] = useState<UploadMode | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [isSplitting, setIsSplitting] = useState(false);
+  const [splitImages, setSplitImages] = useState<SplitImage[]>([]);
+  const [selectedSplitImages, setSelectedSplitImages] = useState<string[]>([]); // Array of image URLs
   const [uploadedItemIds, setUploadedItemIds] = useState<number[]>([]);
   const [selectedItemsForAnalysis, setSelectedItemsForAnalysis] = useState<number[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [failedItems, setFailedItems] = useState<FailedItem[]>([]);
-  const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
+  const [categoryTreeData, setCategoryTreeData] = useState<TreeNodeData[]>([]);
   const [isCategorizing, setIsCategorizing] = useState(false);
 
   const { user } = useAuthStore();
@@ -227,24 +257,79 @@ export function AddItemWizard({ open, onOpenChange, editMode, editItemId, editIt
   // Fetch categories on mount
   useEffect(() => {
     const fetchCategories = async () => {
-      const cats = await wardrobeAPI.getCategories();
-      setCategories(cats);
+      const rootCategories = await wardrobeAPI.getRootCategories();
+      const treeData: TreeNodeData[] = rootCategories.map((cat) => ({
+        key: cat.id,
+        value: cat.id,
+        title: cat.name,
+        isLeaf: false,
+      }));
+      setCategoryTreeData(treeData);
     };
     fetchCategories();
   }, []);
 
+  // Load category children dynamically
+  const onLoadCategoryChildren = useCallback(async (node: TreeNodeData): Promise<void> => {
+    if (node.children) {
+      return;
+    }
+
+    const children = await wardrobeAPI.getCategoriesByParent(node.value as number);
+    const childNodes: TreeNodeData[] = children.map((cat) => ({
+      key: cat.id,
+      value: cat.id,
+      title: cat.name,
+      isLeaf: true,
+    }));
+
+    setCategoryTreeData((origin) =>
+      updateTreeData(origin, node.value as number, childNodes)
+    );
+  }, []);
+
+  // Helper to update tree data
+  const updateTreeData = (
+    list: TreeNodeData[],
+    key: number,
+    children: TreeNodeData[]
+  ): TreeNodeData[] => {
+    return list.map((node) => {
+      if (node.value === key) {
+        return { ...node, children };
+      }
+      if (node.children) {
+        return {
+          ...node,
+          children: updateTreeData(node.children, key, children),
+        };
+      }
+      return node;
+    });
+  };
+
   // Reset and close
   const resetAndClose = useCallback(() => {
     setSelectedFiles([]);
-    setCurrentStep(STEP.UPLOAD);
+    setCurrentStep(STEP.MODE_SELECTION);
+    setUploadMode(null);
+    setSplitImages([]);
+    setSelectedSplitImages([]);
     setUploadedItemIds([]);
     setSelectedItemsForAnalysis([]);
     setFailedItems([]);
     setIsUploading(false);
+    setIsSplitting(false);
     setIsAnalyzing(false);
     setIsCategorizing(false);
     onOpenChange(false);
   }, [onOpenChange]);
+
+  // Handle mode selection
+  const handleModeSelect = (mode: UploadMode) => {
+    setUploadMode(mode);
+    setCurrentStep(STEP.UPLOAD);
+  };
 
   // Handle file selection from StepPhotoAI
   const handleFilesSelect = (files: File[]) => {
@@ -353,9 +438,16 @@ export function AddItemWizard({ open, onOpenChange, editMode, editItemId, editIt
         { id: loadingToast }
       );
 
-      // Refresh wardrobe items
+      // Fetch each manually categorized item and add to store
       const state = useWardrobeStore.getState();
-      await state.fetchItems();
+      for (const itemId of result.itemIds) {
+        try {
+          const item = await wardrobeAPI.getItem(itemId);
+          state.addItemOptimistic(item);
+        } catch (error) {
+          console.error(`Failed to fetch item ${itemId}:`, error);
+        }
+      }
 
       // Merge all uploaded item IDs (from auto + manual)
       const allItemIds = [...uploadedItemIds, ...result.itemIds];
@@ -376,11 +468,170 @@ export function AddItemWizard({ open, onOpenChange, editMode, editItemId, editIt
     }
   };
 
+  // Handle outfit image split
+  const handleOutfitSplit = async () => {
+    if (selectedFiles.length === 0) {
+      toast.error("Please select an outfit image");
+      return;
+    }
+
+    if (selectedFiles.length > 1) {
+      toast.error("Please select only one outfit image to split");
+      return;
+    }
+
+    setIsSplitting(true);
+    const loadingToast = toast.loading("Splitting outfit image...");
+
+    try {
+      // Split the outfit image
+      const splitResults = await wardrobeAPI.splitOutfitImage(selectedFiles[0]);
+
+      if (splitResults.length === 0) {
+        toast.error("No items detected in the image", { id: loadingToast });
+        setIsSplitting(false);
+        return;
+      }
+
+      toast.success(
+        `Successfully split image into ${splitResults.length} item${splitResults.length > 1 ? 's' : ''}!`,
+        { id: loadingToast }
+      );
+
+      // Store split results and pre-select all images
+      setSplitImages(splitResults);
+      setSelectedSplitImages(splitResults.map(img => img.url));
+      setCurrentStep(STEP.SPLIT_SELECTION);
+    } catch (error) {
+      console.error("❌ Split error:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to split outfit image",
+        { id: loadingToast }
+      );
+    } finally {
+      setIsSplitting(false);
+    }
+  };
+
+  // Toggle split image selection
+  const toggleSplitImageSelection = useCallback((imageUrl: string) => {
+    setSelectedSplitImages(prev =>
+      prev.includes(imageUrl)
+        ? prev.filter(url => url !== imageUrl)
+        : [...prev, imageUrl]
+    );
+  }, []);
+
+  // Select/Deselect all split images
+  const toggleSelectAllSplitImages = () => {
+    if (selectedSplitImages.length === splitImages.length) {
+      setSelectedSplitImages([]);
+    } else {
+      setSelectedSplitImages(splitImages.map(img => img.url));
+    }
+  };
+
+  // Handle bulk auto categorization for selected split images
+  const handleBulkAutoFromSplit = async () => {
+    if (selectedSplitImages.length === 0) {
+      toast.error("Please select at least one image");
+      return;
+    }
+
+    setIsUploading(true);
+    const loadingToast = toast.loading(`Processing ${selectedSplitImages.length} image${selectedSplitImages.length > 1 ? 's' : ''}...`);
+
+    try {
+      const userId = await getUserIdFromAuth(user);
+
+      // Get only selected image URLs
+      const selectedUrls = selectedSplitImages;
+
+      // Phase 2: Bulk upload with auto categorization
+      const response = await wardrobeAPI.bulkUploadAuto({
+        userId,
+        imageURLs: selectedUrls,
+      });
+
+      const succeededCount = response.itemIds.length;
+      const hasFailedItems = response.failedItems && response.failedItems.length > 0;
+
+      // Case 1: All items failed (0 succeeded, all failed)
+      if (succeededCount === 0 && hasFailedItems) {
+        toast.warning(
+          `All ${response.failedItems!.length} item${response.failedItems!.length > 1 ? 's' : ''} couldn't be auto-categorized. Please categorize manually.`,
+          { id: loadingToast }
+        );
+        setFailedItems(response.failedItems!);
+        setCurrentStep(STEP.MANUAL_CATEGORIZE);
+      }
+      // Case 2: Some succeeded, some failed (partial success)
+      else if (succeededCount > 0 && hasFailedItems) {
+        toast.success(
+          `Successfully added ${succeededCount} item${succeededCount > 1 ? 's' : ''}!`,
+          { id: loadingToast }
+        );
+        toast.warning(
+          `${response.failedItems!.length} item${response.failedItems!.length > 1 ? 's' : ''} couldn't be auto-categorized. Please categorize manually.`
+        );
+
+        // Refresh wardrobe items
+        const state = useWardrobeStore.getState();
+        await state.fetchItems();
+
+        // Store uploaded item IDs
+        setUploadedItemIds(response.itemIds);
+        setFailedItems(response.failedItems!);
+        setCurrentStep(STEP.MANUAL_CATEGORIZE);
+      }
+      // Case 3: All succeeded (full success)
+      else if (succeededCount > 0) {
+        toast.success(
+          `Successfully added ${succeededCount} item${succeededCount > 1 ? 's' : ''}!`,
+          { id: loadingToast }
+        );
+
+        // Fetch each uploaded item individually and add to store
+        const state = useWardrobeStore.getState();
+        for (const itemId of response.itemIds) {
+          try {
+            const item = await wardrobeAPI.getItem(itemId);
+            state.addItemOptimistic(item);
+          } catch (error) {
+            console.error(`Failed to fetch item ${itemId}:`, error);
+          }
+        }
+
+        // Store uploaded item IDs and go directly to AI analysis
+        setUploadedItemIds(response.itemIds);
+        setSelectedItemsForAnalysis(response.itemIds); // Pre-select all items
+        setCurrentStep(STEP.AI_ANALYSIS);
+      }
+      // Case 4: Complete failure (shouldn't happen, but handle it)
+      else {
+        toast.error("Failed to create items. Please try again.", { id: loadingToast });
+      }
+    } catch (error) {
+      console.error("❌ Bulk auto error:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to process images",
+        { id: loadingToast }
+      );
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   // Handle submit - upload all images
   const handleSubmit = async () => {
     if (selectedFiles.length === 0) {
       toast.error("Please select at least one image");
       return;
+    }
+
+    // Route to outfit split handler if in outfit mode
+    if (uploadMode === 'outfit') {
+      return handleOutfitSplit();
     }
 
     setIsUploading(true);
@@ -456,9 +707,16 @@ export function AddItemWizard({ open, onOpenChange, editMode, editItemId, editIt
           { id: loadingToast }
         );
 
-        // Refresh wardrobe items
+        // Fetch each uploaded item individually and add to store
         const state = useWardrobeStore.getState();
-        await state.fetchItems();
+        for (const itemId of response.itemIds) {
+          try {
+            const item = await wardrobeAPI.getItem(itemId);
+            state.addItemOptimistic(item);
+          } catch (error) {
+            console.error(`Failed to fetch item ${itemId}:`, error);
+          }
+        }
 
         // Store uploaded item IDs and go directly to AI analysis
         setUploadedItemIds(response.itemIds);
@@ -522,25 +780,35 @@ export function AddItemWizard({ open, onOpenChange, editMode, editItemId, editIt
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="font-dela-gothic text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-cyan-200">
-                    {currentStep === STEP.UPLOAD
+                    {currentStep === STEP.MODE_SELECTION
                       ? "Add Items to Wardrobe"
+                      : currentStep === STEP.UPLOAD
+                      ? uploadMode === 'outfit' ? "Upload Outfit Image" : "Add Items to Wardrobe"
+                      : currentStep === STEP.SPLIT_SELECTION
+                      ? "Select Items to Add"
                       : currentStep === STEP.MANUAL_CATEGORIZE
                       ? "Manual Categorization"
                       : "AI Analysis"
                     }
                   </h2>
                   <p className="font-bricolage text-lg text-gray-200 mt-2">
-                    {currentStep === STEP.UPLOAD
-                      ? "Upload up to 10 images to add to your wardrobe"
+                    {currentStep === STEP.MODE_SELECTION
+                      ? "Choose how you want to add items to your wardrobe"
+                      : currentStep === STEP.UPLOAD
+                      ? uploadMode === 'outfit'
+                        ? "Upload a single image containing multiple items"
+                        : "Upload up to 10 images to add to your wardrobe"
+                      : currentStep === STEP.SPLIT_SELECTION
+                      ? "Select which items you want to add to your wardrobe"
                       : currentStep === STEP.MANUAL_CATEGORIZE
-                      ? "Select a category for each item that couldn't be auto-categorized"
+                      ? "Select a category for each item"
                       : "Select items to analyze with AI for detailed attributes"
                     }
                   </p>
                 </div>
                 <button
                   onClick={resetAndClose}
-                  disabled={isUploading || isAnalyzing || isCategorizing}
+                  disabled={isUploading || isAnalyzing || isCategorizing || isSplitting}
                   className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <X className="w-6 h-6 text-white" />
@@ -551,6 +819,59 @@ export function AddItemWizard({ open, onOpenChange, editMode, editItemId, editIt
             {/* Content Container */}
             <div className="flex-1 px-12 py-4 overflow-hidden min-h-0 flex flex-col">
               <AnimatePresence mode="wait">
+                {currentStep === STEP.MODE_SELECTION && (
+                  <motion.div
+                    key="mode-selection"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3 }}
+                    className="flex-1 flex items-center justify-center"
+                  >
+                    <div className="grid grid-cols-2 gap-8 max-w-4xl w-full">
+                      {/* Multiple Items Mode */}
+                      <button
+                        onClick={() => handleModeSelect('multiple')}
+                        className="group relative p-8 rounded-3xl transition-all duration-300 bg-gradient-to-br from-cyan-300/30 via-blue-200/10 to-indigo-300/30 backdrop-blur-md border-2 border-white/20 hover:border-cyan-400/60 hover:shadow-xl hover:shadow-cyan-500/20 hover:scale-105"
+                      >
+                        <div className="flex flex-col items-center gap-6">
+                          <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-400/30 to-cyan-400/30 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                            <Images className="w-12 h-12 text-white" />
+                          </div>
+                          <div className="text-center">
+                            <h3 className="font-dela-gothic text-2xl font-bold text-white mb-2">
+                              Multiple Items
+                            </h3>
+                            <p className="font-bricolage text-base text-gray-200">
+                              Upload individual clothing items (up to 10 images)
+                            </p>
+                          </div>
+                        </div>
+                      </button>
+
+                      {/* Outfit Image Mode */}
+                      <button
+                        onClick={() => handleModeSelect('outfit')}
+                        className="group relative p-8 rounded-3xl transition-all duration-300 bg-gradient-to-br from-purple-300/30 via-pink-200/10 to-indigo-300/30 backdrop-blur-md border-2 border-white/20 hover:border-purple-400/60 hover:shadow-xl hover:shadow-purple-500/20 hover:scale-105"
+                      >
+                        <div className="flex flex-col items-center gap-6">
+                          <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-purple-400/30 to-pink-400/30 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                            <Shirt className="w-12 h-12 text-white" />
+                          </div>
+                          <div className="text-center">
+                            <h3 className="font-dela-gothic text-2xl font-bold text-white mb-2">
+                              Outfit Image
+                            </h3>
+                            <p className="font-bricolage text-base text-gray-200">
+                              Upload one image with multiple items to auto-split
+                            </p>
+                          </div>
+                        </div>
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+
                 {currentStep === STEP.UPLOAD && (
                   <motion.div
                     key="upload"
@@ -563,7 +884,101 @@ export function AddItemWizard({ open, onOpenChange, editMode, editItemId, editIt
                     <StepPhotoAI
                       onFilesSelect={handleFilesSelect}
                       onClearFiles={handleClearFiles}
+                      maxImages={uploadMode === 'outfit' ? 1 : 10}
                     />
+                  </motion.div>
+                )}
+
+                {currentStep === STEP.SPLIT_SELECTION && (
+                  <motion.div
+                    key="split-selection"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.3 }}
+                    className="flex-1 overflow-hidden flex flex-col"
+                  >
+                    {/* Selection Header */}
+                    <div className="flex items-center justify-between mb-4 flex-shrink-0">
+                      <div className="flex items-center gap-3">
+                        <CheckCircle2 className="w-6 h-6 text-green-400" />
+                        <span className="font-bricolage text-lg text-white font-semibold">
+                          {selectedSplitImages.length} of {splitImages.length} items selected
+                        </span>
+                      </div>
+                      <GlassButton
+                        onClick={toggleSelectAllSplitImages}
+                        variant="custom"
+                        backgroundColor="rgba(255, 255, 255, 0.2)"
+                        borderColor="rgba(255, 255, 255, 0.4)"
+                        textColor="white"
+                        size="sm"
+                      >
+                        {selectedSplitImages.length === splitImages.length ? "Deselect All" : "Select All"}
+                      </GlassButton>
+                    </div>
+
+                    {/* Split Images Grid */}
+                    <div className="flex-1 overflow-y-auto min-h-0 hide-scrollbar flex items-center justify-center" data-lenis-prevent>
+                      <div className="flex gap-6 justify-center max-w-4xl">
+                        {splitImages.map((splitImage) => (
+                          <div
+                            key={splitImage.url}
+                            onClick={() => toggleSplitImageSelection(splitImage.url)}
+                            className="group relative w-80 flex flex-col cursor-pointer p-1"
+                          >
+                            {/* GlassCard wrapper */}
+                            <div
+                              className={
+                                selectedSplitImages.includes(splitImage.url)
+                                  ? "relative flex flex-col p-3 rounded-2xl transition-all duration-100 bg-gradient-to-br from-cyan-300/30 via-blue-200/10 to-indigo-300/30 backdrop-blur-md border-2 border-cyan-400/60 shadow-lg shadow-cyan-500/40 ring-2 ring-cyan-400/30 ring-offset-2 ring-offset-transparent"
+                                  : "relative flex flex-col p-3 rounded-2xl transition-all duration-100 bg-gradient-to-br from-cyan-300/30 via-blue-200/10 to-indigo-300/30 backdrop-blur-md border-2 border-white/20 hover:border-cyan-400/40"
+                              }
+                            >
+                              {/* Selection Indicator */}
+                              <div className={
+                                selectedSplitImages.includes(splitImage.url)
+                                  ? "absolute top-3 right-3 z-10 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-100 border-2 bg-cyan-500 border-white/50 shadow-lg"
+                                  : "absolute top-3 right-3 z-10 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-100 border-2 bg-white/20 backdrop-blur-md border-white/30"
+                              }>
+                                {selectedSplitImages.includes(splitImage.url) && <CheckCircle2 className="w-5 h-5 text-white" />}
+                              </div>
+
+                              {/* Image Container */}
+                              <div className="bg-white/5 rounded-lg aspect-square overflow-hidden relative mb-3">
+                                <Image
+                                  src={splitImage.url}
+                                  alt={splitImage.category}
+                                  width="100%"
+                                  height="100%"
+                                  className="object-cover rounded-lg"
+                                  preview={false}
+                                  loading="lazy"
+                                  placeholder={false}
+                                  style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'cover',
+                                    display: 'block',
+                                    borderRadius: '0.5rem'
+                                  }}
+                                  wrapperClassName="w-full h-full"
+                                  rootClassName="w-full h-full !block"
+                                />
+                              </div>
+
+                              {/* Item Details */}
+                              <div className="flex flex-col px-1">
+                                {/* Category */}
+                                <span className="px-2 py-1 rounded-full bg-white/10 border border-white/20 text-white/90 text-xs font-medium truncate text-center">
+                                  {splitImage.category}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </motion.div>
                 )}
 
@@ -594,8 +1009,9 @@ export function AddItemWizard({ open, onOpenChange, editMode, editItemId, editIt
                             key={`failed-${index}`}
                             item={item}
                             index={index}
-                            categories={categories}
+                            categoryTreeData={categoryTreeData}
                             onCategoryChange={updateFailedItemCategory}
+                            onLoadCategoryChildren={onLoadCategoryChildren}
                           />
                         ))}
                       </div>
@@ -632,18 +1048,34 @@ export function AddItemWizard({ open, onOpenChange, editMode, editItemId, editIt
                       </GlassButton>
                     </div>
 
-                    {/* Items Grid */}
+                    {/* Items Grid - Center layout for outfit mode (2 items) */}
                     <div className="flex-1 overflow-y-auto min-h-0 hide-scrollbar" data-lenis-prevent>
-                      <div className="grid grid-cols-5 gap-4">
-                        {uploadedItems.map((item) => (
-                          <AnalysisItemCard
-                            key={item.id}
-                            item={item}
-                            isSelected={selectedSet.has(item.id!)}
-                            onToggle={toggleItemSelection}
-                          />
-                        ))}
-                      </div>
+                      {uploadedItems.length === 2 ? (
+                        /* Centered layout for 2 items (outfit mode) */
+                        <div className="flex gap-6 justify-center items-center h-full">
+                          {uploadedItems.map((item) => (
+                            <div key={item.id} className="w-80">
+                              <AnalysisItemCard
+                                item={item}
+                                isSelected={selectedSet.has(item.id!)}
+                                onToggle={toggleItemSelection}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        /* Grid layout for multiple items */
+                        <div className="grid grid-cols-5 gap-4">
+                          {uploadedItems.map((item) => (
+                            <AnalysisItemCard
+                              key={item.id}
+                              item={item}
+                              isSelected={selectedSet.has(item.id!)}
+                              onToggle={toggleItemSelection}
+                            />
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </motion.div>
                 )}
@@ -654,7 +1086,19 @@ export function AddItemWizard({ open, onOpenChange, editMode, editItemId, editIt
             <div className="px-12 pb-8">
               <div className="flex items-center justify-end">
                 <div className="flex items-center gap-4">
-                  {currentStep === STEP.UPLOAD ? (
+                  {currentStep === STEP.MODE_SELECTION ? (
+                    <GlassButton
+                      onClick={resetAndClose}
+                      variant="custom"
+                      backgroundColor="rgba(255, 255, 255, 0.3)"
+                      borderColor="rgba(255, 255, 255, 0.5)"
+                      textColor="#374151"
+                      size="md"
+                    >
+                      <X className="w-5 h-5" />
+                      Cancel
+                    </GlassButton>
+                  ) : currentStep === STEP.UPLOAD ? (
                     <>
                       <GlassButton
                         onClick={resetAndClose}
@@ -671,7 +1115,47 @@ export function AddItemWizard({ open, onOpenChange, editMode, editItemId, editIt
 
                       <GlassButton
                         onClick={handleSubmit}
-                        disabled={isUploading || selectedFiles.length === 0}
+                        disabled={
+                          (isUploading || isSplitting || selectedFiles.length === 0) ||
+                          (uploadMode === 'outfit' && selectedFiles.length > 1)
+                        }
+                        variant="custom"
+                        backgroundColor="rgba(59, 130, 246, 0.6)"
+                        borderColor="rgba(59, 130, 246, 0.8)"
+                        textColor="white"
+                        size="md"
+                      >
+                        {isUploading || isSplitting ? (
+                          <>
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                            {isSplitting ? 'Splitting...' : 'Uploading...'}
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="w-5 h-5" />
+                            {uploadMode === 'outfit' ? 'Split Outfit Image' : 'Upload & Add to Wardrobe'}
+                          </>
+                        )}
+                      </GlassButton>
+                    </>
+                  ) : currentStep === STEP.SPLIT_SELECTION ? (
+                    <>
+                      <GlassButton
+                        onClick={resetAndClose}
+                        disabled={isUploading}
+                        variant="custom"
+                        backgroundColor="rgba(255, 255, 255, 0.3)"
+                        borderColor="rgba(255, 255, 255, 0.5)"
+                        textColor="#374151"
+                        size="md"
+                      >
+                        <X className="w-5 h-5" />
+                        Cancel
+                      </GlassButton>
+
+                      <GlassButton
+                        onClick={handleBulkAutoFromSplit}
+                        disabled={isUploading || selectedSplitImages.length === 0}
                         variant="custom"
                         backgroundColor="rgba(59, 130, 246, 0.6)"
                         borderColor="rgba(59, 130, 246, 0.8)"
@@ -681,12 +1165,12 @@ export function AddItemWizard({ open, onOpenChange, editMode, editItemId, editIt
                         {isUploading ? (
                           <>
                             <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                            Uploading...
+                            Processing...
                           </>
                         ) : (
                           <>
-                            <Upload className="w-5 h-5" />
-                            Upload & Add to Wardrobe
+                            <CheckCircle2 className="w-5 h-5" />
+                            Add Selected Items ({selectedSplitImages.length})
                           </>
                         )}
                       </GlassButton>

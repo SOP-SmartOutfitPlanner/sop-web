@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, memo, useCallback } from "react";
 import Image from "next/image";
 import { MoreVertical, Edit, Trash2, Sparkles, Flower2, Sun, Leaf, Snowflake, Wand2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import GlassButton from "@/components/ui/glass-button";
 import GlassCard from "@/components/ui/glass-card";
+import { DeleteItemModal } from "@/components/wardrobe/DeleteItemModal";
 import { WardrobeItem } from "@/types";
 import { cn } from "@/lib/utils";
 
@@ -23,10 +24,11 @@ interface ItemCardProps {
   onDelete?: (id: string) => void;
   onUseInOutfit?: (item: WardrobeItem) => void;
   onAnalyze?: (id: string) => void;
+  onView?: (item: WardrobeItem) => void;
   showCheckbox?: boolean;
 }
 
-export function ItemCard({
+export const ItemCard = memo(function ItemCard({
   item,
   isSelected = false,
   onSelect,
@@ -34,20 +36,33 @@ export function ItemCard({
   onDelete,
   onUseInOutfit,
   onAnalyze,
+  onView,
   showCheckbox = false,
 }: ItemCardProps) {
   const [isHovered, setIsHovered] = useState(false);
-
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const handleCheckboxChange = (checked: boolean) => {
+  const handleCheckboxChange = useCallback((checked: boolean) => {
     onSelect?.(item.id, checked);
-  };
+  }, [item.id, onSelect]);
 
-  const handleEdit = () => onEdit?.(item);
-  const handleDelete = () => onDelete?.(item.id);
-  const handleUseInOutfit = () => onUseInOutfit?.(item);
-  const handleAnalyze = async () => {
+  const handleEdit = useCallback(() => onEdit?.(item), [item, onEdit]);
+  const handleDeleteClick = useCallback(() => setShowDeleteModal(true), []);
+  const handleDeleteConfirm = useCallback(async () => {
+    setIsDeleting(true);
+    try {
+      await onDelete?.(item.id);
+      setShowDeleteModal(false);
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [item.id, onDelete]);
+  const handleUseInOutfit = useCallback(() => onUseInOutfit?.(item), [item, onUseInOutfit]);
+  const handleView = useCallback(() => onView?.(item), [item, onView]);
+  const handleAnalyze = useCallback(async (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     if (isAnalyzing) return;
     setIsAnalyzing(true);
     try {
@@ -55,7 +70,12 @@ export function ItemCard({
     } finally {
       setIsAnalyzing(false);
     }
-  };
+  }, [isAnalyzing, item.id, onAnalyze]);
+
+  const handleUseInOutfitClick = useCallback((e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    onUseInOutfit?.(item);
+  }, [item, onUseInOutfit]);
 
   // Get unique colors from item
   const colors = item.colors?.slice(0, 4) || [];
@@ -81,87 +101,90 @@ export function ItemCard({
   const seasonItems = item.seasons?.map(s => typeof s === 'string' ? s : s.name) || [];
 
   return (
-    <div
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      className="group relative w-full h-full flex flex-col"
-    >
-      {/* AI Badge - Top Left Corner - Only show if confidence > 50 */}
-      {item.isAnalyzed && item.aiConfidence && item.aiConfidence > 50 && (
-        <div className="absolute -top-2 -left-2 z-20">
-          <div className="relative">
-            {/* Glow effect */}
-            <div className="absolute inset-0 w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 blur-md opacity-75 animate-pulse" />
+    <>
+      {/* Delete Confirmation Modal */}
+      <DeleteItemModal
+        open={showDeleteModal}
+        onOpenChange={setShowDeleteModal}
+        onConfirm={handleDeleteConfirm}
+        itemName={item.name}
+        itemImageUrl={item.imageUrl}
+        isDeleting={isDeleting}
+      />
 
-            {/* Main badge */}
-            <div className="relative w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 via-cyan-500 to-blue-500 flex items-center justify-center shadow-xl border-2 border-white">
-              <span className="text-xs font-black text-white drop-shadow-lg">AI</span>
+      <div
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        className="group relative w-full h-full flex flex-col"
+      >
+        {/* AI Badge - Top Left Corner - Only show if confidence > 50 */}
+        {item.isAnalyzed && item.aiConfidence && item.aiConfidence > 50 && (
+          <div className="absolute -top-2 -left-2 z-20">
+            <div className="relative">
+              {/* Glow effect */}
+              <div className="absolute inset-0 w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 blur-md opacity-75 animate-pulse" />
+
+              {/* Main badge */}
+              <div className="relative w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 via-cyan-500 to-blue-500 flex items-center justify-center shadow-xl border-2 border-white">
+                <span className="text-xs font-black text-white drop-shadow-lg">AI</span>
+              </div>
             </div>
           </div>
+        )}
+
+        {/* Menu - Positioned outside the card */}
+        <div className="absolute top-2 right-2 z-20">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className={cn(
+                  "p-2 rounded-lg",
+                  "bg-white/30 border border-white/30",
+                  "text-white hover:bg-white/40 hover:border-white/40",
+                  "shadow-lg shadow-white/10",
+                  "transition-all duration-200",
+                  isHovered ? "opacity-100" : "opacity-0"
+                )}
+              >
+                <MoreVertical className="w-4 h-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 bg-white/90 backdrop-blur-xl border-white/50">
+              <DropdownMenuItem onClick={handleEdit} className="hover:bg-white/60">
+                <Edit className="w-4 h-4 mr-2" />
+                Edit Item
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleUseInOutfit} className="hover:bg-white/60">
+                <Sparkles className="w-4 h-4 mr-2" />
+                Use in Outfit
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={handleDeleteClick}
+                className="text-red-600 focus:text-red-600 hover:bg-red-50/60"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-      )}
 
-      {/* Menu - Positioned outside the card */}
-      <div className="absolute top-2 right-2 z-20">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              className={cn(
-                "p-2 rounded-lg",
-                "bg-white/20 backdrop-blur-md border border-white/30",
-                "text-white hover:bg-white/30 hover:border-white/40",
-                "shadow-lg shadow-white/10",
-                "transition-all duration-200",
-                isHovered ? "opacity-100" : "opacity-0"
-              )}
-            >
-              <MoreVertical className="w-4 h-4" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48 bg-white/90 backdrop-blur-xl border-white/50">
-            <DropdownMenuItem onClick={handleEdit} className="hover:bg-white/60">
-              <Edit className="w-4 h-4 mr-2" />
-              Edit Item
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleUseInOutfit} className="hover:bg-white/60">
-              <Sparkles className="w-4 h-4 mr-2" />
-              Use in Outfit
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={handleDelete}
-              className="text-red-600 focus:text-red-600 hover:bg-red-50/60"
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-
-      <GlassCard
+        <GlassCard
         padding="16px"
         borderRadius="24px"
-        blur="12px"
-        brightness={1.1}
-        glowColor={isSelected ? "rgba(34, 211, 238, 0.5)" : isHovered ? "rgba(34, 211, 238, 0.35)" : "rgba(34, 211, 238, 0.2)"}
-        borderColor={isSelected ? "rgba(34, 211, 238, 0.5)" : isHovered ? "rgba(34, 211, 238, 0.4)" : "rgba(255, 255, 255, 0.2)"}
-        borderWidth="3px"
+        blur="4px"
+        brightness={1.02}
+        glowColor={isSelected ? "rgba(34, 211, 238, 0.4)" : "rgba(34, 211, 238, 0.2)"}
+        borderColor={isSelected ? "rgba(34, 211, 238, 0.5)" : "rgba(255, 255, 255, 0.2)"}
+        borderWidth="2px"
         className={cn(
-          "relative h-full flex flex-col",
-          "bg-gradient-to-br from-cyan-300/30 via-blue-200/10 to-indigo-300/30",
-          "transition-all duration-300",
-          isHovered && [
-            "bg-gradient-to-br from-white/20 via-cyan-100/15 to-cyan-200/8",
-            "scale-[1.02]"
-          ],
-          isSelected && [
-            "gb-gradient-to-br from-cyan-400/20 via-cyan-300/15 to-white/10",
-            "ring-2 ring-cyan-400/50"
-          ]
+          "relative h-full flex flex-col item-card-transition cursor-pointer",
+          "bg-gradient-to-br from-cyan-300/20 via-blue-200/10 to-indigo-300/20",
+          isHovered && "item-card-hovered",
+          isSelected && "ring-2 ring-cyan-400/50"
         )}
+        onClick={handleView}
       >
-        {/* Inner gradient overlay for extra depth with cyan accent */}
-        <div className="absolute inset-0 rounded-3xl bg-gradient-to-t from-cyan-900/5 via-transparent to-white/5 pointer-events-none" />
 
         <div className="w-full flex flex-col flex-1 relative z-10">
           {/* Image Container */}
@@ -171,7 +194,7 @@ export function ItemCard({
             <div
               className={cn(
                 "absolute top-4 left-4 z-10",
-                "rounded-lg bg-black/50 backdrop-blur-md p-1.5",
+                "rounded-lg bg-black/70 p-1.5",
                 "transition-opacity duration-200",
                 isHovered || isSelected ? "opacity-100" : "opacity-0"
               )}
@@ -191,24 +214,8 @@ export function ItemCard({
               fill
               className="object-cover"
               sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.style.display = "none";
-                if (target.parentElement) {
-                  target.parentElement.innerHTML = `
-                      <div class="flex h-full w-full items-center justify-center bg-gradient-to-br from-white/5 to-white/[0.02]">
-                        <div class="text-center">
-                          <div class="mx-auto h-20 w-20 rounded-full bg-white/10 flex items-center justify-center mb-3 ring-1 ring-white/20">
-                            <span class="text-white/60 text-3xl font-semibold">
-                              ${item.name.charAt(0).toUpperCase()}
-                            </span>
-                          </div>
-                          <p class="text-sm text-white/40 font-medium">No image</p>
-                        </div>
-                      </div>
-                    `;
-                }
-              }}
+              priority={false}
+              loading="lazy"
             />
           </div>
 
@@ -298,10 +305,10 @@ export function ItemCard({
                 onClick={handleAnalyze}
                 disabled={isAnalyzing}
                 borderRadius="10px"
-                blur="5px"
-                brightness={1.2}
-                glowColor="rgba(147, 51, 234, 0.5)"
-                glowIntensity={8}
+                blur="4px"
+                brightness={1.1}
+                glowColor="rgba(147, 51, 234, 0.3)"
+                glowIntensity={4}
                 borderColor="rgba(168, 85, 247, 0.3)"
                 borderWidth="1px"
                 textColor="rgba(19, 19, 19, 1)"
@@ -324,12 +331,12 @@ export function ItemCard({
                 className="font-semibold w-full"
                 size="sm"
                 variant="primary"
-                onClick={handleUseInOutfit}
+                onClick={handleUseInOutfitClick}
                 borderRadius="10px"
-                blur="5px"
-                brightness={1.2}
-                glowColor="rgba(59, 130, 246, 0.5)"
-                glowIntensity={8}
+                blur="4px"
+                brightness={1.1}
+                glowColor="rgba(59, 130, 246, 0.3)"
+                glowIntensity={4}
                 borderColor="rgba(148, 163, 184, 0.3)"
                 borderWidth="1px"
                 textColor="rgba(19, 19, 19, 1)"
@@ -341,7 +348,18 @@ export function ItemCard({
             )}
           </div>
         </div>
-      </GlassCard>
-    </div>
+        </GlassCard>
+
+        <style jsx>{`
+          :global(.item-card-transition) {
+            transition: box-shadow 0.2s ease;
+            will-change: box-shadow;
+          }
+          :global(.item-card-hovered) {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+          }
+        `}</style>
+      </div>
+    </>
   );
-}
+});

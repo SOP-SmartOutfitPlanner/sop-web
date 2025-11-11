@@ -454,3 +454,34 @@
   color: rgba(255, 255, 255, 0.8);
   font-weight: 500;
 }
+
+/* Performance-optimized Glass Button Styles */
+.glass-button {
+  position: relative;
+  overflow: hidden;
+  will-change: transform;
+}
+
+.glass-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.glass-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.glass-button-primary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.glass-button-secondary:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.glass-button-outline:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.glass-button-ghost:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+}

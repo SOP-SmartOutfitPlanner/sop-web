@@ -57,6 +57,9 @@ export interface ApiWardrobeItem {
   id?: number; // Optional as it might not be present in all responses
   createdAt?: string;
   updatedAt?: string;
+  // AI analysis fields
+  aiConfidence?: number;
+  isAnalyzed?: boolean;
   // Relational arrays
   styles?: Array<{ id: number; name: string }>;
   occasions?: Array<{ id: number; name: string }>;
@@ -129,9 +132,20 @@ export interface CreateWardrobeItemRequest extends ItemCreateModel {
 
 class WardrobeAPI {
   /**
-   * Get all wardrobe items for current user with pagination
+   * Get all wardrobe items for current user with pagination and filters
    */
-  async getItems(pageIndex: number = 1, pageSize: number = 10): Promise<ApiItemsResponse> {
+  async getItems(
+    pageIndex: number = 1,
+    pageSize: number = 10,
+    filters?: {
+      isAnalyzed?: boolean;
+      categoryId?: number;
+      seasonId?: number;
+      styleId?: number;
+      occasionId?: number;
+      sortByDate?: 'asc' | 'desc';
+    }
+  ): Promise<ApiItemsResponse> {
     // Get userId from localStorage token
     const userId = this.getUserIdFromToken();
 
@@ -147,6 +161,32 @@ class WardrobeAPI {
           hasPrevious: false,
         },
       };
+    }
+
+    // Build query parameters
+    const params: Record<string, string | number | boolean> = {
+      "page-index": pageIndex,
+      "page-size": pageSize,
+    };
+
+    // Add optional filter parameters
+    if (filters?.isAnalyzed !== undefined) {
+      params.IsAnalyzed = filters.isAnalyzed;
+    }
+    if (filters?.categoryId !== undefined) {
+      params.CategoryId = filters.categoryId;
+    }
+    if (filters?.seasonId !== undefined) {
+      params.SeasonId = filters.seasonId;
+    }
+    if (filters?.styleId !== undefined) {
+      params.StyleId = filters.styleId;
+    }
+    if (filters?.occasionId !== undefined) {
+      params.OccasionId = filters.occasionId;
+    }
+    if (filters?.sortByDate) {
+      params.SortByDate = filters.sortByDate === 'asc' ? 0 : 1; // 0 = asc, 1 = desc
     }
 
     // New endpoint: /items/user/{userId} with pagination params
@@ -165,10 +205,7 @@ class WardrobeAPI {
         };
       };
     }>(`/items/user/${userId}`, {
-      params: {
-        "page-index": pageIndex,
-        "page-size": pageSize,
-      },
+      params,
     });
 
     // API returns { statusCode, message, data: { data: [...], metaData: {...} } }
@@ -404,15 +441,20 @@ class WardrobeAPI {
 
 
   /**
-   * Get all available styles
+   * Get all available styles (only system-created)
    */
   async getStyles(): Promise<
     { id: number; name: string; description?: string }[]
   > {
     try {
       const response = await apiClient.get("/styles?take-all=true");
-      const styles = response.data?.data || [];
-      return styles;
+      const allStyles = response.data?.data || [];
+      // Filter only SYSTEM-created styles
+      const systemStyles = allStyles.filter(
+        (style: { id: number; name: string; description?: string; createdBy?: string }) =>
+          style.createdBy === "SYSTEM"
+      );
+      return systemStyles;
     } catch (error) {
       console.error("❌ Failed to fetch styles:", error);
       return [];
@@ -468,6 +510,55 @@ class WardrobeAPI {
   }
 
   /**
+   * Get root categories (top-level categories)
+   */
+  async getRootCategories(
+    pageIndex: number = 1,
+    pageSize: number = 100
+  ): Promise<{ id: number; name: string; parentId?: number; parentName?: string }[]> {
+    try {
+      const response = await apiClient.get("/categories/root", {
+        params: {
+          "page-index": pageIndex,
+          "page-size": pageSize,
+        },
+      });
+
+      // API returns { data: [...], metaData: {...} }
+      const categories = response.data?.data || [];
+      return categories;
+    } catch (error) {
+      console.error("❌ Failed to fetch root categories:", error);
+      return [];
+    }
+  }
+
+  /**
+   * Get categories by parent ID
+   */
+  async getCategoriesByParent(
+    parentId: number,
+    pageIndex: number = 1,
+    pageSize: number = 100
+  ): Promise<{ id: number; name: string; parentId?: number; parentName?: string }[]> {
+    try {
+      const response = await apiClient.get(`/categories/parent/${parentId}`, {
+        params: {
+          "page-index": pageIndex,
+          "page-size": pageSize,
+        },
+      });
+
+      // API returns { data: [...], metaData: {...} }
+      const categories = response.data?.data || [];
+      return categories;
+    } catch (error) {
+      console.error("❌ Failed to fetch categories by parent:", error);
+      return [];
+    }
+  }
+
+  /**
    * Get user wardrobe statistics
    */
   async getUserStats(): Promise<{
@@ -504,6 +595,46 @@ class WardrobeAPI {
         categoryCounts: {},
       };
     }
+  }
+
+  /**
+   * Split outfit image into multiple clothing items
+   * Uploads an image containing multiple items and receives split images
+   *
+   * Response format (200 OK):
+   * { statusCode: 200, message: "Successfully split image",
+   *   data: [{ category: string, url: string, fileName: string }] }
+   *
+   * Response format (400 Bad Request):
+   * { statusCode: 400, message: "Failed to split image" }
+   */
+  async splitOutfitImage(file: File): Promise<{
+    category: string;
+    url: string;
+    fileName: string;
+  }[]> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await apiClient.post<{
+      statusCode: number;
+      message: string;
+      data: Array<{
+        category: string;
+        url: string;
+        fileName: string;
+      }>;
+    }>('/items/split-item', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+
+    if (response.statusCode !== 200) {
+      throw new Error(response.message || 'Failed to split image');
+    }
+
+    return response.data;
   }
 }
 

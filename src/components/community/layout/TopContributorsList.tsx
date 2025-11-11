@@ -1,7 +1,7 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
-import { Contributor, ContributorCardProps } from "./types";
+import { Contributor } from "./types";
 import { ContributorCard } from "./ContributorCard";
 
 interface TopContributorsListProps {

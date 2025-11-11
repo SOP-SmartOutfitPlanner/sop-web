@@ -51,6 +51,8 @@ interface WardrobeStore {
   setSelectionMode: (mode: boolean) => void;
   // AI Analysis
   analyzeItem: (id: string) => Promise<void>;
+  analyzingItem: { id: string; imageUrl: string; name: string } | null;
+  analysisProgress: number;
   // Reset
   resetStore: () => void;
 }
@@ -195,6 +197,9 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
   totalPages: 0,
   hasNext: false,
   hasPrevious: false,
+  // Analysis state
+  analyzingItem: null,
+  analysisProgress: 0,
 
   // Helper to get raw API item by ID
   getRawItemById: (id: number) => {
@@ -202,12 +207,27 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
     return state.rawApiItems.find((item) => item.id === id);
   },
 
-  // Fetch items from API with pagination
+  // Fetch items from API with pagination and filters
   fetchItems: async () => {
     set({ isLoading: true, error: null });
     try {
       const state = get();
-      const response = await wardrobeAPI.getItems(state.currentPage, state.pageSize);
+
+      // Build API filter parameters from current filters
+      const apiFilters = {
+        isAnalyzed: state.filters.isAnalyzed,
+        categoryId: state.filters.categoryId,
+        seasonId: state.filters.seasonId,
+        styleId: state.filters.styleId,
+        occasionId: state.filters.occasionId,
+        sortByDate: state.filters.sortByDate,
+      };
+
+      const response = await wardrobeAPI.getItems(
+        state.currentPage,
+        state.pageSize,
+        apiFilters
+      );
       const items = response.data.map(apiItemToWardrobeItem);
       const filtered = filterItems(items, state.filters, state.searchQuery);
       const sorted = sortItems(filtered, state.sortBy);
@@ -391,15 +411,19 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
   },
 
   // Filter functionality
-  setFilters: (filters) =>
+  setFilters: (filters) => {
     set((state) => {
       const filtered = filterItems(state.items, filters, state.searchQuery);
       const sorted = sortItems(filtered, state.sortBy);
       return {
         filters,
         filteredItems: sorted,
+        currentPage: 1, // Reset to first page when filters change
       };
-    }),
+    });
+    // Fetch new items from API with updated filters
+    get().fetchItems();
+  },
 
   clearFilters: () =>
     set((state) => {
@@ -507,8 +531,33 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
     try {
       const numericId = parseInt(id);
 
+      // Get item info before starting
+      const item = get().items.find((item) => item.id === id);
+      if (!item) throw new Error("Item not found");
+
+      // Set analyzing state
+      set({
+        analyzingItem: {
+          id,
+          imageUrl: item.imageUrl,
+          name: item.name
+        },
+        analysisProgress: 0
+      });
+
+      // Simulate progress
+      const progressInterval = setInterval(() => {
+        set((state) => ({
+          analysisProgress: Math.min(state.analysisProgress + 10, 90)
+        }));
+      }, 200);
+
       // Call AI analysis API
-      const confidenceScores = await wardrobeAPI.analyzeItems([numericId]);
+      await wardrobeAPI.analyzeItems([numericId]);
+
+      // Complete progress
+      set({ analysisProgress: 100 });
+      clearInterval(progressInterval);
 
       // Fetch updated item data
       const updatedApiItem = await wardrobeAPI.getItem(numericId);
@@ -534,8 +583,15 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
           filteredItems: sorted,
         };
       });
+
+      // Clear analyzing state after a short delay
+      setTimeout(() => {
+        set({ analyzingItem: null, analysisProgress: 0 });
+      }, 1000);
     } catch (error) {
       console.error("Failed to analyze item:", error);
+      // Clear analyzing state on error
+      set({ analyzingItem: null, analysisProgress: 0 });
       throw error;
     }
   },
