@@ -35,13 +35,20 @@ interface AddItemWizardProps {
 const STEP = {
   MODE_SELECTION: 0,
   UPLOAD: 1,
-  MANUAL_CATEGORIZE: 2,
-  AI_ANALYSIS: 3,
+  SPLIT_SELECTION: 2,
+  MANUAL_CATEGORIZE: 3,
+  AI_ANALYSIS: 4,
 } as const;
 
 type Step = typeof STEP[keyof typeof STEP];
 
 type UploadMode = 'multiple' | 'outfit';
+
+interface SplitImage {
+  category: string;
+  url: string;
+  fileName: string;
+}
 
 interface FailedItem {
   imageUrl: string;
@@ -235,6 +242,8 @@ export function AddItemWizard({ open, onOpenChange, editMode, editItemId, editIt
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [isSplitting, setIsSplitting] = useState(false);
+  const [splitImages, setSplitImages] = useState<SplitImage[]>([]);
+  const [selectedSplitImages, setSelectedSplitImages] = useState<string[]>([]); // Array of image URLs
   const [uploadedItemIds, setUploadedItemIds] = useState<number[]>([]);
   const [selectedItemsForAnalysis, setSelectedItemsForAnalysis] = useState<number[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -304,6 +313,8 @@ export function AddItemWizard({ open, onOpenChange, editMode, editItemId, editIt
     setSelectedFiles([]);
     setCurrentStep(STEP.MODE_SELECTION);
     setUploadMode(null);
+    setSplitImages([]);
+    setSelectedSplitImages([]);
     setUploadedItemIds([]);
     setSelectedItemsForAnalysis([]);
     setFailedItems([]);
@@ -487,17 +498,10 @@ export function AddItemWizard({ open, onOpenChange, editMode, editItemId, editIt
         { id: loadingToast }
       );
 
-      // Convert split results to failed items for manual categorization
-      // Note: Even though items have suggested categories from split API,
-      // we still let users review and adjust them in the manual categorization step
-      const itemsToCategorizé: FailedItem[] = splitResults.map(result => ({
-        imageUrl: result.url,
-        reason: `Detected as ${result.category}`,
-        categoryId: undefined, // User must select category
-      }));
-
-      setFailedItems(itemsToCategorizé);
-      setCurrentStep(STEP.MANUAL_CATEGORIZE);
+      // Store split results and pre-select all images
+      setSplitImages(splitResults);
+      setSelectedSplitImages(splitResults.map(img => img.url));
+      setCurrentStep(STEP.SPLIT_SELECTION);
     } catch (error) {
       console.error("❌ Split error:", error);
       toast.error(
@@ -506,6 +510,115 @@ export function AddItemWizard({ open, onOpenChange, editMode, editItemId, editIt
       );
     } finally {
       setIsSplitting(false);
+    }
+  };
+
+  // Toggle split image selection
+  const toggleSplitImageSelection = useCallback((imageUrl: string) => {
+    setSelectedSplitImages(prev =>
+      prev.includes(imageUrl)
+        ? prev.filter(url => url !== imageUrl)
+        : [...prev, imageUrl]
+    );
+  }, []);
+
+  // Select/Deselect all split images
+  const toggleSelectAllSplitImages = () => {
+    if (selectedSplitImages.length === splitImages.length) {
+      setSelectedSplitImages([]);
+    } else {
+      setSelectedSplitImages(splitImages.map(img => img.url));
+    }
+  };
+
+  // Handle bulk auto categorization for selected split images
+  const handleBulkAutoFromSplit = async () => {
+    if (selectedSplitImages.length === 0) {
+      toast.error("Please select at least one image");
+      return;
+    }
+
+    setIsUploading(true);
+    const loadingToast = toast.loading(`Processing ${selectedSplitImages.length} image${selectedSplitImages.length > 1 ? 's' : ''}...`);
+
+    try {
+      const userId = await getUserIdFromAuth(user);
+
+      // Get only selected image URLs
+      const selectedUrls = selectedSplitImages;
+
+      // Phase 2: Bulk upload with auto categorization
+      const response = await wardrobeAPI.bulkUploadAuto({
+        userId,
+        imageURLs: selectedUrls,
+      });
+
+      const succeededCount = response.itemIds.length;
+      const hasFailedItems = response.failedItems && response.failedItems.length > 0;
+
+      // Case 1: All items failed (0 succeeded, all failed)
+      if (succeededCount === 0 && hasFailedItems) {
+        toast.warning(
+          `All ${response.failedItems!.length} item${response.failedItems!.length > 1 ? 's' : ''} couldn't be auto-categorized. Please categorize manually.`,
+          { id: loadingToast }
+        );
+        setFailedItems(response.failedItems!);
+        setCurrentStep(STEP.MANUAL_CATEGORIZE);
+      }
+      // Case 2: Some succeeded, some failed (partial success)
+      else if (succeededCount > 0 && hasFailedItems) {
+        toast.success(
+          `Successfully added ${succeededCount} item${succeededCount > 1 ? 's' : ''}!`,
+          { id: loadingToast }
+        );
+        toast.warning(
+          `${response.failedItems!.length} item${response.failedItems!.length > 1 ? 's' : ''} couldn't be auto-categorized. Please categorize manually.`
+        );
+
+        // Refresh wardrobe items
+        const state = useWardrobeStore.getState();
+        await state.fetchItems();
+
+        // Store uploaded item IDs
+        setUploadedItemIds(response.itemIds);
+        setFailedItems(response.failedItems!);
+        setCurrentStep(STEP.MANUAL_CATEGORIZE);
+      }
+      // Case 3: All succeeded (full success)
+      else if (succeededCount > 0) {
+        toast.success(
+          `Successfully added ${succeededCount} item${succeededCount > 1 ? 's' : ''}!`,
+          { id: loadingToast }
+        );
+
+        // Fetch each uploaded item individually and add to store
+        const state = useWardrobeStore.getState();
+        for (const itemId of response.itemIds) {
+          try {
+            const item = await wardrobeAPI.getItem(itemId);
+            state.addItemOptimistic(item);
+          } catch (error) {
+            console.error(`Failed to fetch item ${itemId}:`, error);
+          }
+        }
+
+        // Store uploaded item IDs and go directly to AI analysis
+        setUploadedItemIds(response.itemIds);
+        setSelectedItemsForAnalysis(response.itemIds); // Pre-select all items
+        setCurrentStep(STEP.AI_ANALYSIS);
+      }
+      // Case 4: Complete failure (shouldn't happen, but handle it)
+      else {
+        toast.error("Failed to create items. Please try again.", { id: loadingToast });
+      }
+    } catch (error) {
+      console.error("❌ Bulk auto error:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to process images",
+        { id: loadingToast }
+      );
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -671,6 +784,8 @@ export function AddItemWizard({ open, onOpenChange, editMode, editItemId, editIt
                       ? "Add Items to Wardrobe"
                       : currentStep === STEP.UPLOAD
                       ? uploadMode === 'outfit' ? "Upload Outfit Image" : "Add Items to Wardrobe"
+                      : currentStep === STEP.SPLIT_SELECTION
+                      ? "Select Items to Add"
                       : currentStep === STEP.MANUAL_CATEGORIZE
                       ? "Manual Categorization"
                       : "AI Analysis"
@@ -683,6 +798,8 @@ export function AddItemWizard({ open, onOpenChange, editMode, editItemId, editIt
                       ? uploadMode === 'outfit'
                         ? "Upload a single image containing multiple items"
                         : "Upload up to 10 images to add to your wardrobe"
+                      : currentStep === STEP.SPLIT_SELECTION
+                      ? "Select which items you want to add to your wardrobe"
                       : currentStep === STEP.MANUAL_CATEGORIZE
                       ? "Select a category for each item"
                       : "Select items to analyze with AI for detailed attributes"
@@ -772,6 +889,99 @@ export function AddItemWizard({ open, onOpenChange, editMode, editItemId, editIt
                   </motion.div>
                 )}
 
+                {currentStep === STEP.SPLIT_SELECTION && (
+                  <motion.div
+                    key="split-selection"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.3 }}
+                    className="flex-1 overflow-hidden flex flex-col"
+                  >
+                    {/* Selection Header */}
+                    <div className="flex items-center justify-between mb-4 flex-shrink-0">
+                      <div className="flex items-center gap-3">
+                        <CheckCircle2 className="w-6 h-6 text-green-400" />
+                        <span className="font-bricolage text-lg text-white font-semibold">
+                          {selectedSplitImages.length} of {splitImages.length} items selected
+                        </span>
+                      </div>
+                      <GlassButton
+                        onClick={toggleSelectAllSplitImages}
+                        variant="custom"
+                        backgroundColor="rgba(255, 255, 255, 0.2)"
+                        borderColor="rgba(255, 255, 255, 0.4)"
+                        textColor="white"
+                        size="sm"
+                      >
+                        {selectedSplitImages.length === splitImages.length ? "Deselect All" : "Select All"}
+                      </GlassButton>
+                    </div>
+
+                    {/* Split Images Grid */}
+                    <div className="flex-1 overflow-y-auto min-h-0 hide-scrollbar flex items-center justify-center" data-lenis-prevent>
+                      <div className="flex gap-6 justify-center max-w-4xl">
+                        {splitImages.map((splitImage) => (
+                          <div
+                            key={splitImage.url}
+                            onClick={() => toggleSplitImageSelection(splitImage.url)}
+                            className="group relative w-80 flex flex-col cursor-pointer p-1"
+                          >
+                            {/* GlassCard wrapper */}
+                            <div
+                              className={
+                                selectedSplitImages.includes(splitImage.url)
+                                  ? "relative flex flex-col p-3 rounded-2xl transition-all duration-100 bg-gradient-to-br from-cyan-300/30 via-blue-200/10 to-indigo-300/30 backdrop-blur-md border-2 border-cyan-400/60 shadow-lg shadow-cyan-500/40 ring-2 ring-cyan-400/30 ring-offset-2 ring-offset-transparent"
+                                  : "relative flex flex-col p-3 rounded-2xl transition-all duration-100 bg-gradient-to-br from-cyan-300/30 via-blue-200/10 to-indigo-300/30 backdrop-blur-md border-2 border-white/20 hover:border-cyan-400/40"
+                              }
+                            >
+                              {/* Selection Indicator */}
+                              <div className={
+                                selectedSplitImages.includes(splitImage.url)
+                                  ? "absolute top-3 right-3 z-10 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-100 border-2 bg-cyan-500 border-white/50 shadow-lg"
+                                  : "absolute top-3 right-3 z-10 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-100 border-2 bg-white/20 backdrop-blur-md border-white/30"
+                              }>
+                                {selectedSplitImages.includes(splitImage.url) && <CheckCircle2 className="w-5 h-5 text-white" />}
+                              </div>
+
+                              {/* Image Container */}
+                              <div className="bg-white/5 rounded-lg aspect-square overflow-hidden relative mb-3">
+                                <Image
+                                  src={splitImage.url}
+                                  alt={splitImage.category}
+                                  width="100%"
+                                  height="100%"
+                                  className="object-cover rounded-lg"
+                                  preview={false}
+                                  loading="lazy"
+                                  placeholder={false}
+                                  style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'cover',
+                                    display: 'block',
+                                    borderRadius: '0.5rem'
+                                  }}
+                                  wrapperClassName="w-full h-full"
+                                  rootClassName="w-full h-full !block"
+                                />
+                              </div>
+
+                              {/* Item Details */}
+                              <div className="flex flex-col px-1">
+                                {/* Category */}
+                                <span className="px-2 py-1 rounded-full bg-white/10 border border-white/20 text-white/90 text-xs font-medium truncate text-center">
+                                  {splitImage.category}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
                 {currentStep === STEP.MANUAL_CATEGORIZE && (
                   <motion.div
                     key="categorize"
@@ -838,18 +1048,34 @@ export function AddItemWizard({ open, onOpenChange, editMode, editItemId, editIt
                       </GlassButton>
                     </div>
 
-                    {/* Items Grid */}
+                    {/* Items Grid - Center layout for outfit mode (2 items) */}
                     <div className="flex-1 overflow-y-auto min-h-0 hide-scrollbar" data-lenis-prevent>
-                      <div className="grid grid-cols-5 gap-4">
-                        {uploadedItems.map((item) => (
-                          <AnalysisItemCard
-                            key={item.id}
-                            item={item}
-                            isSelected={selectedSet.has(item.id!)}
-                            onToggle={toggleItemSelection}
-                          />
-                        ))}
-                      </div>
+                      {uploadedItems.length === 2 ? (
+                        /* Centered layout for 2 items (outfit mode) */
+                        <div className="flex gap-6 justify-center items-center h-full">
+                          {uploadedItems.map((item) => (
+                            <div key={item.id} className="w-80">
+                              <AnalysisItemCard
+                                item={item}
+                                isSelected={selectedSet.has(item.id!)}
+                                onToggle={toggleItemSelection}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        /* Grid layout for multiple items */
+                        <div className="grid grid-cols-5 gap-4">
+                          {uploadedItems.map((item) => (
+                            <AnalysisItemCard
+                              key={item.id}
+                              item={item}
+                              isSelected={selectedSet.has(item.id!)}
+                              onToggle={toggleItemSelection}
+                            />
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </motion.div>
                 )}
@@ -908,6 +1134,43 @@ export function AddItemWizard({ open, onOpenChange, editMode, editItemId, editIt
                           <>
                             <Upload className="w-5 h-5" />
                             {uploadMode === 'outfit' ? 'Split Outfit Image' : 'Upload & Add to Wardrobe'}
+                          </>
+                        )}
+                      </GlassButton>
+                    </>
+                  ) : currentStep === STEP.SPLIT_SELECTION ? (
+                    <>
+                      <GlassButton
+                        onClick={resetAndClose}
+                        disabled={isUploading}
+                        variant="custom"
+                        backgroundColor="rgba(255, 255, 255, 0.3)"
+                        borderColor="rgba(255, 255, 255, 0.5)"
+                        textColor="#374151"
+                        size="md"
+                      >
+                        <X className="w-5 h-5" />
+                        Cancel
+                      </GlassButton>
+
+                      <GlassButton
+                        onClick={handleBulkAutoFromSplit}
+                        disabled={isUploading || selectedSplitImages.length === 0}
+                        variant="custom"
+                        backgroundColor="rgba(59, 130, 246, 0.6)"
+                        borderColor="rgba(59, 130, 246, 0.8)"
+                        textColor="white"
+                        size="md"
+                      >
+                        {isUploading ? (
+                          <>
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                            Processing...
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle2 className="w-5 h-5" />
+                            Add Selected Items ({selectedSplitImages.length})
                           </>
                         )}
                       </GlassButton>

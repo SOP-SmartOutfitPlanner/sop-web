@@ -198,106 +198,177 @@ export function StepPhotoAI({
         {/* Image Grid - At Top */}
         {imageFiles.length > 0 ? (
           <>
-            {/* Header - Fixed height */}
-            <div className="flex items-center justify-between mb-1.5 flex-shrink-0">
-              <h3 className="font-bricolage font-bold text-sm text-white">
-                Selected ({imageFiles.length}/{maxImages})
-              </h3>
-              <button
-                onClick={handleClearAll}
-                className="px-3 py-2 bg-gradient-to-r from-blue-500/60 to-cyan-500/60 hover:from-blue-600/70 hover:to-cyan-600/70 backdrop-blur-sm text-white rounded-lg font-bricolage font-semibold shadow-lg transition-all duration-200 border border-blue-400/50 text-xs h-8 flex items-center"
-              >
-                <X className="w-3.5 h-3.5 mr-1" />
-                Clear
-              </button>
-            </div>
-
-            {/* Image Grid - Scrollable container */}
-            <div
-              className="flex-1 mb-2 overflow-y-auto overflow-x-hidden min-h-0 hide-scrollbar"
-              data-lenis-prevent
-            >
-              <div className="grid grid-cols-5 gap-2">
-                <AntImage.PreviewGroup>
-                  {imageFiles.map((imageFile, index) => (
-                    <div
-                      key={imageFile.id}
-                      className="relative group aspect-square rounded-lg overflow-hidden hover:shadow-lg transition-all duration-200"
-                    >
+            {maxImages === 1 ? (
+              /* Single Image Centered Layout for Outfit Mode */
+              <div className="flex-1 flex items-center justify-center">
+                <div className="relative inline-block max-w-[90%] max-h-[70vh]">
+                  <div className="relative rounded-2xl overflow-hidden shadow-2xl">
+                    <AntImage.PreviewGroup>
                       <AntImage
-                        src={imageFile.preview}
-                        alt={`Image ${index + 1}`}
-                        className="w-full h-full object-cover"
+                        src={imageFiles[0].preview}
+                        alt="Outfit Image"
+                        className="block"
+                        style={{
+                          maxWidth: '100%',
+                          maxHeight: '50vh',
+                          height: 'auto',
+                          width: 'auto',
+                          objectFit: 'contain',
+                          display: 'block',
+                        }}
                         preview={{
                           mask: (
                             <div className="flex items-center justify-center">
-                              <span className="text-white font-bricolage font-medium text-xs">
+                              <span className="text-white font-bricolage font-medium">
                                 Preview
                               </span>
                             </div>
                           ),
                         }}
                       />
+                    </AntImage.PreviewGroup>
 
-                      {/* Edit and Remove buttons */}
-                      <div className="absolute top-0.5 right-0.5 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEditingImage({ url: imageFile.preview, index });
-                          }}
-                          className="w-7 h-7 rounded bg-blue-500 hover:bg-blue-600 flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-110"
-                          title="Edit image"
-                        >
-                          <Edit2 className="w-3 h-3 text-white" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRemoveImage(index);
-                          }}
-                          className="w-7 h-7 rounded bg-red-500 hover:bg-red-600 flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-110"
-                          title="Remove image"
-                        >
-                          <X className="w-3 h-3 text-white" />
-                        </button>
-                      </div>
-
-                      {/* File info overlay */}
-                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-1 py-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                        <p className="text-[8px] text-white font-bricolage font-medium truncate">
-                          {imageFile.file.name}
-                        </p>
-                      </div>
+                    {/* Edit and Remove buttons - Always visible */}
+                    <div className="absolute top-3 right-3 flex gap-2 z-10">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingImage({ url: imageFiles[0].preview, index: 0 });
+                        }}
+                        className="w-10 h-10 rounded-lg bg-blue-500/90 hover:bg-blue-600 flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-110 backdrop-blur-sm"
+                        title="Edit image"
+                      >
+                        <Edit2 className="w-5 h-5 text-white" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRemoveImage(0);
+                        }}
+                        className="w-10 h-10 rounded-lg bg-red-500/90 hover:bg-red-600 flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-110 backdrop-blur-sm"
+                        title="Remove image"
+                      >
+                        <X className="w-5 h-5 text-white" />
+                      </button>
                     </div>
-                  ))}
-                </AntImage.PreviewGroup>
-              </div>
-            </div>
 
-            {/* Add More Button - Fixed at bottom */}
-            {canAddMore && (
-              <div className="flex justify-center flex-shrink-0 mt-2">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  className="hidden"
-                  onChange={(e) => {
-                    if (e.target.files && e.target.files.length > 0) {
-                      handleFileSelect(e.target.files);
-                    }
-                  }}
-                />
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="px-4 py-2 bg-gradient-to-r from-blue-500/60 to-cyan-500/60 hover:from-blue-600/70 hover:to-cyan-600/70 backdrop-blur-sm text-white rounded-lg font-bricolage font-semibold shadow-lg transition-all duration-200 border border-blue-400/50 flex items-center"
-                >
-                  <Plus className="w-5 h-5 mr-2" />
-                  Add More Images ({imageFiles.length}/{maxImages})
-                </button>
+                    {/* File info - Always visible */}
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent px-4 py-3">
+                      <p className="text-sm text-white font-bricolage font-medium truncate">
+                        {imageFiles[0].file.name}
+                      </p>
+                      <p className="text-xs text-gray-300 font-bricolage mt-1">
+                        {(imageFiles[0].file.size / 1024 / 1024).toFixed(2)} MB
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
+            ) : (
+              /* Multiple Images Grid Layout */
+              <>
+                {/* Header - Fixed height */}
+                <div className="flex items-center justify-between mb-1.5 flex-shrink-0">
+                  <h3 className="font-bricolage font-bold text-sm text-white">
+                    Selected ({imageFiles.length}/{maxImages})
+                  </h3>
+                  <button
+                    onClick={handleClearAll}
+                    className="px-3 py-2 bg-gradient-to-r from-blue-500/60 to-cyan-500/60 hover:from-blue-600/70 hover:to-cyan-600/70 backdrop-blur-sm text-white rounded-lg font-bricolage font-semibold shadow-lg transition-all duration-200 border border-blue-400/50 text-xs h-8 flex items-center"
+                  >
+                    <X className="w-3.5 h-3.5 mr-1" />
+                    Clear
+                  </button>
+                </div>
+
+                {/* Image Grid - Scrollable container */}
+                <div
+                  className="flex-1 mb-2 overflow-y-auto overflow-x-hidden min-h-0 hide-scrollbar"
+                  data-lenis-prevent
+                >
+                  <div className="grid grid-cols-5 gap-2">
+                    <AntImage.PreviewGroup>
+                      {imageFiles.map((imageFile, index) => (
+                        <div
+                          key={imageFile.id}
+                          className="relative group aspect-square rounded-lg overflow-hidden hover:shadow-lg transition-all duration-200"
+                        >
+                          <AntImage
+                            src={imageFile.preview}
+                            alt={`Image ${index + 1}`}
+                            className="w-full h-full object-cover"
+                            preview={{
+                              mask: (
+                                <div className="flex items-center justify-center">
+                                  <span className="text-white font-bricolage font-medium text-xs">
+                                    Preview
+                                  </span>
+                                </div>
+                              ),
+                            }}
+                          />
+
+                          {/* Edit and Remove buttons */}
+                          <div className="absolute top-0.5 right-0.5 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingImage({ url: imageFile.preview, index });
+                              }}
+                              className="w-7 h-7 rounded bg-blue-500 hover:bg-blue-600 flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-110"
+                              title="Edit image"
+                            >
+                              <Edit2 className="w-3 h-3 text-white" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRemoveImage(index);
+                              }}
+                              className="w-7 h-7 rounded bg-red-500 hover:bg-red-600 flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-110"
+                              title="Remove image"
+                            >
+                              <X className="w-3 h-3 text-white" />
+                            </button>
+                          </div>
+
+                          {/* File info overlay */}
+                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-1 py-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            <p className="text-[8px] text-white font-bricolage font-medium truncate">
+                              {imageFile.file.name}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </AntImage.PreviewGroup>
+                  </div>
+                </div>
+
+                {/* Add More Button - Fixed at bottom */}
+                {canAddMore && (
+                  <div className="flex justify-center flex-shrink-0 mt-2">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files.length > 0) {
+                          handleFileSelect(e.target.files);
+                        }
+                      }}
+                    />
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-4 py-2 bg-gradient-to-r from-blue-500/60 to-cyan-500/60 hover:from-blue-600/70 hover:to-cyan-600/70 backdrop-blur-sm text-white rounded-lg font-bricolage font-semibold shadow-lg transition-all duration-200 border border-blue-400/50 flex items-center"
+                    >
+                      <Plus className="w-5 h-5 mr-2" />
+                      Add More Images ({imageFiles.length}/{maxImages})
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </>
         ) : (
