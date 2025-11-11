@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { TuiImageEditor } from "./TuiImageEditor";
 
-const MAX_IMAGES = 10;
+const DEFAULT_MAX_IMAGES = 10;
 const MAX_FILE_SIZE_MB = 10;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
@@ -21,11 +21,13 @@ interface ImageFile {
 interface StepPhotoAIProps {
   onFilesSelect?: (files: File[]) => void;
   onClearFiles?: () => void;
+  maxImages?: number;
 }
 
 export function StepPhotoAI({
   onFilesSelect,
   onClearFiles,
+  maxImages = DEFAULT_MAX_IMAGES,
 }: StepPhotoAIProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [imageFiles, setImageFiles] = useState<ImageFile[]>([]);
@@ -48,8 +50,8 @@ export function StepPhotoAI({
     const fileArray = Array.from(files);
     const currentCount = imageFiles.length;
 
-    if (currentCount + fileArray.length > MAX_IMAGES) {
-      toast.error(`You can only upload up to ${MAX_IMAGES} images`);
+    if (currentCount + fileArray.length > maxImages) {
+      toast.error(`You can only upload up to ${maxImages} image${maxImages > 1 ? 's' : ''}`);
       return;
     }
 
@@ -174,7 +176,7 @@ export function StepPhotoAI({
     toast.success("Image updated");
   };
 
-  const canAddMore = imageFiles.length < MAX_IMAGES;
+  const canAddMore = imageFiles.length < maxImages;
 
   return (
     <>
@@ -199,7 +201,7 @@ export function StepPhotoAI({
             {/* Header - Fixed height */}
             <div className="flex items-center justify-between mb-1.5 flex-shrink-0">
               <h3 className="font-bricolage font-bold text-sm text-white">
-                Selected ({imageFiles.length}/{MAX_IMAGES})
+                Selected ({imageFiles.length}/{maxImages})
               </h3>
               <button
                 onClick={handleClearAll}
@@ -293,7 +295,7 @@ export function StepPhotoAI({
                   className="px-4 py-2 bg-gradient-to-r from-blue-500/60 to-cyan-500/60 hover:from-blue-600/70 hover:to-cyan-600/70 backdrop-blur-sm text-white rounded-lg font-bricolage font-semibold shadow-lg transition-all duration-200 border border-blue-400/50 flex items-center"
                 >
                   <Plus className="w-5 h-5 mr-2" />
-                  Add More Images ({imageFiles.length}/{MAX_IMAGES})
+                  Add More Images ({imageFiles.length}/{maxImages})
                 </button>
               </div>
             )}
@@ -338,7 +340,7 @@ export function StepPhotoAI({
                   or click the button below to select files
                 </p>
                 <p className="font-bricolage text-[10px] text-gray-500 mt-1">
-                  Max {MAX_IMAGES} images, {MAX_FILE_SIZE_MB}MB each • PNG, JPG, WEBP
+                  Max {maxImages} image{maxImages > 1 ? 's' : ''}, {MAX_FILE_SIZE_MB}MB each • PNG, JPG, WEBP
                 </p>
               </div>
 
