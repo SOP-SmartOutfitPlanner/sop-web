@@ -23,6 +23,7 @@ export function EditPostDialog({
     caption: string;
     tags: string[];
     files?: File[];
+    existingImageUrls?: string[];
   }) => {
     try {
       setIsSubmitting(true);
@@ -35,10 +36,43 @@ export function EditPostDialog({
         formData.append("Hashtags", tag);
       });
 
-      // Add new images
-      data.files?.forEach((file) => {
-        formData.append("Images", file);
-      });
+      // API only accepts File objects in "Images" field, not URLs
+      // Convert existing image URLs to File objects and send them along with new files
+      const hasExistingUrls = data.existingImageUrls && data.existingImageUrls.length > 0;
+      const hasNewFiles = data.files && data.files.length > 0;
+
+      // Convert existing image URLs to File objects
+      if (hasExistingUrls) {
+        try {
+          const existingImageFiles = await Promise.all(
+            data.existingImageUrls.map(async (url) => {
+              const response = await fetch(url);
+              if (!response.ok) {
+                throw new Error(`Failed to fetch image: ${response.statusText}`);
+              }
+              const blob = await response.blob();
+              const urlParts = url.split("/");
+              const filename = urlParts[urlParts.length - 1] || `existing-image.jpg`;
+              return new File([blob], filename, { type: blob.type || "image/jpeg" });
+            })
+          );
+
+          existingImageFiles.forEach((file) => {
+            formData.append("Images", file);
+          });
+        } catch (error) {
+          console.error("Error converting existing images to files:", error);
+          toast.error("Failed to load existing images. Please try again.");
+          throw error;
+        }
+      }
+
+      // Add new images (File objects)
+      if (hasNewFiles) {
+        data.files.forEach((file) => {
+          formData.append("Images", file);
+        });
+      }
 
       // Call API to update post
       const postId = parseInt(post.id, 10);

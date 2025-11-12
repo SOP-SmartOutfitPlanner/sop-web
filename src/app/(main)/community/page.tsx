@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useCommunityAuth } from "@/hooks/useCommunityAuth";
 import { useCommunityFilters } from "@/hooks/useCommunityFilters";
 import { useCreatePost } from "@/hooks/useCreatePost";
@@ -20,6 +21,10 @@ import {
 export default function Community() {
   // Authentication
   const { isInitialized } = useCommunityAuth();
+  
+  // Get URL params for hashtag filter
+  const searchParams = useSearchParams();
+  const hashtagId = searchParams.get("hashtag");
 
   // Filter state management
   const {
@@ -75,6 +80,7 @@ export default function Community() {
       <InfiniteScrollFeed
         searchQuery={debouncedSearchQuery}
         refreshKey={feedRefreshKey}
+        initialHashtagId={hashtagId ? parseInt(hashtagId, 10) : undefined}
       />
     </CommunityLayout>
   );

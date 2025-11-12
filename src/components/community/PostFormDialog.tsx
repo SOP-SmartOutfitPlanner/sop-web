@@ -42,6 +42,8 @@ export function PostFormDialog({
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [caption, setCaption] = useState("");
 
+  const isEditMode = mode === "edit";
+
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
@@ -69,18 +71,22 @@ export function PostFormDialog({
     },
   });
 
-  const isEditMode = mode === "edit";
-
   // Initialize editor with post data in edit mode
   useEffect(() => {
-    if (isEditMode && editor && post?.caption) {
+    if (isEditMode && editor && post) {
       // Reconstruct caption with hashtags
       const hashtagsText = post.tags?.map((tag) => `#${tag.name}`).join(" ");
       const fullCaption = hashtagsText
         ? `${post.caption} ${hashtagsText}`
         : post.caption;
+
       editor.commands.setContent(fullCaption);
       setCaption(editor.getText());
+
+      // Initialize selected images
+      if (post.images && post.images.length > 0) {
+        setSelectedImages(post.images);
+      }
     }
   }, [editor, isEditMode, post]);
 
@@ -116,9 +122,8 @@ export function PostFormDialog({
     // In edit mode, only remove from files if it's a newly added image
     if (isEditMode && post) {
       if (index >= post.images.length) {
-        setSelectedFiles((prev) =>
-          prev.filter((_, i) => i !== index - post.images.length)
-        );
+        const fileIndex = index - post.images.length;
+        setSelectedFiles((prev) => prev.filter((_, i) => i !== fileIndex));
       }
     } else {
       // In create mode, simply remove from files
@@ -137,7 +142,6 @@ export function PostFormDialog({
     const fullCaption = editor.getText().trim();
 
     if (!fullCaption) {
-      console.warn("Caption is empty");
       return;
     }
 
@@ -148,11 +152,32 @@ export function PostFormDialog({
     // Remove hashtags from caption
     const captionWithoutHashtags = fullCaption.replace(/#\w+/g, "").trim();
 
-    await onSubmit({
+    // Calculate remaining original images (images that are still selected but not new files)
+    // In edit mode: selectedImages = [original images...] + [new file previews...]
+    // We need to find which images are original (URLs) vs new (data URLs from FileReader)
+    const originalImages = isEditMode && post ? post.images || [] : [];
+    const remainingOriginalImages: string[] = [];
+    
+    if (isEditMode && post && originalImages.length > 0) {
+      selectedImages.forEach((img) => {
+        // Original images are URLs (start with http/https), new images are data URLs (start with data:)
+        if (
+          (img.startsWith("http://") || img.startsWith("https://")) &&
+          originalImages.includes(img)
+        ) {
+          remainingOriginalImages.push(img);
+        }
+      });
+    }
+
+    const submitData = {
       caption: captionWithoutHashtags,
       tags: hashtags,
       files: selectedFiles.length > 0 ? selectedFiles : undefined,
-    });
+      existingImageUrls: isEditMode ? remainingOriginalImages : undefined,
+    };
+
+    await onSubmit(submitData);
 
     // Reset form for create mode
     if (!isEditMode) {
