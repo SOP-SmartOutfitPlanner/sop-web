@@ -5,11 +5,9 @@ import { X, Heart, Edit, Trash2, Calendar, User } from "lucide-react";
 import GlassButton from "@/components/ui/glass-button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Outfit } from "@/types/outfit";
-import { WardrobeItem } from "@/types";
 import { useSaveFavoriteOutfit, useOutfit } from "@/hooks/useOutfits";
 import { format } from "date-fns";
-import { ItemCard } from "../wardrobe";
-import { parseColors } from "@/lib/utils/color-utils";
+import { OutfitItemCard } from "./OutfitItemCard";
 
 interface ViewOutfitDialogProps {
   open: boolean;
@@ -106,36 +104,6 @@ const ViewOutfitDialogComponent = ({
     return format(new Date(outfit.createdDate), "MMMM d, yyyy");
   }, [outfit]);
 
-  // Convert outfit items to WardrobeItem format
-  const wardrobeItems = useMemo(() => {
-    if (!outfit) return [];
-    
-    return outfit.items.map((item): WardrobeItem => ({
-      id: item.itemId?.toString() || item.id?.toString() || "",
-      name: item.name,
-      type: "top" as const, // Default type since outfit items don't have this field
-      category: {
-        id: item.categoryId || 0,
-        name: item.categoryName || "Uncategorized",
-      },
-      imageUrl: item.imgUrl,
-      colors: parseColors(item.color), // Use color parser to get proper hex codes
-      fabric: item.fabric || "",
-      brand: item.brand || "",
-      weatherSuitable: item.weatherSuitable || "",
-      condition: item.condition || "",
-      pattern: item.pattern || "",
-      seasons: [],
-      occasions: [],
-      styles: [],
-      isAnalyzed: true,
-      aiConfidence: 100,
-      status: "active",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    }));
-  }, [outfit]);
-
   if (!open || !outfit) return null;
 
   return (
@@ -205,11 +173,10 @@ const ViewOutfitDialogComponent = ({
             <div className="flex-1 px-12 py-4 overflow-y-auto min-h-0 hide-scrollbar" data-lenis-prevent>
               {/* Items Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                {wardrobeItems.map((item) => (
-                  <ItemCard 
-                    key={item.id} 
+                {outfit.items.map((item) => (
+                  <OutfitItemCard 
+                    key={item.itemId || item.id} 
                     item={item}
-                    showCheckbox={false}
                   />
                 ))}
               </div>
