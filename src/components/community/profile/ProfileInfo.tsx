@@ -112,12 +112,12 @@ export function ProfileInfo({
             >
               {isFollowing ? "Following" : "Follow"}
             </Button>
-            <Button
+            {/* <Button
               onClick={onMessage}
               className="flex-1 h-10 text-sm font-semibold rounded-lg bg-gradient-to-r from-cyan-500/40 to-blue-500/40 text-white border border-cyan-400/50 hover:from-cyan-500/60 hover:to-blue-500/60 hover:border-cyan-400/70 hover:shadow-lg hover:shadow-cyan-500/30 transition-all duration-300"
             >
               Message
-            </Button>
+            </Button> */}
             <Button
               onClick={onShare}
               className="h-10 w-10 rounded-lg bg-gradient-to-r from-cyan-500/40 to-blue-500/40 text-cyan-200 border border-cyan-400/50 hover:from-cyan-500/60 hover:to-blue-500/60 hover:border-cyan-400/70 hover:shadow-lg hover:shadow-cyan-500/30 transition-all duration-300 p-0 flex items-center justify-center"

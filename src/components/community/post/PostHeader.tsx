@@ -26,6 +26,7 @@ import {
   Trophy,
   Trash2,
   Edit,
+  Flag,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -148,19 +149,33 @@ export function PostHeader({
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0 rounded-full text-blue-200/70 hover:bg-white/10 hover:text-white transition-colors"
+              aria-label="Open post options"
+            >
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent
+            align="end"
+            className="min-w-[180px] backdrop-blur-xl bg-gradient-to-br from-cyan-950/60 via-blue-950/50 to-indigo-950/60 border-2 border-cyan-400/25 shadow-2xl shadow-cyan-500/20 text-white/90"
+          >
             {isAuthorStylist && !isOwnPost && (
-              <DropdownMenuItem onClick={onMessageAuthor}>
+              <DropdownMenuItem
+                onClick={onMessageAuthor}
+                className="focus:bg-cyan-500/20 focus:text-white cursor-pointer"
+              >
                 <MessageCircle className="w-4 h-4 mr-2" />
                 Message author
               </DropdownMenuItem>
             )}
             {isOwnPost && onEdit && (
-              <DropdownMenuItem onClick={onEdit}>
+              <DropdownMenuItem
+                onClick={onEdit}
+                className="focus:bg-cyan-500/20 focus:text-white cursor-pointer"
+              >
                 <Edit className="w-4 h-4 mr-2" />
                 Edit post
               </DropdownMenuItem>
@@ -168,14 +183,18 @@ export function PostHeader({
             {isOwnPost && onDelete && (
               <DropdownMenuItem
                 onClick={() => setIsDeleteDialogOpen(true)}
-                className="text-destructive focus:text-destructive"
+                className="text-red-400 focus:text-red-300 focus:bg-red-500/20 cursor-pointer"
               >
                 <Trash2 className="w-4 h-4 mr-2" />
                 Delete post
               </DropdownMenuItem>
             )}
             {!isOwnPost && (
-              <DropdownMenuItem onClick={() => onReport("inappropriate")}>
+              <DropdownMenuItem
+                onClick={() => onReport("inappropriate")}
+                className="focus:bg-cyan-500/20 focus:text-white cursor-pointer"
+              >
+                <Flag className="w-4 h-4 mr-2" />
                 Report
               </DropdownMenuItem>
             )}
