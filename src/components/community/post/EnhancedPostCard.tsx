@@ -15,7 +15,7 @@ interface EnhancedPostCardProps {
   post: Post;
   currentUser: CommunityUser;
   onLike: () => void;
-  onReport: (reason: string) => void;
+  onReport: (reason: string) => Promise<void>;
   onRequestStylist?: (post: Post) => void;
   showChallengeEntry?: boolean;
   onPostDeleted?: (postId: string) => void;

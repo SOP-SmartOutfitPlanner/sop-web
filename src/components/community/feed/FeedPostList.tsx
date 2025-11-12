@@ -9,7 +9,7 @@ interface FeedPostListProps {
   posts: Post[];
   currentUser: CommunityUser;
   onLike: (postId: string | number) => void;
-  onReport: (postId: number, reason: string) => void;
+  onReport: (postId: number, description: string) => Promise<void>;
   onDeletePost?: (postId: number) => Promise<void>;
   onEditPost?: (post: Post) => void;
 }
@@ -35,7 +35,7 @@ export function FeedPostList({
             post={post}
             currentUser={currentUser}
             onLike={() => onLike(post.id)}
-            onReport={(reason) => onReport(parseInt(post.id), reason)}
+            onReport={(reason) => onReport(parseInt(post.id, 10), reason)}
             onDeletePost={onDeletePost}
             onEditPost={onEditPost ? () => onEditPost(post) : undefined}
           />

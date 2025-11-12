@@ -79,12 +79,31 @@ export function UserProfile({ userId }: UserProfileProps) {
     toast.success("Đã copy link profile");
   };
 
-  const handleReportPost = () => {
+  const handleReportPost = async (post: Post, reason: string) => {
     if (!currentUser?.id) {
-      toast.error("Vui lòng đăng nhập");
-      return;
+      const message = "Vui lòng đăng nhập";
+      toast.error(message);
+      throw new Error(message);
     }
-    toast.success("Cảm ơn bạn đã báo cáo");
+
+    try {
+      const response = await communityAPI.createReport({
+        postId: parseInt(post.id, 10),
+        userId: parseInt(currentUser.id, 10),
+        type: "POST",
+        description: reason,
+      });
+
+      toast.success("Cảm ơn bạn đã báo cáo", {
+        description: response?.message,
+      });
+    } catch (error) {
+      console.error("Error reporting post:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Không thể gửi báo cáo";
+      toast.error(errorMessage);
+      throw error instanceof Error ? error : new Error(errorMessage);
+    }
   };
 
   const handleEditPost = (post: Post) => {
@@ -168,7 +187,7 @@ export function UserProfile({ userId }: UserProfileProps) {
                       avatar: userProfile.avatar,
                     }}
                     onLike={() => handleLike(parseInt(post.id))}
-                    onReport={handleReportPost}
+                    onReport={(reason) => handleReportPost(post, reason)}
                     onEditPost={isOwnProfile ? () => handleEditPost(post) : undefined}
                   />
                 ))}
