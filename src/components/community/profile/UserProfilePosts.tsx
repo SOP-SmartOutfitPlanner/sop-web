@@ -6,6 +6,8 @@ import { EnhancedPostCard } from "@/components/community/post/EnhancedPostCard";
 import { PostSkeleton } from "@/components/community/feed/PostSkeleton";
 import { useAuthStore } from "@/store/auth-store";
 import { useUserPosts } from "@/hooks/community/useUserPosts";
+import { communityAPI } from "@/lib/api/community-api";
+import { toast } from "sonner";
 
 interface UserProfilePostsProps {
   userId: string;
@@ -30,6 +32,41 @@ export function UserProfilePosts({ userId, userName }: UserProfilePostsProps) {
     observerTarget,
     handleLike,
   } = useUserPosts(userId);
+
+  const handleReportPost = async (postId: string, reason: string) => {
+    if (!user?.id) {
+      const message = "Vui lòng đăng nhập";
+      toast.error(message);
+      throw new Error(message);
+    }
+
+    const parsedPostId = Number.parseInt(postId, 10);
+
+    if (Number.isNaN(parsedPostId)) {
+      const message = "ID bài viết không hợp lệ";
+      toast.error(message);
+      throw new Error(message);
+    }
+
+    try {
+      const response = await communityAPI.createReport({
+        postId: parsedPostId,
+        userId: Number.parseInt(user.id, 10),
+        type: "POST",
+        description: reason,
+      });
+
+      toast.success("Cảm ơn bạn đã báo cáo", {
+        description: response?.message,
+      });
+    } catch (error) {
+      console.error("Error reporting post:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Không thể gửi báo cáo";
+      toast.error(errorMessage);
+      throw error instanceof Error ? error : new Error(errorMessage);
+    }
+  };
 
   // Loading state
   if (isInitialLoading && posts.length === 0) {
@@ -79,7 +116,7 @@ export function UserProfilePosts({ userId, userName }: UserProfilePostsProps) {
                 avatar: user?.avatar,
               }}
               onLike={() => handleLike(parseInt(post.id))}
-              onReport={() => {}}
+              onReport={(reason) => handleReportPost(post.id, reason)}
               onEditPost={(post) => {
                 console.log("Edit post:", post);
                 // TODO: Open edit dialog with post data

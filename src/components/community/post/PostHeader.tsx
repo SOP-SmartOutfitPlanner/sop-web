@@ -29,6 +29,7 @@ import {
   Flag,
 } from "lucide-react";
 import { useState } from "react";
+import { ReportDialog } from "../report/ReportDialog";
 
 interface PostHeaderProps {
   user: CommunityUser;
@@ -38,7 +39,7 @@ interface PostHeaderProps {
   isOwnPost?: boolean;
   isFollowing?: boolean;
   onMessageAuthor: () => void;
-  onReport: (reason: string) => void;
+  onReport: (reason: string) => Promise<void>;
   onFollow?: () => void;
   onDelete?: () => Promise<void>;
   onEdit?: () => void;
@@ -59,6 +60,7 @@ export function PostHeader({
 }: PostHeaderProps) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
 
   const handleDeleteConfirm = async () => {
     if (!onDelete) return;
@@ -71,6 +73,8 @@ export function PostHeader({
       setIsDeleting(false);
     }
   };
+
+  const handleReportSubmit = async (reason: string) => onReport(reason);
 
   return (
     <div className="flex items-center justify-between">
@@ -191,7 +195,7 @@ export function PostHeader({
             )}
             {!isOwnPost && (
               <DropdownMenuItem
-                onClick={() => onReport("inappropriate")}
+                onClick={() => setIsReportDialogOpen(true)}
                 className="focus:bg-cyan-500/20 focus:text-white cursor-pointer"
               >
                 <Flag className="w-4 h-4 mr-2" />
@@ -201,6 +205,15 @@ export function PostHeader({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      <ReportDialog
+        open={isReportDialogOpen}
+        onOpenChange={setIsReportDialogOpen}
+        onSubmit={handleReportSubmit}
+        title="Report Post"
+        description="Select a reason for reporting this post. Our team will review it as soon as possible."
+        confirmLabel="Submit report"
+      />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog

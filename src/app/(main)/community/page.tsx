@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useCommunityAuth } from "@/hooks/useCommunityAuth";
 import { useCommunityFilters } from "@/hooks/useCommunityFilters";
 import { useCreatePost } from "@/hooks/useCreatePost";
@@ -31,6 +31,11 @@ export default function Community() {
   // Post creation
   const { createPost, isCreating } = useCreatePost();
   const [isNewPostOpen, setIsNewPostOpen] = useState(false);
+  const [feedRefreshKey, setFeedRefreshKey] = useState(0);
+
+  const handleFeedRefresh = useCallback(() => {
+    setFeedRefreshKey((prev) => prev + 1);
+  }, []);
 
   // Handle post creation and close dialog
   const handleCreatePost = async (postData: {
@@ -57,6 +62,7 @@ export default function Community() {
         onNewPostOpenChange={setIsNewPostOpen}
         onCreatePost={handleCreatePost}
         isSubmitting={isCreating}
+        onRefreshFeed={handleFeedRefresh}
       />
 
       {/* All filters grouped together */}
@@ -68,6 +74,7 @@ export default function Community() {
       {/* Infinite scroll feed - Uses debounced search for performance */}
       <InfiniteScrollFeed
         searchQuery={debouncedSearchQuery}
+        refreshKey={feedRefreshKey}
       />
     </CommunityLayout>
   );

@@ -8,50 +8,62 @@ import { useEffect } from "react";
  */
 export function useScrollLock(isLocked: boolean) {
   useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+
     if (isLocked) {
-      // Save current scroll position
       const scrollY = window.scrollY;
 
-      // Stop Lenis smooth scrolling
-      const html = document.documentElement;
+      // Persist scroll position so we can restore it later
+      body.dataset.scrollLockSavedPosition = scrollY.toString();
+
       html.classList.add("lenis-stopped");
       html.style.overflow = "hidden";
 
       // Prevent body scroll with !important level specificity
-      document.body.style.setProperty("overflow", "hidden", "important");
-      document.body.style.setProperty("position", "fixed", "important");
-      document.body.style.setProperty("width", "100%", "important");
-      document.body.style.setProperty("top", `-${scrollY}px`, "important");
-      document.body.style.setProperty("left", "0", "important");
-      document.body.style.setProperty("right", "0", "important");
+      body.style.setProperty("overflow", "hidden", "important");
+      body.style.setProperty("position", "fixed", "important");
+      body.style.setProperty("width", "100%", "important");
+      body.style.setProperty("top", `-${scrollY}px`, "important");
+      body.style.setProperty("left", "0", "important");
+      body.style.setProperty("right", "0", "important");
     } else {
-      // Re-enable Lenis smooth scrolling
-      const html = document.documentElement;
+      const savedScrollPosition = body.dataset.scrollLockSavedPosition;
+
       html.classList.remove("lenis-stopped");
       html.style.overflow = "";
 
-      // // Restore body scroll and scroll position
-      // const scrollY = document.body.style.top;
-      // document.body.style.removeProperty("overflow");
-      // document.body.style.removeProperty("position");
-      // document.body.style.removeProperty("width");
-      // document.body.style.removeProperty("top");
-      // document.body.style.removeProperty("left");
-      // document.body.style.removeProperty("right");
+      body.style.removeProperty("overflow");
+      body.style.removeProperty("position");
+      body.style.removeProperty("width");
+      body.style.removeProperty("top");
+      body.style.removeProperty("left");
+      body.style.removeProperty("right");
 
-      // if (scrollY) {
-      //   window.scrollTo(0, parseInt(scrollY || "0") * -1);
-      // }
+      if (savedScrollPosition) {
+        const top = parseInt(savedScrollPosition, 10);
+        body.removeAttribute("data-scroll-lock-saved-position");
+        window.scrollTo({ top });
+      }
     }
 
     // Cleanup on unmount
     return () => {
-      const html = document.documentElement;
       html.classList.remove("lenis-stopped");
-      document.body.style.overflow = "";
-      document.body.style.position = "";
-      document.body.style.width = "";
-      document.body.style.top = "";
+      html.style.overflow = "";
+
+      body.style.removeProperty("overflow");
+      body.style.removeProperty("position");
+      body.style.removeProperty("width");
+      body.style.removeProperty("top");
+      body.style.removeProperty("left");
+      body.style.removeProperty("right");
+
+      if (body.dataset.scrollLockSavedPosition) {
+        const top = parseInt(body.dataset.scrollLockSavedPosition, 10);
+        body.removeAttribute("data-scroll-lock-saved-position");
+        window.scrollTo({ top });
+      }
     };
   }, [isLocked]);
 }

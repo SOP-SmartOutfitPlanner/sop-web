@@ -21,21 +21,19 @@ export function Sidebar() {
     <div className="sticky top-4 space-y-6 max-h-[calc(100vh-32px)] overflow-y-auto">
       {/* Top Contributors Card - Glassmorphism Style */}
       <div className="relative group">
-        {/* Glass Container */}
-        <div className="absolute inset-0 bg-slate-950/20 rounded-2xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        <div className="absolute inset-0 rounded-2xl blur-xl bg-cyan-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-        {/* Main Card */}
-        <div className="relative backdrop-blur-xl bg-slate-950/40 border border-slate-700/30 hover:border-slate-700/50 rounded-2xl p-6 transition-all duration-300 shadow-lg shadow-slate-900/20 hover:shadow-slate-900/40">
-          {/* Inner glow overlay */}
+        <div className="relative backdrop-blur-2xl bg-gradient-to-br from-cyan-500/18 via-blue-500/12 to-indigo-500/18 border border-cyan-300/35 hover:border-cyan-200/50 rounded-2xl p-6 transition-all duration-300 shadow-xl shadow-cyan-900/20 hover:shadow-cyan-800/35">
           <div className="absolute inset-0 bg-gradient-to-t from-cyan-900/5 via-transparent to-white/5 rounded-2xl pointer-events-none" />
 
-          {/* Content */}
           <div className="relative z-10">
             <div className="flex items-center gap-2 mb-4">
-              <div className="p-2 rounded-lg bg-amber-500/20 border border-amber-400/30">
-                <Trophy className="w-5 h-5 text-amber-300" />
+              <div className="p-2 rounded-lg bg-amber-400/25 border border-amber-300/40 shadow-inner shadow-amber-400/30">
+                <Trophy className="w-5 h-5 text-amber-100" />
               </div>
-              <h3 className="font-bold text-lg text-white">Top Contributors</h3>
+              <h3 className="font-bold text-lg text-white drop-shadow-sm">
+                Top Contributors
+              </h3>
             </div>
 
             <TopContributorsList

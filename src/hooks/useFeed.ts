@@ -1,7 +1,29 @@
+import { useCallback } from "react";
+import { AxiosError } from "axios";
 import { useInfiniteQuery, useMutation, useQueryClient, InfiniteData } from "@tanstack/react-query";
-import { communityAPI, CommunityPost, FeedResponse } from "@/lib/api/community-api";
+import {
+  communityAPI,
+  CommunityPost,
+  FeedResponse,
+  ReportEntry,
+} from "@/lib/api/community-api";
 import { useAuthStore } from "@/store/auth-store";
 import { toast } from "sonner";
+
+const getErrorMessage = (error: unknown, fallback: string) => {
+  if (error instanceof AxiosError) {
+    const message = error.response?.data?.message ?? error.response?.data?.error;
+    if (typeof message === "string" && message.length > 0) {
+      return message;
+    }
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return fallback;
+};
 
 // Helper function to build full image URLs
 // API now returns full URLs from MinIO (https://storage.wizlab.io.vn/sop/...)
@@ -67,6 +89,10 @@ export function useFeed(pageSize: number = 10) {
     refetchOnMount: true,
     refetchOnWindowFocus: false,
   });
+
+  const resetFeed = useCallback(async () => {
+    await queryClient.removeQueries({ queryKey: ["posts", "all", user?.id] });
+  }, [queryClient, user?.id]);
 
   // Flatten all pages into single array of posts
   const allPosts: CommunityPost[] = data?.pages.flatMap((page) => page.data) ?? [];
@@ -183,21 +209,27 @@ export function useFeed(pageSize: number = 10) {
     mutationFn: async ({
       postId,
       userId,
-      reason,
+      description,
     }: {
       postId: number;
       userId: number;
-      reason: string;
+      description: string;
     }) => {
-      await communityAPI.reportPost(postId, userId, reason);
-    },
-    onSuccess: () => {
-      toast.success("Post reported", {
-        description: "Thank you for reporting. We'll review this content.",
+      return await communityAPI.createReport({
+        postId,
+        userId,
+        type: "POST",
+        description,
       });
     },
-    onError: () => {
-      toast.error("Failed to report post");
+    onSuccess: (response: { statusCode: number; message: string; data: ReportEntry }) => {
+      toast.success("Report submitted", {
+        description: response?.message || "Thank you for letting us know.",
+      });
+    },
+    onError: (error: unknown) => {
+      const message = getErrorMessage(error, "Failed to submit report");
+      toast.error(message);
     },
   });
 
@@ -224,10 +256,11 @@ export function useFeed(pageSize: number = 10) {
     // Actions
     fetchNextPage,
     refetch,
+    resetFeed,
     toggleLike,
     createPost: createPostMutation.mutate,
     deletePost: deletePostMutation.mutate,
-    reportPost: reportPostMutation.mutate,
+    reportPost: reportPostMutation.mutateAsync,
     
     // Mutation states
     isCreatingPost: createPostMutation.isPending,
