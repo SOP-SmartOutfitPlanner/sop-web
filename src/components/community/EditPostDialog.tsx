@@ -42,7 +42,7 @@ export function EditPostDialog({
       const hasNewFiles = data.files && data.files.length > 0;
 
       // Convert existing image URLs to File objects
-      if (hasExistingUrls) {
+      if (hasExistingUrls && data.existingImageUrls) {
         try {
           const existingImageFiles = await Promise.all(
             data.existingImageUrls.map(async (url) => {
@@ -68,7 +68,7 @@ export function EditPostDialog({
       }
 
       // Add new images (File objects)
-      if (hasNewFiles) {
+      if (hasNewFiles && data.files) {
         data.files.forEach((file) => {
           formData.append("Images", file);
         });
