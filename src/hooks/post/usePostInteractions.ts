@@ -6,7 +6,7 @@ interface UsePostInteractionsProps {
   post: Post;
   isOwnPost: boolean;
   onLike: () => void;
-  onReport: (reason: string) => void;
+  onReport: (reason: string) => Promise<void>;
   onDelete?: () => Promise<void>;
 }
 
@@ -64,12 +64,7 @@ export function usePostInteractions({
     }
   }, [isOwnPost, onDelete]);
 
-  const handleReport = useCallback(
-    (reason: string) => {
-      onReport(reason);
-    },
-    [onReport]
-  );
+  const handleReport = useCallback((reason: string) => onReport(reason), [onReport]);
 
   return {
     // State

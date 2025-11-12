@@ -57,6 +57,28 @@ export interface FeedResponse {
   metaData: FeedMetaData;
 }
 
+export type ReportType = "POST" | "COMMENT";
+
+export interface CreateReportRequest {
+  userId: number;
+  postId?: number;
+  commentId?: number;
+  type: ReportType;
+  description: string;
+}
+
+export interface ReportEntry {
+  id: number;
+  userId: number;
+  postId: number | null;
+  commentId: number | null;
+  type: ReportType;
+  action: "NONE" | "REMOVE" | "WARN";
+  status: "PENDING" | "REVIEWED" | "RESOLVED" | "REJECTED";
+  description: string;
+  createdDate: string;
+}
+
 interface ApiResponse<T> {
   statusCode: number;
   message: string;
@@ -268,17 +290,23 @@ class CommunityAPI {
   }
 
   /**
-   * Report a post
+   * Submit a report for a post or comment
    */
-  async reportPost(
-    postId: number,
-    userId: number,
-    reason: string
-  ): Promise<void> {
-    await apiClient.post(`${this.BASE_PATH}/${postId}/report`, {
-      userId,
-      reason,
-    });
+  async createReport(
+    payload: CreateReportRequest
+  ): Promise<ApiResponse<ReportEntry>> {
+    const response = await apiClient.post<ApiResponse<ReportEntry>>(
+      "/reports",
+      {
+        userId: payload.userId,
+        postId: payload.postId ?? null,
+        commentId: payload.commentId ?? null,
+        type: payload.type,
+        description: payload.description,
+      }
+    );
+
+    return response.data;
   }
 
   /**

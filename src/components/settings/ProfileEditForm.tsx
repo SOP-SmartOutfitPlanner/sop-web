@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { useAuthStore } from "@/store/auth-store";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { AvatarUpload } from "./AvatarUpload";
 import { cn } from "@/lib/utils";
 import { userAPI } from "@/lib/api/user-api";
 import type { UserProfileResponse, Job, StyleOption } from "@/types/user";
+import tinycolor from "tinycolor2";
 
 interface ProfileFormData {
   displayName: string;
@@ -22,6 +23,55 @@ interface ProfileFormData {
   gender?: string | number;
   jobId?: number;
 }
+
+const COLOR_PRESETS = [
+  { name: "Red", color: "#EF4444" },
+  { name: "Pink", color: "#EC4899" },
+  { name: "Purple", color: "#A855F7" },
+  { name: "Blue", color: "#3B82F6" },
+  { name: "Cyan", color: "#06B6D4" },
+  { name: "Green", color: "#10B981" },
+  { name: "Yellow", color: "#F59E0B" },
+  { name: "Orange", color: "#F97316" },
+  { name: "Brown", color: "#92400E" },
+  { name: "Gray", color: "#6B7280" },
+  { name: "Black", color: "#1F2937" },
+  { name: "White", color: "#F9FAFB" },
+  { name: "Beige", color: "#D4C5B9" },
+  { name: "Navy", color: "#1E3A8A" },
+  { name: "Maroon", color: "#7C2D12" },
+  { name: "Olive", color: "#84CC16" },
+] as const;
+
+type ParsedColor = {
+  name: string;
+  hex: string;
+  isLight: boolean;
+  readableText: string;
+};
+
+const parseColorName = (name: string): ParsedColor | null => {
+  const color = tinycolor(name);
+  if (!color.isValid()) {
+    return null;
+  }
+
+  const hex = color.toHexString();
+  const readableText = tinycolor
+    .mostReadable(hex, ["#0f172a", "#ffffff"], {
+      includeFallbackColors: true,
+      level: "AA",
+      size: "small",
+    })
+    .toHexString();
+
+  return {
+    name,
+    hex,
+    isLight: color.isLight(),
+    readableText,
+  };
+};
 
 export function ProfileEditForm() {
   const { user } = useAuthStore();
@@ -37,20 +87,27 @@ export function ProfileEditForm() {
   // Available options from API
   const [availableJobs, setAvailableJobs] = useState<Job[]>([]);
   const [availableStyles, setAvailableStyles] = useState<StyleOption[]>([]);
-  const [availableColors] = useState<string[]>([
-    "Yellow",
-    "Maroon",
-    "Red",
-    "Blue",
-    "Green",
-    "Purple",
-    "Black",
-    "White",
-    "Gray",
-    "Brown",
-    "Pink",
-    "Orange",
-  ]);
+
+  const dynamicColorNames = useMemo(() => {
+    const presetColors = COLOR_PRESETS.map((preset) => preset.color);
+    const userColors = [
+      ...(userData?.preferedColor ?? []),
+      ...(userData?.avoidedColor ?? []),
+    ];
+
+    return Array.from(
+      new Set<string>([
+        ...presetColors,
+        ...userColors.map((color) => color ?? "").filter(Boolean),
+      ])
+    );
+  }, [userData?.preferedColor, userData?.avoidedColor]);
+
+  const availableColors = useMemo(() => {
+    return dynamicColorNames
+      .map(parseColorName)
+      .filter((color): color is ParsedColor => color !== null);
+  }, [dynamicColorNames]);
 
   const {
     register,
@@ -67,6 +124,12 @@ export function ProfileEditForm() {
       gender: "Unknown",
     },
   });
+
+  const glassInputClasses =
+    "bg-slate-900/30 border border-cyan-400/25 text-white placeholder:text-slate-200/70 rounded-xl focus:ring-2 focus:ring-cyan-300/50 focus:border-cyan-300/40 transition-colors shadow-inner shadow-cyan-500/10 disabled:bg-slate-900/40 disabled:text-slate-300/70 disabled:border-slate-600/40";
+
+  const glassTextareaClasses =
+    "resize-none bg-slate-900/30 border border-cyan-400/25 text-white placeholder:text-slate-200/70 rounded-xl focus:ring-2 focus:ring-cyan-300/50 focus:border-cyan-300/40 transition-colors shadow-inner shadow-cyan-500/10";
 
   // Load user data and available options from API
   useEffect(() => {
@@ -96,12 +159,21 @@ export function ProfileEditForm() {
         let jobs: unknown[] = [];
         let styles: unknown[] = [];
 
-        const jobsData = jobsResponse as { data?: { data?: unknown[] } | unknown[] };
-        const stylesData = stylesResponse as { data?: { data?: unknown[] } | unknown[] };
+        const jobsData = jobsResponse as {
+          data?: { data?: unknown[] } | unknown[];
+        };
+        const stylesData = stylesResponse as {
+          data?: { data?: unknown[] } | unknown[];
+        };
 
         if (Array.isArray(jobsResponse)) {
           jobs = jobsResponse;
-        } else if (jobsData.data && typeof jobsData.data === 'object' && 'data' in jobsData.data && Array.isArray(jobsData.data.data)) {
+        } else if (
+          jobsData.data &&
+          typeof jobsData.data === "object" &&
+          "data" in jobsData.data &&
+          Array.isArray(jobsData.data.data)
+        ) {
           jobs = jobsData.data.data;
         } else if (Array.isArray(jobsData.data)) {
           jobs = jobsData.data;
@@ -109,14 +181,25 @@ export function ProfileEditForm() {
 
         if (Array.isArray(stylesResponse)) {
           styles = stylesResponse;
-        } else if (stylesData.data && typeof stylesData.data === 'object' && 'data' in stylesData.data && Array.isArray(stylesData.data.data)) {
+        } else if (
+          stylesData.data &&
+          typeof stylesData.data === "object" &&
+          "data" in stylesData.data &&
+          Array.isArray(stylesData.data.data)
+        ) {
           styles = stylesData.data.data;
         } else if (Array.isArray(stylesData.data)) {
           styles = stylesData.data;
         }
 
-        setAvailableJobs(Array.isArray(jobs) ? jobs as Job[] : []);
-        setAvailableStyles(Array.isArray(styles) ? styles as StyleOption[] : []);
+        setAvailableJobs(Array.isArray(jobs) ? (jobs as Job[]) : []);
+        const typedStyles = Array.isArray(styles)
+          ? (styles as StyleOption[])
+          : [];
+        const systemStyles = typedStyles.filter(
+          (style) => style.createdBy?.toUpperCase() === "SYSTEM"
+        );
+        setAvailableStyles(systemStyles);
 
         setUserData(userData);
 
@@ -137,7 +220,9 @@ export function ProfileEditForm() {
 
         // Initialize style preferences
         const styleNames =
-          (userData as { userStyles?: Array<{ styleName: string }> }).userStyles?.map((s) => s.styleName) || [];
+          (
+            userData as { userStyles?: Array<{ styleName: string }> }
+          ).userStyles?.map((s) => s.styleName) || [];
         setSelectedStyles(new Set(styleNames));
       } catch (error) {
         console.error("Error loading user data:", error);
@@ -225,7 +310,10 @@ export function ProfileEditForm() {
       {/* Avatar Section */}
       <div className="backdrop-blur-xl bg-slate-950/40 border border-slate-700/30 rounded-2xl p-6 shadow-lg shadow-slate-900/20 transition-all duration-300 hover:border-slate-700/50 hover:shadow-slate-900/40">
         <h2 className="text-lg font-bold mb-4 text-white">Profile Picture</h2>
-        <AvatarUpload />
+        <AvatarUpload
+          avatarUrl={userData?.avtUrl ?? undefined}
+          displayName={userData?.displayName ?? user?.displayName ?? null}
+        />
       </div>
 
       {/* Basic Information */}
@@ -243,7 +331,7 @@ export function ProfileEditForm() {
               })}
               placeholder="Your name"
               disabled
-              className="bg-slate-900/50 border border-slate-700/30 text-white placeholder:text-slate-500 rounded-lg focus:ring-2 focus:ring-cyan-400/30 disabled:opacity-60"
+              className={glassInputClasses}
             />
             {errors.displayName && (
               <p className="text-sm text-red-400 mt-1">
@@ -262,7 +350,7 @@ export function ProfileEditForm() {
                 {...register("email")}
                 placeholder="your@email.com"
                 disabled
-                className="flex-1 bg-slate-900/50 border border-slate-700/30 text-white placeholder:text-slate-500 rounded-lg focus:ring-2 focus:ring-cyan-400/30 disabled:opacity-60"
+                className={cn(glassInputClasses, "flex-1")}
               />
               <span className="px-3 py-2 rounded-lg bg-emerald-500/20 text-emerald-200 text-sm font-semibold border border-emerald-400/30">
                 ✓ Verified
@@ -279,7 +367,7 @@ export function ProfileEditForm() {
               {...register("bio")}
               placeholder="Tell us about yourself..."
               rows={4}
-              className="resize-none bg-slate-900/50 border border-slate-700/30 text-white placeholder:text-slate-500 rounded-lg focus:ring-2 focus:ring-cyan-400/30"
+              className={glassTextareaClasses}
             />
             <p className="text-xs text-slate-400 mt-1">Max 500 characters</p>
           </div>
@@ -292,7 +380,7 @@ export function ProfileEditForm() {
             <Input
               {...register("location")}
               placeholder="City, Country"
-              className="bg-slate-900/50 border border-slate-700/30 text-white placeholder:text-slate-500 rounded-lg focus:ring-2 focus:ring-cyan-400/30"
+              className={glassInputClasses}
             />
           </div>
         </div>
@@ -312,7 +400,7 @@ export function ProfileEditForm() {
             <Input
               {...register("dob")}
               type="date"
-              className="bg-slate-900/50 border border-slate-700/30 text-white rounded-lg focus:ring-2 focus:ring-cyan-400/30"
+              className={glassInputClasses}
             />
           </div>
 
@@ -323,7 +411,10 @@ export function ProfileEditForm() {
             </label>
             <select
               {...register("gender")}
-              className="w-full px-3 py-2 border border-slate-700/30 rounded-lg bg-slate-900/50 text-white focus:ring-2 focus:ring-cyan-400/30"
+              className={cn(
+                glassInputClasses,
+                "w-full appearance-none bg-slate-900/20"
+              )}
             >
               <option value="Unknown" className="bg-slate-800">
                 Prefer not to say
@@ -351,7 +442,10 @@ export function ProfileEditForm() {
           </label>
           <select
             {...register("jobId", { valueAsNumber: true })}
-            className="w-full px-3 py-2 border border-slate-700/30 rounded-lg bg-slate-900/50 text-white focus:ring-2 focus:ring-cyan-400/30"
+            className={cn(
+              glassInputClasses,
+              "w-full appearance-none bg-slate-900/20"
+            )}
           >
             <option value="" className="bg-slate-800">
               Select a job...
@@ -384,20 +478,35 @@ export function ProfileEditForm() {
             <div className="space-y-2">
               <div className="flex flex-wrap gap-2">
                 {availableColors.map((color) => {
-                  const isSelected = selectedColors.has(color);
+                  const isSelected = selectedColors.has(color.name);
                   return (
                     <button
-                      key={color}
+                      key={color.name}
                       type="button"
-                      onClick={() => toggleColor(color)}
+                      onClick={() => toggleColor(color.name)}
                       className={cn(
-                        "px-3 py-1.5 rounded-full border transition-all text-sm font-medium",
+                        "relative h-12 w-12 rounded-full border-2 transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-cyan-300/60",
                         isSelected
-                          ? "border-cyan-400/60 bg-cyan-500/20 text-cyan-100 shadow-lg shadow-cyan-500/20"
-                          : "border-slate-600/40 text-slate-300 hover:border-cyan-400/50 hover:bg-cyan-500/10"
+                          ? "border-white/80 shadow-lg shadow-cyan-500/20"
+                          : "border-white/30 shadow shadow-slate-900/40"
                       )}
+                      style={{ backgroundColor: color.hex }}
+                      aria-label={color.name}
+                      title={color.name}
                     >
-                      {color}
+                      <span
+                        className={cn(
+                          "absolute inset-0 rounded-full",
+                          color.isLight ? "ring-1 ring-slate-400/40" : ""
+                        )}
+                      />
+                      {isSelected && (
+                        <span
+                          className="absolute inset-1 rounded-full border-2"
+                          style={{ borderColor: color.readableText }}
+                        />
+                      )}
+                      <span className="sr-only">{color.name}</span>
                     </button>
                   );
                 })}
@@ -413,20 +522,35 @@ export function ProfileEditForm() {
             <div className="space-y-2">
               <div className="flex flex-wrap gap-2">
                 {availableColors.map((color) => {
-                  const isSelected = selectedAvoidedColors.has(color);
+                  const isSelected = selectedAvoidedColors.has(color.name);
                   return (
                     <button
-                      key={color}
+                      key={color.name}
                       type="button"
-                      onClick={() => toggleAvoidedColor(color)}
+                      onClick={() => toggleAvoidedColor(color.name)}
                       className={cn(
-                        "px-3 py-1.5 rounded-full border transition-all text-sm font-medium",
+                        "relative h-12 w-12 rounded-full border-2 transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-rose-300/60",
                         isSelected
-                          ? "border-red-400/60 bg-red-500/20 text-red-100 shadow-lg shadow-red-500/20"
-                          : "border-slate-600/40 text-slate-300 hover:border-red-400/50 hover:bg-red-500/10"
+                          ? "border-white/80 shadow-lg shadow-rose-500/20"
+                          : "border-white/30 shadow shadow-slate-900/40"
                       )}
+                      style={{ backgroundColor: color.hex }}
+                      aria-label={color.name}
+                      title={color.name}
                     >
-                      {color}
+                      <span
+                        className={cn(
+                          "absolute inset-0 rounded-full",
+                          color.isLight ? "ring-1 ring-slate-400/40" : ""
+                        )}
+                      />
+                      {isSelected && (
+                        <span
+                          className="absolute inset-1 rounded-full border-2"
+                          style={{ borderColor: color.readableText }}
+                        />
+                      )}
+                      <span className="sr-only">{color.name}</span>
                     </button>
                   );
                 })}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Upload, X } from "lucide-react";
@@ -8,7 +8,15 @@ import { useAuthStore } from "@/store/auth-store";
 import { toast } from "sonner";
 import Image from "next/image";
 
-export function AvatarUpload() {
+interface AvatarUploadProps {
+  avatarUrl?: string | null;
+  displayName?: string | null;
+}
+
+export function AvatarUpload({
+  avatarUrl,
+  displayName,
+}: AvatarUploadProps) {
   const { user } = useAuthStore();
   const [preview, setPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -64,19 +72,31 @@ export function AvatarUpload() {
     }
   };
 
+  const resolvedAvatarUrl = useMemo(() => {
+    return preview ?? avatarUrl ?? user?.avatar ?? undefined;
+  }, [preview, avatarUrl, user?.avatar]);
+
+  const resolvedDisplayName = useMemo(() => {
+    return displayName ?? user?.displayName ?? "";
+  }, [displayName, user?.displayName]);
+
+  const fallbackInitial = resolvedDisplayName
+    ? resolvedDisplayName.charAt(0).toUpperCase()
+    : "U";
+
   return (
     <div className="space-y-4">
       {/* Avatar Preview */}
       <div className="flex items-center gap-6">
         <Avatar className="w-20 h-20 ring-2 ring-cyan-400/30">
-          <AvatarImage src={preview || user?.avatar} alt={user?.displayName} />
+          <AvatarImage src={resolvedAvatarUrl} alt={resolvedDisplayName || "User avatar"} />
           <AvatarFallback className="text-2xl font-bold bg-gradient-to-br from-cyan-400 to-blue-500 text-white">
-            {user?.displayName?.charAt(0).toUpperCase()}
+            {fallbackInitial}
           </AvatarFallback>
         </Avatar>
 
         <div className="space-y-2">
-          <p className="text-sm font-semibold text-white">{user?.displayName}</p>
+          <p className="text-sm font-semibold text-white">{resolvedDisplayName}</p>
           <p className="text-xs text-blue-200/60">
             JPG, PNG or GIF (Max 5MB)
           </p>

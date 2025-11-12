@@ -15,9 +15,11 @@ import {
 import { FeedPostList } from "./FeedPostList";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { EditPostDialog } from "@/components/community/EditPostDialog";
+import { toast } from "sonner";
 
 interface InfiniteScrollFeedProps {
   searchQuery?: string;
+  refreshKey?: number;
 }
 
 /**
@@ -31,10 +33,12 @@ interface InfiniteScrollFeedProps {
  */
 export function InfiniteScrollFeed({
   searchQuery = "",
+  refreshKey = 0,
 }: InfiniteScrollFeedProps) {
   const { user } = useAuthStore();
   const observerTarget = useRef<HTMLDivElement>(null);
   const [editingPost, setEditingPost] = useState<Post | null>(null);
+  const [isManualRefreshing, setIsManualRefreshing] = useState(false);
 
   const {
     posts,
@@ -48,7 +52,43 @@ export function InfiniteScrollFeed({
     reportPost,
     deletePost,
     refetch,
+    resetFeed,
   } = useFeed(10);
+
+  useEffect(() => {
+    if (!refreshKey) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    const performRefresh = async () => {
+      setIsManualRefreshing(true);
+
+      try {
+        await resetFeed();
+        if (isCancelled) return;
+
+        const result = await refetch();
+
+        if (result?.error) {
+          throw result.error;
+        }
+      } catch (error) {
+        console.error("Failed to refresh community feed", error);
+      } finally {
+        if (!isCancelled) {
+          setIsManualRefreshing(false);
+        }
+      }
+    };
+
+    performRefresh();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [refreshKey, resetFeed, refetch]);
 
   // Intersection Observer for infinite scroll
   useEffect(() => {
@@ -109,12 +149,17 @@ export function InfiniteScrollFeed({
 
   // Handle report
   const handleReport = useCallback(
-    (postId: number, reason: string) => {
-      if (!user) return;
-      reportPost({
+    async (postId: number, description: string) => {
+      if (!user?.id) {
+        const message = "You need to sign in to report content.";
+        toast.error(message);
+        throw new Error(message);
+      }
+
+      await reportPost({
         postId,
-        userId: parseInt(user.id),
-        reason,
+        userId: parseInt(user.id, 10),
+        description,
       });
     },
     [user, reportPost]
@@ -129,11 +174,13 @@ export function InfiniteScrollFeed({
   );
 
   // Loading state
-  if (isLoading) {
+  if (isLoading || isManualRefreshing) {
+    const skeletonCount = isManualRefreshing ? 4 : 3;
+
     return (
       <FeedLoading>
-        {[1, 2, 3].map((i) => (
-          <PostSkeleton key={i} />
+        {Array.from({ length: skeletonCount }).map((_, index) => (
+          <PostSkeleton key={index} />
         ))}
       </FeedLoading>
     );

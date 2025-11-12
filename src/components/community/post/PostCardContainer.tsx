@@ -19,7 +19,7 @@ interface PostCardContainerProps {
   onImageClick: () => void;
   onLike: () => void;
   onComment: () => void;
-  onReport: (reason: string) => void;
+  onReport: (reason: string) => Promise<void>;
   onMessageAuthor: () => void;
   onFollow?: () => void;
   onDelete?: () => Promise<void>;
@@ -64,7 +64,7 @@ export function PostCardContainer({
         padding="0"
         borderRadius="24px"
         blur="24px"
-        brightness={1.03}
+        brightness={1.85}
         glowColor={
           isHovered ? "rgba(103, 232, 249, 0.08)" : "rgba(103, 232, 249, 0.04)"
         }

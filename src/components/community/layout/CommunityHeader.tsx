@@ -15,6 +15,7 @@ interface CommunityHeaderProps {
     files?: File[]; // Changed to File[] for upload
   }) => Promise<void>;
   isSubmitting?: boolean;
+  onRefreshFeed?: () => void;
 }
 
 /**
@@ -25,10 +26,12 @@ export function CommunityHeader({
   onNewPostOpenChange,
   onCreatePost,
   isSubmitting = false,
+  onRefreshFeed,
 }: CommunityHeaderProps) {
   const router = useRouter();
 
   const handleReload = () => {
+    onRefreshFeed?.();
     router.refresh();
   };
 
