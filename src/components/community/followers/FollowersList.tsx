@@ -2,20 +2,12 @@
 
 import { Loader2 } from "lucide-react";
 import { UserListItem } from "./UserListItem";
-
-interface FollowerUser {
-  id: number;
-  userId: number;
-  displayName: string;
-  avatarUrl: string | null;
-  bio: string | null;
-  createdDate: string;
-}
+import { FollowerUser } from "@/lib/api/community-api";
 
 interface FollowersListProps {
   users: FollowerUser[];
   isLoading: boolean;
-  followingStatus: Record<number, boolean>;
+  followingStatus?: Record<number, boolean>; // Optional: fallback if not using API's isFollowing
   currentUserId?: string;
   isOwnProfile?: boolean;
   type?: "followers" | "following";
@@ -57,13 +49,14 @@ export function FollowersList({
     <div className="divide-y divide-cyan-400/10">
       {users.map((user) => {
         const isCurrentUser = currentUserId === user.userId.toString();
-        const isFollowing = followingStatus[user.userId];
+        // Priority: Use dynamic followingStatus state (updated on toggle), fallback to API's isFollowing
+        const isFollowing = followingStatus?.[user.userId] ?? user.isFollowing ?? false;
 
         return (
           <UserListItem
             key={user.id}
             user={user}
-            isFollowing={isFollowing || false}
+            isFollowing={isFollowing}
             isCurrentUser={isCurrentUser}
             isOwnProfile={isOwnProfile}
             type={type}

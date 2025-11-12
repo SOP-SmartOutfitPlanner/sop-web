@@ -6,6 +6,16 @@ export interface Hashtag {
   name: string;
 }
 
+export interface FollowerUser {
+  id: number;
+  userId: number;
+  displayName: string;
+  avatarUrl: string | null;
+  bio: string | null;
+  isFollowing: boolean; // With token: true/false if current user follows this user. Guest: always false
+  createdDate: string;
+}
+
 export interface CommunityPost {
   id: number;
   userId: number;
@@ -59,7 +69,7 @@ class CommunityAPI {
   /**
    * Get all posts with pagination
    * API Response: { data: [...], metaData: {...} }
-   * 
+   *
    * Note: Token is automatically sent via apiClient interceptor
    * - With token: Returns isLiked and isFollowing based on current user
    * - Without token (GUEST): Returns isLiked=false and isFollowing=false for all
@@ -280,15 +290,12 @@ class CommunityAPI {
     comment: string;
     parentCommentId?: number | null;
   }): Promise<{ statusCode: number; message: string; data: ApiComment }> {
-    const response = await apiClient.post(
-      "/comment-posts",
-      {
-        postId: data.postId,
-        userId: data.userId,
-        comment: data.comment,
-        parentCommentId: data.parentCommentId || null,
-      }
-    );
+    const response = await apiClient.post("/comment-posts", {
+      postId: data.postId,
+      userId: data.userId,
+      comment: data.comment,
+      parentCommentId: data.parentCommentId || null,
+    });
     // Return full response including message
     return response.data;
   }
@@ -484,12 +491,16 @@ class CommunityAPI {
    * Get list of followers for a user
    * API: GET /followers/followers/{userId}?page-index=1&page-size=10
    * Response: { statusCode, message, data: { data: [...users], metaData: {...} } }
+   *
+   * Note: Token is automatically sent via apiClient interceptor
+   * - With token: Returns isFollowing=true/false (if current user follows each follower)
+   * - Without token (GUEST): Returns isFollowing=false for all
    */
   async getFollowersList(
     userId: number,
     page: number = 1,
     pageSize: number = 10
-  ) {
+  ): Promise<FollowerUser[]> {
     try {
       const response = await apiClient.get(`/followers/followers/${userId}`, {
         params: {
@@ -498,7 +509,7 @@ class CommunityAPI {
         },
       });
 
-      // Try different response structures
+      // Response structure: { statusCode, message, data: { data: [...], metaData: {...} } }
       if (response.data?.data?.data && Array.isArray(response.data.data.data)) {
         return response.data.data.data;
       }
@@ -524,12 +535,16 @@ class CommunityAPI {
    * Get list of users that a user is following
    * API: GET /followers/following/{userId}?page-index=1&page-size=10
    * Response: { statusCode, message, data: { data: [...users], metaData: {...} } }
+   *
+   * Note: Token is automatically sent via apiClient interceptor
+   * - With token: Returns isFollowing=true/false (if current user follows each user)
+   * - Without token (GUEST): Returns isFollowing=false for all
    */
   async getFollowingList(
     userId: number,
     page: number = 1,
     pageSize: number = 10
-  ) {
+  ): Promise<FollowerUser[]> {
     try {
       const response = await apiClient.get(`/followers/following/${userId}`, {
         params: {
@@ -537,7 +552,7 @@ class CommunityAPI {
           "page-size": pageSize,
         },
       });
-      // Try different response structures
+      // Response structure: { statusCode, message, data: { data: [...], metaData: {...} } }
       if (response.data?.data?.data && Array.isArray(response.data.data.data)) {
         return response.data.data.data;
       }
@@ -563,6 +578,7 @@ class CommunityAPI {
    * Toggle follow/unfollow a user
    * API: POST /followers
    * Body: { followerId: number, followingId: number }
+   * Response: { statusCode: 200, message: "Follow/Unfollow user successfully", data: {...} }
    */
   async toggleFollow(followerId: number, followingId: number) {
     const response = await apiClient.post("/followers", {
@@ -605,13 +621,13 @@ class CommunityAPI {
    * Get top contributors
    * API: GET /posts/top-contributors?userId={optional}&take-all={optional}
    * Response: { statusCode, message, data: { data: [{ userId, displayName, avatarUrl, postCount, isFollowing }], metaData: {...} } }
-   * 
+   *
    * Usage:
    * - GUEST mode (no userId): Returns all contributors with isFollowing=false for all
    * - Logged in (with userId): Returns contributors with accurate isFollowing status
    *   - isFollowing=true: Current user is already following this contributor
    *   - isFollowing=false: Current user is NOT following this contributor
-   * 
+   *
    * @param userId - Optional. Current user's ID to check follow status
    * @returns Array of contributors with follow status
    */
