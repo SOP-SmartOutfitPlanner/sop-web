@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import Image from "next/image";
 import {
   Heart,
@@ -8,10 +8,28 @@ import {
   Share2,
   Bookmark,
   MoreHorizontal,
+  Edit,
+  Trash2,
+  Flag,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Post } from "@/types/community";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -22,12 +40,16 @@ import { useScrollLock } from "@/hooks/useScrollLock";
 import { communityAPI } from "@/lib/api/community-api";
 import { toast } from "sonner";
 import { usePostModal } from "@/hooks/community/usePostModal";
+import { ReportDialog } from "@/components/community/report/ReportDialog";
+import { EditPostDialog } from "@/components/community/EditPostDialog";
 
 interface PostModalProps {
   post: Post;
   isOpen: boolean;
   onClose: () => void;
   onLike: () => void;
+  onPostUpdated?: () => void;
+  onPostDeleted?: () => void;
 }
 
 /**
@@ -36,9 +58,23 @@ interface PostModalProps {
  * - Reduced from ~330 lines to ~200 lines
  * - Clean separation of concerns
  */
-export function PostModal({ post, isOpen, onClose, onLike }: PostModalProps) {
+export function PostModal({
+  post,
+  isOpen,
+  onClose,
+  onLike,
+  onPostUpdated,
+  onPostDeleted,
+}: PostModalProps) {
   const { user } = useAuthStore();
   const commentInputRef = useRef<HTMLInputElement>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
+  // Check if current user is the post owner
+  const isOwnPost = user && user.id === post.userId;
 
   // Lock body scroll when modal is open
   useScrollLock(isOpen);
@@ -57,7 +93,10 @@ export function PostModal({ post, isOpen, onClose, onLike }: PostModalProps) {
 
   const handleCommentButtonClick = () => {
     commentInputRef.current?.focus();
-    commentInputRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    commentInputRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "end",
+    });
   };
 
   const handlePostComment = async (comment: string) => {
@@ -89,7 +128,86 @@ export function PostModal({ post, isOpen, onClose, onLike }: PostModalProps) {
     }
   };
 
+  const handleDeletePost = async () => {
+    if (!user) {
+      toast.error("Please login to delete post");
+      return;
+    }
+
+    try {
+      setIsDeleting(true);
+      await communityAPI.deletePost(parseInt(post.id));
+      toast.success("Post deleted successfully");
+      setIsDeleteDialogOpen(false);
+      onPostDeleted?.();
+      onClose();
+    } catch (error) {
+      console.error("Error deleting post:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to delete post";
+      toast.error(errorMessage);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleReportPost = async (description: string) => {
+    if (!user) {
+      toast.error("Please login to report post");
+      return;
+    }
+
+    try {
+      await communityAPI.createReport({
+        userId: parseInt(user.id),
+        postId: parseInt(post.id),
+        type: "POST",
+        description,
+      });
+      toast.success("Report submitted successfully");
+      setIsReportDialogOpen(false);
+    } catch (error) {
+      console.error("Error reporting post:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to submit report";
+      toast.error(errorMessage);
+      throw error; // Re-throw to let ReportDialog handle it
+    }
+  };
+
+  const handleEditPostSuccess = async () => {
+    setIsEditDialogOpen(false);
+    onPostUpdated?.();
+    // Optionally refresh the post data or close modal
+  };
+
+  // Ensure EditPostDialog has higher z-index than PostModal
+  useEffect(() => {
+    if (isEditDialogOpen) {
+      // Add style to ensure EditPostDialog overlay and content have higher z-index
+      const style = document.createElement("style");
+      style.id = "edit-post-dialog-z-index";
+      style.textContent = `
+        [data-radix-portal] [data-slot="dialog-overlay"]:last-of-type {
+          z-index: 60 !important;
+        }
+        [data-radix-portal] [data-slot="dialog-content"]:last-of-type {
+          z-index: 60 !important;
+        }
+      `;
+      document.head.appendChild(style);
+
+      return () => {
+        const existingStyle = document.getElementById("edit-post-dialog-z-index");
+        if (existingStyle) {
+          existingStyle.remove();
+        }
+      };
+    }
+  }, [isEditDialogOpen]);
+
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
         className={`!p-0 !gap-0 backdrop-blur-2xl bg-slate-950/60 border border-cyan-400/15 shadow-[0_8px_32px_rgba(0,0,0,0.4)] rounded-3xl overflow-hidden flex flex-col ${
@@ -121,7 +239,7 @@ export function PostModal({ post, isOpen, onClose, onLike }: PostModalProps) {
                       alt={post.caption}
                       width={1080}
                       height={1080}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain"
                       priority
                     />
                   </div>
@@ -227,13 +345,49 @@ export function PostModal({ post, isOpen, onClose, onLike }: PostModalProps) {
                   </div>
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 hover:bg-cyan-400/20 transition-colors"
-              >
-                <MoreHorizontal className="w-5 h-5 text-cyan-300" />
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 hover:bg-cyan-400/20 transition-colors"
+                  >
+                    <MoreHorizontal className="w-5 h-5 text-cyan-300" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className="min-w-[180px] backdrop-blur-xl bg-gradient-to-br from-cyan-950/60 via-blue-950/50 to-indigo-950/60 border-2 border-cyan-400/25 shadow-2xl shadow-cyan-500/20 text-white/90"
+                >
+                  {isOwnPost && (
+                    <>
+                      <DropdownMenuItem
+                        onClick={() => setIsEditDialogOpen(true)}
+                        className="focus:bg-cyan-500/20 focus:text-white cursor-pointer"
+                      >
+                        <Edit className="w-4 h-4 mr-2" />
+                        Edit post
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => setIsDeleteDialogOpen(true)}
+                        className="text-red-400 focus:text-red-300 focus:bg-red-500/20 cursor-pointer"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Delete post
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  {!isOwnPost && (
+                    <DropdownMenuItem
+                      onClick={() => setIsReportDialogOpen(true)}
+                      className="focus:bg-cyan-500/20 focus:text-white cursor-pointer"
+                    >
+                      <Flag className="w-4 h-4 mr-2" />
+                      Report
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
             {/* BODY: Caption + Interactions + Comments */}
@@ -282,7 +436,7 @@ export function PostModal({ post, isOpen, onClose, onLike }: PostModalProps) {
                         }`}
                       />
                     </button>
-                    <button 
+                    <button
                       onClick={handleCommentButtonClick}
                       className="p-2 rounded-lg hover:bg-cyan-500/10 transition-all text-white hover:text-cyan-300"
                     >
@@ -325,6 +479,65 @@ export function PostModal({ post, isOpen, onClose, onLike }: PostModalProps) {
           </div>
         </div>
       </DialogContent>
+
+      {/* Report Dialog */}
+      <ReportDialog
+        open={isReportDialogOpen}
+        onOpenChange={setIsReportDialogOpen}
+        onSubmit={handleReportPost}
+        title="Report Post"
+        description="Select a reason for reporting this post. Our team will review it as soon as possible."
+        confirmLabel="Submit report"
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
+        <AlertDialogContent className="backdrop-blur-xl bg-gradient-to-br from-cyan-950/70 via-blue-950/60 to-indigo-950/60 border border-cyan-400/20 shadow-2xl shadow-cyan-500/20 text-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete post</AlertDialogTitle>
+            <AlertDialogDescription className="text-blue-100/80">
+              Are you sure you want to delete this post? This action cannot be
+              undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex gap-3">
+            <AlertDialogCancel className="border border-transparent text-slate-200 hover:border-cyan-400/40 hover:bg-cyan-500/10">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeletePost}
+              disabled={isDeleting}
+              className="bg-red-500/80 hover:bg-red-500 text-white"
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </Dialog>
+
+    {/* Edit Post Dialog - Render outside PostModal to ensure proper z-index */}
+    {isEditDialogOpen && (
+      <Dialog
+        open={isEditDialogOpen}
+        onOpenChange={(open) => !open && setIsEditDialogOpen(false)}
+      >
+        <DialogContent
+          showCloseButton={false}
+          className="max-w-2xl max-h-[90vh] !overflow-hidden p-0 flex flex-col backdrop-blur-xl bg-gradient-to-br from-cyan-950/60 via-blue-950/50 to-indigo-950/60 border-2 border-cyan-400/25 shadow-2xl shadow-cyan-500/20"
+        >
+          <EditPostDialog
+            post={post}
+            onSuccess={handleEditPostSuccess}
+            onClose={() => setIsEditDialogOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+    )}
+    </>
   );
 }

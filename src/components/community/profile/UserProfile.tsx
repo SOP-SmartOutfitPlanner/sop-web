@@ -18,6 +18,7 @@ import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { EditPostDialog } from "@/components/community/EditPostDialog";
 import { Post } from "@/types/community";
+import { LoadingScreen } from "@/components/community";
 
 interface UserProfileProps {
   userId: string;
@@ -130,20 +131,12 @@ export function UserProfile({ userId }: UserProfileProps) {
 
   // Loading state
   if (isLoading || isInitialLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-[#F5F8FF] via-[#F5F8FF] to-[#EAF0FF] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
+    return <LoadingScreen message="Đang tải hồ sơ..." />;
   }
 
   // Error state
   if (!userProfile) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-[#F5F8FF] via-[#F5F8FF] to-[#EAF0FF] flex items-center justify-center">
-        <p className="text-muted-foreground">Không tìm thấy người dùng</p>
-      </div>
-    );
+    return <LoadingScreen message="Không tìm thấy người dùng" />;
   }
 
   return (
@@ -173,7 +166,7 @@ export function UserProfile({ userId }: UserProfileProps) {
           <div className="border-t border-border">
             {posts.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20">
-                <p className="text-muted-foreground">Chưa có bài viết nào</p>
+                <p className="text-muted-foreground">No posts yet</p>
               </div>
             ) : (
               <div className="space-y-4 p-4">

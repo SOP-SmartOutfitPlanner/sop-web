@@ -126,10 +126,10 @@ export function ProfileEditForm() {
   });
 
   const glassInputClasses =
-    "bg-slate-900/30 border border-cyan-400/25 text-white placeholder:text-slate-200/70 rounded-xl focus:ring-2 focus:ring-cyan-300/50 focus:border-cyan-300/40 transition-colors shadow-inner shadow-cyan-500/10 disabled:bg-slate-900/40 disabled:text-slate-300/70 disabled:border-slate-600/40";
+    "bg-white/90 text-black placeholder:text-slate-200/70 rounded-lg border border-white/10 py-3 px-4 focus:ring-2 focus:ring-cyan-300/50 focus:border-cyan-200/60 transition-colors shadow-inner shadow-cyan-500/10 disabled:bg-white/5 disabled:text-slate-300/70 disabled:border-white/10";
 
   const glassTextareaClasses =
-    "resize-none bg-slate-900/30 border border-cyan-400/25 text-white placeholder:text-slate-200/70 rounded-xl focus:ring-2 focus:ring-cyan-300/50 focus:border-cyan-300/40 transition-colors shadow-inner shadow-cyan-500/10";
+    "resize-none bg-white/90 text-black placeholder:text-slate-200/70 rounded-lg border border-white/10 py-3 px-4 focus:ring-2 focus:ring-cyan-300/50 focus:border-cyan-200/60 transition-colors shadow-inner shadow-cyan-500/10";
 
   // Load user data and available options from API
   useEffect(() => {
@@ -411,10 +411,7 @@ export function ProfileEditForm() {
             </label>
             <select
               {...register("gender")}
-              className={cn(
-                glassInputClasses,
-                "w-full appearance-none bg-slate-900/20"
-              )}
+              className={cn(glassInputClasses, "w-full appearance-none pr-8")}
             >
               <option value="Unknown" className="bg-slate-800">
                 Prefer not to say
@@ -442,10 +439,7 @@ export function ProfileEditForm() {
           </label>
           <select
             {...register("jobId", { valueAsNumber: true })}
-            className={cn(
-              glassInputClasses,
-              "w-full appearance-none bg-slate-900/20"
-            )}
+            className={cn(glassInputClasses, "w-full appearance-none pr-8")}
           >
             <option value="" className="bg-slate-800">
               Select a job...

@@ -31,9 +31,11 @@ export function TopContributorsList({
     );
   }
 
+  const visibleContributors = contributors.slice(0, 5);
+
   return (
     <div className="space-y-4">
-      {contributors.map((contributor, index) => (
+      {visibleContributors.map((contributor, index) => (
         <ContributorCard
           key={contributor.userId}
           contributor={contributor}
