@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { useCommunityAuth } from "@/hooks/useCommunityAuth";
 import { useCommunityFilters } from "@/hooks/useCommunityFilters";
 import { useCreatePost } from "@/hooks/useCreatePost";
@@ -12,6 +13,28 @@ import {
   InfiniteScrollFeed,
   LoadingScreen,
 } from "@/components/community";
+
+/**
+ * Component that reads search params - needs to be wrapped in Suspense
+ */
+function CommunityFeedContent({
+  searchQuery,
+  refreshKey,
+}: {
+  searchQuery: string;
+  refreshKey: number;
+}) {
+  const searchParams = useSearchParams();
+  const hashtagId = searchParams.get("hashtag");
+
+  return (
+    <InfiniteScrollFeed
+      searchQuery={searchQuery}
+      refreshKey={refreshKey}
+      initialHashtagId={hashtagId ? parseInt(hashtagId, 10) : undefined}
+    />
+  );
+}
 
 /**
  * Community page - Social feed for outfit sharing
@@ -72,10 +95,12 @@ export default function Community() {
       />
 
       {/* Infinite scroll feed - Uses debounced search for performance */}
-      <InfiniteScrollFeed
-        searchQuery={debouncedSearchQuery}
-        refreshKey={feedRefreshKey}
-      />
+      <Suspense fallback={<LoadingScreen message="Loading feed..." />}>
+        <CommunityFeedContent
+          searchQuery={debouncedSearchQuery}
+          refreshKey={feedRefreshKey}
+        />
+      </Suspense>
     </CommunityLayout>
   );
 }

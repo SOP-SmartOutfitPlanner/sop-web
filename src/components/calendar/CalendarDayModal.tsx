@@ -8,6 +8,7 @@ import GlassButton from "@/components/ui/glass-button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useUserOccasions, useCalendarEntries, useCreateCalendarEntry, useDeleteCalendarEntry } from "@/hooks/useCalendar";
 import { useOutfits } from "@/hooks/useOutfits";
+import { useScrollLock } from "@/hooks/useScrollLock";
 import { UserOccasion } from "@/types/userOccasion";
 import { Outfit } from "@/types/outfit";
 import { Calender } from "@/types/calender";
@@ -66,6 +67,9 @@ export function CalendarDayModal({
 
   const { mutate: createCalendarEntry, isPending: isCreatingEntry } = useCreateCalendarEntry();
   const { mutate: deleteCalendarEntry, isPending: isDeletingEntry } = useDeleteCalendarEntry();
+
+  // Lock scroll when modal is open
+  useScrollLock(open);
 
   const allOccasions = occasionsData?.data?.data || [];
   const allCalendarEntries = calendarData?.data?.data || [];
@@ -194,12 +198,12 @@ export function CalendarDayModal({
       />
 
       {/* Modal */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-x-hidden overflow-y-auto">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none overflow-hidden">
         <div
-          className="w-full max-w-[1200px] max-h-[95vh] rounded-3xl overflow-hidden shadow-2xl bg-linear-to-br from-slate-900/95 via-blue-900/95 to-slate-900/95 backdrop-blur-xl border border-white/10 mx-auto"
+          className="w-full max-w-[1200px] h-[95vh] rounded-3xl overflow-hidden shadow-2xl bg-linear-to-br from-slate-900/95 via-blue-900/95 to-slate-900/95 backdrop-blur-xl border border-white/10 mx-auto pointer-events-auto flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex flex-col h-full max-h-[95vh]">
+          <div className="flex flex-col h-full">
             {/* Header */}
             <div className="px-10 pt-8 pb-6 shrink-0 border-b border-white/10">
               <div className="flex items-center justify-between">
@@ -243,11 +247,11 @@ export function CalendarDayModal({
             </div>
 
             {/* Content - Two Columns */}
-            <div className="flex-1 px-10 py-8 overflow-hidden">
+            <div className="flex-1 px-10 py-8 overflow-hidden min-h-0">
               <div className="grid grid-cols-2 gap-8 h-full">
                 {/* Left: Occasions */}
-                <div className="flex flex-col">
-                  <div className="flex items-center justify-between mb-5">
+                <div className="flex flex-col min-h-0">
+                  <div className="flex items-center justify-between mb-5 shrink-0">
                     <h3 className="font-bricolage text-xl font-semibold text-white flex items-center gap-2">
                       <Calendar className="w-6 h-6 text-purple-400" />
                       Your Occasions
@@ -266,7 +270,7 @@ export function CalendarDayModal({
                     </div>
                   )}
 
-                  <div className="flex-1 overflow-y-hidden overflow-x-hidden space-y-4 pr-3 pt-1">
+                  <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-4 pr-3 pt-1 min-h-0">
                     {isLoadingOccasions ? (
                       <div className="text-center py-12">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-3"></div>
@@ -390,8 +394,8 @@ export function CalendarDayModal({
                 </div>
 
                 {/* Right: Outfits */}
-                <div className="flex flex-col">
-                  <div className="mb-5">
+                <div className="flex flex-col min-h-0">
+                  <div className="mb-5 shrink-0">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="font-bricolage text-xl font-semibold text-white flex items-center gap-2">
                         <Shirt className="w-6 h-6 text-cyan-400" />
@@ -416,7 +420,7 @@ export function CalendarDayModal({
                     )}
                   </div>
 
-                  <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-4 pr-3 pt-1">
+                  <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-4 pr-3 pt-1 min-h-0">
                     {isLoadingOutfits ? (
                       <div className="text-center py-12">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-3"></div>

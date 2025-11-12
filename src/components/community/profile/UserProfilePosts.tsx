@@ -2,11 +2,12 @@
 
 import { motion } from "framer-motion";
 import { Loader2, ImageOff } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { EnhancedPostCard } from "@/components/community/post/EnhancedPostCard";
 import { PostSkeleton } from "@/components/community/feed/PostSkeleton";
 import { useAuthStore } from "@/store/auth-store";
 import { useUserPosts } from "@/hooks/community/useUserPosts";
-import { communityAPI } from "@/lib/api/community-api";
+import { communityAPI, Hashtag } from "@/lib/api/community-api";
 import { toast } from "sonner";
 
 interface UserProfilePostsProps {
@@ -22,6 +23,7 @@ interface UserProfilePostsProps {
  */
 export function UserProfilePosts({ userId, userName }: UserProfilePostsProps) {
   const { user } = useAuthStore();
+  const router = useRouter();
 
   // Data management hook
   const {
@@ -31,7 +33,8 @@ export function UserProfilePosts({ userId, userName }: UserProfilePostsProps) {
     hasMore,
     observerTarget,
     handleLike,
-  } = useUserPosts(userId);
+    refetch,
+  } = useUserPosts(userId, user?.id);
 
   const handleReportPost = async (postId: string, reason: string) => {
     if (!user?.id) {
@@ -66,6 +69,32 @@ export function UserProfilePosts({ userId, userName }: UserProfilePostsProps) {
       toast.error(errorMessage);
       throw error instanceof Error ? error : new Error(errorMessage);
     }
+  };
+
+  const handleDeletePost = async (postId: number) => {
+    if (!user?.id) {
+      toast.error("Vui lòng đăng nhập");
+      return;
+    }
+
+    try {
+      await communityAPI.deletePost(postId);
+      toast.success("Bài viết đã được xóa");
+      
+      // Refetch posts to update the list
+      await refetch();
+    } catch (error) {
+      console.error("Error deleting post:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Không thể xóa bài viết";
+      toast.error(errorMessage);
+      throw error;
+    }
+  };
+
+  const handleTagClick = (tag: Hashtag) => {
+    // Navigate to community page with tag filter
+    router.push(`/community?hashtag=${tag.id}`);
   };
 
   // Loading state
@@ -117,10 +146,11 @@ export function UserProfilePosts({ userId, userName }: UserProfilePostsProps) {
               }}
               onLike={() => handleLike(parseInt(post.id))}
               onReport={(reason) => handleReportPost(post.id, reason)}
+              onDeletePost={handleDeletePost}
               onEditPost={(post) => {
-                console.log("Edit post:", post);
                 // TODO: Open edit dialog with post data
               }}
+              onTagClick={handleTagClick}
             />
           </motion.div>
         ))}

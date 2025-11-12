@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth-store";
-import { communityAPI } from "@/lib/api/community-api";
+import { communityAPI, Hashtag } from "@/lib/api/community-api";
 import { toast } from "sonner";
 import { AnimatedBackground } from "@/components/ui/animated-background";
 import { EnhancedPostCard } from "@/components/community/post/EnhancedPostCard";
@@ -71,7 +71,7 @@ export function UserProfile({ userId }: UserProfileProps) {
 
   // Handlers
   const handleMessage = () => {
-    console.log("Open chat with", userId);
+    // TODO: Implement chat functionality
   };
 
   const handleShare = () => {
@@ -109,6 +109,32 @@ export function UserProfile({ userId }: UserProfileProps) {
 
   const handleEditPost = (post: Post) => {
     setEditingPost(post);
+  };
+
+  const handleTagClick = (tag: Hashtag) => {
+    // Navigate to community page with tag filter
+    router.push(`/community?hashtag=${tag.id}`);
+  };
+
+  const handleDeletePost = async (postId: number) => {
+    if (!currentUser?.id) {
+      toast.error("Vui lòng đăng nhập");
+      return;
+    }
+
+    try {
+      await communityAPI.deletePost(postId);
+      toast.success("Bài viết đã được xóa");
+      
+      // Refetch posts to update the list
+      await refetch();
+    } catch (error) {
+      console.error("Error deleting post:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Không thể xóa bài viết";
+      toast.error(errorMessage);
+      throw error;
+    }
   };
 
   const handleFollowToggleWithUpdate = async () => {
@@ -181,7 +207,9 @@ export function UserProfile({ userId }: UserProfileProps) {
                     }}
                     onLike={() => handleLike(parseInt(post.id))}
                     onReport={(reason) => handleReportPost(post, reason)}
+                    onDeletePost={isOwnProfile ? handleDeletePost : undefined}
                     onEditPost={isOwnProfile ? () => handleEditPost(post) : undefined}
+                    onTagClick={handleTagClick}
                   />
                 ))}
 

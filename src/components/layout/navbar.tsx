@@ -15,6 +15,7 @@ import {
   Users,
   Image as ImgIcon,
   MessageSquare,
+  Bell,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -40,11 +41,9 @@ const mainNavigationItems = [
 
 const personalNavigationItems = [
   {
-    path: "/subscription",
-    label: "Subscription",
-    icon: CreditCard,
-    enabled: false,
+    path: "/subscription", label: "Subscription", icon: CreditCard, enabled: true,
   },
+  { path: "/notifications", label: "Notifications", icon: Bell, enabled: true },
   { path: "/collections", label: "Collections", icon: ImgIcon, enabled: false },
 ];
 
@@ -270,7 +269,7 @@ export function Navbar() {
           </nav>
 
           {/* PART 3: User Information - Right Corner */}
-          <div className="hidden lg:flex items-center gap-4 flex-shrink-0">
+          <div className="hidden lg:flex items-center gap-4">
             {/* Personal Navigation Icons */}
             {!isFirstTime && (
               <div className="flex items-center gap-2">
@@ -281,10 +280,13 @@ export function Navbar() {
                       key={item.path}
                       variant="ghost"
                       size="sm"
-                      className="relative text-white/80 hover:text-white hover:bg-white/10 rounded-full p-2"
+                      className="relative text-white/80 hover:text-white hover:bg-white/10 rounded-full p-2.5 cursor-pointer"
                       disabled={!item.enabled}
                     >
-                      <Icon className="w-5 h-5" />
+                      <Icon className="w-100 h-100" />
+                      {item.path === "/notifications" && item.enabled && (
+                        <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+                      )}
                     </Button>
                   );
 
@@ -313,9 +315,9 @@ export function Navbar() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="relative text-white/80 hover:text-white hover:bg-white/10 rounded-full p-2"
+                    className="relative text-white/80 hover:text-white hover:bg-white/10 rounded-full p-2.5"
                   >
-                    <MessageSquare className="w-5 h-5" />
+                    <MessageSquare className="w-6 h-6" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>

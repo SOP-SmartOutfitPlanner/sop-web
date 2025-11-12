@@ -49,7 +49,7 @@ export default function OutfitPage() {
   const { mutate: deleteOutfit } = useDeleteOutfit();
 
   // Fetch outfits
-  const { data, isLoading } = useOutfits({
+  const { data, isLoading, error, isError } = useOutfits({
     pageIndex: currentPage,
     pageSize,
     takeAll: false,
@@ -66,6 +66,13 @@ export default function OutfitPage() {
   const outfits = data?.data?.data || [];
   const metaData = data?.data?.metaData;
   const wardrobeItems = wardrobeData?.data || [];
+
+  // Log error for debugging
+  useEffect(() => {
+    if (isError && error) {
+      console.error("❌ Error fetching outfits:", error);
+    }
+  }, [isError, error]);
 
   const handleEditOutfit = useCallback((outfit: Outfit) => {
     setEditingOutfit(outfit);
@@ -180,6 +187,20 @@ export default function OutfitPage() {
 
         {/* Filters */}
         <OutfitFilters />
+
+        {/* Error State */}
+        {isError && (
+          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-xl">
+            <p className="font-poppins text-sm text-red-600 dark:text-red-400">
+              ❌ Failed to load outfits. Please check console for details.
+            </p>
+            {error && (
+              <p className="font-poppins text-xs text-red-500 dark:text-red-300 mt-2">
+                {error instanceof Error ? error.message : "Unknown error"}
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Stats */}
         {metaData && (

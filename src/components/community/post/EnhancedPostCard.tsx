@@ -121,8 +121,14 @@ export function EnhancedPostCard({
     onDelete:
       isOwnPost && onDeletePost
         ? async () => {
-            await onDeletePost(parseInt(post.id, 10));
-            onPostDeleted?.(post.id);
+            const postId = parseInt(post.id, 10);
+            try {
+              await onDeletePost(postId);
+              onPostDeleted?.(post.id);
+            } catch (error) {
+              console.error("Error in onDelete:", error);
+              throw error;
+            }
           }
         : undefined,
   });

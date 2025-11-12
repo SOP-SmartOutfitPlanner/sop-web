@@ -199,7 +199,8 @@ export function useFeed(pageSize: number = 10, searchQuery?: string) {
       queryClient.invalidateQueries({ queryKey: ["posts", "all", user?.id] });
       toast.success("Post deleted successfully");
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Error deleting post:", error);
       toast.error("Failed to delete post");
     },
   });
@@ -259,7 +260,7 @@ export function useFeed(pageSize: number = 10, searchQuery?: string) {
     resetFeed,
     toggleLike,
     createPost: createPostMutation.mutate,
-    deletePost: deletePostMutation.mutate,
+    deletePost: deletePostMutation.mutateAsync,
     reportPost: reportPostMutation.mutateAsync,
     
     // Mutation states
