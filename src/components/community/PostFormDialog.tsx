@@ -163,11 +163,15 @@ export function PostFormDialog({
   };
 
   return (
-    <div className="w-full h-full max-h-[90vh] flex flex-col gap-0 overflow-hidden">
+    <div className="w-full h-full max-h-[90vh] flex flex-col gap-0 overflow-hidden z-999">
       {/* Fixed Header */}
-      <PostFormHeader 
-        mode={mode} 
-        user={user ? { avatar: user.avatar, displayName: user.displayName } : undefined} 
+      <PostFormHeader
+        mode={mode}
+        user={
+          user
+            ? { avatar: user.avatar, displayName: user.displayName }
+            : undefined
+        }
       />
 
       {/* Scrollable Content - Only this scrolls */}

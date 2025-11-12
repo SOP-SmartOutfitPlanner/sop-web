@@ -1,3 +1,4 @@
+import { KeyboardEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Heart, MessageCircle } from "lucide-react";
 
@@ -7,6 +8,7 @@ interface PostActionsProps {
   commentCount: number;
   onLike: () => void;
   onComment: () => void;
+  onViewLikes?: () => void;
 }
 
 export function PostActions({
@@ -15,7 +17,16 @@ export function PostActions({
   commentCount,
   onLike,
   onComment,
+  onViewLikes,
 }: PostActionsProps) {
+  const handleLikesKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (!onViewLikes) return;
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onViewLikes();
+    }
+  };
+
   return (
     <div className="space-y-3">
       {/* Stats - Only show if there are likes or comments */}
@@ -23,7 +34,15 @@ export function PostActions({
         <div className="flex items-center justify-between gap-3 px-2 py-2">
           {/* Likes Badge */}
           {likeCount > 0 && (
-            <div className="flex items-center gap-2 group">
+            <div
+              className={`flex items-center gap-2 group ${
+                onViewLikes ? "cursor-pointer" : ""
+              }`}
+              role={onViewLikes ? "button" : undefined}
+              tabIndex={onViewLikes ? 0 : undefined}
+              onClick={onViewLikes}
+              onKeyDown={handleLikesKeyDown}
+            >
               <div className="relative flex -space-x-1">
                 <div className="relative w-7 h-7 rounded-full bg-gradient-to-br from-red-500 to-pink-500 flex items-center justify-center border-2 border-background shadow-lg shadow-red-500/50 group-hover:shadow-red-500/80 transition-shadow">
                   <Heart className="w-3.5 h-3.5 text-white fill-white" />

@@ -48,7 +48,7 @@ const transformPost = (post: CommunityPost): CommunityPost => ({
  * Hook for infinite scroll feed with React Query
  * Fetches all posts with pagination (not personalized feed)
  */
-export function useFeed(pageSize: number = 10) {
+export function useFeed(pageSize: number = 10, searchQuery?: string) {
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
 
@@ -63,11 +63,11 @@ export function useFeed(pageSize: number = 10) {
     isError,
     refetch,
   } = useInfiniteQuery<FeedResponse, Error>({
-    queryKey: ["posts", "all", user?.id],
+    queryKey: ["posts", "all", user?.id, searchQuery],
     queryFn: async ({ pageParam = 1 }) => {
       // Pass userId to get isLiked status for each post
       const userId = user?.id ? parseInt(user.id) : undefined;
-      const result = await communityAPI.getAllPosts(userId, pageParam as number, pageSize);
+      const result = await communityAPI.getAllPosts(userId, pageParam as number, pageSize, searchQuery);
       return result;
     },
     getNextPageParam: (lastPage) => {
@@ -91,8 +91,8 @@ export function useFeed(pageSize: number = 10) {
   });
 
   const resetFeed = useCallback(async () => {
-    await queryClient.removeQueries({ queryKey: ["posts", "all", user?.id] });
-  }, [queryClient, user?.id]);
+    await queryClient.removeQueries({ queryKey: ["posts", "all", user?.id, searchQuery] });
+  }, [queryClient, user?.id, searchQuery]);
 
   // Flatten all pages into single array of posts
   const allPosts: CommunityPost[] = data?.pages.flatMap((page) => page.data) ?? [];

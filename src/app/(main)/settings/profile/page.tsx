@@ -2,17 +2,13 @@
 
 import { ProfileEditForm } from "@/components/settings/ProfileEditForm";
 import { useAuthStore } from "@/store/auth-store";
-import { Loader2 } from "lucide-react";
+import { LoadingScreen } from "@/components/community";
 
 export default function ProfileSettingsPage() {
   const { user } = useAuthStore();
 
   if (!user) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-6 h-6 animate-spin text-primary" />
-      </div>
-    );
+    return <LoadingScreen message="Đang tải thông tin tài khoản..." />;
   }
 
   return (
