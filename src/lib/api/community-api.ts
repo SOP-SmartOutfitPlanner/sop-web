@@ -85,6 +85,18 @@ interface ApiResponse<T> {
   data: T;
 }
 
+export interface PostLiker {
+  userId: number;
+  displayName: string;
+  avatarUrl?: string | null;
+  isFollowing: boolean;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  metaData: FeedMetaData;
+}
+
 class CommunityAPI {
   private BASE_PATH = "/posts";
 
@@ -99,11 +111,13 @@ class CommunityAPI {
   async getAllPosts(
     userId?: number,
     page: number = 1,
-    pageSize: number = 10
+    pageSize: number = 10,
+    search?: string
   ): Promise<FeedResponse> {
     const response = await apiClient.get(this.BASE_PATH, {
       params: {
         ...(userId && { userId }), // Optional: userId for additional filtering
+        ...(search && { search }), // Optional: search query
         "page-index": page,
         "page-size": pageSize,
       },
@@ -174,6 +188,64 @@ class CommunityAPI {
     }
 
     return feedData;
+  }
+
+  /**
+   * Get posts by hashtag
+   * API: GET /posts/hashtag/{hashtagId}
+   */
+  async getPostsByHashtag(
+    hashtagId: number,
+    page: number = 1,
+    pageSize: number = 10,
+    currentUserId?: number
+  ): Promise<FeedResponse> {
+    const response = await apiClient.get(`${this.BASE_PATH}/hashtag/${hashtagId}`, {
+      params: {
+        ...(currentUserId && { userId: currentUserId }),
+        "page-index": page,
+        "page-size": pageSize,
+      },
+    });
+
+    const feedData = response.data;
+
+    if (!feedData || !feedData.metaData) {
+      console.error("Invalid API response structure:", response);
+      throw new Error("Invalid API response structure");
+    }
+
+    return feedData;
+  }
+
+  /**
+   * Get users who liked a specific post
+   * API: GET /posts/{postId}/likers
+   */
+  async getPostLikers(
+    postId: number,
+    page: number = 1,
+    pageSize: number = 10
+  ): Promise<PaginatedResponse<PostLiker>> {
+    const response = await apiClient.get<{
+      statusCode: number;
+      message: string;
+      data: PaginatedResponse<PostLiker>;
+    }>(`${this.BASE_PATH}/${postId}/likers`, {
+      params: {
+        "page-index": page,
+        "page-size": pageSize,
+      },
+    });
+
+    const likersData = response.data;
+
+    if (!likersData || !Array.isArray(likersData.data) || !likersData.metaData) {
+      console.error("Invalid API response structure:", response);
+      throw new Error("Invalid API response structure");
+    }
+
+    return likersData;
   }
 
   /**

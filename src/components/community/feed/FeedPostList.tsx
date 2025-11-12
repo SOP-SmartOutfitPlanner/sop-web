@@ -2,8 +2,8 @@
 
 import { motion } from "framer-motion";
 import { EnhancedPostCard } from "@/components/community/post/EnhancedPostCard";
-import { Post } from "@/types/community";
-import { CommunityUser } from "@/types/community";
+import { Post, CommunityUser } from "@/types/community";
+import { Hashtag } from "@/lib/api/community-api";
 
 interface FeedPostListProps {
   posts: Post[];
@@ -12,6 +12,7 @@ interface FeedPostListProps {
   onReport: (postId: number, description: string) => Promise<void>;
   onDeletePost?: (postId: number) => Promise<void>;
   onEditPost?: (post: Post) => void;
+  onTagClick?: (tag: Hashtag) => void;
 }
 
 export function FeedPostList({
@@ -21,6 +22,7 @@ export function FeedPostList({
   onReport,
   onDeletePost,
   onEditPost,
+  onTagClick,
 }: FeedPostListProps) {
   return (
     <div className="space-y-6">
@@ -38,6 +40,7 @@ export function FeedPostList({
             onReport={(reason) => onReport(parseInt(post.id, 10), reason)}
             onDeletePost={onDeletePost}
             onEditPost={onEditPost ? () => onEditPost(post) : undefined}
+            onTagClick={onTagClick}
           />
         </motion.div>
       ))}

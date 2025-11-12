@@ -1,5 +1,6 @@
 "use client";
 
+import { Hashtag } from "@/lib/api/community-api";
 import { Post } from "@/types/community";
 import { PostHeader } from "./PostHeader";
 import { PostImage } from "./PostImage";
@@ -24,6 +25,8 @@ interface PostCardContainerProps {
   onFollow?: () => void;
   onDelete?: () => Promise<void>;
   onEdit?: () => void;
+  onTagClick?: (tag: Hashtag) => void;
+  onViewLikes?: () => void;
   authorInfo: {
     id: string;
     name: string;
@@ -47,6 +50,8 @@ export function PostCardContainer({
   onFollow,
   onDelete,
   onEdit,
+  onTagClick,
+  onViewLikes,
   authorInfo,
 }: PostCardContainerProps) {
   const [isHovered, setIsHovered] = useState(false);
@@ -103,7 +108,7 @@ export function PostCardContainer({
           </div>
 
           {/* Content */}
-          <PostContent caption={post.caption} tags={post.tags} />
+          <PostContent caption={post.caption} tags={post.tags} onTagClick={onTagClick} />
 
           {/* Image */}
           {images.length > 0 && (
@@ -120,6 +125,7 @@ export function PostCardContainer({
               commentCount={post.commentCount}
               onLike={onLike}
               onComment={onComment}
+              onViewLikes={onViewLikes}
             />
           </div>
         </div>
