@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useMemo, useCallback, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { PostSkeleton } from "./PostSkeleton";
 import { useFeed } from "@/hooks/useFeed";
 import { Post, apiPostToPost } from "@/types/community";
@@ -22,6 +23,7 @@ import { communityAPI } from "@/lib/api/community-api";
 interface InfiniteScrollFeedProps {
   searchQuery?: string;
   refreshKey?: number;
+  initialHashtagId?: number;
 }
 
 /**
@@ -36,8 +38,11 @@ interface InfiniteScrollFeedProps {
 export function InfiniteScrollFeed({
   searchQuery = "",
   refreshKey = 0,
+  initialHashtagId,
 }: InfiniteScrollFeedProps) {
   const { user } = useAuthStore();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const observerTarget = useRef<HTMLDivElement>(null);
   const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
@@ -158,10 +163,19 @@ export function InfiniteScrollFeed({
   );
 
   const clearTagFilter = useCallback(() => {
+    // Clear state first
     setActiveHashtag(null);
     setTaggedPosts([]);
     setTagError(null);
-  }, []);
+    
+    // Clear hashtag from URL params
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("hashtag");
+    const newUrl = params.toString() ? `/community?${params.toString()}` : "/community";
+    
+    // Use push instead of replace to ensure URL updates
+    router.push(newUrl);
+  }, [router, searchParams]);
 
   const handleTagClick = useCallback(
     async (tag: Hashtag) => {
@@ -170,11 +184,71 @@ export function InfiniteScrollFeed({
         return;
       }
 
-      setActiveHashtag(tag);
-      await fetchPostsForHashtag(tag);
+      // Update URL params when clicking tag - let useEffect handle the state update
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("hashtag", tag.id.toString());
+      const newUrl = `/community?${params.toString()}`;
+      
+      // Just update URL, useEffect will handle setting activeHashtag
+      router.push(newUrl);
     },
-    [activeHashtag?.id, clearTagFilter, fetchPostsForHashtag]
+    [activeHashtag?.id, clearTagFilter, router, searchParams]
   );
+
+  // Initialize hashtag from URL params
+  useEffect(() => {
+    const urlHashtag = searchParams.get("hashtag");
+    const urlHashtagId = urlHashtag ? parseInt(urlHashtag, 10) : undefined;
+
+    // Initialize if URL has hashtag but activeHashtag doesn't match or doesn't exist
+    if (urlHashtagId && activeHashtag?.id !== urlHashtagId) {
+      // Fetch posts for the hashtag and extract tag name from response
+      const initializeHashtag = async () => {
+        try {
+          setIsTagLoading(true);
+          setTagError(null);
+          
+          const userId = user?.id ? parseInt(user.id, 10) : undefined;
+          const response = await communityAPI.getPostsByHashtag(
+            urlHashtagId,
+            1,
+            20,
+            userId
+          );
+          
+          // Extract tag name from first post's hashtags or use a placeholder
+          const postsByTag = response.data?.map(apiPostToPost) ?? [];
+          const tagName = postsByTag[0]?.tags?.find(t => t.id === urlHashtagId)?.name || "";
+          
+          const tag: Hashtag = { id: urlHashtagId, name: tagName };
+          
+          setActiveHashtag(tag);
+          
+          const sortedByTimestamp = [...postsByTag].sort(
+            (a, b) =>
+              new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+          );
+          setTaggedPosts(sortedByTimestamp);
+        } catch (error) {
+          console.error("Failed to initialize hashtag from URL:", error);
+          // Still set the tag with ID only if name not found
+          const tag: Hashtag = { id: urlHashtagId, name: "" };
+          setActiveHashtag(tag);
+          setTaggedPosts([]);
+          setTagError("Không thể tải bài viết theo hashtag");
+        } finally {
+          setIsTagLoading(false);
+        }
+      };
+      initializeHashtag();
+    } 
+    // Clear activeHashtag if URL doesn't have hashtag and activeHashtag exists
+    else if (!urlHashtag && activeHashtag) {
+      setActiveHashtag(null);
+      setTaggedPosts([]);
+      setTagError(null);
+    }
+  }, [initialHashtagId, activeHashtag, user?.id, searchParams]);
 
   const refreshActiveHashtag = useCallback(async () => {
     if (activeHashtag) {
@@ -217,12 +291,17 @@ export function InfiniteScrollFeed({
 
   const handleDeletePost = useCallback(
     async (postId: number) => {
-      await deletePost(postId);
+      try {
+        await deletePost(postId);
 
-      if (activeHashtag) {
-        setTaggedPosts((prev) =>
-          prev.filter((post) => post.id !== postId.toString())
-        );
+        if (activeHashtag) {
+          setTaggedPosts((prev) =>
+            prev.filter((post) => post.id !== postId.toString())
+          );
+        }
+      } catch (error) {
+        console.error("Error in handleDeletePost:", error);
+        throw error;
       }
     },
     [deletePost, activeHashtag]

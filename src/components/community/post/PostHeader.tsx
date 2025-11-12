@@ -69,6 +69,9 @@ export function PostHeader({
       setIsDeleting(true);
       await onDelete();
       setIsDeleteDialogOpen(false);
+    } catch (error) {
+      console.error("Error during delete:", error);
+      throw error;
     } finally {
       setIsDeleting(false);
     }

@@ -50,18 +50,6 @@ export function PostFormFooter({
               <ImageIcon className="w-4 h-4 text-green-400 group-hover:text-green-300" />
             </div>
           </label>
-
-          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-500/10 hover:bg-blue-500/20 hover:shadow-lg hover:shadow-blue-500/30 transition-all cursor-pointer">
-            <Users className="w-4 h-4 text-blue-400 hover:text-blue-300" />
-          </div>
-
-          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-red-500/10 hover:bg-red-500/20 hover:shadow-lg hover:shadow-red-500/30 transition-all cursor-pointer">
-            <MapPin className="w-4 h-4 text-red-400 hover:text-red-300" />
-          </div>
-
-          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-cyan-500/10 hover:bg-cyan-500/20 hover:shadow-lg hover:shadow-cyan-500/30 transition-all cursor-pointer">
-            <MoreHorizontal className="w-4 h-4 text-cyan-300 hover:text-cyan-200" />
-          </div>
         </div>
       </div>
 
