@@ -365,6 +365,16 @@
   animation: word-wipe 0.5s ease-out forwards;
 }
 
+/* Shimmer animation for skeleton loaders */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%) skewX(-12deg);
+  }
+  100% {
+    transform: translateX(200%) skewX(-12deg);
+  }
+}
+
 /* Ant Design Pagination Custom Styling */
 .antd-pagination {
   display: flex;

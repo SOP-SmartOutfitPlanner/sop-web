@@ -1,8 +1,8 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
 import { Contributor } from "./types";
 import { ContributorCard } from "./ContributorCard";
+import { TopContributorsSkeleton } from "./TopContributorsSkeleton";
 
 interface TopContributorsListProps {
   contributors: Contributor[];
@@ -20,11 +20,7 @@ export function TopContributorsList({
   onFollow,
 }: TopContributorsListProps) {
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <Loader2 className="w-5 h-5 animate-spin text-primary" />
-      </div>
-    );
+    return <TopContributorsSkeleton />;
   }
 
   if (contributors.length === 0) {
