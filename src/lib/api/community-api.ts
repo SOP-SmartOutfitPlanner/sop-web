@@ -306,7 +306,7 @@ class CommunityAPI {
       }
     );
 
-    return response.data;
+    return response;
   }
 
   /**
