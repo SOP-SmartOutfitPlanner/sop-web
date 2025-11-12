@@ -1,20 +1,32 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import dynamic from "next/dynamic";
 import GlassButton from "@/components/ui/glass-button";
 import { OutfitGrid } from "@/components/outfit/OutfitGrid";
 import { OutfitFilters } from "@/components/outfit/OutfitFilters";
-import { CreateOutfitDialog } from "@/components/outfit/CreateOutfitDialog";
-import { EditOutfitDialog } from "@/components/outfit/EditOutfitDialog";
-import { ViewOutfitDialog } from "@/components/outfit/ViewOutfitDialog";
 import { useOutfits, useDeleteOutfit } from "@/hooks/useOutfits";
 import { useOutfitStore } from "@/store/outfit-store";
 import { wardrobeAPI } from "@/lib/api/wardrobe-api";
 import { useAuthStore } from "@/store/auth-store";
 import { Outfit } from "@/types/outfit";
+
+// Dynamic imports to avoid SSR issues with antd Image
+const CreateOutfitDialog = dynamic(
+  () => import("@/components/outfit/CreateOutfitDialog").then((mod) => ({ default: mod.CreateOutfitDialog })),
+  { ssr: false }
+);
+const EditOutfitDialog = dynamic(
+  () => import("@/components/outfit/EditOutfitDialog").then((mod) => ({ default: mod.EditOutfitDialog })),
+  { ssr: false }
+);
+const ViewOutfitDialog = dynamic(
+  () => import("@/components/outfit/ViewOutfitDialog").then((mod) => ({ default: mod.ViewOutfitDialog })),
+  { ssr: false }
+);
 
 export default function OutfitPage() {
   const router = useRouter();
