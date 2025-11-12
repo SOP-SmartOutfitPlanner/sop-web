@@ -39,11 +39,7 @@ export default function ResetPasswordPage() {
       setValue("email", storedEmail);
       setValue("resetToken", storedToken);
     } else {
-      toast.error(
-        errors instanceof ApiError
-          ? errors.message
-          : "Invalid password reset session"
-      );
+      toast.error("Invalid password reset session");
       router.push("/forgot-password");
     }
   }, [router, setValue]);

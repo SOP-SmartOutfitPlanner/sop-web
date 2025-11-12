@@ -30,8 +30,18 @@ export interface CreateCalenderRequest{
     userOccasionId: number;
     dateUsed: string;
 }
+export interface EditCalenderRequest{
+    outfitId?: number| null;
+    userOccasionId?: number| null;
+    dateUsed?: string;
+}
 
 export interface CreateCalenderResponse{
+    statusCode: number;
+    message: string;
+    data: Calender;
+}
+export interface EditCalenderResponse{
     statusCode: number;
     message: string;
     data: Calender;

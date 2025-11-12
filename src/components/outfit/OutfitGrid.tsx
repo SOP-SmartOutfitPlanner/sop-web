@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import { OutfitCard } from "./OutfitCard";
 import { Outfit } from "@/types/outfit";
 import { Loader2 } from "lucide-react";

@@ -61,4 +61,3 @@ export interface UserOccasion {
     createdDate: string;
     updatedDate: string | null;
 }
-   

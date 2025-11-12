@@ -173,7 +173,7 @@ export function useSaveFavoriteOutfit() {
 
       return { previousListData, previousDetailData };
     },
-    onSuccess: (response) => {
+    onSuccess: () => {
       toast.success("Favorite status updated!");
     },
     onError: (error: Error, outfitId, context) => {

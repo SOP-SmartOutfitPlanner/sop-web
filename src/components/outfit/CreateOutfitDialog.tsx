@@ -1,10 +1,7 @@
 "use client";
 
 import { useState, memo, useEffect, useCallback, useMemo } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { X, Plus, Check, CheckCircle2, Sparkles, Filter as FilterIcon } from "lucide-react";
+import { X, CheckCircle2, Sparkles, Filter as FilterIcon } from "lucide-react";
 import { Image } from "antd";
 import GlassButton from "@/components/ui/glass-button";
 import { useCreateOutfit } from "@/hooks/useOutfits";
@@ -12,13 +9,6 @@ import { useOutfitStore } from "@/store/outfit-store";
 import { ApiWardrobeItem } from "@/lib/api/wardrobe-api";
 import { FilterModal } from "@/components/wardrobe/FilterModal";
 import { WardrobeFilters } from "@/types/wardrobe";
-
-const createOutfitSchema = z.object({
-  name: z.string().min(1, "Outfit name is required").max(100, "Name is too long"),
-  description: z.string().max(500, "Description is too long").optional(),
-});
-
-type CreateOutfitFormValues = z.infer<typeof createOutfitSchema>;
 
 interface CreateOutfitDialogProps {
   open: boolean;
@@ -163,7 +153,9 @@ export function CreateOutfitDialog({
         }
       });
     }
-  }, [selectedItemIds.length, filteredWardrobeItems, clearSelectedItems, toggleItemSelection]);
+    // selectedItemIds intentionally excluded - we read its length, not iterate it
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filteredWardrobeItems, clearSelectedItems, toggleItemSelection]);
 
   const handleSubmit = useCallback(() => {
     // Validation

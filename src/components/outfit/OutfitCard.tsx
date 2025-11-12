@@ -2,10 +2,11 @@
 
 import { useState, memo, useCallback, MouseEvent } from "react";
 import { motion } from "framer-motion";
+import Image from "next/image";
 import { Heart, Calendar, User, Trash2, Edit } from "lucide-react";
 import { Outfit } from "@/types/outfit";
 import GlassCard from "@/components/ui/glass-card";
-import GlassButton from "@/components/ui/glass-button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useSaveFavoriteOutfit } from "@/hooks/useOutfits";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -20,6 +21,7 @@ interface OutfitCardProps {
 const OutfitCardComponent = ({ outfit, onView, onEdit, onDelete }: OutfitCardProps) => {
   const { mutate: toggleFavorite, isPending } = useSaveFavoriteOutfit();
   const [isHovered, setIsHovered] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const handleFavoriteClick = useCallback((e: MouseEvent) => {
     e.stopPropagation();
@@ -35,6 +37,10 @@ const OutfitCardComponent = ({ outfit, onView, onEdit, onDelete }: OutfitCardPro
 
   const handleDeleteClick = useCallback((e: MouseEvent) => {
     e.stopPropagation();
+    setIsDeleteDialogOpen(true);
+  }, []);
+
+  const confirmDelete = useCallback(() => {
     if (onDelete) {
       onDelete(outfit.id);
     }
@@ -51,15 +57,16 @@ const OutfitCardComponent = ({ outfit, onView, onEdit, onDelete }: OutfitCardPro
   }, [outfit.createdDate]);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      whileHover={{ scale: 1.02 }}
-      transition={{ duration: 0.2 }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
+    <>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        whileHover={{ scale: 1.02 }}
+        transition={{ duration: 0.2 }}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
       <GlassCard
         padding="0"
         blur="10px"
@@ -78,10 +85,12 @@ const OutfitCardComponent = ({ outfit, onView, onEdit, onDelete }: OutfitCardPro
                 key={`${outfit.id}-${item.itemId || item.id}`}
                 className="relative rounded-lg overflow-hidden bg-white dark:bg-gray-800"
               >
-                <img
+                <Image
                   src={item.imgUrl}
                   alt={item.name}
-                  className="w-full h-full object-cover"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 50vw, 25vw"
                 />
               </div>
             ))}
@@ -144,7 +153,7 @@ const OutfitCardComponent = ({ outfit, onView, onEdit, onDelete }: OutfitCardPro
         </div>
 
         {/* Content */}
-        <div className="p-4 space-y-3">
+        <div className="pr-6 pb-6 space-y-2.5">
           <div>
             <h3 className="font-bricolage font-semibold text-lg text-white line-clamp-1">
               {outfit.name}
@@ -181,7 +190,21 @@ const OutfitCardComponent = ({ outfit, onView, onEdit, onDelete }: OutfitCardPro
           </div>
         </div>
       </GlassCard>
-    </motion.div>
+      </motion.div>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        onConfirm={confirmDelete}
+        title="Delete Outfit?"
+        description={`Are you sure you want to delete "${outfit.name}"? This action cannot be undone and will permanently remove this outfit from your collection.`}
+        confirmText="Delete Outfit"
+        cancelText="Cancel"
+        variant="danger"
+        isLoading={false}
+      />
+    </>
   );
 };
 

@@ -33,7 +33,7 @@ const mainNavigationItems = [
   { path: "/outfit", label: "Outfit", icon: Sparkles, enabled: true },
   { path: "/suggest", label: "Suggest", icon: Sparkles, enabled: false },
   { path: "/daily", label: "Daily", icon: Calendar, enabled: false },
-  { path: "/weekly", label: "Weekly", icon: CalendarDays, enabled: true },
+  { path: "/calendar", label: "Calendar", icon: CalendarDays, enabled: true },
   { path: "/community", label: "Community", icon: Users, enabled: true },
   { path: "/challenges", label: "Favorites", icon: Heart, enabled: false },
 ];

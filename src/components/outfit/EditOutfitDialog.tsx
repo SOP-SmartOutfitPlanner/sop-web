@@ -175,7 +175,9 @@ export function EditOutfitDialog({
         }
       });
     }
-  }, [selectedItemIds.length, filteredWardrobeItems, clearSelectedItems, toggleItemSelection]);
+    // selectedItemIds intentionally excluded - we read its length, not iterate it
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filteredWardrobeItems, clearSelectedItems, toggleItemSelection]);
 
   const handleSubmit = useCallback(() => {
     if (!outfitId) return;
