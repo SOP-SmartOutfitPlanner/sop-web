@@ -2,7 +2,6 @@
 
 import { useState, memo, useCallback, MouseEvent } from "react";
 import { motion } from "framer-motion";
-import Image from "next/image";
 import { Heart, Calendar, User, Trash2, Edit } from "lucide-react";
 import { Outfit } from "@/types/outfit";
 import GlassCard from "@/components/ui/glass-card";
@@ -85,12 +84,10 @@ const OutfitCardComponent = ({ outfit, onView, onEdit, onDelete }: OutfitCardPro
                 key={`${outfit.id}-${item.itemId || item.id}`}
                 className="relative rounded-lg overflow-hidden bg-white dark:bg-gray-800"
               >
-                <Image
+                <img
                   src={item.imgUrl}
                   alt={item.name}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 50vw, 25vw"
+                  className="w-full h-full object-cover"
                 />
               </div>
             ))}

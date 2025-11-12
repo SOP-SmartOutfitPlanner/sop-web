@@ -107,6 +107,8 @@ export function CreateOutfitDialog({
   const [nameError, setNameError] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filters, setFilters] = useState<WardrobeFilters>({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
 
   // Filter items based on selected filters
   const filteredWardrobeItems = useMemo(() => {
@@ -134,11 +136,25 @@ export function CreateOutfitDialog({
     return items;
   }, [wardrobeItems, filters]);
 
+  // Paginate filtered items
+  const totalPages = Math.ceil(filteredWardrobeItems.length / itemsPerPage);
+  const paginatedItems = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredWardrobeItems.slice(startIndex, endIndex);
+  }, [filteredWardrobeItems, currentPage, itemsPerPage]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters]);
+
   const handleClose = useCallback(() => {
     setName("");
     setDescription("");
     setNameError("");
     setFilters({});
+    setCurrentPage(1);
     clearSelectedItems();
     onOpenChange(false);
   }, [clearSelectedItems, onOpenChange]);
@@ -368,16 +384,81 @@ export function CreateOutfitDialog({
                     </div>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-4 gap-5">
-                    {filteredWardrobeItems.map((item) => (
-                      <ItemCard
-                        key={item.id}
-                        item={item}
-                        isSelected={selectedSet.has(item.id!)}
-                        onToggle={toggleItemSelection}
-                      />
-                    ))}
-                  </div>
+                  <>
+                    <div className="grid grid-cols-4 gap-5">
+                      {paginatedItems.map((item) => (
+                        <ItemCard
+                          key={item.id}
+                          item={item}
+                          isSelected={selectedSet.has(item.id!)}
+                          onToggle={toggleItemSelection}
+                        />
+                      ))}
+                    </div>
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-center gap-2 mt-6 pb-2">
+                        <button
+                          onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                          disabled={currentPage === 1}
+                          className="px-3 py-1.5 rounded-lg bg-white/10 border border-white/20 text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-all"
+                        >
+                          Previous
+                        </button>
+
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => {
+                            // Show first page, last page, current page, and pages around current
+                            const showPage = 
+                              page === 1 || 
+                              page === totalPages || 
+                              (page >= currentPage - 1 && page <= currentPage + 1);
+                            
+                            const showEllipsis = 
+                              (page === currentPage - 2 && currentPage > 3) ||
+                              (page === currentPage + 2 && currentPage < totalPages - 2);
+
+                            if (showEllipsis) {
+                              return (
+                                <span key={page} className="px-2 text-white/50">
+                                  ...
+                                </span>
+                              );
+                            }
+
+                            if (!showPage) return null;
+
+                            return (
+                              <button
+                                key={page}
+                                onClick={() => setCurrentPage(page)}
+                                className={
+                                  page === currentPage
+                                    ? "px-3 py-1.5 rounded-lg bg-cyan-500 border-2 border-cyan-400 text-white text-sm font-semibold shadow-lg shadow-cyan-500/30"
+                                    : "px-3 py-1.5 rounded-lg bg-white/10 border border-white/20 text-white text-sm font-medium hover:bg-white/20 transition-all"
+                                }
+                              >
+                                {page}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        <button
+                          onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                          disabled={currentPage === totalPages}
+                          className="px-3 py-1.5 rounded-lg bg-white/10 border border-white/20 text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-all"
+                        >
+                          Next
+                        </button>
+
+                        <span className="ml-2 text-white/70 text-sm">
+                          Page {currentPage} of {totalPages}
+                        </span>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>
