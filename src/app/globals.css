@@ -270,6 +270,64 @@
   animation: word-wipe 0.5s ease-out forwards;
 }
 
+/* Hide scrollbar in Ant Design Select and TreeSelect dropdowns while maintaining scroll functionality */
+
+/* Hide the custom scrollbar component */
+.rc-virtual-list-scrollbar {
+  display: none !important;
+  width: 0 !important;
+}
+
+/* Hide scrollbar for Select dropdown */
+.ant-select-dropdown {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.ant-select-dropdown::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+/* Hide scrollbar for TreeSelect dropdown */
+.ant-tree-select-dropdown {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.ant-tree-select-dropdown::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+/* Hide scrollbar for virtual list holder */
+.rc-virtual-list-holder {
+  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important; /* IE and Edge */
+}
+
+.rc-virtual-list-holder::-webkit-scrollbar {
+  display: none !important; /* Chrome, Safari, Opera */
+}
+
+/* Hide scrollbar for tree list holders */
+.ant-select-tree-list-holder,
+.ant-tree-list-holder {
+  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important; /* IE and Edge */
+}
+
+.ant-select-tree-list-holder::-webkit-scrollbar,
+.ant-tree-list-holder::-webkit-scrollbar {
+  display: none !important; /* Chrome, Safari, Opera */
+}
+
+/* Ensure these elements remain scrollable (don't override overflow) */
+.rc-virtual-list-holder,
+.ant-select-tree-list-holder,
+.ant-tree-list-holder {
+  /* Don't set overflow here - let Ant Design manage it */
+  /* This allows mouse wheel scrolling to work properly */
+}
+
 /* Ant Design Pagination Custom Styling */
 .antd-pagination {
   display: flex;

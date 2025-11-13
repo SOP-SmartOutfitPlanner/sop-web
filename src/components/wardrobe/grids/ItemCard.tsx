@@ -54,9 +54,9 @@ export const ItemCard = memo(function ItemCard({
     setIsDeleting(true);
     try {
       await onDelete?.(item.id);
-      setShowDeleteModal(false);
     } finally {
       setIsDeleting(false);
+      setShowDeleteModal(false);
     }
   }, [item.id, onDelete]);
   const handleUseInOutfit = useCallback(() => onUseInOutfit?.(item), [item, onUseInOutfit]);

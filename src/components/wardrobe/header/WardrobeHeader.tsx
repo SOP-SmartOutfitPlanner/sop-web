@@ -7,6 +7,7 @@ import { WardrobeFilters } from "@/types/wardrobe";
 import { WardrobeItem } from "@/types";
 import { useMemo, useCallback, memo, useState, useEffect } from "react";
 import { FilterModal } from "@/components/wardrobe/FilterModal";
+import { useWardrobeStore } from "@/store/wardrobe-store";
 
 const { Search } = AntInput;
 
@@ -46,6 +47,7 @@ export const WardrobeHeader = memo(function WardrobeHeader({
   const [searchValue, setSearchValue] = useState(filters.q || "");
   const debouncedSearchValue = useDebounce(searchValue, 300);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const { setSearchQuery } = useWardrobeStore();
 
   const activeFiltersCount = useMemo(() => {
     return [
@@ -56,9 +58,10 @@ export const WardrobeHeader = memo(function WardrobeHeader({
     ].reduce((a, b) => a + b, 0);
   }, [filters.categoryId, filters.seasonId, filters.styleId, filters.occasionId]);
 
-  // Update filters when debounced search value changes
+  // Update search query when debounced search value changes
   useEffect(() => {
     if (debouncedSearchValue !== filters.q) {
+      setSearchQuery(debouncedSearchValue || "");
       onFiltersChange({ ...filters, q: debouncedSearchValue || undefined });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -70,8 +73,9 @@ export const WardrobeHeader = memo(function WardrobeHeader({
 
   const handleSearchSubmit = useCallback((value: string) => {
     setSearchValue(value);
+    setSearchQuery(value || "");
     onFiltersChange({ ...filters, q: value || undefined });
-  }, [filters, onFiltersChange]);
+  }, [filters, onFiltersChange, setSearchQuery]);
 
   return (
     <div className="space-y-6 mb-8">
