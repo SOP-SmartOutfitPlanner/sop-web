@@ -36,12 +36,16 @@ const mainNavigationItems = [
   { path: "/daily", label: "Daily", icon: Calendar, enabled: false },
   { path: "/calendar", label: "Calendar", icon: CalendarDays, enabled: true },
   { path: "/community", label: "Community", icon: Users, enabled: true },
-  { path: "/challenges", label: "Favorites", icon: Heart, enabled: false },
+  { path: "/collections", label: "Collection", icon: ImgIcon, enabled: true },
+  { path: "/favorites", label: "Favorites", icon: Heart, enabled: false },
 ];
 
 const personalNavigationItems = [
   {
-    path: "/subscription", label: "Subscription", icon: CreditCard, enabled: true,
+    path: "/subscription",
+    label: "Subscription",
+    icon: CreditCard,
+    enabled: true,
   },
   { path: "/notifications", label: "Notifications", icon: Bell, enabled: true },
   { path: "/collections", label: "Collections", icon: ImgIcon, enabled: false },
@@ -51,7 +55,9 @@ const personalNavigationItems = [
 export function Navbar() {
   const pathname = usePathname();
   const { user, isInitialized, isFirstTime } = useAuthStore();
-  const [tabPositions, setTabPositions] = useState<{ [key: string]: { left: number; width: number } }>({});
+  const [tabPositions, setTabPositions] = useState<{
+    [key: string]: { left: number; width: number };
+  }>({});
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
 
@@ -66,7 +72,7 @@ export function Navbar() {
         return true;
       });
 
-      filteredItems.forEach(item => {
+      filteredItems.forEach((item) => {
         const element = document.getElementById(`nav-tab-${item.path}`);
         if (element) {
           const rect = element.getBoundingClientRect();
@@ -75,7 +81,7 @@ export function Navbar() {
             const containerRect = container.getBoundingClientRect();
             positions[item.path] = {
               left: rect.left - containerRect.left,
-              width: rect.width
+              width: rect.width,
             };
           }
         }
@@ -129,10 +135,10 @@ export function Navbar() {
       <header
         className="fixed top-0 left-0 right-0 z-[49] transition-all duration-300 py-4"
         style={{
-          transform: isVisible ? 'translateY(0)' : 'translateY(-100%)',
+          transform: isVisible ? "translateY(0)" : "translateY(-100%)",
         }}
       >
-        <div className="max-w-[1600px] mx-auto px-10 flex items-center justify-between gap-20">
+        <div className="max-w-[1700px] mx-auto px-10 flex items-center justify-between gap-20">
           {/* PART 1: Logo - Left Corner */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
@@ -141,9 +147,13 @@ export function Navbar() {
             className="flex items-center gap-1 cursor-pointer flex-shrink-0"
           >
             <Link href="/wardrobe">
-              <div className="relative w-80 h-28 md:w-72 md:h-24" style={{
-                filter: 'drop-shadow(0 0 20px rgba(59, 130, 246, 0.4)) drop-shadow(0 0 10px rgba(59, 130, 246, 0.3))'
-              }}>
+              <div
+                className="relative w-80 h-28 md:w-72 md:h-24"
+                style={{
+                  filter:
+                    "drop-shadow(0 0 20px rgba(59, 130, 246, 0.4)) drop-shadow(0 0 10px rgba(59, 130, 246, 0.3))",
+                }}
+              >
                 <Image
                   src="/SOP-logo (2).png"
                   alt="SOP Logo"
@@ -183,23 +193,25 @@ export function Navbar() {
                         initial={false}
                         animate={{
                           left: tabPositions[pathname].left,
-                          width: tabPositions[pathname].width
+                          width: tabPositions[pathname].width,
                         }}
                         transition={{
                           type: "spring",
                           stiffness: 350,
-                          damping: 30
+                          damping: 30,
                         }}
                         style={{
-                          backdropFilter: "brightness(1.3) blur(15px) url(#indicatorDisplacementFilter)",
-                          boxShadow: "inset 15px 15px 0px -15px rgba(59, 130, 246, 0.8), inset 0 0 8px 1px rgba(59, 130, 246, 0.8), 0 20px 40px rgba(37, 99, 235, 0.5)",
+                          backdropFilter:
+                            "brightness(1.3) blur(15px) url(#indicatorDisplacementFilter)",
+                          boxShadow:
+                            "inset 15px 15px 0px -15px rgba(59, 130, 246, 0.8), inset 0 0 8px 1px rgba(59, 130, 246, 0.8), 0 20px 40px rgba(37, 99, 235, 0.5)",
                           border: "2px solid rgba(59, 130, 246, 0.6)",
                         }}
                       >
                         <div className="absolute inset-0 bg-gradient-to-r from-sky-600 via-blue-700 to-blue-800 rounded-full" />
                       </motion.div>
 
-                      <svg style={{ display: 'none' }}>
+                      <svg style={{ display: "none" }}>
                         <filter id="indicatorDisplacementFilter">
                           <feTurbulence
                             type="turbulence"
@@ -230,8 +242,11 @@ export function Navbar() {
                         id={`nav-tab-${item.path}`}
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5, delay: 0.3 + index * 0.05 }}
-                        onClick={() => item.enabled ? null : null}
+                        transition={{
+                          duration: 0.5,
+                          delay: 0.3 + index * 0.05,
+                        }}
+                        onClick={() => (item.enabled ? null : null)}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         className={`relative z-20 px-6 py-2.5 rounded-full font-bricolage font-bold text-sm transition-all duration-300 ease-out whitespace-nowrap flex items-center gap-2 ${
@@ -254,9 +269,7 @@ export function Navbar() {
                       </Link>
                     ) : (
                       <Tooltip key={item.path}>
-                        <TooltipTrigger asChild>
-                          {tabButton}
-                        </TooltipTrigger>
+                        <TooltipTrigger asChild>{tabButton}</TooltipTrigger>
                         <TooltipContent>
                           <p>Đang hoàn thiện</p>
                         </TooltipContent>
@@ -296,9 +309,7 @@ export function Navbar() {
                     </Link>
                   ) : (
                     <Tooltip key={item.path}>
-                      <TooltipTrigger asChild>
-                        {navItem}
-                      </TooltipTrigger>
+                      <TooltipTrigger asChild>{navItem}</TooltipTrigger>
                       <TooltipContent>
                         <p>Đang hoàn thiện</p>
                       </TooltipContent>
