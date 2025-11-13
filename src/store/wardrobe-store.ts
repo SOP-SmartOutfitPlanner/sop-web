@@ -221,6 +221,7 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
         styleId: state.filters.styleId,
         occasionId: state.filters.occasionId,
         sortByDate: state.filters.sortByDate,
+        searchQuery: state.searchQuery || undefined,
       };
 
       const response = await wardrobeAPI.getItems(
@@ -371,19 +372,9 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
       // Convert string id to number for API call
       const numericId = parseInt(id);
       await wardrobeAPI.deleteItem(numericId);
-      set((state) => {
-        const newItems = state.items.filter((item) => item.id !== id);
-        const filtered = filterItems(
-          newItems,
-          state.filters,
-          state.searchQuery
-        );
-        const sorted = sortItems(filtered, state.sortBy);
-        return {
-          items: newItems,
-          filteredItems: sorted,
-        };
-      });
+
+      // Refetch items from server to ensure data consistency
+      await get().fetchItems();
     } catch (error) {
       console.error("Failed to delete item:", error);
       set({
@@ -452,15 +443,19 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
 
   // Search functionality
   searchQuery: "",
-  setSearchQuery: (query: string) =>
+  setSearchQuery: (query: string) => {
     set((state) => {
       const filtered = filterItems(state.items, state.filters, query);
       const sorted = sortItems(filtered, state.sortBy);
       return {
         searchQuery: query,
         filteredItems: sorted,
+        currentPage: 1, // Reset to first page when search changes
       };
-    }),
+    });
+    // Fetch new items from API with updated search query
+    get().fetchItems();
+  },
 
   // Bulk selection functionality
   toggleItemSelection: (id: string) =>

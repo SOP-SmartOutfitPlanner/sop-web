@@ -34,6 +34,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { userAPI } from "@/lib/api/user-api";
 import { cn } from "@/lib/utils";
+import { useScrollLock } from "@/hooks/useScrollLock";
 
 // Import from extracted modules
 import { STEPS, TOTAL_STEPS, MAX_COLORS, MAX_STYLES, LOCATION_API_BASE, COLOR_PRESETS } from "./onboarding-dialog/constants";
@@ -93,27 +94,7 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
   });
 
   // ===== Effects =====
-  // Disable body scroll when dialog is open
-  useEffect(() => {
-    if (open) {
-      // Save the current styles
-      const originalOverflow = document.body.style.overflow;
-      const originalPaddingRight = document.body.style.paddingRight;
-
-      // Calculate scrollbar width to prevent layout shift
-      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-
-      // Disable scrolling and add padding to prevent layout shift
-      document.body.style.overflow = 'hidden';
-      document.body.style.paddingRight = `${scrollbarWidth}px`;
-
-      // Re-enable scrolling when dialog closes
-      return () => {
-        document.body.style.overflow = originalOverflow;
-        document.body.style.paddingRight = originalPaddingRight;
-      };
-    }
-  }, [open]);
+useScrollLock(open);
 
   // Load jobs, styles, and provinces when dialog opens
   useEffect(() => {
@@ -705,10 +686,10 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
                                 key={preset.name}
                                 type="button"
                                 onClick={() => {
-                                  if (formData.preferedColor.includes(preset.name)) {
+                                  if (formData.preferedColor.includes(preset.color)) {
                                     setFormData({
                                       ...formData,
-                                      preferedColor: formData.preferedColor.filter((c) => c !== preset.name)
+                                      preferedColor: formData.preferedColor.filter((c) => c !== preset.color)
                                     });
                                   } else {
                                     if (formData.preferedColor.length >= MAX_COLORS) {
@@ -717,20 +698,20 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
                                     }
                                     setFormData({
                                       ...formData,
-                                      preferedColor: [...formData.preferedColor, preset.name]
+                                      preferedColor: [...formData.preferedColor, preset.color]
                                     });
                                   }
                                 }}
                                 className={cn(
                                   "w-10 h-10 rounded-lg border-2 transition-all duration-200 hover:scale-110 shadow-sm",
-                                  formData.preferedColor.includes(preset.name)
+                                  formData.preferedColor.includes(preset.color)
                                     ? "border-green-500 ring-2 ring-green-300"
                                     : "border-gray-300 hover:border-gray-400"
                                 )}
                                 style={{ backgroundColor: preset.color }}
                                 title={preset.name}
                               >
-                                {formData.preferedColor.includes(preset.name) && (
+                                {formData.preferedColor.includes(preset.color) && (
                                   <Check className="w-5 h-5 text-white drop-shadow-lg mx-auto" strokeWidth={3} />
                                 )}
                               </button>
@@ -814,10 +795,10 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
                                 key={preset.name}
                                 type="button"
                                 onClick={() => {
-                                  if (formData.avoidedColor.includes(preset.name)) {
+                                  if (formData.avoidedColor.includes(preset.color)) {
                                     setFormData({
                                       ...formData,
-                                      avoidedColor: formData.avoidedColor.filter((c) => c !== preset.name)
+                                      avoidedColor: formData.avoidedColor.filter((c) => c !== preset.color)
                                     });
                                   } else {
                                     if (formData.avoidedColor.length >= MAX_COLORS) {
@@ -826,20 +807,20 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
                                     }
                                     setFormData({
                                       ...formData,
-                                      avoidedColor: [...formData.avoidedColor, preset.name]
+                                      avoidedColor: [...formData.avoidedColor, preset.color]
                                     });
                                   }
                                 }}
                                 className={cn(
                                   "w-10 h-10 rounded-lg border-2 transition-all duration-200 hover:scale-110 shadow-sm",
-                                  formData.avoidedColor.includes(preset.name)
+                                  formData.avoidedColor.includes(preset.color)
                                     ? "border-red-500 ring-2 ring-red-300"
                                     : "border-gray-300 hover:border-gray-400"
                                 )}
                                 style={{ backgroundColor: preset.color }}
                                 title={preset.name}
                               >
-                                {formData.avoidedColor.includes(preset.name) && (
+                                {formData.avoidedColor.includes(preset.color) && (
                                   <X className="w-5 h-5 text-white drop-shadow-lg mx-auto" strokeWidth={3} />
                                 )}
                               </button>

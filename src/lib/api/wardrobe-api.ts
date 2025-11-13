@@ -144,6 +144,7 @@ class WardrobeAPI {
       styleId?: number;
       occasionId?: number;
       sortByDate?: 'asc' | 'desc';
+      searchQuery?: string;
     }
   ): Promise<ApiItemsResponse> {
     // Get userId from localStorage token
@@ -187,6 +188,9 @@ class WardrobeAPI {
     }
     if (filters?.sortByDate) {
       params.SortByDate = filters.sortByDate === 'asc' ? 0 : 1; // 0 = asc, 1 = desc
+    }
+    if (filters?.searchQuery) {
+      params.search = filters.searchQuery;
     }
 
     // New endpoint: /items/user/{userId} with pagination params
