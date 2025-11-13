@@ -1,13 +1,14 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
 import { Contributor } from "./types";
 import { ContributorCard } from "./ContributorCard";
+import { TopContributorsSkeleton } from "./TopContributorsSkeleton";
 
 interface TopContributorsListProps {
   contributors: Contributor[];
   isLoading: boolean;
   isLoggedIn: boolean;
+  currentUserId?: string;
   onFollow: (contributor: Contributor) => void;
 }
 
@@ -15,14 +16,11 @@ export function TopContributorsList({
   contributors,
   isLoading,
   isLoggedIn,
+  currentUserId,
   onFollow,
 }: TopContributorsListProps) {
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <Loader2 className="w-5 h-5 animate-spin text-primary" />
-      </div>
-    );
+    return <TopContributorsSkeleton />;
   }
 
   if (contributors.length === 0) {
@@ -33,14 +31,17 @@ export function TopContributorsList({
     );
   }
 
+  const visibleContributors = contributors.slice(0, 5);
+
   return (
     <div className="space-y-4">
-      {contributors.map((contributor, index) => (
+      {visibleContributors.map((contributor, index) => (
         <ContributorCard
           key={contributor.userId}
           contributor={contributor}
           index={index}
           isLoggedIn={isLoggedIn}
+          currentUserId={currentUserId}
           onFollow={onFollow}
         />
       ))}

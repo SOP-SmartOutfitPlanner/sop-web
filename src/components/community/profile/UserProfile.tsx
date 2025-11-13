@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth-store";
-import { communityAPI } from "@/lib/api/community-api";
+import { communityAPI, Hashtag } from "@/lib/api/community-api";
 import { toast } from "sonner";
 import { AnimatedBackground } from "@/components/ui/animated-background";
 import { EnhancedPostCard } from "@/components/community/post/EnhancedPostCard";
@@ -18,6 +18,7 @@ import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { EditPostDialog } from "@/components/community/EditPostDialog";
 import { Post } from "@/types/community";
+import { LoadingScreen } from "@/components/community";
 
 interface UserProfileProps {
   userId: string;
@@ -70,7 +71,7 @@ export function UserProfile({ userId }: UserProfileProps) {
 
   // Handlers
   const handleMessage = () => {
-    console.log("Open chat with", userId);
+    // TODO: Implement chat functionality
   };
 
   const handleShare = () => {
@@ -79,16 +80,61 @@ export function UserProfile({ userId }: UserProfileProps) {
     toast.success("Đã copy link profile");
   };
 
-  const handleReportPost = () => {
+  const handleReportPost = async (post: Post, reason: string) => {
     if (!currentUser?.id) {
-      toast.error("Vui lòng đăng nhập");
-      return;
+      const message = "Vui lòng đăng nhập";
+      toast.error(message);
+      throw new Error(message);
     }
-    toast.success("Cảm ơn bạn đã báo cáo");
+
+    try {
+      const response = await communityAPI.createReport({
+        postId: parseInt(post.id, 10),
+        userId: parseInt(currentUser.id, 10),
+        type: "POST",
+        description: reason,
+      });
+
+      toast.success("Cảm ơn bạn đã báo cáo", {
+        description: response?.message,
+      });
+    } catch (error) {
+      console.error("Error reporting post:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Không thể gửi báo cáo";
+      toast.error(errorMessage);
+      throw error instanceof Error ? error : new Error(errorMessage);
+    }
   };
 
   const handleEditPost = (post: Post) => {
     setEditingPost(post);
+  };
+
+  const handleTagClick = (tag: Hashtag) => {
+    // Navigate to community page with tag filter
+    router.push(`/community?hashtag=${tag.id}`);
+  };
+
+  const handleDeletePost = async (postId: number) => {
+    if (!currentUser?.id) {
+      toast.error("Vui lòng đăng nhập");
+      return;
+    }
+
+    try {
+      await communityAPI.deletePost(postId);
+      toast.success("Bài viết đã được xóa");
+      
+      // Refetch posts to update the list
+      await refetch();
+    } catch (error) {
+      console.error("Error deleting post:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Không thể xóa bài viết";
+      toast.error(errorMessage);
+      throw error;
+    }
   };
 
   const handleFollowToggleWithUpdate = async () => {
@@ -111,20 +157,12 @@ export function UserProfile({ userId }: UserProfileProps) {
 
   // Loading state
   if (isLoading || isInitialLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-[#F5F8FF] via-[#F5F8FF] to-[#EAF0FF] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
+    return <LoadingScreen message="Đang tải hồ sơ..." />;
   }
 
   // Error state
   if (!userProfile) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-[#F5F8FF] via-[#F5F8FF] to-[#EAF0FF] flex items-center justify-center">
-        <p className="text-muted-foreground">Không tìm thấy người dùng</p>
-      </div>
-    );
+    return <LoadingScreen message="Không tìm thấy người dùng" />;
   }
 
   return (
@@ -154,7 +192,7 @@ export function UserProfile({ userId }: UserProfileProps) {
           <div className="border-t border-border">
             {posts.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20">
-                <p className="text-muted-foreground">Chưa có bài viết nào</p>
+                <p className="text-muted-foreground">No posts yet</p>
               </div>
             ) : (
               <div className="space-y-4 p-4">
@@ -168,8 +206,10 @@ export function UserProfile({ userId }: UserProfileProps) {
                       avatar: userProfile.avatar,
                     }}
                     onLike={() => handleLike(parseInt(post.id))}
-                    onReport={handleReportPost}
+                    onReport={(reason) => handleReportPost(post, reason)}
+                    onDeletePost={isOwnProfile ? handleDeletePost : undefined}
                     onEditPost={isOwnProfile ? () => handleEditPost(post) : undefined}
+                    onTagClick={handleTagClick}
                   />
                 ))}
 
@@ -210,7 +250,10 @@ export function UserProfile({ userId }: UserProfileProps) {
       {/* Edit Post Dialog */}
       {editingPost && (
         <Dialog open={!!editingPost} onOpenChange={(open) => !open && setEditingPost(null)}>
-          <DialogContent className="max-h-[90vh] overflow-y-auto p-0">
+          <DialogContent 
+            showCloseButton={false}
+            className="max-w-2xl max-h-[90vh] !overflow-hidden p-0 flex flex-col backdrop-blur-xl bg-gradient-to-br from-cyan-950/60 via-blue-950/50 to-indigo-950/60 border-2 border-cyan-400/25 shadow-2xl shadow-cyan-500/20"
+          >
             <EditPostDialog
               post={editingPost}
               onSuccess={async () => {

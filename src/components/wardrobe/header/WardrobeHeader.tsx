@@ -42,7 +42,6 @@ export const WardrobeHeader = memo(function WardrobeHeader({
   isLoading = false,
   filters,
   onFiltersChange,
-  wardrobeItems,
 }: WardrobeHeaderProps) {
   const [searchValue, setSearchValue] = useState(filters.q || "");
   const debouncedSearchValue = useDebounce(searchValue, 300);

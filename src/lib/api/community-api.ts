@@ -6,11 +6,23 @@ export interface Hashtag {
   name: string;
 }
 
+export interface FollowerUser {
+  id: number;
+  userId: number;
+  displayName: string;
+  avatarUrl: string | null;
+  bio: string | null;
+  isFollowing: boolean; // With token: true/false if current user follows this user. Guest: always false
+  createdDate: string;
+}
+
 export interface CommunityPost {
   id: number;
   userId: number;
   userDisplayName: string;
-  userAvatarUrl?: string;
+  avatarUrl?: string | null; // Avatar URL from API (can be null)
+  userAvatarUrl?: string; // Keep for backward compatibility
+  role?: string; // User role: "USER" | "STYLIST" | "ADMIN"
   body: string; // Same as "Body" in API request
   hashtags: Hashtag[];
   images: string[]; // Array of URLs from API
@@ -19,6 +31,7 @@ export interface CommunityPost {
   likeCount: number;
   commentCount: number;
   isLiked: boolean; // User's like status
+  isFollowing: boolean; // Follow status - if logged in, shows if current user follows this post author
   // Note: Caption is sometimes used instead of body in responses
   caption?: string;
 }
@@ -44,10 +57,44 @@ export interface FeedResponse {
   metaData: FeedMetaData;
 }
 
+export type ReportType = "POST" | "COMMENT";
+
+export interface CreateReportRequest {
+  userId: number;
+  postId?: number;
+  commentId?: number;
+  type: ReportType;
+  description: string;
+}
+
+export interface ReportEntry {
+  id: number;
+  userId: number;
+  postId: number | null;
+  commentId: number | null;
+  type: ReportType;
+  action: "NONE" | "REMOVE" | "WARN";
+  status: "PENDING" | "REVIEWED" | "RESOLVED" | "REJECTED";
+  description: string;
+  createdDate: string;
+}
+
 interface ApiResponse<T> {
   statusCode: number;
   message: string;
   data: T;
+}
+
+export interface PostLiker {
+  userId: number;
+  displayName: string;
+  avatarUrl?: string | null;
+  isFollowing: boolean;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  metaData: FeedMetaData;
 }
 
 class CommunityAPI {
@@ -56,15 +103,21 @@ class CommunityAPI {
   /**
    * Get all posts with pagination
    * API Response: { data: [...], metaData: {...} }
+   *
+   * Note: Token is automatically sent via apiClient interceptor
+   * - With token: Returns isLiked and isFollowing based on current user
+   * - Without token (GUEST): Returns isLiked=false and isFollowing=false for all
    */
   async getAllPosts(
     userId?: number,
     page: number = 1,
-    pageSize: number = 10
+    pageSize: number = 10,
+    search?: string
   ): Promise<FeedResponse> {
     const response = await apiClient.get(this.BASE_PATH, {
       params: {
-        ...(userId && { userId }), // Add userId if provided to get isLiked status
+        ...(userId && { userId }), // Optional: userId for additional filtering
+        ...(search && { search }), // Optional: search query
         "page-index": page,
         "page-size": pageSize,
       },
@@ -108,14 +161,20 @@ class CommunityAPI {
   /**
    * Get posts by specific user
    * API: GET /posts/user/{userId}
+   * @param userId - The user whose posts to fetch
+   * @param page - Page number
+   * @param pageSize - Items per page
+   * @param currentUserId - Optional: Current logged-in user ID to get isFollowing status
    */
   async getPostsByUser(
     userId: number,
     page: number = 1,
-    pageSize: number = 10
+    pageSize: number = 10,
+    currentUserId?: number
   ): Promise<FeedResponse> {
     const response = await apiClient.get(`${this.BASE_PATH}/user/${userId}`, {
       params: {
+        ...(currentUserId && { userId: currentUserId }), // Add userId param to get follow status
         "page-index": page,
         "page-size": pageSize,
       },
@@ -129,6 +188,64 @@ class CommunityAPI {
     }
 
     return feedData;
+  }
+
+  /**
+   * Get posts by hashtag
+   * API: GET /posts/hashtag/{hashtagId}
+   */
+  async getPostsByHashtag(
+    hashtagId: number,
+    page: number = 1,
+    pageSize: number = 10,
+    currentUserId?: number
+  ): Promise<FeedResponse> {
+    const response = await apiClient.get(`${this.BASE_PATH}/hashtag/${hashtagId}`, {
+      params: {
+        ...(currentUserId && { userId: currentUserId }),
+        "page-index": page,
+        "page-size": pageSize,
+      },
+    });
+
+    const feedData = response.data;
+
+    if (!feedData || !feedData.metaData) {
+      console.error("Invalid API response structure:", response);
+      throw new Error("Invalid API response structure");
+    }
+
+    return feedData;
+  }
+
+  /**
+   * Get users who liked a specific post
+   * API: GET /posts/{postId}/likers
+   */
+  async getPostLikers(
+    postId: number,
+    page: number = 1,
+    pageSize: number = 10
+  ): Promise<PaginatedResponse<PostLiker>> {
+    const response = await apiClient.get<{
+      statusCode: number;
+      message: string;
+      data: PaginatedResponse<PostLiker>;
+    }>(`${this.BASE_PATH}/${postId}/likers`, {
+      params: {
+        "page-index": page,
+        "page-size": pageSize,
+      },
+    });
+
+    const likersData = response.data;
+
+    if (!likersData || !Array.isArray(likersData.data) || !likersData.metaData) {
+      console.error("Invalid API response structure:", response);
+      throw new Error("Invalid API response structure");
+    }
+
+    return likersData;
   }
 
   /**
@@ -245,17 +362,23 @@ class CommunityAPI {
   }
 
   /**
-   * Report a post
+   * Submit a report for a post or comment
    */
-  async reportPost(
-    postId: number,
-    userId: number,
-    reason: string
-  ): Promise<void> {
-    await apiClient.post(`${this.BASE_PATH}/${postId}/report`, {
-      userId,
-      reason,
-    });
+  async createReport(
+    payload: CreateReportRequest
+  ): Promise<ApiResponse<ReportEntry>> {
+    const response = await apiClient.post<ApiResponse<ReportEntry>>(
+      "/reports",
+      {
+        userId: payload.userId,
+        postId: payload.postId ?? null,
+        commentId: payload.commentId ?? null,
+        type: payload.type,
+        description: payload.description,
+      }
+    );
+
+    return response;
   }
 
   /**
@@ -266,17 +389,15 @@ class CommunityAPI {
     userId: number;
     comment: string;
     parentCommentId?: number | null;
-  }): Promise<ApiComment> {
-    const apiResponse = await apiClient.post<ApiResponse<ApiComment>>(
-      "/comment-posts",
-      {
-        postId: data.postId,
-        userId: data.userId,
-        comment: data.comment,
-        parentCommentId: data.parentCommentId || null,
-      }
-    );
-    return apiResponse.data;
+  }): Promise<{ statusCode: number; message: string; data: ApiComment }> {
+    const response = await apiClient.post("/comment-posts", {
+      postId: data.postId,
+      userId: data.userId,
+      comment: data.comment,
+      parentCommentId: data.parentCommentId || null,
+    });
+    // Return full response including message
+    return response.data;
   }
 
   /**
@@ -323,6 +444,30 @@ class CommunityAPI {
     }>(`/comment-posts/parent/${parentCommentId}`);
 
     return response.data.data;
+  }
+
+  /**
+   * Delete a comment
+   * API: DELETE /comment-posts/{commentId}
+   * Only the comment owner can delete their own comment
+   */
+  async deleteComment(commentId: number) {
+    const response = await apiClient.delete(`/comment-posts/${commentId}`);
+    return response.data;
+  }
+
+  /**
+   * Update a comment
+   * API: PUT /comment-posts/{commentId}
+   * Body: { comment: string }
+   * Only the comment owner can update their own comment
+   */
+  async updateComment(commentId: number, comment: string): Promise<ApiComment> {
+    const response = await apiClient.put<ApiResponse<ApiComment>>(
+      `/comment-posts/${commentId}`,
+      { comment }
+    );
+    return response.data;
   }
 
   /**
@@ -446,12 +591,16 @@ class CommunityAPI {
    * Get list of followers for a user
    * API: GET /followers/followers/{userId}?page-index=1&page-size=10
    * Response: { statusCode, message, data: { data: [...users], metaData: {...} } }
+   *
+   * Note: Token is automatically sent via apiClient interceptor
+   * - With token: Returns isFollowing=true/false (if current user follows each follower)
+   * - Without token (GUEST): Returns isFollowing=false for all
    */
   async getFollowersList(
     userId: number,
     page: number = 1,
     pageSize: number = 10
-  ) {
+  ): Promise<FollowerUser[]> {
     try {
       const response = await apiClient.get(`/followers/followers/${userId}`, {
         params: {
@@ -460,7 +609,7 @@ class CommunityAPI {
         },
       });
 
-      // Try different response structures
+      // Response structure: { statusCode, message, data: { data: [...], metaData: {...} } }
       if (response.data?.data?.data && Array.isArray(response.data.data.data)) {
         return response.data.data.data;
       }
@@ -486,12 +635,16 @@ class CommunityAPI {
    * Get list of users that a user is following
    * API: GET /followers/following/{userId}?page-index=1&page-size=10
    * Response: { statusCode, message, data: { data: [...users], metaData: {...} } }
+   *
+   * Note: Token is automatically sent via apiClient interceptor
+   * - With token: Returns isFollowing=true/false (if current user follows each user)
+   * - Without token (GUEST): Returns isFollowing=false for all
    */
   async getFollowingList(
     userId: number,
     page: number = 1,
     pageSize: number = 10
-  ) {
+  ): Promise<FollowerUser[]> {
     try {
       const response = await apiClient.get(`/followers/following/${userId}`, {
         params: {
@@ -499,7 +652,7 @@ class CommunityAPI {
           "page-size": pageSize,
         },
       });
-      // Try different response structures
+      // Response structure: { statusCode, message, data: { data: [...], metaData: {...} } }
       if (response.data?.data?.data && Array.isArray(response.data.data.data)) {
         return response.data.data.data;
       }
@@ -525,6 +678,7 @@ class CommunityAPI {
    * Toggle follow/unfollow a user
    * API: POST /followers
    * Body: { followerId: number, followingId: number }
+   * Response: { statusCode: 200, message: "Follow/Unfollow user successfully", data: {...} }
    */
   async toggleFollow(followerId: number, followingId: number) {
     const response = await apiClient.post("/followers", {
@@ -565,9 +719,17 @@ class CommunityAPI {
 
   /**
    * Get top contributors
-   * API: GET /posts/top-contributors?userId={optional}
+   * API: GET /posts/top-contributors?userId={optional}&take-all={optional}
    * Response: { statusCode, message, data: { data: [{ userId, displayName, avatarUrl, postCount, isFollowing }], metaData: {...} } }
-   * userId is optional - if provided, includes follow status for logged-in user
+   *
+   * Usage:
+   * - GUEST mode (no userId): Returns all contributors with isFollowing=false for all
+   * - Logged in (with userId): Returns contributors with accurate isFollowing status
+   *   - isFollowing=true: Current user is already following this contributor
+   *   - isFollowing=false: Current user is NOT following this contributor
+   *
+   * @param userId - Optional. Current user's ID to check follow status
+   * @returns Array of contributors with follow status
    */
   async getTopContributors(userId?: number) {
     try {
@@ -575,6 +737,7 @@ class CommunityAPI {
       const response = await apiClient.get("/posts/top-contributors", {
         params,
       });
+
       if (response.data?.data?.data && Array.isArray(response.data.data.data)) {
         return response.data.data.data;
       }

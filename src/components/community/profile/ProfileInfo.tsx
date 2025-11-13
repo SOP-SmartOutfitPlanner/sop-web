@@ -70,7 +70,7 @@ export function ProfileInfo({
               onClick={onClick}
               className="rounded-2xl p-3 bg-gradient-to-br from-cyan-400/10 to-blue-400/10 hover:from-cyan-400/20 hover:to-blue-400/20 border border-cyan-400/20 hover:border-cyan-400/40 transition-all duration-300 shadow-lg shadow-cyan-500/10 hover:shadow-cyan-500/20 group cursor-pointer"
             >
-              <div className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-200 to-blue-200">
+              <div className="text-2xl font-bold text-white">
                 {k === "followers" ? v.toLocaleString() : v}
               </div>
               <div className="text-[10px] tracking-widest uppercase text-blue-200/70 font-semibold group-hover:text-blue-200 transition-colors">
@@ -82,17 +82,17 @@ export function ProfileInfo({
       </div>
 
       {/* Bio Section */}
-      <div className="space-y-3 mb-6">
-        <div className="font-bold text-xl bg-clip-text text-transparent bg-gradient-to-r from-cyan-200 to-blue-200">
+      <div className="space-y-2 mb-8">
+        <div className="font-bold text-2xl md:text-3xl text-white">
           {userProfile.name}
         </div>
         {userProfile.bio && (
-          <div className="text-sm text-blue-100/80 leading-relaxed whitespace-pre-wrap">
+          <div className="text-sm text-slate-100 leading-relaxed whitespace-pre-wrap">
             {userProfile.bio}
           </div>
         )}
         {userProfile.location && (
-          <div className="text-sm text-blue-200/70 flex items-center gap-2">
+          <div className="text-sm text-slate-200 flex items-center gap-2">
             📍 {userProfile.location}
           </div>
         )}
@@ -112,12 +112,12 @@ export function ProfileInfo({
             >
               {isFollowing ? "Following" : "Follow"}
             </Button>
-            <Button
+            {/* <Button
               onClick={onMessage}
               className="flex-1 h-10 text-sm font-semibold rounded-lg bg-gradient-to-r from-cyan-500/40 to-blue-500/40 text-white border border-cyan-400/50 hover:from-cyan-500/60 hover:to-blue-500/60 hover:border-cyan-400/70 hover:shadow-lg hover:shadow-cyan-500/30 transition-all duration-300"
             >
               Message
-            </Button>
+            </Button> */}
             <Button
               onClick={onShare}
               className="h-10 w-10 rounded-lg bg-gradient-to-r from-cyan-500/40 to-blue-500/40 text-cyan-200 border border-cyan-400/50 hover:from-cyan-500/60 hover:to-blue-500/60 hover:border-cyan-400/70 hover:shadow-lg hover:shadow-cyan-500/30 transition-all duration-300 p-0 flex items-center justify-center"

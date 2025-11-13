@@ -1,12 +1,21 @@
+import { KeyboardEvent } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Hashtag } from "@/lib/api/community-api";
 
 interface PostContentProps {
   caption: string;
   tags: Hashtag[];
+  onTagClick?: (tag: Hashtag) => void;
 }
 
-export function PostContent({ caption, tags }: PostContentProps) {
+export function PostContent({ caption, tags, onTagClick }: PostContentProps) {
+  const handleTagKeyDown = (event: KeyboardEvent<HTMLDivElement>, tag: Hashtag) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onTagClick?.(tag);
+    }
+  };
+
   return (
     <div className="space-y-2 px-4">
       <p className="text-white font-semibold text-base leading-relaxed">
@@ -16,15 +25,16 @@ export function PostContent({ caption, tags }: PostContentProps) {
       {tags.length > 0 && (
         <div className="flex flex-wrap gap-2 pb-2">
           {tags.map((tag, index) => (
-            <div key={`${tag.id}-${index}`} className="group relative">
-              {/* Glow background */}
-              <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 rounded-full blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-              {/* Badge */}
-              <Badge className="relative text-xs px-3 py-1.5 bg-gradient-to-r from-cyan-400/30 via-blue-400/20 to-indigo-400/30 text-cyan-100 border border-cyan-400/50 hover:border-cyan-400/80 transition-all duration-300 cursor-pointer backdrop-blur-sm group-hover:from-cyan-400/40 group-hover:to-indigo-400/40 group-hover:shadow-lg group-hover:shadow-cyan-500/30">
-                #{tag.name}
-              </Badge>
-            </div>
+            <Badge
+              key={`${tag.id}-${index}`}
+              className="text-xs px-3 py-1 bg-slate-800/25 hover:bg-slate-800/40 border border-slate-400/45 hover:border-cyan-400/50 text-slate-200 hover:text-cyan-300 font-medium transition-all duration-300 cursor-pointer"
+              role="button"
+              tabIndex={0}
+              onClick={() => onTagClick?.(tag)}
+              onKeyDown={(event) => handleTagKeyDown(event, tag)}
+            >
+              #{tag.name}
+            </Badge>
           ))}
         </div>
       )}

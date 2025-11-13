@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { communityAPI, CommunityPost } from "@/lib/api/community-api";
 import { toast } from "sonner";
 
@@ -6,6 +7,7 @@ export function useFeedFollowStatus(
   posts: CommunityPost[],
   currentUserId?: string
 ) {
+  const queryClient = useQueryClient();
   const [followingStatus, setFollowingStatus] = useState<Record<string, boolean>>({});
 
   // Fetch follow status for all unique users in posts
@@ -86,6 +88,21 @@ export function useFeedFollowStatus(
         if (response.message) {
           toast.success(response.message);
         }
+
+        // Broadcast to other components
+        window.dispatchEvent(
+          new CustomEvent("followStatusChanged", {
+            detail: {
+              userId: followingId,
+              isFollowing: !prevStatus,
+            },
+          })
+        );
+
+        // 🔄 Invalidate React Query cache to refetch posts with updated isFollowing
+        queryClient.invalidateQueries({ queryKey: ["posts"] });
+        queryClient.invalidateQueries({ queryKey: ["userPosts"] });
+        queryClient.invalidateQueries({ queryKey: ["user-profile"] });
       } catch (error) {
         console.error("Error following user:", error);
         // Rollback
@@ -98,7 +115,7 @@ export function useFeedFollowStatus(
         toast.error(errorMessage);
       }
     },
-    [currentUserId, followingStatus]
+    [currentUserId, followingStatus, queryClient]
   );
 
   return { followingStatus, handleFollow };

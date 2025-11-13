@@ -1,16 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
-import { communityAPI } from "@/lib/api/community-api";
+import { useQueryClient } from "@tanstack/react-query";
+import { communityAPI, FollowerUser } from "@/lib/api/community-api";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/auth-store";
-
-interface FollowerUser {
-  id: number;
-  userId: number;
-  displayName: string;
-  avatarUrl: string | null;
-  bio: string | null;
-  createdDate: string;
-}
 
 interface UseFollowersDataProps {
   userId: number;
@@ -28,6 +20,7 @@ export function useFollowersData({
   isOwnProfile = false,
 }: UseFollowersDataProps) {
   const { user: currentUser } = useAuthStore();
+  const queryClient = useQueryClient();
   const [users, setUsers] = useState<FollowerUser[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<FollowerUser[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -57,32 +50,15 @@ export function useFollowersData({
       setUsers(userList);
       setFilteredUsers(userList);
 
-      // Set follow status
-      if (currentUser?.id && userList.length > 0) {
-        const currentUserId = parseInt(currentUser.id);
-
-        if (type === "following") {
-          // In "following" list, already following all
-          const statusMap: Record<number, boolean> = {};
-          userList.forEach((u) => {
-            statusMap[u.userId] = true;
-          });
-          setFollowingStatus(statusMap);
-        } else {
-          // In "followers" list, check follow status
-          const statusPromises = userList.map((u) =>
-            communityAPI
-              .getFollowStatus(currentUserId, u.userId)
-              .then((status) => ({ userId: u.userId, status }))
-              .catch(() => ({ userId: u.userId, status: false }))
-          );
-          const statuses = await Promise.all(statusPromises);
-          const statusMap: Record<number, boolean> = {};
-          statuses.forEach(({ userId, status }) => {
-            statusMap[userId] = status;
-          });
-          setFollowingStatus(statusMap);
-        }
+      // Build followingStatus map from API's isFollowing field
+      // This is more efficient than making N separate API calls
+      if (userList.length > 0) {
+        const statusMap: Record<number, boolean> = {};
+        userList.forEach((user) => {
+          // Use isFollowing from API response (already calculated by backend)
+          statusMap[user.userId] = user.isFollowing ?? false;
+        });
+        setFollowingStatus(statusMap);
       }
     } catch (error) {
       console.error("Error fetching users:", error);
@@ -90,7 +66,7 @@ export function useFollowersData({
     } finally {
       setIsLoading(false);
     }
-  }, [userId, type, currentUser?.id]);
+  }, [userId, type]);
 
   // Initial fetch
   useEffect(() => {
@@ -132,18 +108,36 @@ export function useFollowersData({
         const response = await communityAPI.toggleFollow(followerId, targetUserId);
 
         // Show API response message
-        if (response.message) {
-          toast.success(response.message);
-        }
+        // Response structure: { statusCode, message, data }
+        const message = response?.message || (isFollowing ? "Unfollowed successfully" : "Followed successfully");
+        toast.success(message);
 
-        // Remove from following list if unfollowing
-        if (!isFollowing === false && type === "following") {
+        // Broadcast to other components
+        window.dispatchEvent(
+          new CustomEvent("followStatusChanged", {
+            detail: {
+              userId: targetUserId,
+              isFollowing: !isFollowing,
+            },
+          })
+        );
+
+        // 🔄 Invalidate React Query cache to refetch posts with updated isFollowing
+        queryClient.invalidateQueries({ queryKey: ["posts"] });
+        queryClient.invalidateQueries({ queryKey: ["userPosts"] });
+        queryClient.invalidateQueries({ queryKey: ["user-profile"] });
+
+        // Remove from following list ONLY if:
+        // 1. This is OWN profile (isOwnProfile = true)
+        // 2. AND we're in "following" tab
+        // 3. AND we just unfollowed (isFollowing was true, now false)
+        if (isOwnProfile && type === "following" && isFollowing) {
           setUsers((prev) => prev.filter((u) => u.userId !== targetUserId));
           setFilteredUsers((prev) => prev.filter((u) => u.userId !== targetUserId));
         }
       } catch (error) {
         console.error("Error toggling follow:", error);
-        // Rollback
+        // Rollback optimistic update
         setFollowingStatus((prev) => ({
           ...prev,
           [targetUserId]: !prev[targetUserId],
@@ -153,7 +147,7 @@ export function useFollowersData({
         toast.error(errorMessage);
       }
     },
-    [currentUser?.id, followingStatus, type]
+    [currentUser?.id, followingStatus, type, isOwnProfile, queryClient]
   );
 
   return {

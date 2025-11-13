@@ -1,7 +1,29 @@
+import { useCallback } from "react";
+import { AxiosError } from "axios";
 import { useInfiniteQuery, useMutation, useQueryClient, InfiniteData } from "@tanstack/react-query";
-import { communityAPI, CommunityPost, FeedResponse } from "@/lib/api/community-api";
+import {
+  communityAPI,
+  CommunityPost,
+  FeedResponse,
+  ReportEntry,
+} from "@/lib/api/community-api";
 import { useAuthStore } from "@/store/auth-store";
 import { toast } from "sonner";
+
+const getErrorMessage = (error: unknown, fallback: string) => {
+  if (error instanceof AxiosError) {
+    const message = error.response?.data?.message ?? error.response?.data?.error;
+    if (typeof message === "string" && message.length > 0) {
+      return message;
+    }
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return fallback;
+};
 
 // Helper function to build full image URLs
 // API now returns full URLs from MinIO (https://storage.wizlab.io.vn/sop/...)
@@ -26,7 +48,7 @@ const transformPost = (post: CommunityPost): CommunityPost => ({
  * Hook for infinite scroll feed with React Query
  * Fetches all posts with pagination (not personalized feed)
  */
-export function useFeed(pageSize: number = 10) {
+export function useFeed(pageSize: number = 10, searchQuery?: string) {
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
 
@@ -41,11 +63,11 @@ export function useFeed(pageSize: number = 10) {
     isError,
     refetch,
   } = useInfiniteQuery<FeedResponse, Error>({
-    queryKey: ["posts", "all", user?.id],
+    queryKey: ["posts", "all", user?.id, searchQuery],
     queryFn: async ({ pageParam = 1 }) => {
       // Pass userId to get isLiked status for each post
       const userId = user?.id ? parseInt(user.id) : undefined;
-      const result = await communityAPI.getAllPosts(userId, pageParam as number, pageSize);
+      const result = await communityAPI.getAllPosts(userId, pageParam as number, pageSize, searchQuery);
       return result;
     },
     getNextPageParam: (lastPage) => {
@@ -62,9 +84,15 @@ export function useFeed(pageSize: number = 10) {
       return undefined; // No more pages
     },
     initialPageParam: 1,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 30, // 30 seconds
     gcTime: 1000 * 60 * 10, // 10 minutes
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
   });
+
+  const resetFeed = useCallback(async () => {
+    await queryClient.removeQueries({ queryKey: ["posts", "all", user?.id, searchQuery] });
+  }, [queryClient, user?.id, searchQuery]);
 
   // Flatten all pages into single array of posts
   const allPosts: CommunityPost[] = data?.pages.flatMap((page) => page.data) ?? [];
@@ -171,7 +199,8 @@ export function useFeed(pageSize: number = 10) {
       queryClient.invalidateQueries({ queryKey: ["posts", "all", user?.id] });
       toast.success("Post deleted successfully");
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Error deleting post:", error);
       toast.error("Failed to delete post");
     },
   });
@@ -181,21 +210,27 @@ export function useFeed(pageSize: number = 10) {
     mutationFn: async ({
       postId,
       userId,
-      reason,
+      description,
     }: {
       postId: number;
       userId: number;
-      reason: string;
+      description: string;
     }) => {
-      await communityAPI.reportPost(postId, userId, reason);
-    },
-    onSuccess: () => {
-      toast.success("Post reported", {
-        description: "Thank you for reporting. We'll review this content.",
+      return await communityAPI.createReport({
+        postId,
+        userId,
+        type: "POST",
+        description,
       });
     },
-    onError: () => {
-      toast.error("Failed to report post");
+    onSuccess: (response: { statusCode: number; message: string; data: ReportEntry }) => {
+      toast.success("Report submitted", {
+        description: response?.message || "Thank you for letting us know.",
+      });
+    },
+    onError: (error: unknown) => {
+      const message = getErrorMessage(error, "Failed to submit report");
+      toast.error(message);
     },
   });
 
@@ -222,10 +257,11 @@ export function useFeed(pageSize: number = 10) {
     // Actions
     fetchNextPage,
     refetch,
+    resetFeed,
     toggleLike,
     createPost: createPostMutation.mutate,
-    deletePost: deletePostMutation.mutate,
-    reportPost: reportPostMutation.mutate,
+    deletePost: deletePostMutation.mutateAsync,
+    reportPost: reportPostMutation.mutateAsync,
     
     // Mutation states
     isCreatingPost: createPostMutation.isPending,

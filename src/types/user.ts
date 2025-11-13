@@ -58,6 +58,9 @@ export interface StyleOption {
   id: number;
   name: string;
   description: string;
+  createdBy?: string | null;
+  createdDate?: string | null;
+  updatedDate?: string | null;
 }
 
 export interface PurposeOption {

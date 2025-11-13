@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, memo, useMemo } from "react";
+import { useEffect, memo, useMemo, useState } from "react";
 import { X, Heart, Edit, Trash2, Calendar, User } from "lucide-react";
-import { Image } from "antd";
 import GlassButton from "@/components/ui/glass-button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Outfit } from "@/types/outfit";
-import { useSaveFavoriteOutfit } from "@/hooks/useOutfits";
+import { useSaveFavoriteOutfit, useOutfit } from "@/hooks/useOutfits";
 import { format } from "date-fns";
+import { OutfitItemCard } from "./OutfitItemCard";
 
 interface ViewOutfitDialogProps {
   open: boolean;
@@ -16,70 +17,21 @@ interface ViewOutfitDialogProps {
   onDelete?: (outfitId: number) => void;
 }
 
-// Memoized item card for performance
-const ItemCard = memo(({ item, outfitId }: { item: Outfit['items'][number]; outfitId: number }) => (
-  <div
-    key={`${outfitId}-${item.itemId || item.id}`}
-    className="relative flex flex-col p-2 rounded-2xl transition-all duration-100 bg-linear-to-br from-cyan-300/30 via-blue-200/10 to-indigo-300/30 backdrop-blur-md border-2 border-white/20"
-  >
-    <div className="bg-white/5 rounded-lg aspect-square overflow-hidden relative mb-2">
-      <Image
-        src={item.imgUrl}
-        alt={item.name}
-        width="100%"
-        height="100%"
-        className="object-cover rounded-lg"
-        preview={true}
-        loading="lazy"
-        placeholder={false}
-        style={{
-          width: "100%",
-          height: "100%",
-          objectFit: "cover",
-          display: "block",
-          borderRadius: "0.5rem",
-        }}
-        wrapperClassName="w-full h-full"
-        rootClassName="w-full h-full !block"
-      />
-    </div>
-
-    <div className="flex flex-col px-1">
-      <h3 className="text-white font-semibold text-sm truncate mb-1">
-        {item.name}
-      </h3>
-
-      <span className="px-1.5 py-0.5 rounded-full bg-white/10 border border-white/20 text-white/70 text-[9px] font-medium truncate text-center">
-        {item.categoryName}
-      </span>
-
-      {item.color && (
-        <div className="mt-2 text-[10px] text-white/60">
-          <span className="font-medium">Color: </span>
-          <span>{item.color}</span>
-        </div>
-      )}
-
-      {item.brand && (
-        <div className="text-[10px] text-white/60">
-          <span className="font-medium">Brand: </span>
-          <span>{item.brand}</span>
-        </div>
-      )}
-    </div>
-  </div>
-));
-
-ItemCard.displayName = 'ViewOutfitItemCard';
-
 const ViewOutfitDialogComponent = ({
   open,
   onOpenChange,
-  outfit,
+  outfit: initialOutfit,
   onEdit,
   onDelete,
 }: ViewOutfitDialogProps) => {
   const { mutate: toggleFavorite, isPending } = useSaveFavoriteOutfit();
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  
+  // Fetch real-time outfit data from React Query cache
+  const { data: latestOutfit } = useOutfit(initialOutfit?.id || null);
+  
+  // Use latest data from cache, fallback to initial prop
+  const outfit = latestOutfit || initialOutfit;
 
   const handleClose = () => {
     onOpenChange(false);
@@ -103,10 +55,14 @@ const ViewOutfitDialogComponent = ({
 
   const handleDeleteClick = () => {
     if (outfit && onDelete) {
-      if (confirm("Are you sure you want to delete this outfit?")) {
-        onDelete(outfit.id);
-        handleClose();
-      }
+      setIsDeleteDialogOpen(true);
+    }
+  };
+
+  const confirmDelete = () => {
+    if (outfit && onDelete) {
+      onDelete(outfit.id);
+      handleClose();
     }
   };
 
@@ -218,7 +174,10 @@ const ViewOutfitDialogComponent = ({
               {/* Items Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                 {outfit.items.map((item) => (
-                  <ItemCard key={item.itemId || item.id} item={item} outfitId={outfit.id} />
+                  <OutfitItemCard 
+                    key={item.itemId || item.id} 
+                    item={item}
+                  />
                 ))}
               </div>
             </div>
@@ -302,6 +261,19 @@ const ViewOutfitDialogComponent = ({
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        onConfirm={confirmDelete}
+        title="Delete Outfit?"
+        description={`Are you sure you want to delete "${outfit?.name}"? This action cannot be undone and will permanently remove this outfit from your collection.`}
+        confirmText="Delete Outfit"
+        cancelText="Cancel"
+        variant="danger"
+        isLoading={false}
+      />
     </>
   );
 };

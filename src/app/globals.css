@@ -58,6 +58,49 @@
   scrollbar-color: rgba(59, 130, 246, 0.6) rgba(59, 130, 246, 0.1);
 }
 
+/* Modal Scrollbar - Invisible until scroll (Glassmorphism) */
+.modal-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.modal-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 3px;
+}
+
+.modal-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(34, 211, 238, 0);
+  border-radius: 3px;
+  transition: background 0.4s ease;
+}
+
+.modal-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(34, 211, 238, 0.4);
+  box-shadow: 0 0 6px rgba(34, 211, 238, 0.4);
+}
+
+/* Scrolling state - make thumb visible while scrolling */
+.modal-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(34, 211, 238, 0) transparent;
+}
+
+.modal-scrollbar::-webkit-scrollbar-thumb:active {
+  background: rgba(34, 211, 238, 0.5);
+}
+
+/* Fade in scrollbar when scrolling */
+@supports selector(::-webkit-scrollbar) {
+  .modal-scrollbar {
+    scroll-behavior: smooth;
+  }
+  
+  .modal-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(34, 211, 238, 0.1);
+  }
+}
+
 /* Hide scrollbar but allow scrolling */
 .hide-scrollbar {
   scrollbar-width: none;
@@ -66,6 +109,58 @@
 
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
+}
+
+/* Scroll Lock - Block body scroll when modal is open */
+.scroll-locked {
+  overflow: hidden !important;
+  position: fixed !important;
+  width: 100% !important;
+}
+
+/* Tailwind scrollbar utilities fallback */
+.scrollbar-thin {
+  scrollbar-width: thin;
+}
+
+.scrollbar-track-transparent::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-track-transparent {
+  scrollbar-color: rgba(34, 211, 238, 0.2) transparent;
+}
+
+.scrollbar-thumb-cyan-400\/20::-webkit-scrollbar-thumb {
+  background: rgba(34, 211, 238, 0.2);
+  border-radius: 4px;
+}
+
+.hover\:scrollbar-thumb-cyan-400\/35::-webkit-scrollbar-thumb:hover {
+  background: rgba(34, 211, 238, 0.35);
+  box-shadow: 0 0 6px rgba(34, 211, 238, 0.3);
+}
+
+/* Setup WebKit scrollbar styling */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(34, 211, 238, 0.2);
+  border-radius: 3px;
+  transition: all 0.3s ease;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(34, 211, 238, 0.35);
+  box-shadow: 0 0 6px rgba(34, 211, 238, 0.3);
 }
 
 
@@ -326,6 +421,14 @@
 .ant-tree-list-holder {
   /* Don't set overflow here - let Ant Design manage it */
   /* This allows mouse wheel scrolling to work properly */
+/* Shimmer animation for skeleton loaders */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%) skewX(-12deg);
+  }
+  100% {
+    transform: translateX(200%) skewX(-12deg);
+  }
 }
 
 /* Ant Design Pagination Custom Styling */

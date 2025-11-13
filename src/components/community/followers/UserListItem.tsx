@@ -4,14 +4,7 @@ import { memo } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-
-interface FollowerUser {
-  id: number;
-  userId: number;
-  displayName: string;
-  avatarUrl: string | null;
-  bio: string | null;
-}
+import { FollowerUser } from "@/lib/api/community-api";
 
 interface UserListItemProps {
   user: FollowerUser;
