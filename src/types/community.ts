@@ -54,6 +54,7 @@ export interface CommunityUser {
   id: string;
   name: string;
   avatar?: string;
+  role?: string;
 }
 
 // API types (deprecated - use CommunityPost from community-api.ts instead)

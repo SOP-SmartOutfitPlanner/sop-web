@@ -11,6 +11,7 @@ import {
   Edit,
   Trash2,
   Flag,
+  Star,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,7 @@ import { toast } from "sonner";
 import { usePostModal } from "@/hooks/community/usePostModal";
 import { ReportDialog } from "@/components/community/report/ReportDialog";
 import { EditPostDialog } from "@/components/community/EditPostDialog";
+import { Badge } from "@/components/ui/badge";
 
 interface PostModalProps {
   post: Post;
@@ -75,6 +77,7 @@ export function PostModal({
 
   // Check if current user is the post owner
   const isOwnPost = user && user.id === post.userId;
+  const isAuthorStylist = post.userRole?.toUpperCase() === "STYLIST";
 
   // Lock body scroll when modal is open
   useScrollLock(isOpen);
@@ -336,8 +339,19 @@ export function PostModal({
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <div className="font-semibold text-sm text-white">
-                      {post.userDisplayName}
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-sm text-white">
+                        {post.userDisplayName}
+                      </span>
+                      {isAuthorStylist && (
+                        <Badge
+                          variant="secondary"
+                          className="text-xs bg-primary/10 text-primary border-primary/20"
+                        >
+                          <Star className="w-3 h-3 mr-1 fill-current" />
+                          Stylist
+                        </Badge>
+                      )}
                     </div>
                     <div className="text-xs text-slate-400 font-medium">
                       {formatDistanceToNow(new Date(post.timestamp), {

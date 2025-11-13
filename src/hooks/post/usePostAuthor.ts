@@ -4,33 +4,32 @@ import { UserMini } from "@/types/chat";
 
 interface UsePostAuthorProps {
   post: Post;
-  currentUser: CommunityUser;
+  currentUser?: CommunityUser;
   onStylistChat: (stylist: UserMini) => void;
 }
 
-export function usePostAuthor({
-  post,
-  currentUser,
-  onStylistChat,
-}: UsePostAuthorProps) {
-  // Check if author is a stylist (based on name patterns)
-  const isAuthorStylist =
-    currentUser.name.includes("Chen") ||
-    currentUser.name.includes("Rivera") ||
-    currentUser.name.includes("Patel");
+export function usePostAuthor({ post, onStylistChat }: UsePostAuthorProps) {
+  const normalizedRole = post.userRole?.toUpperCase() ?? "";
+  const isAuthorStylist = normalizedRole === "STYLIST";
 
-  // Handle message to author
   const handleMessageAuthor = useCallback(() => {
     if (!isAuthorStylist) return;
 
     const stylistData: UserMini = {
-      id: `s${currentUser.name.split(" ")[0].toLowerCase()}`,
-      name: currentUser.name,
+      id: post.userId,
+      name: post.userDisplayName,
       role: "stylist",
-      isOnline: Math.random() > 0.5,
+      avatar: post.userAvatarUrl,
     };
+
     onStylistChat(stylistData);
-  }, [isAuthorStylist, currentUser.name, onStylistChat]);
+  }, [
+    isAuthorStylist,
+    onStylistChat,
+    post.userAvatarUrl,
+    post.userDisplayName,
+    post.userId,
+  ]);
 
   return {
     isAuthorStylist,
@@ -39,6 +38,7 @@ export function usePostAuthor({
       id: post.userId,
       name: post.userDisplayName,
       avatar: post.userAvatarUrl,
+      role: post.userRole,
     },
   };
 }

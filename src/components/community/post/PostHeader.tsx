@@ -61,6 +61,8 @@ export function PostHeader({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
+  const showStylistBadge =
+    isAuthorStylist || user.role?.toUpperCase() === "STYLIST";
 
   const handleDeleteConfirm = async () => {
     if (!onDelete) return;
@@ -100,6 +102,15 @@ export function PostHeader({
                 {user.name}
               </p>
             </Link>
+            {showStylistBadge && (
+              <Badge
+                variant="secondary"
+                className="text-xs uppercase tracking-wide bg-gradient-to-r from-cyan-500/25 via-blue-500/25 to-purple-500/25 text-cyan-100 border border-cyan-400/40 shadow-[0_0_12px_rgba(34,211,238,0.35)]"
+              >
+                <Star className="w-3 h-3 mr-1 fill-current" />
+                Stylist
+              </Badge>
+            )}
             {!isOwnPost && !isFollowing && onFollow && (
               <button
                 className="px-3 py-1 ml-2 rounded-lg text-xs font-semibold text-white bg-gradient-to-r from-cyan-500/60 to-blue-500/60 hover:from-cyan-500/80 hover:to-blue-500/80 border border-cyan-400/30 hover:border-cyan-400/50 transition-all hover:shadow-lg hover:shadow-cyan-500/30"
@@ -113,15 +124,6 @@ export function PostHeader({
                 ✓ Following
               </span>
             )} */}
-            {isAuthorStylist && (
-              <Badge
-                variant="secondary"
-                className="text-xs bg-primary/10 text-primary border-primary/20"
-              >
-                <Star className="w-3 h-3 mr-1 fill-current" />
-                Stylist
-              </Badge>
-            )}
             {showChallengeEntry && (
               <Badge
                 variant="outline"
@@ -142,18 +144,6 @@ export function PostHeader({
 
       <div className="flex items-center gap-2">
         {/* Follow Button - show only if not own post and not following */}
-
-        {isAuthorStylist && (
-          <Button
-            size="sm"
-            variant="ghost"
-            className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-primary/10"
-            onClick={onMessageAuthor}
-          >
-            <MessageCircle className="w-4 h-4" />
-          </Button>
-        )}
-
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -169,15 +159,6 @@ export function PostHeader({
             align="end"
             className="min-w-[180px] backdrop-blur-xl bg-gradient-to-br from-cyan-950/60 via-blue-950/50 to-indigo-950/60 border-2 border-cyan-400/25 shadow-2xl shadow-cyan-500/20 text-white/90"
           >
-            {isAuthorStylist && !isOwnPost && (
-              <DropdownMenuItem
-                onClick={onMessageAuthor}
-                className="focus:bg-cyan-500/20 focus:text-white cursor-pointer"
-              >
-                <MessageCircle className="w-4 h-4 mr-2" />
-                Message author
-              </DropdownMenuItem>
-            )}
             {isOwnPost && onEdit && (
               <DropdownMenuItem
                 onClick={onEdit}
