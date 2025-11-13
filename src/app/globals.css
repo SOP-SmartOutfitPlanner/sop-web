@@ -415,12 +415,6 @@
   display: none !important; /* Chrome, Safari, Opera */
 }
 
-/* Ensure these elements remain scrollable (don't override overflow) */
-.rc-virtual-list-holder,
-.ant-select-tree-list-holder,
-.ant-tree-list-holder {
-  /* Don't set overflow here - let Ant Design manage it */
-  /* This allows mouse wheel scrolling to work properly */
 /* Shimmer animation for skeleton loaders */
 @keyframes shimmer {
   0% {

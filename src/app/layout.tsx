@@ -5,6 +5,7 @@ import {
   Poppins,
   Bricolage_Grotesque,
 } from "next/font/google";
+import { Suspense } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/components/providers/auth-provider";
 import { GoogleAuthProvider } from "@/components/providers/google-oauth-provider";
@@ -63,7 +64,9 @@ export default function RootLayout({
                   <Toaster />
                   <GlobalUploadToast />
                   <GlobalEditModal />
-                  <PageLoadingProvider />
+                  <Suspense fallback={null}>
+                    <PageLoadingProvider />
+                  </Suspense>
                 </OnboardingProvider>
               </GoogleAuthProvider>
             </QueryProvider>
