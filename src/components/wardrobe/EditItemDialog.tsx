@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Image, Select, ColorPicker, TreeSelect } from "antd";
 import type { Color } from "antd/es/color-picker";
 import type { DataNode } from "antd/es/tree";
-import GlassButton from "@/components/ui/glass-button";
+import { ConfirmModal } from "@/components/common/ConfirmModal";
 
 interface TreeNodeData extends DataNode {
   value?: number;
@@ -32,6 +32,7 @@ interface ColorOption {
 interface EditFormData {
   name: string;
   categoryId: number;
+  categoryName?: string;
   colors: ColorOption[];
   brand: string;
   frequencyWorn: string;
@@ -122,6 +123,7 @@ export function EditItemDialog({
         name: item.name,
         categoryId: item.categoryId || item.category?.id || 0,
         colors,
+        categoryName: item.categoryName || "",
         brand: item.brand || "",
         frequencyWorn: item.frequencyWorn || "",
         imgUrl: item.imgUrl,
@@ -169,11 +171,13 @@ export function EditItemDialog({
           value: cat.id,
           title: cat.name,
           isLeaf: children.length === 0,
+          selectable: false, // Disable selection for parent categories
           children: children.map((child) => ({
             key: child.id,
             value: child.id,
             title: child.name,
             isLeaf: true,
+            selectable: true, // Allow selection for child categories
           })),
         };
       });
@@ -283,64 +287,29 @@ export function EditItemDialog({
     setFormData({ ...formData, colors: updatedColors });
   };
 
-  if (!open) return null;
-
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        className="fixed h-full inset-0 bg-black/50 backdrop-blur-sm z-50"
-        onClick={() => {
-          if (!isSaving) {
-            onOpenChange(false);
-          }
-        }}
-      />
-
-      {/* Modal Container */}
-      <div className="fixed inset-0 z-[51] flex items-center justify-center p-4 pointer-events-none">
-        <div
-          className="w-[1400px] max-w-[95vw] h-[95vh] rounded-3xl overflow-hidden shadow-2xl pointer-events-auto relative flex flex-col"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Background */}
-          <div className="absolute inset-0 bg-gradient-to-br from-slate-900/95 via-blue-900/90 to-slate-900/95">
-            <div className="absolute top-0 -right-32 w-[500px] h-[500px] bg-blue-200/20 rounded-full blur-3xl"></div>
-            <div className="absolute bottom-0 -left-32 w-[500px] h-[500px] bg-cyan-200/20 rounded-full blur-3xl"></div>
+    <ConfirmModal
+      open={open}
+      onOpenChange={onOpenChange}
+      onConfirm={handleSave}
+      title="Edit Item"
+      subtitle="Update your wardrobe item details"
+      maxWidth="1400px"
+      maxHeight="95vh"
+      isLoading={isSaving || isLoading}
+      loadingText="Saving changes..."
+      confirmButtonText="Save Changes"
+      confirmButtonColor="rgba(59, 130, 246, 0.6)"
+      confirmButtonBorderColor="rgba(59, 130, 246, 0.8)"
+    >
+      {isLoading ? (
+        <div className="flex items-center justify-center h-full">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="w-12 h-12 text-white animate-spin" />
+            <p className="text-white/70">Loading item details...</p>
           </div>
-
-          <div className="relative z-10 flex flex-col h-full">
-            {/* Header */}
-            <div className="px-6 pt-4 pb-3 flex-shrink-0">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="font-dela-gothic text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-cyan-200">
-                    Edit Item
-                  </h2>
-                  <p className="font-bricolage text-sm text-gray-200 mt-0.5">
-                    Update your wardrobe item details
-                  </p>
-                </div>
-                <button
-                  onClick={() => onOpenChange(false)}
-                  disabled={isSaving}
-                  className="w-9 h-9 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
-                >
-                  <X className="w-5 h-5 text-white" />
-                </button>
-              </div>
-            </div>
-
-            {/* Content - Fixed height with proper overflow */}
-            <div className="flex-1 px-6 min-h-0 overflow-hidden">
-              {isLoading ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="flex flex-col items-center gap-4">
-                    <Loader2 className="w-12 h-12 text-white animate-spin" />
-                    <p className="text-white/70">Loading item details...</p>
-                  </div>
-                </div>
-              ) : formData ? (
+        </div>
+      ) : formData ? (
                 <div className="grid grid-cols-3 gap-3 h-full overflow-hidden">
                   {/* Column 1: Image, Name, Colors */}
                   <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-3 flex flex-col gap-2 overflow-hidden">
@@ -438,15 +407,12 @@ export function EditItemDialog({
                         className="w-full"
                         size="large"
                         placeholder="Select category"
+                        popupMatchSelectWidth={false}
                         filterTreeNode={(search, item) =>
                           (item.title as string)
                             .toLowerCase()
                             .includes(search.toLowerCase())
                         }
-                        dropdownStyle={{
-                          maxHeight: 300,
-                          overflow: "auto",
-                        }}
                       />
                     </div>
 
@@ -658,50 +624,6 @@ export function EditItemDialog({
                   </div>
                 </div>
               ) : null}
-            </div>
-
-            {/* Footer Actions */}
-            <div className="px-6 py-3 border-t border-white/10 flex-shrink-0">
-              <div className="flex items-center justify-end gap-3">
-                <GlassButton
-                  onClick={() => onOpenChange(false)}
-                  disabled={isSaving}
-                  variant="custom"
-                  backgroundColor="rgba(255, 255, 255, 0.3)"
-                  borderColor="rgba(255, 255, 255, 0.5)"
-                  textColor="#374151"
-                  size="md"
-                >
-                  <X className="w-5 h-5" />
-                  Cancel
-                </GlassButton>
-
-                <GlassButton
-                  onClick={handleSave}
-                  disabled={isSaving || isLoading}
-                  variant="custom"
-                  backgroundColor="rgba(59, 130, 246, 0.6)"
-                  borderColor="rgba(59, 130, 246, 0.8)"
-                  textColor="white"
-                  size="md"
-                >
-                  {isSaving ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="w-5 h-5" />
-                      Save Changes
-                    </>
-                  )}
-                </GlassButton>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </>
+    </ConfirmModal>
   );
 }

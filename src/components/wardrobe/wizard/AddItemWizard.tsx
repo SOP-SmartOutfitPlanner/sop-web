@@ -207,12 +207,7 @@ const ManualCategorizeCard = memo(({ item, index, categoryTreeData, onCategoryCh
             className="w-full"
             size="small"
             style={{ width: '100%' }}
-            dropdownStyle={{
-              background: 'rgba(255, 255, 255, 0.95)',
-              backdropFilter: 'blur(12px)',
-              maxHeight: 300,
-              overflow: 'auto',
-            }}
+            popupMatchSelectWidth={false}
             filterTreeNode={(search, item) =>
               (item.title as string)
                 .toLowerCase()
@@ -263,6 +258,7 @@ export function AddItemWizard({ open, onOpenChange, editMode, editItemId, editIt
         value: cat.id,
         title: cat.name,
         isLeaf: false,
+        disabled: true, // Parent categories are not selectable
       }));
       setCategoryTreeData(treeData);
     };
@@ -281,6 +277,7 @@ export function AddItemWizard({ open, onOpenChange, editMode, editItemId, editIt
       value: cat.id,
       title: cat.name,
       isLeaf: true,
+      disabled: false, // Child categories are selectable
     }));
 
     setCategoryTreeData((origin) =>
@@ -754,11 +751,6 @@ export function AddItemWizard({ open, onOpenChange, editMode, editItemId, editIt
       <div
         className="fixed h-full inset-0 bg-black/50 backdrop-blur-sm z-50 overflow-hidden overscroll-none"
         style={{ position: 'fixed', inset: 0 }}
-        onClick={() => {
-          if (!isUploading && !isAnalyzing && !isCategorizing) {
-            resetAndClose();
-          }
-        }}
       />
 
       {/* Modal Container */}

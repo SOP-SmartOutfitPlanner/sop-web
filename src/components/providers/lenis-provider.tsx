@@ -13,7 +13,18 @@ export function LenisProvider({ children }: { children: ReactNode }) {
       smoothWheel: true,
       syncTouch: false,
       touchInertiaExponent: 30,
+      prevent: () => {
+        // Prevent Lenis from handling scroll when body has overflow hidden
+        return document.body.style.overflow === 'hidden' ||
+               document.documentElement.classList.contains('lenis-stopped');
+      },
     });
+
+    // Expose lenis instance globally for useScrollLock hook
+    if (typeof window !== 'undefined') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).lenis = lenis;
+    }
 
     // Animation frame loop
     let rafId: number;
@@ -28,6 +39,12 @@ export function LenisProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelAnimationFrame(rafId);
       lenis.destroy();
+
+      // Remove global reference
+      if (typeof window !== 'undefined') {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        delete (window as any).lenis;
+      }
     };
   }, []);
 
