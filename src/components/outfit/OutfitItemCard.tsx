@@ -1,9 +1,9 @@
 "use client";
 
 import { memo } from "react";
-import { Sparkles } from "lucide-react";
 import GlassCard from "@/components/ui/glass-card";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 
 interface OutfitItem {
   itemId: number;
@@ -27,15 +27,17 @@ interface OutfitItemCardProps {
 }
 
 // Parse color JSON string
-const parseColors = (colorString: string): Array<{ name: string; hex: string }> => {
+const parseColors = (
+  colorString: string
+): Array<{ name: string; hex: string }> => {
   try {
-    if (colorString.startsWith('[')) {
+    if (colorString.startsWith("[")) {
       return JSON.parse(colorString);
     }
     // Fallback for comma-separated
-    return colorString.split(',').map(c => ({
+    return colorString.split(",").map((c) => ({
       name: c.trim(),
-      hex: '#808080'
+      hex: "#808080",
     }));
   } catch {
     return [];
@@ -48,7 +50,6 @@ export const OutfitItemCard = memo(function OutfitItemCard({
 }: OutfitItemCardProps) {
   const colors = parseColors(item.color).slice(0, 4);
   const hasAiDescription = !!item.aiDescription;
-
   return (
     <div className="group relative w-full h-full flex flex-col">
       {/* AI Badge - Top Left Corner */}
@@ -60,7 +61,9 @@ export const OutfitItemCard = memo(function OutfitItemCard({
 
             {/* Main badge */}
             <div className="relative w-10 h-10 rounded-full bg-linear-to-br from-cyan-400 via-cyan-500 to-blue-500 flex items-center justify-center shadow-xl border-2 border-white">
-              <span className="text-xs font-black text-white drop-shadow-lg">AI</span>
+              <span className="text-xs font-black text-white drop-shadow-lg">
+                AI
+              </span>
             </div>
           </div>
         </div>
@@ -77,22 +80,27 @@ export const OutfitItemCard = memo(function OutfitItemCard({
         className={cn(
           "relative h-full flex flex-col item-card-transition",
           "bg-linear-to-br from-cyan-300/20 via-blue-200/10 to-indigo-300/20",
-          onClick && "cursor-pointer hover:border-cyan-400/50"
+          onClick &&
+            "cursor-pointer hover:border-cyan-400/50 hover:shadow-lg hover:shadow-cyan-500/20 transition-all duration-200"
         )}
         onClick={onClick}
       >
-        <div className="w-full flex flex-col flex-1 relative z-10">
-          {/* Image Container */}
-          <div className="bg-white/5 rounded-xl aspect-square flex items-center justify-center overflow-hidden relative">
-            <img
+        <div className="w-full flex flex-col h-full relative z-10">
+          {/* Image Container - Fixed aspect ratio */}
+          <div className="bg-white/5 rounded-xl aspect-square flex items-center justify-center overflow-hidden relative shrink-0">
+            <Image
               src={item.imgUrl}
               alt={item.name}
-              className="w-full h-full object-cover"
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+              priority={false}
+              loading="lazy"
             />
           </div>
 
-          {/* Item Details */}
-          <div className="flex flex-col mt-3 space-y-2">
+          {/* Item Details - Fixed height */}
+          <div className="flex flex-col mt-3 space-y-2 flex-1 min-h-0">
             {/* Name and Category */}
             <div className="flex items-start gap-2">
               <h3 className="text-white font-semibold text-sm line-clamp-1 flex-1">
@@ -105,7 +113,7 @@ export const OutfitItemCard = memo(function OutfitItemCard({
 
             {/* Colors */}
             {colors.length > 0 && (
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 shrink-0">
                 {colors.map((color, index) => (
                   <div
                     key={index}
@@ -117,34 +125,42 @@ export const OutfitItemCard = memo(function OutfitItemCard({
               </div>
             )}
 
-            {/* Info Grid */}
-            <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11px] text-white/70">
-              <div className="flex items-center gap-1">
-                <span className="font-medium text-white/50">Fabric:</span>
+            {/* Info Grid - Fixed min height to ensure consistency */}
+            <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11px] text-white/70 min-h-[72px]">
+              <div className="flex items-center gap-1 min-w-0">
+                <span className="font-medium text-white/50 shrink-0">
+                  Fabric:
+                </span>
                 <span className="truncate">{item.fabric}</span>
               </div>
-              
-              <div className="flex items-center gap-1">
-                <span className="font-medium text-white/50">Pattern:</span>
+
+              <div className="flex items-center gap-1 min-w-0">
+                <span className="font-medium text-white/50 shrink-0">
+                  Pattern:
+                </span>
                 <span className="truncate">{item.pattern}</span>
               </div>
 
-              <div className="flex items-center gap-1">
-                <span className="font-medium text-white/50">Weather:</span>
+              <div className="flex items-center gap-1 min-w-0">
+                <span className="font-medium text-white/50 shrink-0">
+                  Weather:
+                </span>
                 <span className="truncate">{item.weatherSuitable}</span>
               </div>
 
-              <div className="flex items-center gap-1">
-                <span className="font-medium text-white/50">Condition:</span>
+              <div className="flex items-center gap-1 min-w-0">
+                <span className="font-medium text-white/50 shrink-0">
+                  Condition:
+                </span>
                 <span className="truncate">{item.condition}</span>
               </div>
 
-              {item.brand && (
-                <div className="col-span-2 flex items-center gap-1">
-                  <span className="font-medium text-white/50">Brand:</span>
-                  <span className="truncate">{item.brand}</span>
-                </div>
-              )}
+              <div className="col-span-2 flex items-center gap-1 min-w-0">
+                <span className="font-medium text-white/50 shrink-0">
+                  Brand:
+                </span>
+                <span className="truncate">{item.brand || "—"}</span>
+              </div>
             </div>
           </div>
         </div>

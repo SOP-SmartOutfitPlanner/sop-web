@@ -16,15 +16,24 @@ import { Outfit } from "@/types/outfit";
 
 // Dynamic imports to avoid SSR issues with antd Image
 const CreateOutfitDialog = dynamic(
-  () => import("@/components/outfit/CreateOutfitDialog").then((mod) => ({ default: mod.CreateOutfitDialog })),
+  () =>
+    import("@/components/outfit/CreateOutfitDialog").then((mod) => ({
+      default: mod.CreateOutfitDialog,
+    })),
   { ssr: false }
 );
 const EditOutfitDialog = dynamic(
-  () => import("@/components/outfit/EditOutfitDialog").then((mod) => ({ default: mod.EditOutfitDialog })),
+  () =>
+    import("@/components/outfit/EditOutfitDialog").then((mod) => ({
+      default: mod.EditOutfitDialog,
+    })),
   { ssr: false }
 );
 const ViewOutfitDialog = dynamic(
-  () => import("@/components/outfit/ViewOutfitDialog").then((mod) => ({ default: mod.ViewOutfitDialog })),
+  () =>
+    import("@/components/outfit/ViewOutfitDialog").then((mod) => ({
+      default: mod.ViewOutfitDialog,
+    })),
   { ssr: false }
 );
 
@@ -84,13 +93,12 @@ export default function OutfitPage() {
     setIsViewDialogOpen(true);
   }, []);
 
-  const handleDeleteOutfit = useCallback((outfitId: number) => {
-    if (!confirm("Are you sure you want to delete this outfit?")) {
-      return;
-    }
-
-    deleteOutfit(outfitId);
-  }, [deleteOutfit]);
+  const handleDeleteOutfit = useCallback(
+    (outfitId: number) => {
+      deleteOutfit(outfitId);
+    },
+    [deleteOutfit]
+  );
 
   // Prevent scrolling when dialog is open
   useEffect(() => {
@@ -169,7 +177,7 @@ export default function OutfitPage() {
                 My Outfit
               </span>
             </h4>
-            <p className="font-poppins text-gray-600 dark:text-gray-400 mt-2">
+            <p className="bg-clip-text text-transparent bg-linear-to-r from-white via-blue-100 to-cyan-200">
               Create and manage your outfit combinations
             </p>
           </div>
@@ -205,7 +213,7 @@ export default function OutfitPage() {
         {/* Stats */}
         {metaData && (
           <div className="mb-6">
-            <p className="font-poppins text-sm text-gray-600 dark:text-gray-400">
+            <p className="font-poppins text-sm font-medium text-white/90">
               Showing {outfits.length} of {metaData.totalCount} outfits
             </p>
           </div>

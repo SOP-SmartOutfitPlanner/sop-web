@@ -2,7 +2,16 @@
 
 import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, startOfWeek, endOfWeek } from "date-fns";
+import {
+  format,
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  isSameMonth,
+  isToday,
+  startOfWeek,
+  endOfWeek,
+} from "date-fns";
 import GlassButton from "@/components/ui/glass-button";
 import { CalendarDayModal } from "./CalendarDayModal";
 import { useUserOccasions, useCalendarEntries } from "@/hooks/useCalendar";
@@ -41,15 +50,18 @@ export function OutfitCalendar() {
 
   // Helper function to check if a day has occasions
   const getDayInfo = (day: Date) => {
-    const dayString = format(day, 'yyyy-MM-dd');
-    
-    const dayOccasions = occasions.filter(occasion => {
-      const occasionDate = format(new Date(occasion.dateOccasion), 'yyyy-MM-dd');
+    const dayString = format(day, "yyyy-MM-dd");
+
+    const dayOccasions = occasions.filter((occasion) => {
+      const occasionDate = format(
+        new Date(occasion.dateOccasion),
+        "yyyy-MM-dd"
+      );
       return occasionDate === dayString;
     });
 
-    const dayEntries = calendarEntries.filter(entry => {
-      const entryDate = format(new Date(entry.dateUsed), 'yyyy-MM-dd');
+    const dayEntries = calendarEntries.filter((entry) => {
+      const entryDate = format(new Date(entry.dateUsed), "yyyy-MM-dd");
       return entryDate === dayString;
     });
 
@@ -63,18 +75,24 @@ export function OutfitCalendar() {
       occasionCount: dayOccasions.length,
       outfitCount: dayEntries.length,
       firstOccasionName: firstOccasion?.name,
-      firstOccasionTime: firstOccasion ? format(new Date(firstOccasion.startTime), 'HH:mm') : null,
+      firstOccasionTime: firstOccasion
+        ? format(new Date(firstOccasion.startTime), "HH:mm")
+        : null,
       firstOutfitName: firstEntry?.outfitName,
       weatherInfo: firstOccasion?.weatherSnapshot,
     };
   };
 
   const handlePrevMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1));
+    setCurrentDate(
+      new Date(currentDate.getFullYear(), currentDate.getMonth() - 1)
+    );
   };
 
   const handleNextMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1));
+    setCurrentDate(
+      new Date(currentDate.getFullYear(), currentDate.getMonth() + 1)
+    );
   };
 
   const handleToday = () => {
@@ -91,7 +109,7 @@ export function OutfitCalendar() {
       {/* Calendar Header */}
       <div className="mb-6 flex items-center justify-between">
         <h2 className="font-dela-gothic text-2xl font-bold text-white">
-          {format(currentDate, 'MMMM yyyy')}
+          {format(currentDate, "MMMM yyyy")}
         </h2>
         <div className="flex items-center gap-2">
           <GlassButton variant="ghost" size="sm" onClick={handleToday}>
@@ -110,8 +128,11 @@ export function OutfitCalendar() {
       <div className="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-6">
         {/* Day Names */}
         <div className="grid grid-cols-7 gap-2 mb-4">
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-            <div key={day} className="text-center font-bricolage text-sm font-semibold text-white/70 py-2">
+          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+            <div
+              key={day}
+              className="text-center font-bricolage text-sm font-semibold text-white/70 py-2"
+            >
               {day}
             </div>
           ))}
@@ -130,54 +151,89 @@ export function OutfitCalendar() {
                 onClick={() => handleDayClick(day)}
                 title={
                   isCurrentMonth && (dayInfo.hasOccasions || dayInfo.hasOutfits)
-                    ? `${dayInfo.firstOccasionName ? `📅 ${dayInfo.firstOccasionName}${dayInfo.firstOccasionTime ? ` (${dayInfo.firstOccasionTime})` : ''}` : ''}${dayInfo.firstOccasionName && dayInfo.firstOutfitName ? '\n' : ''}${dayInfo.firstOutfitName ? `👕 ${dayInfo.firstOutfitName}` : ''}${dayInfo.weatherInfo ? `\n🌤️ ${dayInfo.weatherInfo}` : ''}`
+                    ? `${
+                        dayInfo.firstOccasionName
+                          ? `📅 ${dayInfo.firstOccasionName}${
+                              dayInfo.firstOccasionTime
+                                ? ` (${dayInfo.firstOccasionTime})`
+                                : ""
+                            }`
+                          : ""
+                      }${
+                        dayInfo.firstOccasionName && dayInfo.firstOutfitName
+                          ? "\n"
+                          : ""
+                      }${
+                        dayInfo.firstOutfitName
+                          ? `👕 ${dayInfo.firstOutfitName}`
+                          : ""
+                      }${
+                        dayInfo.weatherInfo ? `\n🌤️ ${dayInfo.weatherInfo}` : ""
+                      }`
                     : undefined
                 }
                 className={`
                   relative aspect-square p-2 rounded-xl transition-all duration-300
-                  ${isCurrentMonth
-                    ? 'bg-white/10 hover:bg-white/25 hover:scale-105 border border-white/20 hover:border-white/40'
-                    : 'bg-white/5 border border-white/10 opacity-50 hover:opacity-70'
+                  ${
+                    isCurrentMonth
+                      ? "bg-white/10 hover:bg-white/25 hover:scale-105 border border-white/20 hover:border-white/40"
+                      : "bg-white/5 border border-white/10 opacity-50 hover:opacity-70"
                   }
-                  ${isCurrentDay
-                    ? 'ring-2 ring-cyan-400 bg-cyan-500/30 shadow-lg shadow-cyan-500/20'
-                    : ''
+                  ${
+                    isCurrentDay
+                      ? "ring-2 ring-cyan-400 bg-cyan-500/30 shadow-lg shadow-cyan-500/20"
+                      : ""
                   }
-                  ${dayInfo.hasOutfits ? 'hover:ring-2 hover:ring-purple-400/50' : ''}
+                  ${
+                    dayInfo.hasOutfits
+                      ? "hover:ring-2 hover:ring-purple-400/50"
+                      : ""
+                  }
                   group
                 `}
               >
                 <div className="relative flex flex-col items-center justify-center h-full gap-1">
                   {/* Date Number */}
-                  <span className={`
+                  <span
+                    className={`
                     font-bricolage text-base font-bold
-                    ${isCurrentMonth ? 'text-white' : 'text-white/40'}
-                    ${isCurrentDay ? 'text-cyan-200 text-lg' : ''}
-                    ${dayInfo.hasOutfits && !isCurrentDay ? 'text-purple-200' : ''}
-                  `}>
-                    {format(day, 'd')}
+                    ${isCurrentMonth ? "text-white" : "text-white/40"}
+                    ${isCurrentDay ? "text-cyan-200 text-lg" : ""}
+                    ${
+                      dayInfo.hasOutfits && !isCurrentDay
+                        ? "text-purple-200"
+                        : ""
+                    }
+                  `}
+                  >
+                    {format(day, "d")}
                   </span>
-                  
+
                   {/* Enhanced Indicators */}
-                  {isCurrentMonth && (dayInfo.hasOccasions || dayInfo.hasOutfits) && (
-                    <div className="flex flex-col items-center gap-0.5">
-                      {/* Outfit Indicator */}
-                      {dayInfo.hasOutfits && (
-                        <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-purple-500/40 backdrop-blur-sm border border-purple-400/30">
-                          <div className="w-2 h-2 rounded-sm bg-purple-200" />
-                          <span className="text-[9px] text-purple-100 font-bold">{dayInfo.outfitCount}</span>
-                        </div>
-                      )}
-                      
-                      {/* Occasion Indicator */}
-                      {dayInfo.hasOccasions && (
-                        <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-cyan-500/40 backdrop-blur-sm border border-cyan-400/30">
-                          <div className="w-2 h-2 rounded-full bg-cyan-200" />
-                          <span className="text-[9px] text-cyan-100 font-bold">{dayInfo.occasionCount}</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  {isCurrentMonth &&
+                    (dayInfo.hasOccasions || dayInfo.hasOutfits) && (
+                      <div className="flex flex-col items-center gap-0.5">
+                        {/* Outfit Indicator */}
+                        {dayInfo.hasOutfits && (
+                          <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-purple-500/40 backdrop-blur-sm border border-purple-400/30">
+                            <div className="w-2 h-2 rounded-sm bg-purple-200" />
+                            <span className="text-[9px] text-purple-100 font-bold">
+                              {dayInfo.outfitCount}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Occasion Indicator */}
+                        {dayInfo.hasOccasions && (
+                          <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-cyan-500/40 backdrop-blur-sm border border-cyan-400/30">
+                            <div className="w-2 h-2 rounded-full bg-cyan-200" />
+                            <span className="text-[9px] text-cyan-100 font-bold">
+                              {dayInfo.occasionCount}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                   {/* Today Badge */}
                   {isCurrentDay && (
