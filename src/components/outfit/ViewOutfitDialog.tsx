@@ -8,6 +8,7 @@ import { Outfit } from "@/types/outfit";
 import { useSaveFavoriteOutfit, useOutfit } from "@/hooks/useOutfits";
 import { format } from "date-fns";
 import { OutfitItemCard } from "./OutfitItemCard";
+import { ViewItemDialog } from "@/components/wardrobe/ViewItemDialog";
 
 interface ViewOutfitDialogProps {
   open: boolean;
@@ -26,15 +27,27 @@ const ViewOutfitDialogComponent = ({
 }: ViewOutfitDialogProps) => {
   const { mutate: toggleFavorite, isPending } = useSaveFavoriteOutfit();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  
+  const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
+  const [isItemDialogOpen, setIsItemDialogOpen] = useState(false);
+
   // Fetch real-time outfit data from React Query cache
   const { data: latestOutfit } = useOutfit(initialOutfit?.id || null);
-  
+
   // Use latest data from cache, fallback to initial prop
   const outfit = latestOutfit || initialOutfit;
 
   const handleClose = () => {
     onOpenChange(false);
+  };
+
+  const handleItemClick = (itemId: number) => {
+    setSelectedItemId(itemId);
+    setIsItemDialogOpen(true);
+  };
+
+  const handleItemDialogClose = () => {
+    setIsItemDialogOpen(false);
+    setSelectedItemId(null);
   };
 
   const handleFavoriteClick = () => {
@@ -154,7 +167,8 @@ const ViewOutfitDialogComponent = ({
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="font-semibold text-white">
-                        {outfit.items.length} {outfit.items.length === 1 ? "Item" : "Items"}
+                        {outfit.items.length}{" "}
+                        {outfit.items.length === 1 ? "Item" : "Items"}
                       </span>
                     </div>
                   </div>
@@ -162,6 +176,7 @@ const ViewOutfitDialogComponent = ({
 
                 <button
                   onClick={handleClose}
+                  aria-label="Close dialog"
                   className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-all duration-200 ml-4 shrink-0"
                 >
                   <X className="w-6 h-6 text-white" />
@@ -170,14 +185,19 @@ const ViewOutfitDialogComponent = ({
             </div>
 
             {/* Content Container */}
-            <div className="flex-1 px-12 py-4 overflow-y-auto min-h-0 hide-scrollbar" data-lenis-prevent>
+            <div
+              className="flex-1 px-12 py-4 overflow-y-auto min-h-0 hide-scrollbar"
+              data-lenis-prevent
+            >
               {/* Items Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                 {outfit.items.map((item) => (
-                  <OutfitItemCard 
-                    key={item.itemId || item.id} 
-                    item={item}
-                  />
+                  <div key={item.itemId || item.id} className="h-[420px]">
+                    <OutfitItemCard
+                      item={item}
+                      onClick={() => handleItemClick(item.itemId || item.id!)}
+                    />
+                  </div>
                 ))}
               </div>
             </div>
@@ -191,14 +211,24 @@ const ViewOutfitDialogComponent = ({
                     onClick={handleFavoriteClick}
                     disabled={isPending}
                     variant="custom"
-                    backgroundColor={outfit.isFavorite ? "rgba(239, 68, 68, 0.6)" : "rgba(255, 255, 255, 0.2)"}
-                    borderColor={outfit.isFavorite ? "rgba(239, 68, 68, 0.8)" : "rgba(255, 255, 255, 0.4)"}
+                    backgroundColor={
+                      outfit.isFavorite
+                        ? "rgba(239, 68, 68, 0.6)"
+                        : "rgba(255, 255, 255, 0.2)"
+                    }
+                    borderColor={
+                      outfit.isFavorite
+                        ? "rgba(239, 68, 68, 0.8)"
+                        : "rgba(255, 255, 255, 0.4)"
+                    }
                     textColor="white"
                     size="md"
                     className="gap-2"
                   >
                     <Heart
-                      className={`w-5 h-5 ${outfit.isFavorite ? "fill-current" : ""}`}
+                      className={`w-5 h-5 ${
+                        outfit.isFavorite ? "fill-current" : ""
+                      }`}
                     />
                     {outfit.isFavorite ? "Unfavorite" : "Favorite"}
                   </GlassButton>
@@ -274,18 +304,30 @@ const ViewOutfitDialogComponent = ({
         variant="danger"
         isLoading={false}
       />
+
+      {/* Item Detail Dialog */}
+      {selectedItemId && (
+        <ViewItemDialog
+          open={isItemDialogOpen}
+          onOpenChange={handleItemDialogClose}
+          itemId={selectedItemId}
+        />
+      )}
     </>
   );
 };
 
 // Memoize dialog to prevent unnecessary re-renders
-export const ViewOutfitDialog = memo(ViewOutfitDialogComponent, (prevProps, nextProps) => {
-  return (
-    prevProps.open === nextProps.open &&
-    prevProps.outfit?.id === nextProps.outfit?.id &&
-    prevProps.outfit?.isFavorite === nextProps.outfit?.isFavorite &&
-    prevProps.outfit?.isSaved === nextProps.outfit?.isSaved &&
-    prevProps.onEdit === nextProps.onEdit &&
-    prevProps.onDelete === nextProps.onDelete
-  );
-});
+export const ViewOutfitDialog = memo(
+  ViewOutfitDialogComponent,
+  (prevProps, nextProps) => {
+    return (
+      prevProps.open === nextProps.open &&
+      prevProps.outfit?.id === nextProps.outfit?.id &&
+      prevProps.outfit?.isFavorite === nextProps.outfit?.isFavorite &&
+      prevProps.outfit?.isSaved === nextProps.outfit?.isSaved &&
+      prevProps.onEdit === nextProps.onEdit &&
+      prevProps.onDelete === nextProps.onDelete
+    );
+  }
+);

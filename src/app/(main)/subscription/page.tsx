@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { Check, Zap, Star } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -76,7 +75,7 @@ const pricingPlans = [
 ];
 
 export default function SubscriptionContentPage() {
-  const router = useRouter();
+  // const router = useRouter();
 
   const handleGetStarted = () => {
     // router.push("/register");
@@ -103,7 +102,8 @@ export default function SubscriptionContentPage() {
             </span>
           </h2>
           <p className="font-poppins text-lg md:text-xl text-gray-300 max-w-2xl mx-auto mb-4">
-            Start free forever. Upgrade anytime to unlock premium features and AI-powered styling.
+            Start free forever. Upgrade anytime to unlock premium features and
+            AI-powered styling.
           </p>
           <motion.p
             initial={{ opacity: 0 }}
@@ -128,14 +128,14 @@ export default function SubscriptionContentPage() {
               transition={{ duration: 0.5, delay: index * 0.1 }}
               whileHover={{
                 y: -8,
-                transition: { duration: 0.3 }
+                transition: { duration: 0.3 },
               }}
               className={`relative rounded-2xl p-8 transition-all h-full flex flex-col backdrop-blur-sm ${
                 plan.popular
-                  ? 'bg-gradient-to-br from-blue-600/90 via-cyan-600/90 to-blue-700/90 text-white shadow-2xl shadow-blue-500/30 scale-100 lg:scale-105 z-10 border-2 border-cyan-300/50'
-                  : plan.name === 'Ultra'
-                  ? 'bg-gradient-to-br from-slate-900/90 via-blue-950/90 to-indigo-950/90 text-white shadow-xl shadow-indigo-900/30 border border-cyan-400/20'
-                  : 'bg-white/10 border border-white/20 hover:border-cyan-400/50 hover:shadow-xl shadow-lg'
+                  ? "bg-gradient-to-br from-blue-600/90 via-cyan-600/90 to-blue-700/90 text-white shadow-2xl shadow-blue-500/30 scale-100 lg:scale-105 z-10 border-2 border-cyan-300/50"
+                  : plan.name === "Ultra"
+                  ? "bg-gradient-to-br from-slate-900/90 via-blue-950/90 to-indigo-950/90 text-white shadow-xl shadow-indigo-900/30 border border-cyan-400/20"
+                  : "bg-white/10 border border-white/20 hover:border-cyan-400/50 hover:shadow-xl shadow-lg"
               }`}
             >
               {/* Popular badge */}
@@ -154,7 +154,7 @@ export default function SubscriptionContentPage() {
               )}
 
               {/* Ultra Premium badge */}
-              {plan.name === 'Ultra' && (
+              {plan.name === "Ultra" && (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.8 }}
                   whileInView={{ opacity: 1, scale: 1 }}
@@ -171,47 +171,67 @@ export default function SubscriptionContentPage() {
               )}
 
               {/* Plan header */}
-              <div className={`text-center mb-6 pb-6 border-b ${plan.popular || plan.name === 'Ultra' ? 'border-white/20' : 'border-white/20'}`}>
-                <h3 className={`font-dela-gothic text-2xl font-bold mb-3 ${
-                  plan.popular || plan.name === 'Ultra' ? 'text-white' : 'text-white'
-                  }`}>
+              <div
+                className={`text-center mb-6 pb-6 border-b ${
+                  plan.popular || plan.name === "Ultra"
+                    ? "border-white/20"
+                    : "border-white/20"
+                }`}
+              >
+                <h3
+                  className={`font-dela-gothic text-2xl font-bold mb-3 ${
+                    plan.popular || plan.name === "Ultra"
+                      ? "text-white"
+                      : "text-white"
+                  }`}
+                >
                   {plan.name}
                 </h3>
-                <p className={`font-poppins text-sm mb-6 ${
-                  plan.popular
-                    ? 'text-blue-100'
-                    : plan.name === 'Ultra'
-                    ? 'text-cyan-200'
-                    : 'text-gray-200'
-                  }`}>
+                <p
+                  className={`font-poppins text-sm mb-6 ${
+                    plan.popular
+                      ? "text-blue-100"
+                      : plan.name === "Ultra"
+                      ? "text-cyan-200"
+                      : "text-gray-200"
+                  }`}
+                >
                   {plan.description}
                 </p>
                 <div className="flex items-baseline justify-center gap-1 mb-2">
-                  <span className={`font-dela-gothic text-5xl font-bold ${
-                    plan.popular || plan.name === 'Ultra' ? 'text-white' : 'text-white'
-                    }`}>
+                  <span
+                    className={`font-dela-gothic text-5xl font-bold ${
+                      plan.popular || plan.name === "Ultra"
+                        ? "text-white"
+                        : "text-white"
+                    }`}
+                  >
                     {plan.price}
                   </span>
                   {plan.period && (
-                    <span className={`font-poppins text-base ${
-                      plan.popular
-                        ? 'text-blue-200'
-                        : plan.name === 'Ultra'
-                        ? 'text-cyan-200'
-                        : 'text-gray-300'
-                      }`}>
+                    <span
+                      className={`font-poppins text-base ${
+                        plan.popular
+                          ? "text-blue-200"
+                          : plan.name === "Ultra"
+                          ? "text-cyan-200"
+                          : "text-gray-300"
+                      }`}
+                    >
                       /{plan.period}
                     </span>
                   )}
                 </div>
                 {plan.price !== "$0" && (
-                  <p className={`font-poppins text-xs ${
-                    plan.popular
-                      ? 'text-blue-200'
-                      : plan.name === 'Ultra'
-                      ? 'text-cyan-300'
-                      : 'text-gray-300'
-                    }`}>
+                  <p
+                    className={`font-poppins text-xs ${
+                      plan.popular
+                        ? "text-blue-200"
+                        : plan.name === "Ultra"
+                        ? "text-cyan-300"
+                        : "text-gray-300"
+                    }`}
+                  >
                     Billed monthly • Cancel anytime
                   </p>
                 )}
@@ -233,47 +253,54 @@ export default function SubscriptionContentPage() {
                     transition={{ delay: 0.4 + featureIndex * 0.05 }}
                     className="flex items-start"
                   >
-                    <div className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center mr-3 mt-0.5 ${
-                      plan.popular
-                        ? 'bg-blue-400/30'
-                        : plan.name === 'Ultra'
-                        ? 'bg-cyan-400/20'
-                        : 'bg-white/20'
-                      }`}>
+                    <div
+                      className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center mr-3 mt-0.5 ${
+                        plan.popular
+                          ? "bg-blue-400/30"
+                          : plan.name === "Ultra"
+                          ? "bg-cyan-400/20"
+                          : "bg-white/20"
+                      }`}
+                    >
                       <Check
                         size={14}
                         className={`${
                           plan.popular
-                            ? 'text-blue-100'
-                            : plan.name === 'Ultra'
-                            ? 'text-cyan-300'
-                            : 'text-white'
-                          }`}
+                            ? "text-blue-100"
+                            : plan.name === "Ultra"
+                            ? "text-cyan-300"
+                            : "text-white"
+                        }`}
                       />
                     </div>
-                    <span className={`font-poppins text-sm leading-relaxed ${
-                      plan.popular
-                        ? 'text-blue-50'
-                        : plan.name === 'Ultra'
-                        ? 'text-blue-100'
-                        : 'text-gray-100'
-                      }`}>
+                    <span
+                      className={`font-poppins text-sm leading-relaxed ${
+                        plan.popular
+                          ? "text-blue-50"
+                          : plan.name === "Ultra"
+                          ? "text-blue-100"
+                          : "text-gray-100"
+                      }`}
+                    >
                       {feature}
                     </span>
                   </motion.li>
                 ))}
-                {plan.notIncluded && plan.notIncluded.map((feature, fIndex) => (
-                  <li key={fIndex} className="flex items-start opacity-40">
-                    <div className="w-5 h-5 flex-shrink-0 mt-0.5 mr-3 rounded-full border border-current flex items-center justify-center">
-                      <div className="w-2 h-0.5 bg-current" />
-                    </div>
-                    <span className={`font-poppins text-sm line-through ${
-                      plan.popular ? 'text-blue-200' : 'text-gray-300'
-                      }`}>
-                      {feature}
-                    </span>
-                  </li>
-                ))}
+                {plan.notIncluded &&
+                  plan.notIncluded.map((feature, fIndex) => (
+                    <li key={fIndex} className="flex items-start opacity-40">
+                      <div className="w-5 h-5 flex-shrink-0 mt-0.5 mr-3 rounded-full border border-current flex items-center justify-center">
+                        <div className="w-2 h-0.5 bg-current" />
+                      </div>
+                      <span
+                        className={`font-poppins text-sm line-through ${
+                          plan.popular ? "text-blue-200" : "text-gray-300"
+                        }`}
+                      >
+                        {feature}
+                      </span>
+                    </li>
+                  ))}
               </ul>
 
               {/* CTA button */}
@@ -283,16 +310,16 @@ export default function SubscriptionContentPage() {
                 onClick={handleGetStarted}
                 className={`w-full py-4 px-6 font-bricolage font-bold rounded-xl transition-all shadow-lg ${
                   plan.popular
-                    ? 'bg-white text-blue-600 hover:bg-blue-50 hover:shadow-2xl'
-                    : plan.name === 'Ultra'
-                    ? 'bg-gradient-to-r from-cyan-400 via-blue-400 to-cyan-500 text-slate-900 hover:from-cyan-300 hover:via-blue-300 hover:to-cyan-400 hover:shadow-2xl shadow-cyan-500/50'
-                    : 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:from-blue-700 hover:to-cyan-700 hover:shadow-xl'
-                  }`}
+                    ? "bg-white text-blue-600 hover:bg-blue-50 hover:shadow-2xl"
+                    : plan.name === "Ultra"
+                    ? "bg-gradient-to-r from-cyan-400 via-blue-400 to-cyan-500 text-slate-900 hover:from-cyan-300 hover:via-blue-300 hover:to-cyan-400 hover:shadow-2xl shadow-cyan-500/50"
+                    : "bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:from-blue-700 hover:to-cyan-700 hover:shadow-xl"
+                }`}
               >
                 {plan.cta}
               </motion.button>
 
-              {plan.name === 'Ultra' && (
+              {plan.name === "Ultra" && (
                 <p className="font-bricolage text-center text-xs mt-4 text-cyan-300">
                   ✨ Premium support & exclusive features
                 </p>
@@ -310,10 +337,17 @@ export default function SubscriptionContentPage() {
           className="mt-20 text-center"
         >
           <p className="font-poppins text-gray-300 mb-4">
-            Need help choosing? <a href="#" className="text-blue-400 hover:text-blue-300 font-semibold underline">Compare all features</a>
+            Need help choosing?{" "}
+            <a
+              href="#"
+              className="text-blue-400 hover:text-blue-300 font-semibold underline"
+            >
+              Compare all features
+            </a>
           </p>
           <p className="font-poppins text-sm text-gray-400">
-            All plans include: Mobile & Web access • Secure cloud storage • Regular updates
+            All plans include: Mobile & Web access • Secure cloud storage •
+            Regular updates
           </p>
         </motion.div>
       </div>

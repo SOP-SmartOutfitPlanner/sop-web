@@ -24,7 +24,9 @@ export function EditCalendarEntryModal({
   occasions,
   outfits,
 }: EditCalendarEntryModalProps) {
-  const [selectedOccasionId, setSelectedOccasionId] = useState<number | null>(null);
+  const [selectedOccasionId, setSelectedOccasionId] = useState<number | null>(
+    null
+  );
   const [selectedOutfitId, setSelectedOutfitId] = useState<number | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>("");
 
@@ -33,9 +35,7 @@ export function EditCalendarEntryModal({
   // Initialize form with current values
   useEffect(() => {
     if (open && calendarEntry) {
-      setSelectedOccasionId(calendarEntry.userOccasionId);
       setSelectedOutfitId(calendarEntry.outfitId);
-      setSelectedDate(calendarEntry.dateUsed.split("T")[0]); // Extract date part
     }
   }, [open, calendarEntry]);
 
@@ -43,17 +43,10 @@ export function EditCalendarEntryModal({
     if (!calendarEntry) return;
 
     const updateData: Partial<EditCalenderRequest> = {};
-    
-    if (selectedOccasionId !== calendarEntry.userOccasionId) {
-      updateData.userOccasionId = selectedOccasionId;
-    }
+
     if (selectedOutfitId !== calendarEntry.outfitId) {
       updateData.outfitId = selectedOutfitId;
     }
-    if (selectedDate && selectedDate !== calendarEntry.dateUsed.split("T")[0]) {
-      updateData.dateUsed = `${selectedDate}T00:00:00`;
-    }
-
     // Only update if there are changes
     if (Object.keys(updateData).length === 0) {
       onOpenChange(false);
@@ -61,7 +54,7 @@ export function EditCalendarEntryModal({
     }
 
     updateEntry(
-      { id: calendarEntry.id, data: updateData },
+      { id: calendarEntry.calendarId, data: updateData },
       {
         onSuccess: () => {
           onOpenChange(false);
@@ -145,12 +138,21 @@ export function EditCalendarEntryModal({
                           <span className="px-2 py-1 rounded-full bg-purple-500/20 text-purple-200 text-xs font-semibold">
                             {occasion.occasionName}
                           </span>
-                          <h4 className="font-semibold text-white mt-1">{occasion.name}</h4>
+                          <h4 className="font-semibold text-white mt-1">
+                            {occasion.name}
+                          </h4>
                           <p className="text-xs text-white/60 mt-1">
-                            {format(new Date(occasion.startTime), "MMM d, yyyy")} at {format(new Date(occasion.startTime), "h:mm a")} - {format(new Date(occasion.endTime), "h:mm a")}
+                            {format(
+                              new Date(occasion.startTime),
+                              "MMM d, yyyy"
+                            )}{" "}
+                            at {format(new Date(occasion.startTime), "h:mm a")}{" "}
+                            - {format(new Date(occasion.endTime), "h:mm a")}
                           </p>
                         </div>
-                        {isSelected && <Sparkles className="w-5 h-5 text-purple-400" />}
+                        {isSelected && (
+                          <Sparkles className="w-5 h-5 text-purple-400" />
+                        )}
                       </div>
                     </button>
                   );
@@ -181,13 +183,17 @@ export function EditCalendarEntryModal({
                     >
                       <div className="flex items-center justify-between">
                         <div>
-                          <h4 className="font-semibold text-white">{outfit.name}</h4>
+                          <h4 className="font-semibold text-white">
+                            {outfit.name}
+                          </h4>
                           <p className="text-xs text-white/60 mt-1">
                             <Shirt className="w-3 h-3 inline mr-1" />
                             {outfit.items.length} items
                           </p>
                         </div>
-                        {isSelected && <Sparkles className="w-5 h-5 text-cyan-400" />}
+                        {isSelected && (
+                          <Sparkles className="w-5 h-5 text-cyan-400" />
+                        )}
                       </div>
                     </button>
                   );
@@ -207,7 +213,12 @@ export function EditCalendarEntryModal({
                 backgroundColor="rgba(59, 130, 246, 0.6)"
                 borderColor="rgba(59, 130, 246, 0.8)"
                 onClick={handleUpdate}
-                disabled={isPending || !selectedOccasionId || !selectedOutfitId || !selectedDate}
+                disabled={
+                  isPending ||
+                  !selectedOccasionId ||
+                  !selectedOutfitId ||
+                  !selectedDate
+                }
               >
                 {isPending ? (
                   <>

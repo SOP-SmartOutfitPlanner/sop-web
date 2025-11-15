@@ -9,14 +9,14 @@ export default function WeeklyPageContent() {
         <div className="mb-8">
           <h1 className="font-dela-gothic text-2xl md:text-3xl lg:text-4xl leading-tight">
             <span className="bg-clip-text text-transparent bg-linear-to-r from-white via-blue-100 to-cyan-200">
-               Outfit Calendar
+              Outfit Calendar
             </span>
           </h1>
-          <p className="font-poppins text-gray-600 dark:text-gray-400 mt-2">
+          <p className="bg-clip-text text-transparent bg-linear-to-r from-white via-blue-100 to-cyan-200">
             Plan your outfits for every occasion
           </p>
         </div>
-        
+
         <OutfitCalendar />
       </div>
     </div>
