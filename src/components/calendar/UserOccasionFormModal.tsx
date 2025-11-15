@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { X, Calendar, Clock, Trash2, Save } from "lucide-react";
-import { format } from "date-fns";
+import { format, isBefore, startOfDay } from "date-fns";
 import { Select } from "antd";
 import GlassButton from "@/components/ui/glass-button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { 
   useCreateUserOccasion, 
   useUpdateUserOccasion, 
@@ -61,6 +62,8 @@ export function UserOccasionFormModal({
   const { mutate: updateOccasion, isPending: isUpdating } = useUpdateUserOccasion();
   const { mutate: deleteOccasion, isPending: isDeleting } = useDeleteUserOccasion();
 
+  const [isPastDateDialogOpen, setIsPastDateDialogOpen] = useState(false);
+
   // Load editing data
   useEffect(() => {
     if (editingOccasion) {
@@ -94,6 +97,18 @@ export function UserOccasionFormModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Check if date is in the past (only for new occasions, not editing)
+    if (!isEditing) {
+      const selectedDateObj = new Date(formData.dateOccasion);
+      const today = startOfDay(new Date());
+      const selectedDateOnly = startOfDay(selectedDateObj);
+
+      if (isBefore(selectedDateOnly, today)) {
+        setIsPastDateDialogOpen(true);
+        return;
+      }
+    }
 
     // Transform to API format: combine date + time to full datetime
     const payload = {
@@ -246,11 +261,17 @@ export function UserOccasionFormModal({
                       type="date"
                       value={formData.dateOccasion}
                       onChange={(e) => setFormData({ ...formData, dateOccasion: e.target.value })}
+                      min={isEditing ? undefined : format(new Date(), 'yyyy-MM-dd')}
                       required
                       disabled={isPending}
                       className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-cyan-400/50"
                     />
                   </div>
+                  {!isEditing && (
+                    <p className="text-[11px] text-white/50 mt-1">
+                      You can only create occasions for today or future dates
+                    </p>
+                  )}
                 </div>
 
                 {/* Time Range */}
@@ -370,6 +391,19 @@ export function UserOccasionFormModal({
           </form>
         </div>
       </div>
+
+      {/* Past Date Warning Dialog */}
+      <ConfirmDialog
+        open={isPastDateDialogOpen}
+        onOpenChange={setIsPastDateDialogOpen}
+        onConfirm={() => setIsPastDateDialogOpen(false)}
+        title="Cannot Create Occasion in the Past"
+        description="You can only create occasions for today or future dates. Please select a valid date."
+        confirmText="OK"
+        cancelText=""
+        variant="warning"
+        isLoading={false}
+      />
     </>
   );
 }

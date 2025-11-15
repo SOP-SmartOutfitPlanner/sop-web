@@ -12,6 +12,7 @@ interface DailyOutfitsSectionProps {
   selectedDailyOutfits: number[];
   isCreatingEntry: boolean;
   isDeletingEntry: boolean;
+  canAddOutfit?: boolean;
   onToggleSelection: (outfitId: number) => void;
   onToggleSelectAll: (outfitIds: number[]) => void;
   onBatchAdd: (e?: React.MouseEvent) => void;
@@ -26,6 +27,7 @@ export function DailyOutfitsSection({
   selectedDailyOutfits,
   isCreatingEntry,
   isDeletingEntry,
+  canAddOutfit = true,
   onToggleSelection,
   onToggleSelectAll,
   onBatchAdd,
@@ -161,7 +163,8 @@ export function DailyOutfitsSection({
                 variant="primary"
                 size="sm"
                 onClick={onBatchAdd}
-                disabled={isCreatingEntry}
+                disabled={isCreatingEntry || !canAddOutfit}
+                title={!canAddOutfit ? "Cannot add outfit to calendar in the past" : undefined}
               >
                 <Plus className="w-4 h-4" />
                 Add {selectedDailyOutfits.length} Outfit
@@ -210,8 +213,9 @@ export function DailyOutfitsSection({
 
                     <button
                       onClick={(e) => onAddSingle(outfit, e)}
-                      disabled={isCreatingEntry}
+                      disabled={isCreatingEntry || !canAddOutfit}
                       className="w-full text-left disabled:opacity-50"
+                      title={!canAddOutfit ? "Cannot add outfit to calendar in the past" : undefined}
                     >
                       <div className="aspect-square p-2">
                         <div className="relative w-full h-full grid grid-cols-2 gap-1 rounded-lg overflow-hidden bg-linear-to-br from-slate-500/20 to-blue-500/20">

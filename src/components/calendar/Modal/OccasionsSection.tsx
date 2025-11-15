@@ -17,6 +17,7 @@ interface OccasionsSectionProps {
   isLoadingOutfits: boolean;
   isCreatingEntry: boolean;
   isDeletingEntry: boolean;
+  canAddOccasion?: boolean;
   onToggleOccasion: (occasionId: number) => void;
   onAddOccasion: () => void;
   onEditOccasion: (occasion: UserOccasion, e?: React.MouseEvent) => void;
@@ -42,6 +43,7 @@ export function OccasionsSection({
   isLoadingOutfits,
   isCreatingEntry,
   isDeletingEntry,
+  canAddOccasion = true,
   onToggleOccasion,
   onAddOccasion,
   onEditOccasion,
@@ -59,7 +61,13 @@ export function OccasionsSection({
           <Calendar className="w-6 h-6 text-purple-400" />
           Your Occasions for This Day
         </h3>
-        <GlassButton variant="ghost" size="md" onClick={onAddOccasion}>
+        <GlassButton 
+          variant="ghost" 
+          size="md" 
+          onClick={onAddOccasion}
+          disabled={!canAddOccasion}
+          title={!canAddOccasion ? "Cannot create occasion in the past" : undefined}
+        >
           <Plus className="w-5 h-5" />
           Add Occasion
         </GlassButton>

@@ -103,6 +103,8 @@ export function ConfirmDialog({
                 onClick={() => onOpenChange(false)}
                 className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all shrink-0"
                 disabled={isLoading}
+                title="Close"
+                aria-label="Close dialog"
               >
                 <X className="w-4 h-4 text-white" />
               </button>
@@ -111,16 +113,18 @@ export function ConfirmDialog({
 
           {/* Actions */}
           <div className="px-6 py-5 bg-white/5">
-            <div className="flex items-center justify-end gap-3">
-              <GlassButton
-                variant="ghost"
-                size="md"
-                onClick={() => onOpenChange(false)}
-                disabled={isLoading}
-                className="min-w-[100px]"
-              >
-                {cancelText}
-              </GlassButton>
+            <div className={`flex items-center ${cancelText ? 'justify-end' : 'justify-center'} gap-3`}>
+              {cancelText && (
+                <GlassButton
+                  variant="ghost"
+                  size="md"
+                  onClick={() => onOpenChange(false)}
+                  disabled={isLoading}
+                  className="min-w-[100px]"
+                >
+                  {cancelText}
+                </GlassButton>
+              )}
               <GlassButton
                 variant="custom"
                 size="md"

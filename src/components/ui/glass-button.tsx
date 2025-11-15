@@ -20,6 +20,7 @@ interface GlassButtonProps {
   displacementScale?: number;
   className?: string;
   type?: 'button' | 'submit' | 'reset';
+  title?: string;
 }
 
 const GlassButton: React.FC<GlassButtonProps> = memo(function GlassButton({
@@ -39,7 +40,8 @@ const GlassButton: React.FC<GlassButtonProps> = memo(function GlassButton({
   borderWidth = '1px',
   textColor,
   className = '',
-  type = 'button'
+  type = 'button',
+  title
 }) {
   const sizeStyles = {
     sm: { padding: '0.5rem 1rem', fontSize: '0.875rem' },
@@ -114,6 +116,7 @@ const GlassButton: React.FC<GlassButtonProps> = memo(function GlassButton({
       onClick={onClick}
       disabled={disabled}
       data-hover-bg={currentVariant.hoverBg}
+      title={title}
     >
       {children}
     </button>
