@@ -59,7 +59,7 @@ export function DayOccasionList({
             <Tooltip
               key={idx}
               title={
-                <div className="space-y-2 max-w-xs">
+                <div className="space-y-2 w-full">
                   {/* Header */}
                   <div className="text-xs font-semibold border-b border-white/20 pb-1.5">
                     {isDaily
@@ -102,7 +102,7 @@ export function DayOccasionList({
                             .map((item, itemIdx) => (
                               <div
                                 key={itemIdx}
-                                className="aspect-square bg-white/5 rounded overflow-hidden border border-white/10"
+                                className="aspect-square bg-white/5 rounded overflow-hidden border border-white/10 relative"
                               >
                                 <Image
                                   src={item.imgUrl}
@@ -128,7 +128,12 @@ export function DayOccasionList({
               }
               placement="right"
               mouseEnterDelay={0.2}
-              styles={{ root: { maxWidth: "320px" } }}
+              styles={{ 
+                root: { 
+                  maxWidth: "320px",
+                  minWidth: "320px"
+                } 
+              }}
             >
               <div
                 className={`${
@@ -182,7 +187,7 @@ export function DayOccasionList({
         {hiddenCount > 0 && (
           <Tooltip
             title={
-              <div className="space-y-1.5 max-w-xs">
+              <div className="space-y-1.5 w-[320px]">
                 <div className="text-xs font-semibold border-b border-white/20 pb-1">
                   +{hiddenCount} More Occasion{hiddenCount > 1 ? "s" : ""}
                 </div>
@@ -226,6 +231,12 @@ export function DayOccasionList({
             }
             placement="right"
             mouseEnterDelay={0.2}
+            styles={{ 
+              root: { 
+                maxWidth: "320px",
+                minWidth: "320px"
+              } 
+            }}
           >
             <div
               className={`${
