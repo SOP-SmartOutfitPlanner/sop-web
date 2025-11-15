@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Check, Settings } from "lucide-react";
+import { Check } from "lucide-react";
 import GlassButton from "@/components/ui/glass-button";
 import NotificationCard from "@/components/notifications/NotificationCard";
 import FilterBar from "@/components/notifications/FilterBar";
@@ -78,10 +78,36 @@ const mergeNotifications = (
   };
 };
 
-export default function NotificationsPage() {
+// Component that uses useSearchParams - must be wrapped in Suspense
+function NotificationQueryHandler({
+  onNotificationId,
+}: {
+  onNotificationId: (id: number) => void;
+}) {
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const notificationId = searchParams.get("id");
+    if (notificationId) {
+      const id = parseInt(notificationId, 10);
+      if (!isNaN(id)) {
+        onNotificationId(id);
+        // Clean up URL without reloading page
+        window.history.replaceState({}, "", "/notifications");
+      }
+    }
+  }, [searchParams, onNotificationId]);
+
+  return null;
+}
+
+function NotificationsPageContent({
+  initialNotificationId,
+}: {
+  initialNotificationId: number | null;
+}) {
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
-  const searchParams = useSearchParams();
   const [filter, setFilter] = useState<FilterType>("all");
   const [localNotifications, setLocalNotifications] = useState<
     NotificationItem[]
@@ -91,19 +117,13 @@ export default function NotificationsPage() {
   >(null);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
 
-  // Handle query param to open notification detail from toast click
+  // Handle notification ID from query params
   useEffect(() => {
-    const notificationId = searchParams.get("id");
-    if (notificationId) {
-      const id = parseInt(notificationId, 10);
-      if (!isNaN(id)) {
-        setSelectedNotificationId(id);
-        setIsDetailDialogOpen(true);
-        // Clean up URL without reloading page
-        window.history.replaceState({}, "", "/notifications");
-      }
+    if (initialNotificationId) {
+      setSelectedNotificationId(initialNotificationId);
+      setIsDetailDialogOpen(true);
     }
-  }, [searchParams]);
+  }, [initialNotificationId]);
 
   // Fetch notifications from API
   const { data, isLoading, error, refetch } = useQuery({
@@ -442,5 +462,22 @@ export default function NotificationsPage() {
         onMarkAsRead={markAsRead}
       />
     </div>
+  );
+}
+
+export default function NotificationsPage() {
+  const [notificationIdFromQuery, setNotificationIdFromQuery] = useState<
+    number | null
+  >(null);
+
+  return (
+    <Suspense fallback={<div className="min-h-screen pt-32" />}>
+      <NotificationQueryHandler
+        onNotificationId={setNotificationIdFromQuery}
+      />
+      <NotificationsPageContent
+        initialNotificationId={notificationIdFromQuery}
+      />
+    </Suspense>
   );
 }

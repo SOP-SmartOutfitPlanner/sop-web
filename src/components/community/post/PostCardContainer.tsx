@@ -89,7 +89,7 @@ export function PostCardContainer({
         {/* Inner gradient overlay for extra depth with cyan accent */}
         <div className="absolute inset-0 rounded-3xl bg-gradient-to-t from-cyan-900/5 via-transparent to-white/5 pointer-events-none" />
 
-        <div className="w-full flex flex-col relative z-10">
+        <div className="w-full flex flex-col relative z-10 rounded-3xl">
           {/* Header */}
           <div className="p-4 pb-3">
             <PostHeader

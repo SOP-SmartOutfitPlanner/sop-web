@@ -100,7 +100,8 @@ function ReplyItem({ reply, postId }: ReplyItemProps) {
       toast.success("Reply updated successfully");
     } catch (error) {
       console.error("Error updating reply:", error);
-      toast.error("Failed to update reply");
+      const message = getErrorMessage(error, "Failed to update reply");
+      toast.error(message);
     } finally {
       setIsUpdating(false);
     }
@@ -116,7 +117,8 @@ function ReplyItem({ reply, postId }: ReplyItemProps) {
       setShowDeleteDialog(false);
     } catch (error) {
       console.error("Error deleting reply:", error);
-      toast.error("Failed to delete reply");
+      const message = getErrorMessage(error, "Failed to delete reply");
+      toast.error(message);
     }
   };
 
@@ -309,8 +311,9 @@ function CommentItem({
       setReplyText("");
       setShowReplyForm(false);
       toast.success(response.message || "Reply added successfully");
-    } catch {
-      toast.error("Failed to add reply");
+    } catch (error) {
+      const message = getErrorMessage(error, "Failed to add reply");
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -332,7 +335,8 @@ function CommentItem({
       toast.success("Comment updated successfully");
     } catch (error) {
       console.error("Error updating comment:", error);
-      toast.error("Failed to update comment");
+      const message = getErrorMessage(error, "Failed to update comment");
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -359,7 +363,8 @@ function CommentItem({
       setShowDeleteDialog(false);
     } catch (error) {
       console.error("Error deleting comment:", error);
-      toast.error("Failed to delete comment");
+      const message = getErrorMessage(error, "Failed to delete comment");
+      toast.error(message);
     } finally {
       setIsDeleting(false);
     }
@@ -629,8 +634,9 @@ export default function CommentSection({
       );
 
       setComments(commentsWithReplies);
-    } catch {
-      toast.error("Failed to load comments");
+    } catch (error) {
+      const message = getErrorMessage(error, "Failed to load comments");
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }
@@ -677,7 +683,8 @@ export default function CommentSection({
       // Note: Success toast is already shown in handleReply
     } catch (error) {
       console.error("Error refreshing replies:", error);
-      toast.error("Failed to refresh replies");
+      const message = getErrorMessage(error, "Failed to refresh replies");
+      toast.error(message);
     }
   };
 

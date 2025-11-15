@@ -3,7 +3,7 @@ export { default as FilterBar } from "./FilterBar";
 export { default as LoadingState } from "./LoadingState";
 export { default as ErrorState } from "./ErrorState";
 export { default as EmptyState } from "./EmptyState";
-export { default as RealtimeNotificationListener } from "./RealtimeNotificationListener";
+export { RealtimeNotificationListener } from "./RealtimeNotificationListener";
 export { NotificationDetailDialog } from "./NotificationDetailDialog";
 export * from "./types";
 export * from "./utils";

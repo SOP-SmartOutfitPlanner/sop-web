@@ -167,12 +167,14 @@ export function InfiniteScrollFeed({
     setActiveHashtag(null);
     setTaggedPosts([]);
     setTagError(null);
-    
+
     // Clear hashtag from URL params
     const params = new URLSearchParams(searchParams.toString());
     params.delete("hashtag");
-    const newUrl = params.toString() ? `/community?${params.toString()}` : "/community";
-    
+    const newUrl = params.toString()
+      ? `/community?${params.toString()}`
+      : "/community";
+
     // Use push instead of replace to ensure URL updates
     router.push(newUrl);
   }, [router, searchParams]);
@@ -188,7 +190,7 @@ export function InfiniteScrollFeed({
       const params = new URLSearchParams(searchParams.toString());
       params.set("hashtag", tag.id.toString());
       const newUrl = `/community?${params.toString()}`;
-      
+
       // Just update URL, useEffect will handle setting activeHashtag
       router.push(newUrl);
     },
@@ -207,7 +209,7 @@ export function InfiniteScrollFeed({
         try {
           setIsTagLoading(true);
           setTagError(null);
-          
+
           const userId = user?.id ? parseInt(user.id, 10) : undefined;
           const response = await communityAPI.getPostsByHashtag(
             urlHashtagId,
@@ -215,15 +217,16 @@ export function InfiniteScrollFeed({
             20,
             userId
           );
-          
+
           // Extract tag name from first post's hashtags or use a placeholder
           const postsByTag = response.data?.map(apiPostToPost) ?? [];
-          const tagName = postsByTag[0]?.tags?.find(t => t.id === urlHashtagId)?.name || "";
-          
+          const tagName =
+            postsByTag[0]?.tags?.find((t) => t.id === urlHashtagId)?.name || "";
+
           const tag: Hashtag = { id: urlHashtagId, name: tagName };
-          
+
           setActiveHashtag(tag);
-          
+
           const sortedByTimestamp = [...postsByTag].sort(
             (a, b) =>
               new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
@@ -241,7 +244,7 @@ export function InfiniteScrollFeed({
         }
       };
       initializeHashtag();
-    } 
+    }
     // Clear activeHashtag if URL doesn't have hashtag and activeHashtag exists
     else if (!urlHashtag && activeHashtag) {
       setActiveHashtag(null);
@@ -445,7 +448,7 @@ export function InfiniteScrollFeed({
         >
           <DialogContent
             showCloseButton={false}
-            className="max-w-2xl max-h-[90vh] !overflow-hidden p-0 flex flex-col backdrop-blur-xl bg-gradient-to-br from-cyan-950/60 via-blue-950/50 to-indigo-950/60 border-2 border-cyan-400/25 shadow-2xl shadow-cyan-500/20"
+            className="max-w-2xl  max-h-[90vh] !overflow-hidden p-0 flex flex-col backdrop-blur-xl bg-gradient-to-br from-cyan-950/60 via-blue-950/50 to-indigo-950/60 border-2 border-cyan-400/25 shadow-2xl shadow-cyan-500/20"
           >
             <EditPostDialog
               post={editingPost}

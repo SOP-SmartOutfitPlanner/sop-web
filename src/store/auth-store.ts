@@ -93,11 +93,15 @@ export const useAuthStore = create<AuthStore>((set) => ({
         updatedAt: undefined,
       };
 
-      // Fetch user profile to check isFirstTime
+      // Fetch user profile to check isFirstTime and get avatar
       let isFirstTime = false;
       try {
         const profileResponse = await userAPI.getUserProfile();
         isFirstTime = profileResponse.data.isFirstTime;
+        // Update avatar from profile
+        if (profileResponse.data.avtUrl) {
+          user.avatar = profileResponse.data.avtUrl;
+        }
       } catch (profileError) {
         console.error("Failed to fetch user profile:", profileError);
         // Continue with login success even if profile fetch fails
@@ -352,11 +356,15 @@ export const useAuthStore = create<AuthStore>((set) => ({
         updatedAt: undefined,
       };
 
-      // Fetch user profile to check isFirstTime
+      // Fetch user profile to check isFirstTime and get avatar
       let isFirstTime = false;
       try {
         const profileResponse = await userAPI.getUserProfile();
         isFirstTime = profileResponse.data.isFirstTime;
+        // Update avatar from profile
+        if (profileResponse.data.avtUrl) {
+          user.avatar = profileResponse.data.avtUrl;
+        }
       } catch (profileError) {
         console.error("Failed to fetch user profile:", profileError);
       }
