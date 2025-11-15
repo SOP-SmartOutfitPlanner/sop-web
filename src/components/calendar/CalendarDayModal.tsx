@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { format } from "date-fns";
+import { format, isBefore, startOfDay } from "date-fns";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   useUserOccasions,
@@ -42,6 +42,8 @@ export function CalendarDayModal({
     useState<Calender | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deletingEntryId, setDeletingEntryId] = useState<number | null>(null);
+  const [isPastDateDialogOpen, setIsPastDateDialogOpen] = useState(false);
+  const [pastDateDialogMessage, setPastDateDialogMessage] = useState("");
 
   // Multi-select states
   const [selectedDailyOutfits, setSelectedDailyOutfits] = useState<number[]>(
@@ -131,6 +133,16 @@ export function CalendarDayModal({
   }, [open, onOpenChange]);
 
   const handleAddOccasion = () => {
+    // Check if selected date is in the past
+    const today = startOfDay(new Date());
+    const selectedDateOnly = startOfDay(selectedDate);
+
+    if (isBefore(selectedDateOnly, today)) {
+      setPastDateDialogMessage("You can only create occasions for today or future dates. Please select a valid date.");
+      setIsPastDateDialogOpen(true);
+      return;
+    }
+
     setEditingOccasion(null);
     setIsOccasionFormOpen(true);
   };
@@ -208,6 +220,16 @@ export function CalendarDayModal({
       e.stopPropagation();
     }
 
+    // Check if selected date is in the past
+    const today = startOfDay(new Date());
+    const selectedDateOnly = startOfDay(selectedDate);
+
+    if (isBefore(selectedDateOnly, today)) {
+      setPastDateDialogMessage("You can only add outfits to calendar for today or future dates. Please select a valid date.");
+      setIsPastDateDialogOpen(true);
+      return;
+    }
+
     const formattedDate = format(selectedDate, "yyyy-MM-dd'T'HH:mm:ss");
 
     if (occasionId === null) {
@@ -233,6 +255,16 @@ export function CalendarDayModal({
   ) => {
     if (e) {
       e.stopPropagation();
+    }
+
+    // Check if selected date is in the past
+    const today = startOfDay(new Date());
+    const selectedDateOnly = startOfDay(selectedDate);
+
+    if (isBefore(selectedDateOnly, today)) {
+      setPastDateDialogMessage("You can only add outfits to calendar for today or future dates. Please select a valid date.");
+      setIsPastDateDialogOpen(true);
+      return;
     }
 
     const outfitIds =
@@ -341,6 +373,7 @@ export function CalendarDayModal({
                   selectedDailyOutfits={selectedDailyOutfits}
                   isCreatingEntry={isCreatingEntry}
                   isDeletingEntry={isDeletingEntry}
+                  canAddOutfit={!isBefore(startOfDay(selectedDate), startOfDay(new Date()))}
                   onToggleSelection={(outfitId) =>
                     toggleOutfitSelection(outfitId, null)
                   }
@@ -365,6 +398,7 @@ export function CalendarDayModal({
                   isLoadingOutfits={isLoadingOutfits}
                   isCreatingEntry={isCreatingEntry}
                   isDeletingEntry={isDeletingEntry}
+                  canAddOccasion={!isBefore(startOfDay(selectedDate), startOfDay(new Date()))}
                   onToggleOccasion={toggleOccasion}
                   onAddOccasion={handleAddOccasion}
                   onEditOccasion={handleEditOccasion}
@@ -416,6 +450,19 @@ export function CalendarDayModal({
         cancelText="Cancel"
         variant="danger"
         isLoading={isDeletingEntry}
+      />
+
+      {/* Past Date Warning Dialog */}
+      <ConfirmDialog
+        open={isPastDateDialogOpen}
+        onOpenChange={setIsPastDateDialogOpen}
+        onConfirm={() => setIsPastDateDialogOpen(false)}
+        title="Cannot Add to Past Date"
+        description={pastDateDialogMessage}
+        confirmText="OK"
+        cancelText=""
+        variant="warning"
+        isLoading={false}
       />
     </>
   );
