@@ -15,6 +15,7 @@ import { LenisProvider } from "@/components/providers/lenis-provider";
 import { PageLoadingProvider } from "@/components/providers/page-loading-provider";
 import { GlobalUploadToast } from "@/components/upload/GlobalUploadToast";
 import { GlobalEditModal } from "@/components/modals/GlobalEditModal";
+import { RealtimeNotificationListener } from "@/components/notifications/RealtimeNotificationListener";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -64,6 +65,7 @@ export default function RootLayout({
                   <Toaster />
                   <GlobalUploadToast />
                   <GlobalEditModal />
+                  <RealtimeNotificationListener />
                   <Suspense fallback={null}>
                     <PageLoadingProvider />
                   </Suspense>

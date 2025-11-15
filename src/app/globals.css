@@ -1,5 +1,5 @@
 /* Google Fonts - Dela Gothic One */
-@import url('https://fonts.googleapis.com/css2?family=Dela+Gothic+One&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Dela+Gothic+One&display=swap");
 
 @import "tailwindcss";
 
@@ -42,13 +42,21 @@
 }
 
 .wizard-scrollbar::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, rgba(59, 130, 246, 0.6), rgba(6, 182, 212, 0.6));
+  background: linear-gradient(
+    180deg,
+    rgba(59, 130, 246, 0.6),
+    rgba(6, 182, 212, 0.6)
+  );
   border-radius: 3px;
   transition: all 0.3s ease;
 }
 
 .wizard-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, rgba(59, 130, 246, 0.8), rgba(6, 182, 212, 0.8));
+  background: linear-gradient(
+    180deg,
+    rgba(59, 130, 246, 0.8),
+    rgba(6, 182, 212, 0.8)
+  );
   box-shadow: 0 0 6px rgba(6, 182, 212, 0.5);
 }
 
@@ -90,12 +98,365 @@
   background: rgba(34, 211, 238, 0.5);
 }
 
+/* Ant Design Notification - Glassmorphism Style (matching GlassCard) */
+.ant-notification {
+  z-index: 9999 !important;
+  top: 80px !important; /* Position below navbar to avoid overlap */
+}
+
+.ant-notification-top {
+  top: 100px !important;
+}
+
+.ant-notification-topLeft {
+  top: 80px !important;
+  left: 24px !important;
+}
+
+.ant-notification-topRight {
+  top: 80px !important;
+  right: 24px !important;
+}
+
+/* Notification wrapper - container for each notice */
+.ant-notification-notice-wrapper {
+  margin-bottom: 12px !important;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+  background: rgba(15, 23, 42, 0.9) !important;
+  border-radius: 30px !important;
+}
+
+.ant-notification-notice {
+  /* GlassCard-like background */
+  background: rgba(
+    15,
+    23,
+    42,
+    0.85
+  ) !important; /* slate-900 with transparency */
+  backdrop-filter: brightness(1.15) blur(12px) saturate(180%) !important;
+  -webkit-backdrop-filter: brightness(1.15) blur(12px) saturate(180%) !important;
+  /* GlassCard-like border and glow */
+  border: 1px solid rgba(148, 163, 184, 0.3) !important; /* slate-400 with opacity */
+  border-radius: 16px !important;
+  /* GlassCard-like shadow (matching drop-shadow effect) */
+  filter: drop-shadow(-8px -10px 46px rgba(0, 0, 0, 0.37)) !important;
+  box-shadow: inset 6px 6px 0px -6px rgba(255, 255, 255, 0.7),
+    inset 0 0 8px 1px rgba(255, 255, 255, 0.7), 0 8px 32px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(148, 163, 184, 0.1), 0 0 20px rgba(6, 182, 212, 0.15) !important;
+
+  padding: 18px 20px !important;
+  min-width: 320px !important;
+  max-width: 420px !important;
+
+  /* GlassCard-like transition */
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+  position: relative !important;
+  overflow: hidden !important;
+  cursor: default !important;
+}
+
+/* Hover effect for better interactivity */
+.ant-notification-notice:hover {
+  background: rgba(15, 23, 42, 0.9) !important;
+  border-color: rgba(148, 163, 184, 0.4) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: inset 6px 6px 0px -6px rgba(255, 255, 255, 0.8),
+    inset 0 0 8px 1px rgba(255, 255, 255, 0.8), 0 12px 40px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(148, 163, 184, 0.15), 0 0 30px rgba(6, 182, 212, 0.2) !important;
+}
+
+/* GlassCard-like before pseudo element effect */
+.ant-notification-notice::before {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  border-radius: 16px !important;
+  box-shadow: inset 6px 6px 0px -6px rgba(255, 255, 255, 0.7),
+    inset 0 0 8px 1px rgba(255, 255, 255, 0.7) !important;
+  pointer-events: none !important;
+}
+
+.ant-notification-notice-message {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  font-size: 16px !important;
+  margin-bottom: 6px !important;
+  margin-left: 0 !important;
+  margin-top: 0 !important;
+  font-family: var(--font-bricolage-grotesque), sans-serif !important;
+  line-height: 1.5 !important;
+  position: relative !important;
+  z-index: 1 !important;
+  letter-spacing: -0.01em !important;
+}
+
+.ant-notification-notice-description {
+  color: rgba(226, 232, 240, 0.85) !important; /* slate-200 with opacity */
+  font-size: 14px !important;
+  line-height: 1.6 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  margin-left: 0 !important;
+  font-family: var(--font-poppins), sans-serif !important;
+  position: relative !important;
+  z-index: 1 !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+}
+
+.ant-notification-notice-icon {
+  color: #22d3ee !important; /* cyan-400 */
+  font-size: 22px !important;
+  margin-right: 14px !important;
+  margin-top: 0 !important;
+  position: relative !important;
+  z-index: 1 !important;
+  flex-shrink: 0 !important;
+  width: 24px !important;
+  height: 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Icon container with background */
+.ant-notification-notice-with-icon .ant-notification-notice-icon {
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 10px !important;
+  background: rgba(6, 182, 212, 0.15) !important;
+  border: 1px solid rgba(34, 211, 238, 0.3) !important;
+  margin-right: 14px !important;
+  margin-top: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+/* Content wrapper */
+.ant-notification-notice-content {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 0 !important;
+  flex: 1 !important;
+  min-width: 0 !important;
+  padding-right: 32px !important; /* Space for close button */
+}
+
+/* Layout with icon on left, title on top, description below */
+.ant-notification-notice-with-icon {
+  display: grid !important;
+  grid-template-columns: auto 1fr !important;
+  align-items: start !important;
+  width: 100% !important;
+}
+
+/* Icon spans both rows (title and description) */
+.ant-notification-notice-with-icon .ant-notification-notice-icon {
+  grid-column: 1 !important;
+  grid-row: 1 / 3 !important; /* Span both message and description rows */
+  align-self: start !important;
+}
+
+/* Title (message) in first row, second column */
+.ant-notification-notice-with-icon .ant-notification-notice-message {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  margin: 0 !important;
+  margin-bottom: 6px !important;
+}
+
+/* Description in second row, second column */
+.ant-notification-notice-with-icon .ant-notification-notice-description {
+  grid-column: 2 !important;
+  grid-row: 2 !important;
+  margin: 0 !important;
+  margin-top: 0 !important;
+}
+
+.ant-notification-notice-icon-success {
+  color: #34d399 !important; /* emerald-400 */
+}
+
+.ant-notification-notice-with-icon .ant-notification-notice-icon-success {
+  background: rgba(16, 185, 129, 0.15) !important;
+  border-color: rgba(52, 211, 153, 0.3) !important;
+}
+
+.ant-notification-notice-icon-error {
+  color: #f87171 !important; /* red-400 */
+}
+
+.ant-notification-notice-with-icon .ant-notification-notice-icon-error {
+  background: rgba(239, 68, 68, 0.15) !important;
+  border-color: rgba(248, 113, 113, 0.3) !important;
+}
+
+.ant-notification-notice-icon-warning {
+  color: #fbbf24 !important; /* amber-400 */
+}
+
+.ant-notification-notice-with-icon .ant-notification-notice-icon-warning {
+  background: rgba(245, 158, 11, 0.15) !important;
+  border-color: rgba(251, 191, 36, 0.3) !important;
+}
+
+.ant-notification-notice-icon-info {
+  color: #22d3ee !important; /* cyan-400 */
+}
+
+.ant-notification-notice-with-icon .ant-notification-notice-icon-info {
+  background: rgba(6, 182, 212, 0.15) !important;
+  border-color: rgba(34, 211, 238, 0.3) !important;
+}
+
+.ant-notification-notice-close {
+  color: #ffffff !important; /* slate-400 with opacity */
+  top: 14px !important;
+  right: 14px !important;
+  width: 24px !important;
+  height: 24px !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  position: absolute !important;
+  z-index: 10 !important;
+  background: rgba(15, 23, 42, 0.6) !important;
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+  border-radius: 6px !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+.ant-notification-notice-close:hover {
+  color: #ffffff !important;
+  background: rgba(239, 68, 68, 0.2) !important; /* red-500 with opacity */
+  border-color: rgba(239, 68, 68, 0.4) !important;
+  border-radius: 6px !important;
+  backdrop-filter: blur(6px) !important;
+  transform: scale(1.1) !important;
+}
+
+.ant-notification-notice-close:active {
+  transform: scale(0.95) !important;
+}
+
+.ant-notification-notice-btn {
+  margin-top: 14px !important;
+  position: relative !important;
+  z-index: 1 !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.ant-notification-notice-btn button {
+  background: rgba(6, 182, 212, 0.2) !important; /* cyan-500 with opacity */
+  border: 1px solid rgba(34, 211, 238, 0.4) !important; /* cyan-400 with opacity */
+  color: #a5f3fc !important; /* cyan-200 */
+  border-radius: 8px !important;
+  padding: 8px 16px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  backdrop-filter: blur(4px) !important;
+  box-shadow: inset 2px 2px 0px -2px rgba(255, 255, 255, 0.3),
+    0 2px 8px rgba(6, 182, 212, 0.2) !important;
+  cursor: pointer !important;
+  font-family: var(--font-poppins), sans-serif !important;
+}
+
+.ant-notification-notice-btn button:hover {
+  background: rgba(6, 182, 212, 0.3) !important;
+  border-color: rgba(34, 211, 238, 0.6) !important;
+  color: #ffffff !important;
+  transform: translateY(-2px) !important;
+  box-shadow: inset 2px 2px 0px -2px rgba(255, 255, 255, 0.4),
+    0 4px 12px rgba(6, 182, 212, 0.3), 0 0 20px rgba(6, 182, 212, 0.2) !important;
+}
+
+.ant-notification-notice-btn button:active {
+  transform: translateY(0) !important;
+}
+
+/* Animation for notification entrance (GlassCard-like smooth transition) */
+.ant-notification-notice {
+  animation: slideInDown 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+}
+
+.ant-notification-notice-enter {
+  animation: slideInDown 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+}
+
+.ant-notification-notice-leave {
+  animation: slideOutUp 0.3s cubic-bezier(0.55, 0.06, 0.68, 0.19) !important;
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-30px) scale(0.92);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes slideOutUp {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+    filter: blur(2px);
+  }
+}
+
+/* Responsive design for mobile */
+@media (max-width: 640px) {
+  .ant-notification-notice {
+    min-width: calc(100vw - 32px) !important;
+    max-width: calc(100vw - 32px) !important;
+    padding: 16px 18px !important;
+    margin-left: 16px !important;
+    margin-right: 16px !important;
+  }
+
+  .ant-notification-notice-message {
+    font-size: 15px !important;
+  }
+
+  .ant-notification-notice-description {
+    font-size: 13px !important;
+  }
+
+  .ant-notification-notice-icon {
+    font-size: 20px !important;
+  }
+
+  .ant-notification-notice-with-icon .ant-notification-notice-icon {
+    width: 36px !important;
+    height: 36px !important;
+  }
+}
+
 /* Fade in scrollbar when scrolling */
 @supports selector(::-webkit-scrollbar) {
   .modal-scrollbar {
     scroll-behavior: smooth;
   }
-  
+
   .modal-scrollbar::-webkit-scrollbar-thumb {
     background: rgba(34, 211, 238, 0.1);
   }
@@ -162,7 +523,6 @@
   background: rgba(34, 211, 238, 0.35);
   box-shadow: 0 0 6px rgba(34, 211, 238, 0.3);
 }
-
 
 /* 1) Design tokens (HSL) */
 :root {
@@ -271,7 +631,8 @@
   --font-sans: var(--font-geist-sans), "Poppins", system-ui, sans-serif;
   --font-mono: var(--font-geist-mono);
   --font-dela-gothic: "Dela Gothic One", system-ui, sans-serif;
-  --font-bricolage-grotesque: var(--font-bricolage-grotesque), system-ui, sans-serif;
+  --font-bricolage-grotesque: var(--font-bricolage-grotesque), system-ui,
+    sans-serif;
 }
 
 /* 4) Base applies */
@@ -283,10 +644,11 @@
   html {
     /* Hide scrollbar for Chrome, Safari and Opera */
     scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none;  /* Internet Explorer 10+ */
+    -ms-overflow-style: none; /* Internet Explorer 10+ */
   }
 
-  html.lenis, html.lenis body {
+  html.lenis,
+  html.lenis body {
     height: auto;
   }
 
@@ -306,10 +668,11 @@
     pointer-events: none;
   }
 
-  html, body {
+  html,
+  body {
     /* Hide scrollbar for Chrome, Safari and Opera */
     scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none;  /* Internet Explorer 10+ */
+    -ms-overflow-style: none; /* Internet Explorer 10+ */
   }
 
   html::-webkit-scrollbar,
@@ -327,7 +690,6 @@
 .font-bricolage {
   font-family: var(--font-bricolage-grotesque);
 }
-
 
 /* Word-by-word animation */
 @keyframes word-appear {
@@ -544,4 +906,166 @@
 
 .glass-button-ghost:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.1);
+}
+
+/* Glassmorphism Toast Notifications */
+.glass-toast {
+  background: rgba(15, 23, 42, 0.7) !important;
+  backdrop-filter: blur(16px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+  border: 1px solid rgba(34, 211, 238, 0.2) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset, 0 0 20px rgba(34, 211, 238, 0.1) !important;
+  padding: 16px !important;
+  min-width: 320px !important;
+  max-width: 420px !important;
+  color: white !important;
+  font-family: var(--font-bricolage-grotesque) !important;
+  animation: slideInRight 0.3s ease-out !important;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+/* Toast container positioning */
+[data-sonner-toaster] {
+  position: fixed !important;
+  bottom: 16px !important;
+  right: 16px !important;
+  z-index: 9999 !important;
+}
+
+/* Toast content layout */
+.glass-toast [data-title],
+.glass-toast .toast-title {
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  color: white !important;
+  margin-bottom: 4px !important;
+  line-height: 1.4 !important;
+}
+
+.glass-toast [data-description],
+.glass-toast .toast-description {
+  font-size: 13px !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  line-height: 1.5 !important;
+  margin-top: 4px !important;
+}
+
+/* Toast icon styling */
+.glass-toast [data-icon],
+.glass-toast svg[data-icon] {
+  width: 20px !important;
+  height: 20px !important;
+  margin-right: 12px !important;
+  flex-shrink: 0 !important;
+}
+
+/* Toast close button */
+.glass-toast [data-close-button],
+.glass-toast button[data-close-button] {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 6px !important;
+  width: 24px !important;
+  height: 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: rgba(255, 255, 255, 0.6) !important;
+  transition: all 0.2s ease !important;
+  margin-left: 12px !important;
+}
+
+.glass-toast [data-close-button]:hover,
+.glass-toast button[data-close-button]:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  color: white !important;
+}
+
+/* Toast action button */
+.glass-toast [data-button],
+.glass-toast button[data-button] {
+  background: rgba(34, 211, 238, 0.2) !important;
+  border: 1px solid rgba(34, 211, 238, 0.3) !important;
+  border-radius: 8px !important;
+  padding: 6px 12px !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: rgb(165, 243, 252) !important;
+  transition: all 0.2s ease !important;
+  margin-top: 8px !important;
+}
+
+.glass-toast [data-button]:hover,
+.glass-toast button[data-button]:hover {
+  background: rgba(34, 211, 238, 0.3) !important;
+  border-color: rgba(34, 211, 238, 0.4) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Success toast variant */
+.glass-toast[data-type="success"] {
+  border-color: rgba(34, 197, 94, 0.3) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset, 0 0 20px rgba(34, 197, 94, 0.15) !important;
+}
+
+.glass-toast[data-type="success"] [data-icon] {
+  color: rgb(74, 222, 128) !important;
+}
+
+/* Error toast variant */
+.glass-toast[data-type="error"] {
+  border-color: rgba(239, 68, 68, 0.3) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset, 0 0 20px rgba(239, 68, 68, 0.15) !important;
+}
+
+.glass-toast[data-type="error"] [data-icon] {
+  color: rgb(248, 113, 113) !important;
+}
+
+/* Warning toast variant */
+.glass-toast[data-type="warning"] {
+  border-color: rgba(251, 146, 60, 0.3) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset, 0 0 20px rgba(251, 146, 60, 0.15) !important;
+}
+
+.glass-toast[data-type="warning"] [data-icon] {
+  color: rgb(251, 146, 60) !important;
+}
+
+/* Info toast variant */
+.glass-toast[data-type="info"] {
+  border-color: rgba(59, 130, 246, 0.3) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset, 0 0 20px rgba(59, 130, 246, 0.15) !important;
+}
+
+.glass-toast[data-type="info"] [data-icon] {
+  color: rgb(96, 165, 250) !important;
 }
