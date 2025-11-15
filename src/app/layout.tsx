@@ -5,14 +5,17 @@ import {
   Poppins,
   Bricolage_Grotesque,
 } from "next/font/google";
+import { Suspense } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/components/providers/auth-provider";
 import { GoogleAuthProvider } from "@/components/providers/google-oauth-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { OnboardingProvider } from "@/components/providers/onboarding-provider";
 import { LenisProvider } from "@/components/providers/lenis-provider";
+import { PageLoadingProvider } from "@/components/providers/page-loading-provider";
 import { GlobalUploadToast } from "@/components/upload/GlobalUploadToast";
 import { GlobalEditModal } from "@/components/modals/GlobalEditModal";
+import { RealtimeNotificationListener } from "@/components/notifications/RealtimeNotificationListener";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -62,6 +65,10 @@ export default function RootLayout({
                   <Toaster />
                   <GlobalUploadToast />
                   <GlobalEditModal />
+                  <RealtimeNotificationListener />
+                  <Suspense fallback={null}>
+                    <PageLoadingProvider />
+                  </Suspense>
                 </OnboardingProvider>
               </GoogleAuthProvider>
             </QueryProvider>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
 import {
   Shirt,
   Sparkles,
@@ -27,6 +28,7 @@ import {
 import { useAuthStore } from "@/store/auth-store";
 import GlassCard from "@/components/ui/glass-card";
 import { NavbarAuthSection } from "@/components/layout/navbar-auth-section";
+import { notificationAPI } from "@/lib/api";
 
 // -------------------- nav data --------------------
 const mainNavigationItems = [
@@ -36,17 +38,23 @@ const mainNavigationItems = [
   { path: "/daily", label: "Daily", icon: Calendar, enabled: false },
   { path: "/calendar", label: "Calendar", icon: CalendarDays, enabled: true },
   { path: "/community", label: "Community", icon: Users, enabled: true },
+<<<<<<< HEAD
   { path: "/collections", label: "Collection", icon: ImgIcon, enabled: true },
+=======
+>>>>>>> 60ba4c70531a3acd2854adef8da637a3cdb382b7
   { path: "/favorites", label: "Favorites", icon: Heart, enabled: false },
 ];
 
 const personalNavigationItems = [
+<<<<<<< HEAD
   {
     path: "/subscription",
     label: "Subscription",
     icon: CreditCard,
     enabled: true,
   },
+=======
+>>>>>>> 60ba4c70531a3acd2854adef8da637a3cdb382b7
   { path: "/notifications", label: "Notifications", icon: Bell, enabled: true },
   { path: "/collections", label: "Collections", icon: ImgIcon, enabled: false },
 ];
@@ -60,6 +68,21 @@ export function Navbar() {
   }>({});
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+
+  // Fetch unread notification count (only for badge display)
+  const { data: unreadCount } = useQuery({
+    queryKey: ["notifications-unread-count", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const userId = parseInt(user.id, 10);
+      if (isNaN(userId)) return null;
+      const response = await notificationAPI.getUnreadCount(userId);
+      return response.data ?? null;
+    },
+    enabled: !!user?.id && !isFirstTime,
+    staleTime: 1000 * 30, // 30 seconds
+    refetchInterval: 1000 * 30, // Refetch every 30 seconds
+  });
 
   useEffect(() => {
     // Calculate tab positions for the indicator
@@ -296,10 +319,17 @@ export function Navbar() {
                       className="relative text-white/80 hover:text-white hover:bg-white/10 rounded-full p-2.5 cursor-pointer"
                       disabled={!item.enabled}
                     >
-                      <Icon className="w-100 h-100" />
-                      {item.path === "/notifications" && item.enabled && (
-                        <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
-                      )}
+                      <Icon className="w-5 h-5" />
+                      {item.path === "/notifications" &&
+                        item.enabled &&
+                        typeof unreadCount === "number" &&
+                        unreadCount > 0 && (
+                          <motion.span
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            className="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-slate-900"
+                          />
+                        )}
                     </Button>
                   );
 
@@ -317,24 +347,6 @@ export function Navbar() {
                   );
                 })}
               </div>
-            )}
-
-            {/* Messages */}
-            {isInitialized && user && !isFirstTime && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="relative text-white/80 hover:text-white hover:bg-white/10 rounded-full p-2.5"
-                  >
-                    <MessageSquare className="w-6 h-6" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Đang hoàn thiện</p>
-                </TooltipContent>
-              </Tooltip>
             )}
 
             {/* Auth Section */}

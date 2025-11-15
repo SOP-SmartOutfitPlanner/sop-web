@@ -151,7 +151,6 @@ const GlassCard: React.FC<GlassCardProps> = ({
         .glass-card-content {
           position: relative;
           z-index: 1;
-          display: flex;
           flex-wrap: wrap;
           align-items: center;
           justify-content: center;

@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { authAPI, ApiError, apiClient, userAPI } from "@/lib/api";
 import { extractUserFromToken, isAdminUser } from "@/lib/utils/jwt";
 import { queryClient } from "@/lib/query-client";
+import { getDeviceToken, registerDeviceForNotifications, requestNotificationPermission } from "@/lib/utils/device-token";
 import type {
   User,
   LoginRequest,
@@ -92,11 +93,15 @@ export const useAuthStore = create<AuthStore>((set) => ({
         updatedAt: undefined,
       };
 
-      // Fetch user profile to check isFirstTime
+      // Fetch user profile to check isFirstTime and get avatar
       let isFirstTime = false;
       try {
         const profileResponse = await userAPI.getUserProfile();
         isFirstTime = profileResponse.data.isFirstTime;
+        // Update avatar from profile
+        if (profileResponse.data.avtUrl) {
+          user.avatar = profileResponse.data.avtUrl;
+        }
       } catch (profileError) {
         console.error("Failed to fetch user profile:", profileError);
         // Continue with login success even if profile fetch fails
@@ -121,6 +126,45 @@ export const useAuthStore = create<AuthStore>((set) => ({
         requiresVerification: false,
         pendingVerificationEmail: null,
       });
+
+      // Log login success
+      console.log("🔐 User logged in successfully (Email/Password):", {
+        userId: user.id,
+        email: user.email,
+        displayName: user.displayName,
+        role: user.role,
+        isFirstTime,
+      });
+
+      // Register device token for notifications (non-blocking)
+      // Register device token regardless of permission status
+      if (typeof window !== "undefined") {
+        console.log("📱 Starting device token registration process...");
+        
+        // Get device token first
+        const deviceToken = getDeviceToken();
+        const userId = parseInt(userInfo.id, 10);
+        
+        if (isNaN(userId)) {
+          console.error("❌ Invalid userId for device registration:", userInfo.id);
+        } else {
+          console.log("📱 Device token and userId ready:", { userId, deviceToken });
+          
+          // Request permission (but don't wait for it)
+          requestNotificationPermission()
+            .then((hasPermission) => {
+              console.log("📱 Notification permission status:", hasPermission ? "granted" : "denied/default");
+            })
+            .catch((err) => {
+              console.warn("⚠️ Error requesting notification permission:", err);
+            });
+          
+          // Register device token regardless of permission
+          registerDeviceForNotifications(userId, deviceToken).catch((err) => {
+            console.error("❌ Failed to register device for notifications:", err);
+          });
+        }
+      }
 
       return { success: true, isFirstTime };
     } catch (error: unknown) {
@@ -190,6 +234,44 @@ export const useAuthStore = create<AuthStore>((set) => ({
         error: null,
         successMessage: "Admin login successful",
       });
+
+      // Log admin login success
+      console.log("🔐 Admin logged in successfully:", {
+        userId: user.id,
+        email: user.email,
+        displayName: user.displayName,
+        role: user.role,
+      });
+
+      // Register device token for notifications (non-blocking)
+      // Register device token regardless of permission status
+      if (typeof window !== "undefined") {
+        console.log("📱 Starting device token registration process (Admin)...");
+        
+        // Get device token first
+        const deviceToken = getDeviceToken();
+        const userId = parseInt(userInfo.id, 10);
+        
+        if (isNaN(userId)) {
+          console.error("❌ Invalid userId for device registration:", userInfo.id);
+        } else {
+          console.log("📱 Device token and userId ready:", { userId, deviceToken });
+          
+          // Request permission (but don't wait for it)
+          requestNotificationPermission()
+            .then((hasPermission) => {
+              console.log("📱 Notification permission status:", hasPermission ? "granted" : "denied/default");
+            })
+            .catch((err) => {
+              console.warn("⚠️ Error requesting notification permission:", err);
+            });
+          
+          // Register device token regardless of permission
+          registerDeviceForNotifications(userId, deviceToken).catch((err) => {
+            console.error("❌ Failed to register device for notifications:", err);
+          });
+        }
+      }
 
       return true;
     } catch (error: unknown) {
@@ -274,11 +356,15 @@ export const useAuthStore = create<AuthStore>((set) => ({
         updatedAt: undefined,
       };
 
-      // Fetch user profile to check isFirstTime
+      // Fetch user profile to check isFirstTime and get avatar
       let isFirstTime = false;
       try {
         const profileResponse = await userAPI.getUserProfile();
         isFirstTime = profileResponse.data.isFirstTime;
+        // Update avatar from profile
+        if (profileResponse.data.avtUrl) {
+          user.avatar = profileResponse.data.avtUrl;
+        }
       } catch (profileError) {
         console.error("Failed to fetch user profile:", profileError);
       }
@@ -301,6 +387,45 @@ export const useAuthStore = create<AuthStore>((set) => ({
         requiresVerification: false,
         pendingVerificationEmail: null,
       });
+
+      // Log Google login success
+      console.log("🔐 User logged in successfully (Google OAuth):", {
+        userId: user.id,
+        email: user.email,
+        displayName: user.displayName,
+        role: user.role,
+        isFirstTime,
+      });
+
+      // Register device token for notifications (non-blocking)
+      // Register device token regardless of permission status
+      if (typeof window !== "undefined") {
+        console.log("📱 Starting device token registration process (Google OAuth)...");
+        
+        // Get device token first
+        const deviceToken = getDeviceToken();
+        const userId = parseInt(userInfo.id, 10);
+        
+        if (isNaN(userId)) {
+          console.error("❌ Invalid userId for device registration:", userInfo.id);
+        } else {
+          console.log("📱 Device token and userId ready:", { userId, deviceToken });
+          
+          // Request permission (but don't wait for it)
+          requestNotificationPermission()
+            .then((hasPermission) => {
+              console.log("📱 Notification permission status:", hasPermission ? "granted" : "denied/default");
+            })
+            .catch((err) => {
+              console.warn("⚠️ Error requesting notification permission:", err);
+            });
+          
+          // Register device token regardless of permission
+          registerDeviceForNotifications(userId, deviceToken).catch((err) => {
+            console.error("❌ Failed to register device for notifications:", err);
+          });
+        }
+      }
 
       return {
         success: true,
