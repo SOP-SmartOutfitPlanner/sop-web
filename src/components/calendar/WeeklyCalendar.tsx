@@ -257,58 +257,80 @@ export function WeeklyCalendar({
                                 {entry.outfits.length > 1 && (
                                   <Tooltip
                                     title={
-                                      <div className="space-y-2">
-                                        <div className="text-xs font-semibold border-b border-white/20 pb-1">
-                                          More Outfits
+                                      <div className="space-y-2 w-[320px]">
+                                        {/* Header */}
+                                        <div className="text-xs font-semibold border-b border-white/20 pb-1.5">
+                                          {isDaily
+                                            ? "Daily Outfit"
+                                            : entry.userOccasion?.occasionName || "Occasion"}
                                         </div>
-                                        <div className="space-y-2">
-                                          {entry.outfits
-                                            .slice(1)
-                                            .map((outfit, oIdx) => (
-                                              <div
-                                                key={oIdx}
-                                                className="space-y-1"
-                                              >
-                                                <div className="text-[20px] text-white/90 font-medium">
-                                                  • {outfit.outfitName}
-                                                </div>
-                                                {/* Outfit Images Grid */}
-                                                <div className="grid grid-cols-4 gap-1 pl-3">
-                                                  {outfit.outfitDetails.items
-                                                    .slice(0, 4)
-                                                    .map((item, itemIdx) => (
-                                                      <div
-                                                        key={itemIdx}
-                                                        className="aspect-square bg-white/5 rounded overflow-hidden relative"
-                                                      >
-                                                        <Image
-                                                          src={item.imgUrl}
-                                                          alt={item.name}
-                                                          className="object-cover"
-                                                          fill
-                                                          sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-                                                          priority={false}
-                                                          loading="lazy"
-                                                        />
-                                                      </div>
-                                                    ))}
-                                                </div>
-                                                {outfit.outfitDetails.items
-                                                  .length > 4 && (
-                                                  <div className="text-[9px] text-white/50 pl-3">
-                                                    +
-                                                    {outfit.outfitDetails.items
-                                                      .length - 4}{" "}
-                                                    more items
-                                                  </div>
-                                                )}
+
+                                        {/* Occasion Details */}
+                                        {!isDaily && (
+                                          <div className="space-y-1">
+                                            {entry.userOccasion?.name && (
+                                              <div className="text-[11px] text-white/80">
+                                                <span className="text-white/50">📝 Name:</span>{" "}
+                                                {entry.userOccasion.name}
                                               </div>
-                                            ))}
+                                            )}
+                                            {entry.userOccasion?.startTime && (
+                                              <div className="text-[11px] text-white/80">
+                                                <span className="text-white/50">🕒 Time:</span>{" "}
+                                                {format(new Date(entry.userOccasion.startTime), "HH:mm")}
+                                              </div>
+                                            )}
+                                          </div>
+                                        )}
+
+                                        {/* Outfits List */}
+                                        <div className="space-y-2 pt-1 border-t border-white/10">
+                                          <div className="text-[10px] text-white/60 font-medium">
+                                            {entry.outfits.length} Outfit{entry.outfits.length > 1 ? "s" : ""}:
+                                          </div>
+                                          {entry.outfits.map((outfit, oIdx) => (
+                                            <div key={oIdx} className="space-y-1.5">
+                                              <div className="text-[11px] text-white/90 font-medium">
+                                                • {outfit.outfitName}
+                                              </div>
+                                              {/* Outfit Items Preview Grid */}
+                                              <div className="grid grid-cols-4 gap-1 pl-3">
+                                                {outfit.outfitDetails.items
+                                                  .slice(0, 4)
+                                                  .map((item, itemIdx) => (
+                                                    <div
+                                                      key={itemIdx}
+                                                      className="aspect-square bg-white/5 rounded overflow-hidden border border-white/10 relative"
+                                                    >
+                                                      <Image
+                                                        src={item.imgUrl}
+                                                        alt={item.name}
+                                                        className="w-full object-cover"
+                                                        fill
+                                                        priority={false}
+                                                        loading="lazy"
+                                                      />
+                                                    </div>
+                                                  ))}
+                                              </div>
+                                              {outfit.outfitDetails.items.length > 4 && (
+                                                <div className="text-[9px] text-white/50 pl-3">
+                                                  +{outfit.outfitDetails.items.length - 4} more items
+                                                </div>
+                                              )}
+                                            </div>
+                                          ))}
                                         </div>
                                       </div>
                                     }
                                     placement="right"
-                                    styles={{ root: { maxWidth: "550px" } }}
+                                    mouseEnterDelay={0.2}
+                                    styles={{ 
+                                      root: { 
+                                        maxWidth: "320px",
+                                        minWidth: "320px"
+                                      } 
+                                    }}
                                   >
                                     <div className="mt-1 text-center cursor-help">
                                       <span className="text-[9px] px-2 py-0.5 rounded-full bg-purple-500/30 text-purple-200 hover:bg-purple-500/40 transition-all">
