@@ -89,6 +89,30 @@ export const CalenderAPI = {
   },
 
   createCalendarEntry: async (data: CreateCalenderRequest): Promise<CreateCalenderResponse> => {
+    // Validate outfitIds array
+    if (!data.outfitIds || data.outfitIds.length === 0) {
+      throw new Error("outfitIds array must contain at least one outfit ID");
+    }
+
+    // Validate request based on isDaily flag
+    if (data.isDaily) {
+      // isDaily = true: Must have time, must NOT have userOccasionId
+      if (!data.time) {
+        throw new Error("time is required when isDaily is true");
+      }
+      if (data.userOccasionId) {
+        throw new Error("userOccasionId must not be provided when isDaily is true");
+      }
+    } else {
+      // isDaily = false: Must have userOccasionId, must NOT have time
+      if (!data.userOccasionId) {
+        throw new Error("userOccasionId is required when isDaily is false");
+      }
+      if (data.time) {
+        throw new Error("time must not be provided when isDaily is false");
+      }
+    }
+
     return apiClient.post<CreateCalenderResponse>(`/outfits/calendar`, data);
   },
 

@@ -2,16 +2,20 @@
 
 import { memo, useCallback } from "react";
 import { Search, Heart, X } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import GlassButton from "@/components/ui/glass-button";
 import { useOutfitStore } from "@/store/outfit-store";
+import { Input } from "antd";
 
 const OutfitFiltersComponent = () => {
-  const { searchQuery, setSearchQuery, showFavorites, setShowFavorites } = useOutfitStore();
+  const { searchQuery, setSearchQuery, showFavorites, setShowFavorites } =
+    useOutfitStore();
 
-  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
-  }, [setSearchQuery]);
+  const handleSearchChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setSearchQuery(e.target.value);
+    },
+    [setSearchQuery]
+  );
 
   const handleClearSearch = useCallback(() => {
     setSearchQuery("");
@@ -25,7 +29,7 @@ const OutfitFiltersComponent = () => {
     <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center">
       {/* Search */}
       <div className="relative flex-1">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white" />
         <Input
           type="text"
           placeholder="Search outfits..."
@@ -36,7 +40,7 @@ const OutfitFiltersComponent = () => {
         {searchQuery && (
           <button
             onClick={handleClearSearch}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-white hover:text-white/70"
           >
             <X className="w-5 h-5" />
           </button>
@@ -51,9 +55,7 @@ const OutfitFiltersComponent = () => {
           onClick={handleToggleFavorites}
           className="gap-2"
         >
-          <Heart
-            className={`w-4 h-4 ${showFavorites ? "fill-current" : ""}`}
-          />
+          <Heart className={`w-4 h-4 ${showFavorites ? "fill-current" : ""}`} />
           Favorites
         </GlassButton>
       </div>

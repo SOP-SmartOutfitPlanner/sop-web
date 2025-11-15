@@ -23,77 +23,84 @@ interface ItemCardProps {
   onToggle: (id: number) => void;
 }
 
-const ItemCard = memo(({ item, isSelected, onToggle }: ItemCardProps) => {
-  const handleClick = () => {
-    if (item.id) onToggle(item.id);
-  };
+const ItemCard = memo(
+  ({ item, isSelected, onToggle }: ItemCardProps) => {
+    const handleClick = () => {
+      if (item.id) onToggle(item.id);
+    };
 
-  return (
-    <div
-      onClick={handleClick}
-      className="group relative w-full flex flex-col cursor-pointer p-1"
-    >
-      {/* GlassCard wrapper */}
+    return (
       <div
-        className={
-          isSelected
-            ? "relative flex flex-col p-2 rounded-2xl transition-all duration-100 bg-linear-to-br from-cyan-300/30 via-blue-200/10 to-indigo-300/30 backdrop-blur-md border-2 border-cyan-400/60 shadow-lg shadow-cyan-500/40 ring-2 ring-cyan-400/30 ring-offset-2 ring-offset-transparent"
-            : "relative flex flex-col p-2 rounded-2xl transition-all duration-100 bg-linear-to-br from-cyan-300/30 via-blue-200/10 to-indigo-300/30 backdrop-blur-md border-2 border-white/20 hover:border-cyan-400/40"
-        }
+        onClick={handleClick}
+        className="group relative w-full flex flex-col cursor-pointer p-1"
       >
-        {/* Selection Indicator */}
-        <div className={
-          isSelected
-            ? "absolute top-2 right-2 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 border-2 bg-cyan-500 border-white shadow-xl scale-100"
-            : "absolute top-2 right-2 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 border-2 bg-white/20 backdrop-blur-md border-white/40 scale-90 opacity-60 group-hover:opacity-100 group-hover:scale-100"
-        }>
-          {isSelected && <CheckCircle2 className="w-5 h-5 text-white" />}
-        </div>
+        {/* GlassCard wrapper */}
+        <div
+          className={
+            isSelected
+              ? "relative flex flex-col p-2 rounded-2xl transition-all duration-100 bg-linear-to-br from-cyan-300/30 via-blue-200/10 to-indigo-300/30 backdrop-blur-md border-2 border-cyan-400/60 shadow-lg shadow-cyan-500/40 ring-2 ring-cyan-400/30 ring-offset-2 ring-offset-transparent"
+              : "relative flex flex-col p-2 rounded-2xl transition-all duration-100 bg-linear-to-br from-cyan-300/30 via-blue-200/10 to-indigo-300/30 backdrop-blur-md border-2 border-white/20 hover:border-cyan-400/40"
+          }
+        >
+          {/* Selection Indicator */}
+          <div
+            className={
+              isSelected
+                ? "absolute top-2 right-2 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 border-2 bg-cyan-500 border-white shadow-xl scale-100"
+                : "absolute top-2 right-2 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 border-2 bg-white/20 backdrop-blur-md border-white/40 scale-90 opacity-60 group-hover:opacity-100 group-hover:scale-100"
+            }
+          >
+            {isSelected && <CheckCircle2 className="w-5 h-5 text-white" />}
+          </div>
 
-        {/* Image Container */}
-        <div className="bg-white/5 rounded-lg aspect-square overflow-hidden relative mb-2">
-          <Image
-            src={item.imgUrl}
-            alt={item.name}
-            width="100%"
-            height="100%"
-            className="object-cover rounded-lg"
-            preview={false}
-            loading="lazy"
-            placeholder={false}
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              display: 'block',
-              borderRadius: '0.5rem'
-            }}
-            wrapperClassName="w-full h-full"
-            rootClassName="w-full h-full !block"
-          />
-        </div>
+          {/* Image Container */}
+          <div className="bg-white/5 rounded-lg aspect-square overflow-hidden relative mb-2">
+            <Image
+              src={item.imgUrl}
+              alt={item.name}
+              width="100%"
+              height="100%"
+              className="object-cover rounded-lg"
+              preview={false}
+              loading="lazy"
+              placeholder={false}
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                display: "block",
+                borderRadius: "0.5rem",
+              }}
+              wrapperClassName="w-full h-full"
+              rootClassName="w-full h-full !block"
+            />
+          </div>
 
-        {/* Item Details */}
-        <div className="flex flex-col px-1">
-          {/* Name */}
-          <h3 className="text-white font-semibold text-base truncate mb-1.5">
-            {item.name}
-          </h3>
+          {/* Item Details */}
+          <div className="flex flex-col px-1">
+            {/* Name */}
+            <h3 className="text-white font-semibold text-base truncate mb-1.5">
+              {item.name}
+            </h3>
 
-          {/* Category */}
-          <span className="px-2 py-1 rounded-full bg-white/10 border border-white/20 text-white/70 text-xs font-medium truncate text-center">
-            {item.categoryName || item.category?.name || "Uncategorized"}
-          </span>
+            {/* Category */}
+            <span className="px-2 py-1 rounded-full bg-white/10 border border-white/20 text-white/70 text-xs font-medium truncate text-center">
+              {item.categoryName || item.category?.name || "Uncategorized"}
+            </span>
+          </div>
         </div>
       </div>
-    </div>
-  );
-}, (prevProps, nextProps) => {
-  return prevProps.isSelected === nextProps.isSelected &&
-         prevProps.item.id === nextProps.item.id;
-});
+    );
+  },
+  (prevProps, nextProps) => {
+    return (
+      prevProps.isSelected === nextProps.isSelected &&
+      prevProps.item.id === nextProps.item.id
+    );
+  }
+);
 
-ItemCard.displayName = 'ItemCard';
+ItemCard.displayName = "ItemCard";
 
 export function CreateOutfitDialog({
   open,
@@ -101,7 +108,8 @@ export function CreateOutfitDialog({
   wardrobeItems,
 }: CreateOutfitDialogProps) {
   const { mutate: createOutfit, isPending } = useCreateOutfit();
-  const { selectedItemIds, toggleItemSelection, clearSelectedItems } = useOutfitStore();
+  const { selectedItemIds, toggleItemSelection, clearSelectedItems } =
+    useOutfitStore();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [nameError, setNameError] = useState("");
@@ -115,21 +123,21 @@ export function CreateOutfitDialog({
     let items = wardrobeItems;
 
     if (filters.categoryId) {
-      items = items.filter(item => item.categoryId === filters.categoryId);
+      items = items.filter((item) => item.categoryId === filters.categoryId);
     }
     if (filters.seasonId) {
-      items = items.filter(item => 
-        item.seasons?.some(s => s.id === filters.seasonId)
+      items = items.filter((item) =>
+        item.seasons?.some((s) => s.id === filters.seasonId)
       );
     }
     if (filters.styleId) {
-      items = items.filter(item => 
-        item.styles?.some(s => s.id === filters.styleId)
+      items = items.filter((item) =>
+        item.styles?.some((s) => s.id === filters.styleId)
       );
     }
     if (filters.occasionId) {
-      items = items.filter(item => 
-        item.occasions?.some(o => o.id === filters.occasionId)
+      items = items.filter((item) =>
+        item.occasions?.some((o) => o.id === filters.occasionId)
       );
     }
 
@@ -163,7 +171,7 @@ export function CreateOutfitDialog({
     if (selectedItemIds.length === filteredWardrobeItems.length) {
       clearSelectedItems();
     } else {
-      filteredWardrobeItems.forEach(item => {
+      filteredWardrobeItems.forEach((item) => {
         if (item.id && !selectedItemIds.includes(item.id)) {
           toggleItemSelection(item.id);
         }
@@ -204,7 +212,10 @@ export function CreateOutfitDialog({
   }, [name, description, selectedItemIds, createOutfit, handleClose]);
 
   // Memoize selected set for O(1) lookup
-  const selectedSet = useMemo(() => new Set(selectedItemIds), [selectedItemIds]);
+  const selectedSet = useMemo(
+    () => new Set(selectedItemIds),
+    [selectedItemIds]
+  );
 
   // Prevent scrolling when dialog is open
   useEffect(() => {
@@ -245,7 +256,7 @@ export function CreateOutfitDialog({
       {/* Backdrop */}
       <div
         className="fixed h-full inset-0 bg-black/50 backdrop-blur-sm z-50 overflow-hidden overscroll-none"
-        style={{ position: 'fixed', inset: 0 }}
+        style={{ position: "fixed", inset: 0 }}
         onClick={() => {
           if (!isPending) {
             handleClose();
@@ -294,7 +305,10 @@ export function CreateOutfitDialog({
               <div className="shrink-0 mb-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="outfit-name" className="block text-sm font-medium text-white mb-1.5">
+                    <label
+                      htmlFor="outfit-name"
+                      className="block text-sm font-medium text-white mb-1.5"
+                    >
                       Outfit Name *
                     </label>
                     <input
@@ -314,7 +328,10 @@ export function CreateOutfitDialog({
                   </div>
 
                   <div>
-                    <label htmlFor="outfit-description" className="block text-sm font-medium text-white mb-1.5">
+                    <label
+                      htmlFor="outfit-description"
+                      className="block text-sm font-medium text-white mb-1.5"
+                    >
                       Description (Optional)
                     </label>
                     <input
@@ -334,11 +351,13 @@ export function CreateOutfitDialog({
                 <div className="flex items-center gap-3">
                   <Sparkles className="w-5 h-5 text-yellow-400" />
                   <span className="font-bricolage text-base text-white font-semibold">
-                    {selectedItemIds.length} of {filteredWardrobeItems.length} items selected
+                    {selectedItemIds.length} of {filteredWardrobeItems.length}{" "}
+                    items selected
                   </span>
                   {Object.keys(filters).length > 0 && (
                     <span className="px-2.5 py-1 rounded-full bg-cyan-500/20 border border-cyan-400/40 text-cyan-200 text-xs font-medium">
-                      {Object.keys(filters).length} filter{Object.keys(filters).length > 1 ? 's' : ''} active
+                      {Object.keys(filters).length} filter
+                      {Object.keys(filters).length > 1 ? "s" : ""} active
                     </span>
                   )}
                 </div>
@@ -362,13 +381,18 @@ export function CreateOutfitDialog({
                     textColor="white"
                     size="sm"
                   >
-                    {selectedItemIds.length === filteredWardrobeItems.length ? "Deselect All" : "Select All"}
+                    {selectedItemIds.length === filteredWardrobeItems.length
+                      ? "Deselect All"
+                      : "Select All"}
                   </GlassButton>
                 </div>
               </div>
 
               {/* Items Grid */}
-              <div className="flex-1 overflow-y-auto min-h-0 hide-scrollbar" data-lenis-prevent>
+              <div
+                className="flex-1 overflow-y-auto min-h-0 hide-scrollbar"
+                data-lenis-prevent
+              >
                 {filteredWardrobeItems.length === 0 ? (
                   <div className="flex items-center justify-center h-full">
                     <div className="text-center">
@@ -376,16 +400,20 @@ export function CreateOutfitDialog({
                         <Sparkles className="w-8 h-8 text-white/50" />
                       </div>
                       <p className="text-white/70 font-bricolage text-lg">
-                        {Object.keys(filters).length > 0 ? "No items match your filters" : "No wardrobe items found"}
+                        {Object.keys(filters).length > 0
+                          ? "No items match your filters"
+                          : "No wardrobe items found"}
                       </p>
                       <p className="text-white/50 text-sm mt-1">
-                        {Object.keys(filters).length > 0 ? "Try adjusting your filters" : "Add items to your wardrobe first"}
+                        {Object.keys(filters).length > 0
+                          ? "Try adjusting your filters"
+                          : "Add items to your wardrobe first"}
                       </p>
                     </div>
                   </div>
                 ) : (
                   <>
-                    <div className="grid grid-cols-4 gap-5">
+                    <div className="grid grid-cols-5 gap-5">
                       {paginatedItems.map((item) => (
                         <ItemCard
                           key={item.id}
@@ -400,7 +428,9 @@ export function CreateOutfitDialog({
                     {totalPages > 1 && (
                       <div className="flex items-center justify-center gap-2 mt-6 pb-2">
                         <button
-                          onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                          onClick={() =>
+                            setCurrentPage((prev) => Math.max(1, prev - 1))
+                          }
                           disabled={currentPage === 1}
                           className="px-3 py-1.5 rounded-lg bg-white/10 border border-white/20 text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-all"
                         >
@@ -408,16 +438,21 @@ export function CreateOutfitDialog({
                         </button>
 
                         <div className="flex items-center gap-1">
-                          {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => {
+                          {Array.from(
+                            { length: totalPages },
+                            (_, i) => i + 1
+                          ).map((page) => {
                             // Show first page, last page, current page, and pages around current
-                            const showPage = 
-                              page === 1 || 
-                              page === totalPages || 
-                              (page >= currentPage - 1 && page <= currentPage + 1);
-                            
-                            const showEllipsis = 
+                            const showPage =
+                              page === 1 ||
+                              page === totalPages ||
+                              (page >= currentPage - 1 &&
+                                page <= currentPage + 1);
+
+                            const showEllipsis =
                               (page === currentPage - 2 && currentPage > 3) ||
-                              (page === currentPage + 2 && currentPage < totalPages - 2);
+                              (page === currentPage + 2 &&
+                                currentPage < totalPages - 2);
 
                             if (showEllipsis) {
                               return (
@@ -446,7 +481,11 @@ export function CreateOutfitDialog({
                         </div>
 
                         <button
-                          onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                          onClick={() =>
+                            setCurrentPage((prev) =>
+                              Math.min(totalPages, prev + 1)
+                            )
+                          }
                           disabled={currentPage === totalPages}
                           className="px-3 py-1.5 rounded-lg bg-white/10 border border-white/20 text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-all"
                         >
@@ -482,7 +521,9 @@ export function CreateOutfitDialog({
 
                   <GlassButton
                     onClick={handleSubmit}
-                    disabled={isPending || selectedItemIds.length === 0 || !name.trim()}
+                    disabled={
+                      isPending || selectedItemIds.length === 0 || !name.trim()
+                    }
                     variant="custom"
                     backgroundColor="rgba(59, 130, 246, 0.6)"
                     borderColor="rgba(59, 130, 246, 0.8)"
