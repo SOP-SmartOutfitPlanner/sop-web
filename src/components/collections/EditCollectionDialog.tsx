@@ -8,7 +8,6 @@ import { useAuthStore } from "@/store/auth-store";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -94,8 +93,11 @@ export function EditCollectionDialog({
       
       collection.outfits?.forEach((entry) => {
         if (entry.outfit) {
-          // API returns outfit.id, not outfit.outfitId
-          const outfitId = (entry.outfit as any)?.id || (entry.outfit as any)?.outfitId;
+          // API may return outfit.id or outfit.outfitId
+          const outfit = entry.outfit;
+          const outfitId = 
+            ('id' in outfit && typeof outfit.id === 'number' ? outfit.id : null) ||
+            ('outfitId' in outfit && typeof outfit.outfitId === 'number' ? outfit.outfitId : null);
           if (outfitId) {
             outfitsMap.set(outfitId, {
               outfitId: outfitId,
@@ -181,7 +183,7 @@ export function EditCollectionDialog({
           const urlParts = thumbnailPreview.split("/");
           const filename = urlParts[urlParts.length - 1] || "thumbnail.jpg";
           thumbnailToSend = new File([blob], filename, { type: blob.type || "image/jpeg" });
-        } catch (error) {
+        } catch {
           throw new Error("Failed to load existing thumbnail image");
         }
       }
