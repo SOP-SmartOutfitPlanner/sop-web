@@ -38,7 +38,7 @@ const mainNavigationItems = [
   { path: "/daily", label: "Daily", icon: Calendar, enabled: false },
   { path: "/calendar", label: "Calendar", icon: CalendarDays, enabled: true },
   { path: "/community", label: "Community", icon: Users, enabled: true },
-  { path: "/favorites", label: "Favorites", icon: Heart, enabled: false },
+  { path: "/collections", label: "Collections", icon: ImgIcon, enabled: true },
 ];
 
 const personalNavigationItems = [
@@ -148,7 +148,7 @@ export function Navbar() {
           transform: isVisible ? "translateY(0)" : "translateY(-100%)",
         }}
       >
-        <div className="max-w-[1600px] mx-auto px-10 flex items-center justify-between gap-20">
+        <div className="max-w-[1600px] mx-auto  flex items-center justify-between gap-20">
           {/* PART 1: Logo - Left Corner */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}

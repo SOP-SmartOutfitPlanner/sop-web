@@ -25,6 +25,7 @@ export type {
   CollectionOutfitItem,
   CollectionItemDetail,
   CollectionMeta,
+  CollectionComment,
 } from "./collection-api";
 
 // Export Admin API
@@ -49,4 +50,12 @@ export type {
   NotificationsListResponse,
   GetNotificationsParams,
 } from "./notification-api";
+
+// Export Community API
+export { communityAPI } from "./community-api";
+export type { FollowerUser } from "./community-api";
+
+// Export Outfit API
+export { outfitAPI } from "./outfit-api";
+export type { Outfit, GetOutfitsRequest, GetOutfitsResponse } from "../../types/outfit";
 

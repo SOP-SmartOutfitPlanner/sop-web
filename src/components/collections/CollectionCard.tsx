@@ -2,10 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { formatDistanceToNow } from "date-fns";
 import {
   Bookmark,
-  Clock3,
   Globe2,
   Heart,
   Layers,
@@ -17,95 +15,27 @@ import {
 import GlassCard from "@/components/ui/glass-card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import type { CollectionRecord, CollectionItemDetail } from "@/lib/api";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import type { CollectionRecord } from "@/lib/api";
+import {
+  parseColorNames,
+  getAuthorInitials,
+  getCollectionThumbnail,
+  getCollectionFallbackImages,
+} from "@/lib/collections/utils";
 
 interface CollectionCardProps {
   collection: CollectionRecord;
   canManage?: boolean;
 }
 
-function parseColorNames(colorString: string | null): string | undefined {
-  if (!colorString) return undefined;
-  try {
-    const parsed = JSON.parse(colorString) as Array<{ name?: string }>;
-    const names = parsed
-      .map((entry) => entry?.name)
-      .filter((name): name is string => Boolean(name));
-    if (names.length === 0) return undefined;
-    return names.join(", ");
-  } catch (error) {
-    console.warn("Failed to parse color string", error);
-    return undefined;
-  }
-}
-
-function renderItemSummary(item: CollectionItemDetail) {
-  const colors = parseColorNames(item.color);
-  return (
-    <div
-      key={item.itemId}
-      className="rounded-xl border border-slate-700/30 bg-slate-900/60 p-3"
-    >
-      <div className="flex flex-col gap-1">
-        <p className="text-sm font-medium text-slate-200">{item.name}</p>
-        <p className="text-xs text-slate-400">
-          {item.categoryName}
-          {colors && <span className="text-slate-500"> • {colors}</span>}
-        </p>
-        {item.imgUrl && (
-          <a
-            href={item.imgUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="text-xs text-cyan-300 hover:text-cyan-200"
-          >
-            View item image
-          </a>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function getThumbnail(collection: CollectionRecord): string | undefined {
-  if (collection.thumbnailURL) return collection.thumbnailURL;
-  const firstOutfit = collection.outfits?.[0]?.outfit;
-  const firstItemWithImage = firstOutfit?.items.find((item) => item.imgUrl);
-  return firstItemWithImage?.imgUrl ?? undefined;
-}
-
-function getFallbackImages(collection: CollectionRecord, limit = 4): string[] {
-  const images: string[] = [];
-  for (const outfit of collection.outfits ?? []) {
-    for (const item of outfit.outfit.items) {
-      if (item.imgUrl && !images.includes(item.imgUrl)) {
-        images.push(item.imgUrl);
-        if (images.length >= limit) {
-          return images;
-        }
-      }
-    }
-  }
-  return images;
-}
-
-function getAuthorInitials(name: string) {
-  const matches = name
-    .split(" ")
-    .filter(Boolean)
-    .map((part) => part[0]?.toUpperCase())
-    .join("");
-  return matches.slice(0, 2) || "ST";
-}
-
 export function CollectionCard({
   collection,
   canManage: _canManage = false,
 }: CollectionCardProps) {
-  const thumbnail = getThumbnail(collection);
+  const thumbnail = getCollectionThumbnail(collection);
   const outfitsCount = collection.outfits?.length ?? 0;
-  const fallbackImages = getFallbackImages(collection);
+  const fallbackImages = getCollectionFallbackImages(collection);
 
   const publishedBadge = collection.isPublished
     ? {
@@ -202,7 +132,7 @@ export function CollectionCard({
               <h3 className="text-2xl font-bold text-white transition-colors group-hover:text-cyan-100 md:text-[26px]">
                 {collection.title}
               </h3>
-              <p className="text-sm leading-relaxed text-slate-300">
+              <p className="text-sm leading-relaxed text-slate-300 line-clamp-2">
                 {collection.shortDescription}
               </p>
             </div>
@@ -210,6 +140,13 @@ export function CollectionCard({
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3 text-sm">
                 <Avatar className="h-10 w-10 border border-white/20 bg-slate-800/80">
+                  {collection.avtUrl && (
+                    <AvatarImage
+                      src={collection.avtUrl}
+                      alt={collection.userDisplayName}
+                      className="object-cover"
+                    />
+                  )}
                   <AvatarFallback className="bg-cyan-500/25 text-sm font-semibold uppercase tracking-wide text-white">
                     {getAuthorInitials(collection.userDisplayName)}
                   </AvatarFallback>
@@ -230,13 +167,14 @@ export function CollectionCard({
                   <MessageCircle className="h-5 w-5 text-cyan-200" />
                   {collection.commentCount}
                 </span>
-                <span className="inline-flex items-center justify-center">
+                <span className="inline-flex items-center gap-2">
                   <Bookmark
                     className={cn(
                       "h-5 w-5 transition-colors",
                       collection.isSaved ? "text-amber-200" : "text-slate-300"
                     )}
                   />
+                  {collection.savedCount ?? 0}
                 </span>
               </div>
             </div>
