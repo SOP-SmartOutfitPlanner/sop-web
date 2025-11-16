@@ -274,7 +274,7 @@ export default function AdminUsersPage() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600">Đang tải dữ liệu...</p>
+          <p className="text-gray-600">Loading data...</p>
         </div>
       </div>
     );
@@ -285,7 +285,7 @@ export default function AdminUsersPage() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <p className="text-red-600 mb-4">Có lỗi xảy ra khi tải dữ liệu</p>
+          <p className="text-red-600 mb-4">An error occurred while loading data</p>
           <Button onClick={() => window.location.reload()}>Thử lại</Button>
         </div>
       </div>
@@ -297,12 +297,12 @@ export default function AdminUsersPage() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Quản lý Users</h1>
-          <p className="text-gray-600 mt-2">Quản lý người dùng và phân quyền</p>
+          <h1 className="text-3xl font-bold text-gray-900">Manage Users</h1>
+          <p className="text-gray-600 mt-2">Manage users and assign roles</p>
         </div>
         <Button className="bg-blue-600 hover:bg-blue-700">
           <UserPlus className="w-4 h-4 mr-2" />
-          Thêm User
+          Add User
         </Button>
       </div>
 

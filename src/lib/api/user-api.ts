@@ -131,6 +131,51 @@ class UserAPI {
     }
   }
 
+  /**
+   * Get stylist profile by ID
+   * API: GET /user/stylist/{userId}
+   */
+  async getStylistProfile(userId: number): Promise<ApiResponse<{
+    id: number;
+    displayName: string;
+    email: string;
+    avatarUrl: string | null;
+    location: string | null;
+    bio: string | null;
+    dob: string | null;
+    jobId: number | null;
+    jobName: string | null;
+    publishedCollectionsCount: number;
+    totalCollectionsLikes: number;
+    totalCollectionsSaves: number;
+    isFollowed: boolean;
+  }>> {
+    try {
+      const response = await apiClient.get<ApiResponse<{
+        id: number;
+        displayName: string;
+        email: string;
+        avatarUrl: string | null;
+        location: string | null;
+        bio: string | null;
+        dob: string | null;
+        jobId: number | null;
+        jobName: string | null;
+        publishedCollectionsCount: number;
+        totalCollectionsLikes: number;
+        totalCollectionsSaves: number;
+        isFollowed: boolean;
+      }>>(
+        `${this.BASE_PATH}/stylist/${userId}`
+      );
+
+      return response;
+    } catch (error) {
+      console.error("Failed to fetch stylist profile:", error);
+      throw error;
+    }
+  }
+
 }
 
 export const userAPI = new UserAPI();

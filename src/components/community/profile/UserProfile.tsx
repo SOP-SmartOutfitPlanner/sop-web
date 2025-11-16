@@ -42,8 +42,14 @@ export function UserProfile({ userId }: UserProfileProps) {
   // Custom hooks
   const { userProfile, isLoading, refreshCounts, setUserProfile } =
     useUserProfile(userId);
-  const { posts, isInitialLoading, isFetching, observerTarget, handleLike, refetch } =
-    useUserPosts(userId, currentUser?.id);
+  const {
+    posts,
+    isInitialLoading,
+    isFetching,
+    observerTarget,
+    handleLike,
+    refetch,
+  } = useUserPosts(userId, currentUser?.id);
   const { isFollowing, setIsFollowing, toggleFollow } = useFollowUser(
     userId,
     currentUser?.id,
@@ -77,12 +83,12 @@ export function UserProfile({ userId }: UserProfileProps) {
   const handleShare = () => {
     const url = `${window.location.origin}/community/profile/${userId}`;
     navigator.clipboard.writeText(url);
-    toast.success("Đã copy link profile");
+    toast.success("Profile link copied");
   };
 
   const handleReportPost = async (post: Post, reason: string) => {
     if (!currentUser?.id) {
-      const message = "Vui lòng đăng nhập";
+      const message = "Please login";
       toast.error(message);
       throw new Error(message);
     }
@@ -95,13 +101,13 @@ export function UserProfile({ userId }: UserProfileProps) {
         description: reason,
       });
 
-      toast.success("Cảm ơn bạn đã báo cáo", {
+      toast.success("Thank you for reporting", {
         description: response?.message,
       });
     } catch (error) {
       console.error("Error reporting post:", error);
       const errorMessage =
-        error instanceof Error ? error.message : "Không thể gửi báo cáo";
+        error instanceof Error ? error.message : "Cannot send report";
       toast.error(errorMessage);
       throw error instanceof Error ? error : new Error(errorMessage);
     }
@@ -118,20 +124,20 @@ export function UserProfile({ userId }: UserProfileProps) {
 
   const handleDeletePost = async (postId: number) => {
     if (!currentUser?.id) {
-      toast.error("Vui lòng đăng nhập");
+      toast.error("Please login");
       return;
     }
 
     try {
       await communityAPI.deletePost(postId);
-      toast.success("Bài viết đã được xóa");
-      
+      toast.success("Post deleted");
+
       // Refetch posts to update the list
       await refetch();
     } catch (error) {
       console.error("Error deleting post:", error);
       const errorMessage =
-        error instanceof Error ? error.message : "Không thể xóa bài viết";
+        error instanceof Error ? error.message : "Cannot delete post";
       toast.error(errorMessage);
       throw error;
     }
@@ -157,12 +163,12 @@ export function UserProfile({ userId }: UserProfileProps) {
 
   // Loading state
   if (isLoading || isInitialLoading) {
-    return <LoadingScreen message="Đang tải hồ sơ..." />;
+    return <LoadingScreen message="Loading profile..." />;
   }
 
   // Error state
   if (!userProfile) {
-    return <LoadingScreen message="Không tìm thấy người dùng" />;
+    return <LoadingScreen message="User not found" />;
   }
 
   return (
@@ -192,7 +198,7 @@ export function UserProfile({ userId }: UserProfileProps) {
           <div className="border-t border-border">
             {posts.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20">
-                <p className="text-muted-foreground">No posts yet</p>
+                <p className="text-muted-foreground">No posts found</p>
               </div>
             ) : (
               <div className="space-y-4 p-4">
@@ -208,7 +214,9 @@ export function UserProfile({ userId }: UserProfileProps) {
                     onLike={() => handleLike(parseInt(post.id))}
                     onReport={(reason) => handleReportPost(post, reason)}
                     onDeletePost={isOwnProfile ? handleDeletePost : undefined}
-                    onEditPost={isOwnProfile ? () => handleEditPost(post) : undefined}
+                    onEditPost={
+                      isOwnProfile ? () => handleEditPost(post) : undefined
+                    }
                     onTagClick={handleTagClick}
                   />
                 ))}
@@ -249,8 +257,11 @@ export function UserProfile({ userId }: UserProfileProps) {
 
       {/* Edit Post Dialog */}
       {editingPost && (
-        <Dialog open={!!editingPost} onOpenChange={(open) => !open && setEditingPost(null)}>
-          <DialogContent 
+        <Dialog
+          open={!!editingPost}
+          onOpenChange={(open) => !open && setEditingPost(null)}
+        >
+          <DialogContent
             showCloseButton={false}
             className="max-w-2xl max-h-[90vh] !overflow-hidden p-0 flex flex-col backdrop-blur-xl bg-gradient-to-br from-cyan-950/60 via-blue-950/50 to-indigo-950/60 border-2 border-cyan-400/25 shadow-2xl shadow-cyan-500/20"
           >
