@@ -19,95 +19,114 @@ interface CollectionListData {
   count: number;
 }
 
+type TabType = "all" | "published" | "drafts" | "saved";
+
+const STALE_TIME = 1000 * 60; // 1 minute
+const SKELETON_COUNT = 4;
+
 export function CollectionsScreen() {
   const { user } = useAuthStore();
-  const [activeTab, setActiveTab] = useState<
-    "all" | "published" | "drafts" | "saved"
-  >("all");
-  const userId = user?.id ? parseInt(user.id, 10) : null;
-
+  const [activeTab, setActiveTab] = useState<TabType>("all");
+  
+  const userId = useMemo(() => (user?.id ? parseInt(user.id, 10) : null), [user?.id]);
   const isStylist = useMemo(
     () => user?.role?.toUpperCase() === "STYLIST",
     [user?.role]
   );
 
-  // Fetch all collections
-  // For stylists, fetch their own collections to get drafts
-  // For regular users, fetch all published collections
-  const collectionsQuery = useQuery<CollectionListData>({
-    queryKey: [
-      ...COLLECTION_QUERY_KEYS.collections,
-      { role: user?.role, userId: isStylist ? userId : null },
-    ],
+  // Fetch all collections (for tab "all")
+  const allCollectionsQuery = useQuery<CollectionListData>({
+    queryKey: [...COLLECTION_QUERY_KEYS.collections, { type: "all" }],
     queryFn: async () => {
-      let collections: CollectionRecord[] = [];
-      let totalCount = 0;
-
-      if (isStylist && userId) {
-        // For stylists, get their own collections (includes drafts)
-        const { data } = await collectionAPI.getCollectionsByUserId(userId);
-        collections = data?.data ?? [];
-        totalCount = data?.metaData?.totalCount ?? collections.length;
-      } else {
-        // For regular users, get all published collections
-        const { data } = await collectionAPI.getCollections();
-        collections = data?.data ?? [];
-        collections = collections.filter(
-          (collection) => collection.isPublished
-        );
-        totalCount = data?.metaData?.totalCount ?? collections.length;
-      }
-
+      const { data } = await collectionAPI.getCollections();
       return {
-        collections,
-        count: totalCount,
+        collections: data?.data ?? [],
+        count: data?.metaData?.totalCount ?? data?.data?.length ?? 0,
       };
     },
-    staleTime: 1000 * 60,
-    enabled: activeTab !== "saved",
+    staleTime: STALE_TIME,
+    enabled: activeTab === "all",
+  });
+
+  // Fetch stylist's own collections (for tab "published" and "drafts")
+  const stylistCollectionsQuery = useQuery<CollectionListData>({
+    queryKey: [...COLLECTION_QUERY_KEYS.collections, { type: "stylist", userId }],
+    queryFn: async () => {
+      if (!userId) throw new Error("User ID is required");
+      
+      const { data } = await collectionAPI.getCollectionsByUserId(userId);
+      return {
+        collections: data?.data ?? [],
+        count: data?.metaData?.totalCount ?? data?.data?.length ?? 0,
+      };
+    },
+    staleTime: STALE_TIME,
+    enabled: isStylist && (activeTab === "published" || activeTab === "drafts") && !!userId,
   });
 
   // Fetch saved collections
   const savedCollectionsQuery = useQuery<CollectionListData>({
     queryKey: userId ? COLLECTION_QUERY_KEYS.savedCollections(userId) : [],
     queryFn: async () => {
-      if (!userId) {
-        throw new Error("User not authenticated");
-      }
+      if (!userId) throw new Error("User not authenticated");
+      
       const { data } = await collectionAPI.getSavedCollectionsByUserId(userId, {
         takeAll: true,
       });
-      const collections: CollectionRecord[] = data?.data ?? [];
-
       return {
-        collections,
-        count: data?.metaData?.totalCount ?? collections.length,
+        collections: data?.data ?? [],
+        count: data?.metaData?.totalCount ?? data?.data?.length ?? 0,
       };
     },
+    staleTime: STALE_TIME,
     enabled: activeTab === "saved" && !!userId,
-    staleTime: 1000 * 60,
   });
 
   const filteredCollections = useMemo<CollectionRecord[]>(() => {
-    if (activeTab === "saved") {
-      return savedCollectionsQuery.data?.collections ?? [];
+    switch (activeTab) {
+      case "saved":
+        return savedCollectionsQuery.data?.collections ?? [];
+      
+      case "all": {
+        const collections = allCollectionsQuery.data?.collections ?? [];
+        return isStylist 
+          ? collections 
+          : collections.filter((c) => c.isPublished);
+      }
+      
+      case "published":
+      case "drafts": {
+        const collections = stylistCollectionsQuery.data?.collections ?? [];
+        return filterCollectionsByStatus(collections, activeTab);
+      }
+      
+      default:
+        return [];
     }
-    if (!collectionsQuery.data) return [];
-    return filterCollectionsByStatus(
-      collectionsQuery.data.collections,
-      activeTab
-    );
-  }, [activeTab, collectionsQuery.data, savedCollectionsQuery.data]);
+  }, [
+    activeTab,
+    allCollectionsQuery.data,
+    stylistCollectionsQuery.data,
+    savedCollectionsQuery.data,
+    isStylist,
+  ]);
 
-  const isLoading =
-    activeTab === "saved"
-      ? savedCollectionsQuery.isLoading
-      : collectionsQuery.isLoading;
+  const isLoading = useMemo(() => {
+    switch (activeTab) {
+      case "saved":
+        return savedCollectionsQuery.isLoading;
+      case "all":
+        return allCollectionsQuery.isLoading;
+      default:
+        return stylistCollectionsQuery.isLoading;
+    }
+  }, [activeTab, allCollectionsQuery.isLoading, stylistCollectionsQuery.isLoading, savedCollectionsQuery.isLoading]);
 
-  const count =
-    activeTab === "saved"
+  const count = useMemo(() => {
+    return activeTab === "saved"
       ? savedCollectionsQuery.data?.count ?? 0
       : filteredCollections.length;
+  }, [activeTab, savedCollectionsQuery.data?.count, filteredCollections.length]);
 
   return (
     <div className="relative mx-auto w-full max-w-6xl px-6 pb-24 pt-20 space-y-16">
@@ -224,13 +243,10 @@ export function CollectionsScreen() {
 
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-semibold text-white">
-            {activeTab === "saved"
-              ? "Saved Collections"
-              : activeTab === "drafts"
-              ? "Draft collections"
-              : activeTab === "published"
-              ? "Published collections"
-              : "All collections"}
+            {activeTab === "saved" ? "Saved Collections" :
+             activeTab === "drafts" ? "Draft collections" :
+             activeTab === "published" ? "Published collections" :
+             "All collections"}
           </h2>
           <span className="text-sm text-slate-400">
             {count} {activeTab === "saved" ? "saved" : "curated"}{" "}
@@ -240,7 +256,7 @@ export function CollectionsScreen() {
 
         {isLoading ? (
           <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
-            {Array.from({ length: 4 }).map((_, index) => (
+            {Array.from({ length: SKELETON_COUNT }).map((_, index) => (
               <Skeleton
                 key={index}
                 className="h-64 rounded-3xl bg-slate-900/40"
