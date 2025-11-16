@@ -9,10 +9,13 @@ import GlassButton from "@/components/ui/glass-button";
 import { OutfitGrid } from "@/components/outfit/OutfitGrid";
 import { OutfitFilters } from "@/components/outfit/OutfitFilters";
 import { useOutfits, useDeleteOutfit } from "@/hooks/useOutfits";
+import { useCreateCalendarEntry, useUserOccasions } from "@/hooks/useCalendar";
 import { useOutfitStore } from "@/store/outfit-store";
 import { wardrobeAPI } from "@/lib/api/wardrobe-api";
 import { useAuthStore } from "@/store/auth-store";
 import { Outfit } from "@/types/outfit";
+import { format, startOfDay } from "date-fns";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 // Dynamic imports to avoid SSR issues with antd Image
 const CreateOutfitDialog = dynamic(
@@ -56,6 +59,17 @@ export default function OutfitPage() {
   } = useOutfitStore();
 
   const { mutate: deleteOutfit } = useDeleteOutfit();
+  const { mutate: createCalendarEntry, isPending: isCreatingEntry } = useCreateCalendarEntry();
+  const [isPastDateDialogOpen, setIsPastDateDialogOpen] = useState(false);
+
+  // Fetch today's occasions to find existing Daily occasion
+  const today = new Date();
+  const { data: todayOccasionsData } = useUserOccasions({
+    PageIndex: 1,
+    PageSize: 100,
+    takeAll: true,
+    Today: true,
+  });
 
   // Fetch outfits
   const { data, isLoading, error, isError } = useOutfits({
@@ -98,6 +112,64 @@ export default function OutfitPage() {
       deleteOutfit(outfitId);
     },
     [deleteOutfit]
+  );
+
+  const handleUseToday = useCallback(
+    (outfit: Outfit) => {
+      const todayDate = startOfDay(new Date());
+      const formattedDate = format(todayDate, "yyyy-MM-dd'T'HH:mm:ss");
+      const dateString = format(todayDate, "yyyy-MM-dd");
+
+      // Find existing Daily occasion for today
+      const todayOccasions = todayOccasionsData?.data?.data || [];
+      const existingDailyOccasion = todayOccasions.find(
+        (occ) =>
+          occ.name === "Daily" &&
+          format(new Date(occ.dateOccasion), "yyyy-MM-dd") === dateString &&
+          occ.occasionId === null
+      );
+
+      if (existingDailyOccasion) {
+        // Use existing Daily occasion
+        createCalendarEntry(
+          {
+            outfitIds: [outfit.id],
+            isDaily: false,
+            userOccasionId: existingDailyOccasion.id,
+            endTime: formattedDate,
+          },
+          {
+            onSuccess: () => {
+              // Optionally show success message
+              console.log("✅ Outfit added to today's calendar");
+            },
+            onError: (error) => {
+              console.error("❌ Failed to add outfit to calendar:", error);
+            },
+          }
+        );
+      } else {
+        // Create new Daily entry (backend will create Daily occasion)
+        createCalendarEntry(
+          {
+            outfitIds: [outfit.id],
+            isDaily: true,
+            time: formattedDate,
+            endTime: formattedDate,
+          },
+          {
+            onSuccess: () => {
+              // Optionally show success message
+              console.log("✅ Outfit added to today's calendar");
+            },
+            onError: (error) => {
+              console.error("❌ Failed to add outfit to calendar:", error);
+            },
+          }
+        );
+      }
+    },
+    [createCalendarEntry, todayOccasionsData]
   );
 
   // Prevent scrolling when dialog is open
@@ -226,6 +298,7 @@ export default function OutfitPage() {
           onEditOutfit={handleEditOutfit}
           onDeleteOutfit={handleDeleteOutfit}
           onViewOutfit={handleViewOutfit}
+          onUseToday={handleUseToday}
         />
 
         {/* Pagination */}
@@ -277,6 +350,19 @@ export default function OutfitPage() {
           outfit={viewingOutfit}
           onEdit={handleEditOutfit}
           onDelete={handleDeleteOutfit}
+        />
+
+        {/* Past Date Warning Dialog */}
+        <ConfirmDialog
+          open={isPastDateDialogOpen}
+          onOpenChange={setIsPastDateDialogOpen}
+          onConfirm={() => setIsPastDateDialogOpen(false)}
+          title="Cannot Add to Past Date"
+          description="You can only add outfits to calendar for today or future dates."
+          confirmText="OK"
+          cancelText=""
+          variant="warning"
+          isLoading={false}
         />
       </div>
     </div>

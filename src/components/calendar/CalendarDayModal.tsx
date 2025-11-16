@@ -8,17 +8,19 @@ import {
   useCalendarEntries,
   useCreateCalendarEntry,
   useDeleteCalendarEntry,
+  useDeleteUserOccasion,
 } from "@/hooks/useCalendar";
 import { useOutfits } from "@/hooks/useOutfits";
 import { useScrollLock } from "@/hooks/useScrollLock";
+import { useModalScroll } from "@/hooks/useModalScroll";
 import { UserOccasion } from "@/types/userOccasion";
 import { Outfit } from "@/types/outfit";
 import { Calender } from "@/types/calender";
 import { UserOccasionFormModal } from "./UserOccasionFormModal";
 import { EditCalendarEntryModal } from "./EditCalendarEntryModal";
+import { AddDailyOutfitModal } from "./Modal/AddDailyOutfitModal";
 import { ModalHeader } from "./Modal/ModalHeader";
 import { ModalFooter } from "./Modal/ModalFooter";
-import { DailyOutfitsSection } from "./Modal/DailyOutfitsSection";
 import { OccasionsSection } from "./Modal/OccasionsSection";
 
 interface CalendarDayModalProps {
@@ -42,13 +44,13 @@ export function CalendarDayModal({
     useState<Calender | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deletingEntryId, setDeletingEntryId] = useState<number | null>(null);
+  const [isDeleteOccasionDialogOpen, setIsDeleteOccasionDialogOpen] = useState(false);
+  const [deletingOccasionId, setDeletingOccasionId] = useState<number | null>(null);
   const [isPastDateDialogOpen, setIsPastDateDialogOpen] = useState(false);
   const [pastDateDialogMessage, setPastDateDialogMessage] = useState("");
+  const [isAddDailyOutfitModalOpen, setIsAddDailyOutfitModalOpen] = useState(false);
 
   // Multi-select states
-  const [selectedDailyOutfits, setSelectedDailyOutfits] = useState<number[]>(
-    []
-  );
   const [selectedOccasionOutfits, setSelectedOccasionOutfits] = useState<
     Record<number, number[]>
   >({});
@@ -84,8 +86,17 @@ export function CalendarDayModal({
     useCreateCalendarEntry();
   const { mutate: deleteCalendarEntry, isPending: isDeletingEntry } =
     useDeleteCalendarEntry();
+  const { mutate: deleteOccasion, isPending: isDeletingOccasion } =
+    useDeleteUserOccasion();
 
+  // Lock body scroll when modal is open
   useScrollLock(open);
+
+  // Enable mouse wheel scrolling in modal content area
+  const scrollContainerRef = useModalScroll(open, {
+    smooth: false, // Disable smooth for faster scrolling
+    sensitivity: 1.2, // Slightly faster than default
+  });
 
   const allOccasions = occasionsData?.data?.data || [];
   const allCalendarEntries = calendarData?.data?.data || [];
@@ -108,7 +119,6 @@ export function CalendarDayModal({
     if (open) {
       setExpandedOccasionIds([]);
       setEditingOccasion(null);
-      setSelectedDailyOutfits([]);
       setSelectedOccasionOutfits({});
     }
   }, [open]);
@@ -147,6 +157,68 @@ export function CalendarDayModal({
     setIsOccasionFormOpen(true);
   };
 
+  const handleAddDailyOutfit = () => {
+    // Check if selected date is in the past
+    const today = startOfDay(new Date());
+    const selectedDateOnly = startOfDay(selectedDate);
+
+    if (isBefore(selectedDateOnly, today)) {
+      setPastDateDialogMessage("You can only add outfits to calendar for today or future dates. Please select a valid date.");
+      setIsPastDateDialogOpen(true);
+      return;
+    }
+
+    setIsAddDailyOutfitModalOpen(true);
+  };
+
+  const handleAddDailyOutfits = (outfitIds: number[]) => {
+    if (outfitIds.length === 0) return;
+
+    const formattedDate = format(selectedDate, "yyyy-MM-dd'T'HH:mm:ss");
+    const dateString = format(selectedDate, "yyyy-MM-dd");
+
+    // Find existing Daily occasion for selected date
+    // Check in allOccasions (not filtered) to ensure we find it even if it was just created
+    const existingDailyOccasion = allOccasions.find(
+      (occ) =>
+        occ.name === "Daily" &&
+        format(new Date(occ.dateOccasion), "yyyy-MM-dd") === dateString &&
+        occ.occasionId === null
+    );
+
+    if (existingDailyOccasion) {
+      // Use existing Daily occasion
+      createCalendarEntry(
+        {
+          outfitIds,
+          isDaily: false,
+          userOccasionId: existingDailyOccasion.id,
+          endTime: formattedDate,
+        },
+        {
+          onSuccess: () => {
+            setIsAddDailyOutfitModalOpen(false);
+          },
+        }
+      );
+    } else {
+      // Create new Daily entry (backend will create Daily occasion)
+      createCalendarEntry(
+        {
+          outfitIds,
+          isDaily: true,
+          time: formattedDate,
+          endTime: formattedDate,
+        },
+        {
+          onSuccess: () => {
+            setIsAddDailyOutfitModalOpen(false);
+          },
+        }
+      );
+    }
+  };
+
   const handleEditOccasion = (occasion: UserOccasion, e?: React.MouseEvent) => {
     if (e) {
       e.stopPropagation();
@@ -165,54 +237,35 @@ export function CalendarDayModal({
 
   const toggleOutfitSelection = (
     outfitId: number,
-    occasionId: number | null
+    occasionId: number
   ) => {
-    if (occasionId === null) {
-      setSelectedDailyOutfits((prev) =>
-        prev.includes(outfitId)
-          ? prev.filter((id) => id !== outfitId)
-          : [...prev, outfitId]
-      );
-    } else {
-      setSelectedOccasionOutfits((prev) => {
-        const currentSelected = prev[occasionId] || [];
-        return {
-          ...prev,
-          [occasionId]: currentSelected.includes(outfitId)
-            ? currentSelected.filter((id) => id !== outfitId)
-            : [...currentSelected, outfitId],
-        };
-      });
-    }
+    setSelectedOccasionOutfits((prev) => {
+      const currentSelected = prev[occasionId] || [];
+      return {
+        ...prev,
+        [occasionId]: currentSelected.includes(outfitId)
+          ? currentSelected.filter((id) => id !== outfitId)
+          : [...currentSelected, outfitId],
+      };
+    });
   };
 
   const toggleSelectAll = (
     availableOutfitIds: number[],
-    occasionId: number | null
+    occasionId: number
   ) => {
-    if (occasionId === null) {
-      const allSelected = availableOutfitIds.every((id) =>
-        selectedDailyOutfits.includes(id)
-      );
-      if (allSelected) {
-        setSelectedDailyOutfits([]);
-      } else {
-        setSelectedDailyOutfits(availableOutfitIds);
-      }
-    } else {
-      const currentSelected = selectedOccasionOutfits[occasionId] || [];
-      const allSelected = availableOutfitIds.every((id) =>
-        currentSelected.includes(id)
-      );
-      setSelectedOccasionOutfits((prev) => ({
-        ...prev,
-        [occasionId]: allSelected ? [] : availableOutfitIds,
-      }));
-    }
+    const currentSelected = selectedOccasionOutfits[occasionId] || [];
+    const allSelected = availableOutfitIds.every((id) =>
+      currentSelected.includes(id)
+    );
+    setSelectedOccasionOutfits((prev) => ({
+      ...prev,
+      [occasionId]: allSelected ? [] : availableOutfitIds,
+    }));
   };
 
   const handleAddOutfitToOccasion = (
-    occasionId: number | null,
+    occasionId: number,
     outfit: Outfit,
     e?: React.MouseEvent
   ) => {
@@ -232,25 +285,16 @@ export function CalendarDayModal({
 
     const formattedDate = format(selectedDate, "yyyy-MM-dd'T'HH:mm:ss");
 
-    if (occasionId === null) {
-      createCalendarEntry({
-        outfitIds: [outfit.id],
-        isDaily: true,
-        time: formattedDate,
-        endTime: formattedDate,
-      });
-    } else {
-      createCalendarEntry({
-        outfitIds: [outfit.id],
-        isDaily: false,
-        userOccasionId: occasionId,
-        endTime: formattedDate,
-      });
-    }
+    createCalendarEntry({
+      outfitIds: [outfit.id],
+      isDaily: false,
+      userOccasionId: occasionId,
+      endTime: formattedDate,
+    });
   };
 
   const handleBatchAddOutfits = (
-    occasionId: number | null,
+    occasionId: number,
     e?: React.MouseEvent
   ) => {
     if (e) {
@@ -267,47 +311,28 @@ export function CalendarDayModal({
       return;
     }
 
-    const outfitIds =
-      occasionId === null
-        ? selectedDailyOutfits
-        : selectedOccasionOutfits[occasionId] || [];
+    const outfitIds = selectedOccasionOutfits[occasionId] || [];
 
     if (outfitIds.length === 0) return;
 
     const formattedDate = format(selectedDate, "yyyy-MM-dd'T'HH:mm:ss");
 
-    if (occasionId === null) {
-      createCalendarEntry(
-        {
-          outfitIds,
-          isDaily: true,
-          time: formattedDate,
-          endTime: formattedDate,
+    createCalendarEntry(
+      {
+        outfitIds,
+        isDaily: false,
+        userOccasionId: occasionId,
+        endTime: formattedDate,
+      },
+      {
+        onSuccess: () => {
+          setSelectedOccasionOutfits((prev) => ({
+            ...prev,
+            [occasionId]: [],
+          }));
         },
-        {
-          onSuccess: () => {
-            setSelectedDailyOutfits([]);
-          },
-        }
-      );
-    } else {
-      createCalendarEntry(
-        {
-          outfitIds,
-          isDaily: false,
-          userOccasionId: occasionId,
-          endTime: formattedDate,
-        },
-        {
-          onSuccess: () => {
-            setSelectedOccasionOutfits((prev) => ({
-              ...prev,
-              [occasionId]: [],
-            }));
-          },
-        }
-      );
-    }
+      }
+    );
   };
 
   const handleDeleteCalendarEntry = (entryId: number, e?: React.MouseEvent) => {
@@ -322,6 +347,25 @@ export function CalendarDayModal({
     if (deletingEntryId) {
       deleteCalendarEntry(deletingEntryId);
       setDeletingEntryId(null);
+    }
+  };
+
+  const handleDeleteOccasion = (occasionId: number, e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
+    setDeletingOccasionId(occasionId);
+    setIsDeleteOccasionDialogOpen(true);
+  };
+
+  const confirmDeleteOccasion = () => {
+    if (deletingOccasionId) {
+      deleteOccasion(deletingOccasionId, {
+        onSuccess: () => {
+          setIsDeleteOccasionDialogOpen(false);
+          setDeletingOccasionId(null);
+        },
+      });
     }
   };
 
@@ -346,11 +390,10 @@ export function CalendarDayModal({
         <div
           className="w-full max-w-[1500px] h-[95vh] rounded-3xl overflow-hidden shadow-2xl bg-linear-to-br
            from-slate-900/95 via-blue-900/95 to-slate-900/95 backdrop-blur-xl border border-white/10 mx-auto flex flex-col 
-           pointer-events-auto "
+           pointer-events-auto"
           onClick={(e) => e.stopPropagation()}
-          onWheel={(e) => e.stopPropagation()}
         >
-          <div className="flex flex-col h-full">
+          <div className="flex flex-col h-full overflow-hidden">
             <ModalHeader
               selectedDate={selectedDate}
               occasions={occasions}
@@ -358,36 +401,22 @@ export function CalendarDayModal({
               onClose={() => onOpenChange(false)}
             />
 
-            <div className="flex-1 px-10 py-8 overflow-y-auto min-h-0 scroll-smooth
-              [&::-webkit-scrollbar]:w-1.5
-              [&::-webkit-scrollbar-track]:bg-white/10
-              [&::-webkit-scrollbar-track]:rounded-full
-              [&::-webkit-scrollbar-thumb]:bg-purple-400/60
-              [&::-webkit-scrollbar-thumb]:rounded-full
-              [&::-webkit-scrollbar-thumb]:hover:bg-purple-400/80"
+            <div 
+              ref={scrollContainerRef}
+              className="flex-1 px-10 py-8 overflow-y-auto overflow-x-hidden min-h-0 scroll-smooth
+                [&::-webkit-scrollbar]:w-1.5
+                [&::-webkit-scrollbar-track]:bg-white/10
+                [&::-webkit-scrollbar-track]:rounded-full
+                [&::-webkit-scrollbar-thumb]:bg-purple-400/60
+                [&::-webkit-scrollbar-thumb]:rounded-full
+                [&::-webkit-scrollbar-thumb]:hover:bg-purple-400/80"
+              style={{ 
+                WebkitOverflowScrolling: 'touch',
+                overscrollBehavior: 'contain',
+                touchAction: 'pan-y'
+              }}
             >
               <div className="max-w-5xl mx-auto space-y-6">
-                <DailyOutfitsSection
-                  calendarEntries={calendarEntries}
-                  outfits={outfits}
-                  selectedDailyOutfits={selectedDailyOutfits}
-                  isCreatingEntry={isCreatingEntry}
-                  isDeletingEntry={isDeletingEntry}
-                  canAddOutfit={!isBefore(startOfDay(selectedDate), startOfDay(new Date()))}
-                  onToggleSelection={(outfitId) =>
-                    toggleOutfitSelection(outfitId, null)
-                  }
-                  onToggleSelectAll={(outfitIds) =>
-                    toggleSelectAll(outfitIds, null)
-                  }
-                  onBatchAdd={(e) => handleBatchAddOutfits(null, e)}
-                  onAddSingle={(outfit, e) =>
-                    handleAddOutfitToOccasion(null, outfit, e)
-                  }
-                  onDeleteEntry={handleDeleteCalendarEntry}
-                  onEditEntry={handleEditCalendarEntry}
-                />
-
                 <OccasionsSection
                   occasions={occasions}
                   calendarEntries={calendarEntries}
@@ -401,6 +430,7 @@ export function CalendarDayModal({
                   canAddOccasion={!isBefore(startOfDay(selectedDate), startOfDay(new Date()))}
                   onToggleOccasion={toggleOccasion}
                   onAddOccasion={handleAddOccasion}
+                  onAddDailyOutfit={handleAddDailyOutfit}
                   onEditOccasion={handleEditOccasion}
                   onToggleSelection={(outfitId, occasionId) =>
                     toggleOutfitSelection(outfitId, occasionId)
@@ -416,6 +446,7 @@ export function CalendarDayModal({
                   }
                   onDeleteEntry={handleDeleteCalendarEntry}
                   onEditEntry={handleEditCalendarEntry}
+                  onDeleteOccasion={handleDeleteOccasion}
                 />
               </div>
             </div>
@@ -452,6 +483,18 @@ export function CalendarDayModal({
         isLoading={isDeletingEntry}
       />
 
+      <ConfirmDialog
+        open={isDeleteOccasionDialogOpen}
+        onOpenChange={setIsDeleteOccasionDialogOpen}
+        onConfirm={confirmDeleteOccasion}
+        title="Delete Occasion?"
+        description="Are you sure you want to delete this occasion? This will also remove all outfits linked to this occasion. This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        isLoading={isDeletingOccasion}
+      />
+
       {/* Past Date Warning Dialog */}
       <ConfirmDialog
         open={isPastDateDialogOpen}
@@ -463,6 +506,18 @@ export function CalendarDayModal({
         cancelText=""
         variant="warning"
         isLoading={false}
+      />
+
+      {/* Add Daily Outfit Modal */}
+      <AddDailyOutfitModal
+        open={isAddDailyOutfitModalOpen}
+        onOpenChange={setIsAddDailyOutfitModalOpen}
+        selectedDate={selectedDate}
+        onAddOutfit={handleAddDailyOutfits}
+        isCreatingEntry={isCreatingEntry}
+        existingOutfitIds={calendarEntries.flatMap((entry) =>
+          entry.outfits.map((o) => o.outfitId)
+        )}
       />
     </>
   );

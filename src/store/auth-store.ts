@@ -294,7 +294,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
     try {
       const response = await authAPI.loginWithGoogle(credential);
-
+      console.log(response);
         // Case 1: New user - requires email verification (201)
         if (response.statusCode === 201) {
           const email = (response.data as { email?: string }).email;
