@@ -1,5 +1,15 @@
 import { useEffect } from "react";
 
+// Type declaration for Lenis instance on window
+declare global {
+  interface Window {
+    lenis?: {
+      stop: () => void;
+      start: () => void;
+    };
+  }
+}
+
 /**
  * Custom hook to lock/unlock scroll when modals or dialogs are open
  * Also handles Lenis smooth scrolling if present
@@ -8,50 +18,68 @@ import { useEffect } from "react";
  */
 export function useScrollLock(isLocked: boolean) {
   useEffect(() => {
+    const html = document.documentElement;
+
     if (isLocked) {
       // Save current scroll position
       const scrollY = window.scrollY;
 
-      // Stop Lenis smooth scrolling
-      const html = document.documentElement;
+      // Stop Lenis smooth scrolling if available
       html.classList.add("lenis-stopped");
       html.style.overflow = "hidden";
 
-      // Prevent body scroll with !important level specificity
-      document.body.style.setProperty("overflow", "hidden", "important");
-      document.body.style.setProperty("position", "fixed", "important");
-      document.body.style.setProperty("width", "100%", "important");
-      document.body.style.setProperty("top", `-${scrollY}px`, "important");
-      document.body.style.setProperty("left", "0", "important");
-      document.body.style.setProperty("right", "0", "important");
-    } else {
-      // Re-enable Lenis smooth scrolling
-      const html = document.documentElement;
-      html.classList.remove("lenis-stopped");
-      html.style.overflow = "";
+      // Try to stop Lenis instance if it exists
+      if (typeof window !== 'undefined' && window.lenis) {
+        window.lenis.stop();
+      }
 
-      // // Restore body scroll and scroll position
-      // const scrollY = document.body.style.top;
-      // document.body.style.removeProperty("overflow");
-      // document.body.style.removeProperty("position");
-      // document.body.style.removeProperty("width");
-      // document.body.style.removeProperty("top");
-      // document.body.style.removeProperty("left");
-      // document.body.style.removeProperty("right");
+      // Prevent body scroll - multiple approaches for reliability
+      document.body.style.overflow = "hidden";
+      document.body.style.position = "fixed";
+      document.body.style.width = "100%";
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.left = "0";
+      document.body.style.right = "0";
 
-      // if (scrollY) {
-      //   window.scrollTo(0, parseInt(scrollY || "0") * -1);
-      // }
+      // Prevent scroll on wheel and touchmove
+      const preventScroll = (e: Event) => {
+        e.preventDefault();
+        e.stopPropagation();
+      };
+
+      document.addEventListener('wheel', preventScroll, { passive: false });
+      document.addEventListener('touchmove', preventScroll, { passive: false });
+      document.addEventListener('scroll', preventScroll, { passive: false });
+
+      // Cleanup function when unlocking or unmounting
+      return () => {
+        // Remove event listeners first
+        document.removeEventListener('wheel', preventScroll);
+        document.removeEventListener('touchmove', preventScroll);
+        document.removeEventListener('scroll', preventScroll);
+
+        // Re-enable Lenis smooth scrolling
+        html.classList.remove("lenis-stopped");
+        html.style.overflow = "";
+
+        // Restart Lenis instance if it exists
+        if (typeof window !== 'undefined' && window.lenis) {
+          window.lenis.start();
+        }
+
+        // Restore body scroll and scroll position
+        const savedScrollY = document.body.style.top;
+        document.body.style.overflow = "";
+        document.body.style.position = "";
+        document.body.style.width = "";
+        document.body.style.top = "";
+        document.body.style.left = "";
+        document.body.style.right = "";
+
+        if (savedScrollY) {
+          window.scrollTo(0, parseInt(savedScrollY || "0") * -1);
+        }
+      };
     }
-
-    // Cleanup on unmount
-    return () => {
-      const html = document.documentElement;
-      html.classList.remove("lenis-stopped");
-      document.body.style.overflow = "";
-      document.body.style.position = "";
-      document.body.style.width = "";
-      document.body.style.top = "";
-    };
   }, [isLocked]);
 }

@@ -2,10 +2,13 @@
 
 import { motion } from "framer-motion";
 import { Loader2, ImageOff } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { EnhancedPostCard } from "@/components/community/post/EnhancedPostCard";
 import { PostSkeleton } from "@/components/community/feed/PostSkeleton";
 import { useAuthStore } from "@/store/auth-store";
 import { useUserPosts } from "@/hooks/community/useUserPosts";
+import { communityAPI, Hashtag } from "@/lib/api/community-api";
+import { toast } from "sonner";
 
 interface UserProfilePostsProps {
   userId: string;
@@ -20,6 +23,7 @@ interface UserProfilePostsProps {
  */
 export function UserProfilePosts({ userId, userName }: UserProfilePostsProps) {
   const { user } = useAuthStore();
+  const router = useRouter();
 
   // Data management hook
   const {
@@ -29,7 +33,69 @@ export function UserProfilePosts({ userId, userName }: UserProfilePostsProps) {
     hasMore,
     observerTarget,
     handleLike,
-  } = useUserPosts(userId);
+    refetch,
+  } = useUserPosts(userId, user?.id);
+
+  const handleReportPost = async (postId: string, reason: string) => {
+    if (!user?.id) {
+      const message = "Vui lòng đăng nhập";
+      toast.error(message);
+      throw new Error(message);
+    }
+
+    const parsedPostId = Number.parseInt(postId, 10);
+
+    if (Number.isNaN(parsedPostId)) {
+      const message = "ID bài viết không hợp lệ";
+      toast.error(message);
+      throw new Error(message);
+    }
+
+    try {
+      const response = await communityAPI.createReport({
+        postId: parsedPostId,
+        userId: Number.parseInt(user.id, 10),
+        type: "POST",
+        description: reason,
+      });
+
+      toast.success("Cảm ơn bạn đã báo cáo", {
+        description: response?.message,
+      });
+    } catch (error) {
+      console.error("Error reporting post:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Không thể gửi báo cáo";
+      toast.error(errorMessage);
+      throw error instanceof Error ? error : new Error(errorMessage);
+    }
+  };
+
+  const handleDeletePost = async (postId: number) => {
+    if (!user?.id) {
+      toast.error("Vui lòng đăng nhập");
+      return;
+    }
+
+    try {
+      await communityAPI.deletePost(postId);
+      toast.success("Bài viết đã được xóa");
+      
+      // Refetch posts to update the list
+      await refetch();
+    } catch (error) {
+      console.error("Error deleting post:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Không thể xóa bài viết";
+      toast.error(errorMessage);
+      throw error;
+    }
+  };
+
+  const handleTagClick = (tag: Hashtag) => {
+    // Navigate to community page with tag filter
+    router.push(`/community?hashtag=${tag.id}`);
+  };
 
   // Loading state
   if (isInitialLoading && posts.length === 0) {
@@ -50,7 +116,7 @@ export function UserProfilePosts({ userId, userName }: UserProfilePostsProps) {
         <div className="w-20 h-20 rounded-full bg-muted/30 flex items-center justify-center mx-auto mb-4">
           <ImageOff className="w-10 h-10 text-muted-foreground" />
         </div>
-        <h3 className="text-xl font-semibold mb-2">Chưa có bài viết nào</h3>
+        <h3 className="text-xl font-semibold mb-2">No posts yet</h3>
         <p className="text-muted-foreground">
           {userName} chưa chia sẻ bài viết nào
         </p>
@@ -79,11 +145,12 @@ export function UserProfilePosts({ userId, userName }: UserProfilePostsProps) {
                 avatar: user?.avatar,
               }}
               onLike={() => handleLike(parseInt(post.id))}
-              onReport={() => {}}
+              onReport={(reason) => handleReportPost(post.id, reason)}
+              onDeletePost={handleDeletePost}
               onEditPost={(post) => {
-                console.log("Edit post:", post);
                 // TODO: Open edit dialog with post data
               }}
+              onTagClick={handleTagClick}
             />
           </motion.div>
         ))}

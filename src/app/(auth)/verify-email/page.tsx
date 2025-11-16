@@ -16,6 +16,8 @@ import { PasswordResetLayout } from "@/components/auth/password-reset-layout";
 import { HelpText } from "@/components/auth/help-text";
 import { useOtpVerification } from "@/hooks/useOtpVerification";
 
+export const dynamic = 'force-dynamic';
+
 export default function VerifyEmailPage() {
   const router = useRouter();
   const { pendingVerificationEmail } = useAuthStore();

@@ -100,7 +100,6 @@ export function ViewItemDialog({
       {/* Backdrop */}
       <div
         className="fixed h-full inset-0 bg-black/50 backdrop-blur-sm z-50"
-        onClick={() => onOpenChange(false)}
       />
 
       {/* Modal Container */}
@@ -202,19 +201,15 @@ export function ViewItemDialog({
                     {/* Colors */}
                     <div className="flex-1 min-h-0 flex flex-col">
                       <p className="text-lg font-medium text-white mb-1.5 flex-shrink-0">Colors</p>
-                      <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar space-y-2">
+                      <div className="flex gap-2 flex-wrap overflow-y-auto custom-scrollbar">
                         {itemData.colors.length > 0 ? (
                           itemData.colors.map((color, index) => (
                             <div
                               key={index}
-                              className="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-2"
-                            >
-                              <div
-                                className="w-5 h-5 rounded-md border border-white/30"
-                                style={{ backgroundColor: color.hex }}
-                              />
-                              <span className="text-white text-sm">{color.name}</span>
-                            </div>
+                              className="w-9 h-9 rounded-lg border-2 border-white/30 shadow-sm flex-shrink-0"
+                              style={{ backgroundColor: color.hex }}
+                              title={color.hex}
+                            />
                           ))
                         ) : (
                           <p className="text-white/50 text-sm">No colors</p>
@@ -259,7 +254,7 @@ export function ViewItemDialog({
                     <div>
                       <p className="text-lg font-medium text-white mb-1.5">Weather Suitable</p>
                       <p className="text-white/90 bg-white/10 rounded-lg px-3 py-2 text-sm">{itemData.weatherSuitable}</p>
-                    </div>                 
+                    </div>
                   </div>
 
                   {/* Column 3: Tags */}
@@ -272,7 +267,7 @@ export function ViewItemDialog({
                           itemData.styles.map((style, index) => (
                             <span
                               key={index}
-                              className="px-2 py-1 rounded-md bg-blue-500/20 border border-blue-400/30 text-blue-200 text-xs"
+                              className="px-2 py-1 rounded-md bg-blue-500/20 border border-blue-400/30 text-blue-200 text-md"
                             >
                               {style}
                             </span>
@@ -291,7 +286,7 @@ export function ViewItemDialog({
                           itemData.occasions.map((occasion, index) => (
                             <span
                               key={index}
-                              className="px-2 py-1 rounded-md bg-purple-500/20 border border-purple-400/30 text-purple-200 text-xs"
+                              className="px-2 py-1 rounded-md bg-purple-500/20 border border-purple-400/30 text-purple-200 text-md"
                             >
                               {occasion}
                             </span>
@@ -310,7 +305,7 @@ export function ViewItemDialog({
                           itemData.seasons.map((season, index) => (
                             <span
                               key={index}
-                              className="px-2 py-1 rounded-md bg-cyan-500/20 border border-cyan-400/30 text-cyan-200 text-xs"
+                              className="px-2 py-1 rounded-md bg-cyan-500/20 border border-cyan-400/30 text-cyan-200 text-md"
                             >
                               {season}
                             </span>

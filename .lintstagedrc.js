@@ -8,6 +8,6 @@ module.exports = {
   // Format all supported files with Prettier (if you add it later)
   // '*.{js,jsx,ts,tsx,json,css,scss,md}': ['prettier --write'],
 
-  // Type-check TypeScript files
-  '*.{ts,tsx}': () => 'tsc --noEmit',
+  // Type-check TypeScript files and run build
+  '*.{ts,tsx}': () => 'tsc --noEmit && npm run build',
 };

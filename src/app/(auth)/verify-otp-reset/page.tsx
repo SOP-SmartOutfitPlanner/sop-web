@@ -15,6 +15,8 @@ import { PasswordResetLayout } from "@/components/auth/password-reset-layout";
 import { HelpText } from "@/components/auth/help-text";
 import { useOtpVerification } from "@/hooks/useOtpVerification";
 
+export const dynamic = 'force-dynamic';
+
 export default function VerifyOtpResetPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");

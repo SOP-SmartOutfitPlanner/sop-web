@@ -29,6 +29,7 @@ import {
   Flag,
 } from "lucide-react";
 import { useState } from "react";
+import { ReportDialog } from "../report/ReportDialog";
 
 interface PostHeaderProps {
   user: CommunityUser;
@@ -38,7 +39,7 @@ interface PostHeaderProps {
   isOwnPost?: boolean;
   isFollowing?: boolean;
   onMessageAuthor: () => void;
-  onReport: (reason: string) => void;
+  onReport: (reason: string) => Promise<void>;
   onFollow?: () => void;
   onDelete?: () => Promise<void>;
   onEdit?: () => void;
@@ -59,6 +60,9 @@ export function PostHeader({
 }: PostHeaderProps) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
+  const showStylistBadge =
+    isAuthorStylist || user.role?.toUpperCase() === "STYLIST";
 
   const handleDeleteConfirm = async () => {
     if (!onDelete) return;
@@ -67,10 +71,15 @@ export function PostHeader({
       setIsDeleting(true);
       await onDelete();
       setIsDeleteDialogOpen(false);
+    } catch (error) {
+      console.error("Error during delete:", error);
+      throw error;
     } finally {
       setIsDeleting(false);
     }
   };
+
+  const handleReportSubmit = async (reason: string) => onReport(reason);
 
   return (
     <div className="flex items-center justify-between">
@@ -93,6 +102,15 @@ export function PostHeader({
                 {user.name}
               </p>
             </Link>
+            {showStylistBadge && (
+              <Badge
+                variant="secondary"
+                className="text-xs uppercase tracking-wide bg-gradient-to-r from-cyan-500/25 via-blue-500/25 to-purple-500/25 text-cyan-100 border border-cyan-400/40 shadow-[0_0_12px_rgba(34,211,238,0.35)]"
+              >
+                <Star className="w-3 h-3 mr-1 fill-current" />
+                Stylist
+              </Badge>
+            )}
             {!isOwnPost && !isFollowing && onFollow && (
               <button
                 className="px-3 py-1 ml-2 rounded-lg text-xs font-semibold text-white bg-gradient-to-r from-cyan-500/60 to-blue-500/60 hover:from-cyan-500/80 hover:to-blue-500/80 border border-cyan-400/30 hover:border-cyan-400/50 transition-all hover:shadow-lg hover:shadow-cyan-500/30"
@@ -106,15 +124,6 @@ export function PostHeader({
                 ✓ Following
               </span>
             )} */}
-            {isAuthorStylist && (
-              <Badge
-                variant="secondary"
-                className="text-xs bg-primary/10 text-primary border-primary/20"
-              >
-                <Star className="w-3 h-3 mr-1 fill-current" />
-                Stylist
-              </Badge>
-            )}
             {showChallengeEntry && (
               <Badge
                 variant="outline"
@@ -135,18 +144,6 @@ export function PostHeader({
 
       <div className="flex items-center gap-2">
         {/* Follow Button - show only if not own post and not following */}
-
-        {isAuthorStylist && (
-          <Button
-            size="sm"
-            variant="ghost"
-            className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-primary/10"
-            onClick={onMessageAuthor}
-          >
-            <MessageCircle className="w-4 h-4" />
-          </Button>
-        )}
-
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -162,15 +159,6 @@ export function PostHeader({
             align="end"
             className="min-w-[180px] backdrop-blur-xl bg-gradient-to-br from-cyan-950/60 via-blue-950/50 to-indigo-950/60 border-2 border-cyan-400/25 shadow-2xl shadow-cyan-500/20 text-white/90"
           >
-            {isAuthorStylist && !isOwnPost && (
-              <DropdownMenuItem
-                onClick={onMessageAuthor}
-                className="focus:bg-cyan-500/20 focus:text-white cursor-pointer"
-              >
-                <MessageCircle className="w-4 h-4 mr-2" />
-                Message author
-              </DropdownMenuItem>
-            )}
             {isOwnPost && onEdit && (
               <DropdownMenuItem
                 onClick={onEdit}
@@ -191,7 +179,7 @@ export function PostHeader({
             )}
             {!isOwnPost && (
               <DropdownMenuItem
-                onClick={() => onReport("inappropriate")}
+                onClick={() => setIsReportDialogOpen(true)}
                 className="focus:bg-cyan-500/20 focus:text-white cursor-pointer"
               >
                 <Flag className="w-4 h-4 mr-2" />
@@ -201,6 +189,15 @@ export function PostHeader({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      <ReportDialog
+        open={isReportDialogOpen}
+        onOpenChange={setIsReportDialogOpen}
+        onSubmit={handleReportSubmit}
+        title="Report Post"
+        description="Select a reason for reporting this post. Our team will review it as soon as possible."
+        confirmLabel="Submit report"
+      />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog

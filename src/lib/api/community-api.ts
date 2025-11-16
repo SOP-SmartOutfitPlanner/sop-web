@@ -57,10 +57,44 @@ export interface FeedResponse {
   metaData: FeedMetaData;
 }
 
+export type ReportType = "POST" | "COMMENT";
+
+export interface CreateReportRequest {
+  userId: number;
+  postId?: number;
+  commentId?: number;
+  type: ReportType;
+  description: string;
+}
+
+export interface ReportEntry {
+  id: number;
+  userId: number;
+  postId: number | null;
+  commentId: number | null;
+  type: ReportType;
+  action: "NONE" | "REMOVE" | "WARN";
+  status: "PENDING" | "REVIEWED" | "RESOLVED" | "REJECTED";
+  description: string;
+  createdDate: string;
+}
+
 interface ApiResponse<T> {
   statusCode: number;
   message: string;
   data: T;
+}
+
+export interface PostLiker {
+  userId: number;
+  displayName: string;
+  avatarUrl?: string | null;
+  isFollowing: boolean;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  metaData: FeedMetaData;
 }
 
 class CommunityAPI {
@@ -77,11 +111,13 @@ class CommunityAPI {
   async getAllPosts(
     userId?: number,
     page: number = 1,
-    pageSize: number = 10
+    pageSize: number = 10,
+    search?: string
   ): Promise<FeedResponse> {
     const response = await apiClient.get(this.BASE_PATH, {
       params: {
         ...(userId && { userId }), // Optional: userId for additional filtering
+        ...(search && { search }), // Optional: search query
         "page-index": page,
         "page-size": pageSize,
       },
@@ -152,6 +188,64 @@ class CommunityAPI {
     }
 
     return feedData;
+  }
+
+  /**
+   * Get posts by hashtag
+   * API: GET /posts/hashtag/{hashtagId}
+   */
+  async getPostsByHashtag(
+    hashtagId: number,
+    page: number = 1,
+    pageSize: number = 10,
+    currentUserId?: number
+  ): Promise<FeedResponse> {
+    const response = await apiClient.get(`${this.BASE_PATH}/hashtag/${hashtagId}`, {
+      params: {
+        ...(currentUserId && { userId: currentUserId }),
+        "page-index": page,
+        "page-size": pageSize,
+      },
+    });
+
+    const feedData = response.data;
+
+    if (!feedData || !feedData.metaData) {
+      console.error("Invalid API response structure:", response);
+      throw new Error("Invalid API response structure");
+    }
+
+    return feedData;
+  }
+
+  /**
+   * Get users who liked a specific post
+   * API: GET /posts/{postId}/likers
+   */
+  async getPostLikers(
+    postId: number,
+    page: number = 1,
+    pageSize: number = 10
+  ): Promise<PaginatedResponse<PostLiker>> {
+    const response = await apiClient.get<{
+      statusCode: number;
+      message: string;
+      data: PaginatedResponse<PostLiker>;
+    }>(`${this.BASE_PATH}/${postId}/likers`, {
+      params: {
+        "page-index": page,
+        "page-size": pageSize,
+      },
+    });
+
+    const likersData = response.data;
+
+    if (!likersData || !Array.isArray(likersData.data) || !likersData.metaData) {
+      console.error("Invalid API response structure:", response);
+      throw new Error("Invalid API response structure");
+    }
+
+    return likersData;
   }
 
   /**
@@ -268,17 +362,23 @@ class CommunityAPI {
   }
 
   /**
-   * Report a post
+   * Submit a report for a post or comment
    */
-  async reportPost(
-    postId: number,
-    userId: number,
-    reason: string
-  ): Promise<void> {
-    await apiClient.post(`${this.BASE_PATH}/${postId}/report`, {
-      userId,
-      reason,
-    });
+  async createReport(
+    payload: CreateReportRequest
+  ): Promise<ApiResponse<ReportEntry>> {
+    const response = await apiClient.post<ApiResponse<ReportEntry>>(
+      "/reports",
+      {
+        userId: payload.userId,
+        postId: payload.postId ?? null,
+        commentId: payload.commentId ?? null,
+        type: payload.type,
+        description: payload.description,
+      }
+    );
+
+    return response;
   }
 
   /**

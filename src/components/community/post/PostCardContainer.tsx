@@ -1,5 +1,6 @@
 "use client";
 
+import { Hashtag } from "@/lib/api/community-api";
 import { Post } from "@/types/community";
 import { PostHeader } from "./PostHeader";
 import { PostImage } from "./PostImage";
@@ -19,11 +20,13 @@ interface PostCardContainerProps {
   onImageClick: () => void;
   onLike: () => void;
   onComment: () => void;
-  onReport: (reason: string) => void;
+  onReport: (reason: string) => Promise<void>;
   onMessageAuthor: () => void;
   onFollow?: () => void;
   onDelete?: () => Promise<void>;
   onEdit?: () => void;
+  onTagClick?: (tag: Hashtag) => void;
+  onViewLikes?: () => void;
   authorInfo: {
     id: string;
     name: string;
@@ -47,6 +50,8 @@ export function PostCardContainer({
   onFollow,
   onDelete,
   onEdit,
+  onTagClick,
+  onViewLikes,
   authorInfo,
 }: PostCardContainerProps) {
   const [isHovered, setIsHovered] = useState(false);
@@ -64,7 +69,7 @@ export function PostCardContainer({
         padding="0"
         borderRadius="24px"
         blur="24px"
-        brightness={1.03}
+        brightness={1.85}
         glowColor={
           isHovered ? "rgba(103, 232, 249, 0.08)" : "rgba(103, 232, 249, 0.04)"
         }
@@ -84,7 +89,7 @@ export function PostCardContainer({
         {/* Inner gradient overlay for extra depth with cyan accent */}
         <div className="absolute inset-0 rounded-3xl bg-gradient-to-t from-cyan-900/5 via-transparent to-white/5 pointer-events-none" />
 
-        <div className="w-full flex flex-col relative z-10">
+        <div className="w-full flex flex-col relative z-10 rounded-3xl">
           {/* Header */}
           <div className="p-4 pb-3">
             <PostHeader
@@ -103,7 +108,7 @@ export function PostCardContainer({
           </div>
 
           {/* Content */}
-          <PostContent caption={post.caption} tags={post.tags} />
+          <PostContent caption={post.caption} tags={post.tags} onTagClick={onTagClick} />
 
           {/* Image */}
           {images.length > 0 && (
@@ -120,6 +125,7 @@ export function PostCardContainer({
               commentCount={post.commentCount}
               onLike={onLike}
               onComment={onComment}
+              onViewLikes={onViewLikes}
             />
           </div>
         </div>

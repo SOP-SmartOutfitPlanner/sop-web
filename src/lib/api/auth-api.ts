@@ -93,9 +93,19 @@ class AuthAPI {
     credential: string
   ): Promise<ApiResponse<LoginResponse>> {
     try {
+      const endpoint = `${this.BASE_PATH}/login/google/oauth`;
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "";
+      const fullUrl = `${baseUrl}${endpoint}`;
+      
+      console.log("🔗 Google OAuth login request:", {
+        endpoint,
+        fullUrl,
+        baseUrl,
+      });
+      
       // Request body is just the Google credential string (not an object!)
       const response = await apiClient.post<ApiResponse<LoginResponse>>(
-        `${this.BASE_PATH}/login/google/oauth`,
+        endpoint,
         JSON.stringify(credential),
         {
           headers: {

@@ -17,6 +17,23 @@ import { communityAPI } from "@/lib/api/community-api";
 import { useAuthStore } from "@/store/auth-store";
 import { ApiComment } from "@/types/community";
 import { toast } from "sonner";
+import { ReportDialog } from "@/components/community/report/ReportDialog";
+import { AxiosError } from "axios";
+
+const getErrorMessage = (error: unknown, fallback: string) => {
+  if (error instanceof AxiosError) {
+    const message = error.response?.data?.message ?? error.response?.data?.error;
+    if (typeof message === "string" && message.length > 0) {
+      return message;
+    }
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return fallback;
+};
 
 interface CommentSectionProps {
   postId: string;
@@ -41,9 +58,34 @@ function ReplyItem({ reply, postId }: ReplyItemProps) {
   const [editText, setEditText] = useState(reply.comment);
   const [isUpdating, setIsUpdating] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
   const { user } = useAuthStore();
   
   const isOwnReply = user && reply.userId === parseInt(user.id);
+  const numericPostId = Number.parseInt(postId, 10);
+
+  const handleReport = async (reason: string) => {
+    if (!user?.id) {
+      const message = "You need to sign in to report content.";
+      toast.error(message);
+      throw new Error(message);
+    }
+
+    try {
+      const response = await communityAPI.createReport({
+        userId: parseInt(user.id, 10),
+        postId: Number.isNaN(numericPostId) ? undefined : numericPostId,
+        commentId: reply.id,
+        type: "COMMENT",
+        description: reason,
+      });
+      toast.success(response?.message || "Report submitted successfully");
+    } catch (error) {
+      const message = getErrorMessage(error, "Failed to submit report");
+      toast.error(message);
+      throw new Error(message);
+    }
+  };
 
   const handleEdit = async () => {
     if (!editText.trim()) return;
@@ -58,7 +100,8 @@ function ReplyItem({ reply, postId }: ReplyItemProps) {
       toast.success("Reply updated successfully");
     } catch (error) {
       console.error("Error updating reply:", error);
-      toast.error("Failed to update reply");
+      const message = getErrorMessage(error, "Failed to update reply");
+      toast.error(message);
     } finally {
       setIsUpdating(false);
     }
@@ -74,12 +117,14 @@ function ReplyItem({ reply, postId }: ReplyItemProps) {
       setShowDeleteDialog(false);
     } catch (error) {
       console.error("Error deleting reply:", error);
-      toast.error("Failed to delete reply");
+      const message = getErrorMessage(error, "Failed to delete reply");
+      toast.error(message);
     }
   };
 
   return (
-    <div className="flex gap-3 group">
+    <>
+      <div className="flex gap-3 group">
       <Avatar className="w-6 h-6 flex-shrink-0 ring-1 ring-cyan-400/15">
         {reply.userAvatarUrl && (
           <AvatarImage
@@ -201,11 +246,31 @@ function ReplyItem({ reply, postId }: ReplyItemProps) {
                   </AlertDialog>
                 </>
               )}
+              {!isOwnReply && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsReportDialogOpen(true)}
+                  className="h-auto p-0 text-xs text-rose-300 hover:text-rose-200 font-semibold hover:bg-transparent transition-all opacity-0 group-hover:opacity-100"
+                >
+                  Report
+                </Button>
+              )}
             </div>
           </>
         )}
       </div>
-    </div>
+      </div>
+
+      <ReportDialog
+        open={isReportDialogOpen}
+        onOpenChange={setIsReportDialogOpen}
+        onSubmit={handleReport}
+        title="Report Reply"
+        description="Select a reason for reporting this reply. Our moderation team will review it."
+        confirmLabel="Submit report"
+      />
+    </>
   );
 }
 
@@ -222,10 +287,12 @@ function CommentItem({
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(comment.comment);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
   const { user } = useAuthStore();
 
   // Check if current user owns this comment
   const isOwnComment = user && comment.userId === parseInt(user.id);
+  const numericPostId = Number.parseInt(postId, 10);
 
   const handleReply = async () => {
     if (!user || !replyText.trim()) return;
@@ -244,8 +311,9 @@ function CommentItem({
       setReplyText("");
       setShowReplyForm(false);
       toast.success(response.message || "Reply added successfully");
-    } catch {
-      toast.error("Failed to add reply");
+    } catch (error) {
+      const message = getErrorMessage(error, "Failed to add reply");
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -267,7 +335,8 @@ function CommentItem({
       toast.success("Comment updated successfully");
     } catch (error) {
       console.error("Error updating comment:", error);
-      toast.error("Failed to update comment");
+      const message = getErrorMessage(error, "Failed to update comment");
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -294,14 +363,39 @@ function CommentItem({
       setShowDeleteDialog(false);
     } catch (error) {
       console.error("Error deleting comment:", error);
-      toast.error("Failed to delete comment");
+      const message = getErrorMessage(error, "Failed to delete comment");
+      toast.error(message);
     } finally {
       setIsDeleting(false);
     }
   };
 
+  const handleReport = async (reason: string) => {
+    if (!user?.id) {
+      const message = "You need to sign in to report content.";
+      toast.error(message);
+      throw new Error(message);
+    }
+
+    try {
+      const response = await communityAPI.createReport({
+        userId: parseInt(user.id, 10),
+        postId: Number.isNaN(numericPostId) ? undefined : numericPostId,
+        commentId: comment.id,
+        type: "COMMENT",
+        description: reason,
+      });
+      toast.success(response?.message || "Report submitted successfully");
+    } catch (error) {
+      const message = getErrorMessage(error, "Failed to submit report");
+      toast.error(message);
+      throw new Error(message);
+    }
+  };
+
   return (
-    <div className="space-y-2">
+    <>
+      <div className="space-y-2">
       {/* Main Comment */}
       <div className="flex gap-3 group">
         <Avatar className="w-8 h-8 flex-shrink-0 ring-1.5 ring-cyan-400/20">
@@ -386,6 +480,16 @@ function CommentItem({
                 >
                   Reply
                 </Button>
+                {!isOwnComment && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsReportDialogOpen(true)}
+                    className="h-auto p-0 text-xs text-rose-300 hover:text-rose-200 font-semibold hover:bg-transparent transition-all opacity-0 group-hover:opacity-100"
+                  >
+                    Report
+                  </Button>
+                )}
                 {isOwnComment && (
                   <>
                     <Button
@@ -449,43 +553,53 @@ function CommentItem({
       )}
 
       {/* Reply Form */}
-      {showReplyForm && (
-        <div className="ml-11 flex gap-2 p-2.5 rounded-lg bg-gradient-to-br from-cyan-400/5 to-blue-400/5 border border-cyan-400/10 group">
-          <Avatar className="w-6 h-6 flex-shrink-0 ring-1 ring-cyan-400/20">
-            <AvatarFallback className="text-xs font-semibold bg-gradient-to-br from-cyan-400 to-blue-500 text-white">
-              {user?.displayName?.charAt(0)?.toUpperCase() || "U"}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1 flex items-center gap-2">
-            <input
-              type="text"
-              placeholder="Add a reply..."
-              value={replyText}
-              onChange={(e) => setReplyText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleReply();
-                }
-              }}
-              className="flex-1 outline-none bg-transparent text-sm text-blue-100 placeholder:text-blue-300/50 focus:placeholder:text-blue-300/70 transition-colors disabled:opacity-50"
-              autoFocus
-            />
-            {replyText.trim() && (
-              <Button
-                size="sm"
-                onClick={handleReply}
-                disabled={isSubmitting}
-                variant="ghost"
-                className="h-auto p-0 text-xs text-cyan-300 hover:text-cyan-200 font-semibold hover:bg-transparent transition-colors disabled:opacity-50"
-              >
-                {isSubmitting ? "..." : "Post"}
-              </Button>
-            )}
+        {showReplyForm && (
+          <div className="ml-11 flex gap-2 p-2.5 rounded-lg bg-gradient-to-br from-cyan-400/5 to-blue-400/5 border border-cyan-400/10 group">
+            <Avatar className="w-6 h-6 flex-shrink-0 ring-1 ring-cyan-400/20">
+              <AvatarFallback className="text-xs font-semibold bg-gradient-to-br from-cyan-400 to-blue-500 text-white">
+                {user?.displayName?.charAt(0)?.toUpperCase() || "U"}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 flex items-center gap-2">
+              <input
+                type="text"
+                placeholder="Add a reply..."
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleReply();
+                  }
+                }}
+                className="flex-1 outline-none bg-transparent text-sm text-blue-100 placeholder:text-blue-300/50 focus:placeholder:text-blue-300/70 transition-colors disabled:opacity-50"
+                autoFocus
+              />
+              {replyText.trim() && (
+                <Button
+                  size="sm"
+                  onClick={handleReply}
+                  disabled={isSubmitting}
+                  variant="ghost"
+                  className="h-auto p-0 text-xs text-cyan-300 hover:text-cyan-200 font-semibold hover:bg-transparent transition-colors disabled:opacity-50"
+                >
+                  {isSubmitting ? "..." : "Post"}
+                </Button>
+              )}
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+
+      <ReportDialog
+        open={isReportDialogOpen}
+        onOpenChange={setIsReportDialogOpen}
+        onSubmit={handleReport}
+        title="Report Comment"
+        description="Select a reason for reporting this comment. Our moderation team will review it."
+        confirmLabel="Submit report"
+      />
+    </>
   );
 }
 
@@ -520,8 +634,9 @@ export default function CommentSection({
       );
 
       setComments(commentsWithReplies);
-    } catch {
-      toast.error("Failed to load comments");
+    } catch (error) {
+      const message = getErrorMessage(error, "Failed to load comments");
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }
@@ -568,7 +683,8 @@ export default function CommentSection({
       // Note: Success toast is already shown in handleReply
     } catch (error) {
       console.error("Error refreshing replies:", error);
-      toast.error("Failed to refresh replies");
+      const message = getErrorMessage(error, "Failed to refresh replies");
+      toast.error(message);
     }
   };
 
