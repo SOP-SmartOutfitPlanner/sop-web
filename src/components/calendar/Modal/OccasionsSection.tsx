@@ -1,7 +1,8 @@
 "use client";
 
-import { Calendar, Plus } from "lucide-react";
+import { Calendar, Plus, Shirt } from "lucide-react";
 import GlassButton from "@/components/ui/glass-button";
+import Image from "next/image";
 import { UserOccasion } from "@/types/userOccasion";
 import { Outfit } from "@/types/outfit";
 import { CalendarEntry, Calender } from "@/types/calender";
@@ -20,6 +21,7 @@ interface OccasionsSectionProps {
   canAddOccasion?: boolean;
   onToggleOccasion: (occasionId: number) => void;
   onAddOccasion: () => void;
+  onAddDailyOutfit: () => void;
   onEditOccasion: (occasion: UserOccasion, e?: React.MouseEvent) => void;
   onToggleSelection: (outfitId: number, occasionId: number) => void;
   onToggleSelectAll: (outfitIds: number[], occasionId: number) => void;
@@ -31,6 +33,7 @@ interface OccasionsSectionProps {
   ) => void;
   onDeleteEntry: (entryId: number, e?: React.MouseEvent) => void;
   onEditEntry: (entry: Calender, e?: React.MouseEvent) => void;
+  onDeleteOccasion: (occasionId: number, e?: React.MouseEvent) => void;
 }
 
 export function OccasionsSection({
@@ -46,6 +49,7 @@ export function OccasionsSection({
   canAddOccasion = true,
   onToggleOccasion,
   onAddOccasion,
+  onAddDailyOutfit,
   onEditOccasion,
   onToggleSelection,
   onToggleSelectAll,
@@ -53,6 +57,7 @@ export function OccasionsSection({
   onAddSingle,
   onDeleteEntry,
   onEditEntry,
+  onDeleteOccasion,
 }: OccasionsSectionProps) {
   return (
     <div>
@@ -61,17 +66,30 @@ export function OccasionsSection({
           <Calendar className="w-6 h-6 text-purple-400" />
           Your Occasions for This Day
         </h3>
-        <GlassButton 
-          variant="ghost" 
-          size="md" 
-          onClick={onAddOccasion}
-          disabled={!canAddOccasion}
-          title={!canAddOccasion ? "Cannot create occasion in the past" : undefined}
-        >
-          <Plus className="w-5 h-5" />
-          Add Occasion
-        </GlassButton>
+        <div className="flex items-center gap-2">
+          <GlassButton 
+            variant="ghost" 
+            size="md" 
+            onClick={onAddDailyOutfit}
+            disabled={!canAddOccasion}
+            title={!canAddOccasion ? "Cannot add outfit to calendar in the past" : undefined}
+          >
+            <Shirt className="w-5 h-5" />
+            Add Outfit
+          </GlassButton>
+          <GlassButton 
+            variant="ghost" 
+            size="md" 
+            onClick={onAddOccasion}
+            disabled={!canAddOccasion}
+            title={!canAddOccasion ? "Cannot create occasion in the past" : undefined}
+          >
+            <Plus className="w-5 h-5" />
+            Add Occasion
+          </GlassButton>
+        </div>
       </div>
+   
 
       {/* Occasions List - Expandable */}
       <div className="space-y-3">
@@ -124,6 +142,7 @@ export function OccasionsSection({
                 onAddSingle={(outfit, e) => onAddSingle(occasion.id, outfit, e)}
                 onDeleteEntry={onDeleteEntry}
                 onEditEntry={onEditEntry}
+                onDeleteOccasion={onDeleteOccasion}
                 calendarEntries={calendarEntries}
               />
             );

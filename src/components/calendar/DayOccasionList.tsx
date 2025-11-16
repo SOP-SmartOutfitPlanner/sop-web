@@ -187,7 +187,7 @@ export function DayOccasionList({
         {hiddenCount > 0 && (
           <Tooltip
             title={
-              <div className="space-y-1.5 w-[320px]">
+              <div className="space-y-1.5 w-full">
                 <div className="text-xs font-semibold border-b border-white/20 pb-1">
                   +{hiddenCount} More Occasion{hiddenCount > 1 ? "s" : ""}
                 </div>

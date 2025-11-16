@@ -12,8 +12,8 @@ export interface GetUserOccasionRequest{
     Today? : boolean;
 }
 export interface CreateUserOccasionRequest{
-   occasionId: number;
-    name: string;
+   occasionId?: number| null;
+   name: string| null;
     description: string;
     dateOccasion: string;
     startTime: string;

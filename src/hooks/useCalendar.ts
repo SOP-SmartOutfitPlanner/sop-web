@@ -162,7 +162,7 @@ export function useDeleteCalendarEntry() {
   return useMutation({
     mutationFn: (id: number) => CalenderAPI.deleteCalendarEntry(id),
     onSuccess: () => {
-      toast.success("Removed from calendar successfully!");
+      toast.success("Outfit calendar entry deleted successfully!");
       queryClient.invalidateQueries({ queryKey: ["calendar-entries"] });
       queryClient.invalidateQueries({ queryKey: ["user-occasions"] });
     },

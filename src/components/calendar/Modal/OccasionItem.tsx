@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import {
   ChevronDown,
   ChevronUp,
   Edit,
+  Trash2,
   Calendar,
   Shirt,
   Clock,
@@ -14,6 +16,7 @@ import { Outfit } from "@/types/outfit";
 import { CalendarEntry, Calender } from "@/types/calender";
 import { PlannedOutfitsGrid } from "./PlannedOutfitsGrid";
 import { AvailableOutfitsGrid } from "./AvailableOutfitsGrid";
+import { ViewOutfitDialog } from "@/components/outfit/ViewOutfitDialog";
 
 interface OccasionItemProps {
   occasion: UserOccasion;
@@ -32,6 +35,7 @@ interface OccasionItemProps {
   onAddSingle: (outfit: Outfit, e?: React.MouseEvent) => void;
   onDeleteEntry: (entryId: number, e?: React.MouseEvent) => void;
   onEditEntry: (entry: Calender, e?: React.MouseEvent) => void;
+  onDeleteOccasion: (occasionId: number, e?: React.MouseEvent) => void;
   calendarEntries: CalendarEntry[];
 }
 
@@ -52,9 +56,52 @@ export function OccasionItem({
   onAddSingle,
   onDeleteEntry,
   onEditEntry,
+  onDeleteOccasion,
   calendarEntries,
 }: OccasionItemProps) {
   const plannedCount = plannedOutfits.length;
+  const [viewingOutfit, setViewingOutfit] = useState<Outfit | null>(null);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+
+  // Convert Calender to Outfit format
+  const convertCalenderToOutfit = (calender: Calender): Outfit => {
+    return {
+      id: calender.outfitId,
+      userId: calender.outfitDetails.userId,
+      userDisplayName: calender.outfitDetails.userDisplayName,
+      name: calender.outfitName,
+      description: calender.outfitDetails.description || "",
+      isFavorite: calender.outfitDetails.isFavorite,
+      isSaved: calender.outfitDetails.isSaved,
+      createdDate: calender.outfitDetails.createdDate,
+      updatedDate: calender.outfitDetails.updatedDate,
+      items: calender.outfitDetails.items.map((item) => ({
+        id: item.itemId,
+        itemId: item.itemId,
+        name: item.name,
+        categoryId: item.categoryId,
+        categoryName: item.categoryName,
+        color: item.color,
+        brand: item.brand || "",
+        frequencyWorn: item.frequencyWorn?.toString() || "0",
+        lastWornAt: item.lastWornAt,
+        imgUrl: item.imgUrl,
+        weatherSuitable: item.weatherSuitable,
+        condition: item.condition,
+        pattern: item.pattern,
+        fabric: item.fabric,
+      })),
+    };
+  };
+
+  const handleViewOutfit = (calender: Calender, e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
+    const outfit = convertCalenderToOutfit(calender);
+    setViewingOutfit(outfit);
+    setIsViewDialogOpen(true);
+  };
 
   return (
     <div className="border-2 border-transparent bg-white/10 rounded-xl overflow-hidden transition-all duration-300 hover:border-purple-400/50">
@@ -107,14 +154,25 @@ export function OccasionItem({
             </div>
           </div>
 
-          {/* Edit Button */}
-          <button
-            onClick={(e) => onEdit(occasion, e)}
-            className="p-2.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 hover:border-blue-400/50 transition-all duration-200"
-            title="Edit occasion"
-          >
-            <Edit className="w-4 h-4 text-blue-300" />
-          </button>
+          {/* Action Buttons */}
+          <div className="flex items-center gap-2">
+            {/* Edit Button */}
+            <button
+              onClick={(e) => onEdit(occasion, e)}
+              className="p-2.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 hover:border-blue-400/50 transition-all duration-200"
+              title="Edit occasion"
+            >
+              <Edit className="w-4 h-4 text-blue-300" />
+            </button>
+            {/* Delete Button */}
+            <button
+              onClick={(e) => onDeleteOccasion(occasion.id, e)}
+              className="p-2.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 hover:border-red-400/50 transition-all duration-200"
+              title="Delete occasion"
+            >
+              <Trash2 className="w-4 h-4 text-red-300" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -137,6 +195,7 @@ export function OccasionItem({
               isDeletingEntry={isDeletingEntry}
               onDeleteEntry={onDeleteEntry}
               onEditEntry={onEditEntry}
+              onViewOutfit={handleViewOutfit}
               calendarEntries={calendarEntries}
             />
           )}
@@ -165,6 +224,13 @@ export function OccasionItem({
           )}
         </div>
       )}
+
+      {/* View Outfit Dialog */}
+      <ViewOutfitDialog
+        open={isViewDialogOpen}
+        onOpenChange={setIsViewDialogOpen}
+        outfit={viewingOutfit}
+      />
     </div>
   );
 }
