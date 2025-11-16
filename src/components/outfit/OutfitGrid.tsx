@@ -12,6 +12,7 @@ interface OutfitGridProps {
   onViewOutfit?: (outfit: Outfit) => void;
   onEditOutfit?: (outfit: Outfit) => void;
   onDeleteOutfit?: (outfitId: number) => void;
+  onUseToday?: (outfit: Outfit) => void;
 }
 
 const OutfitGridComponent = ({
@@ -20,6 +21,7 @@ const OutfitGridComponent = ({
   onViewOutfit,
   onEditOutfit,
   onDeleteOutfit,
+  onUseToday,
 }: OutfitGridProps) => {
   // Memoize empty state to prevent re-renders
   const emptyState = useMemo(
@@ -73,6 +75,7 @@ const OutfitGridComponent = ({
               onView={onViewOutfit}
               onEdit={onEditOutfit}
               onDelete={onDeleteOutfit}
+              onUseToday={onUseToday}
             />
           </div>
         ))}
@@ -93,7 +96,8 @@ export const OutfitGrid = memo(OutfitGridComponent, (prevProps, nextProps) => {
   if (
     prevProps.onViewOutfit !== nextProps.onViewOutfit ||
     prevProps.onEditOutfit !== nextProps.onEditOutfit ||
-    prevProps.onDeleteOutfit !== nextProps.onDeleteOutfit
+    prevProps.onDeleteOutfit !== nextProps.onDeleteOutfit ||
+    prevProps.onUseToday !== nextProps.onUseToday
   ) {
     return false;
   }

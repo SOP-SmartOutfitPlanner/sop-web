@@ -1,20 +1,22 @@
 "use client";
 
-import { useState, memo, useCallback, MouseEvent } from "react";
+import React, { useState, memo, useCallback, MouseEvent } from "react";
 import { motion } from "framer-motion";
-import { Heart, Calendar, User, Trash2, Edit } from "lucide-react";
+import { Heart, Calendar, User, Trash2, Edit, Sparkles } from "lucide-react";
 import { Outfit } from "@/types/outfit";
 import GlassCard from "@/components/ui/glass-card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useSaveFavoriteOutfit } from "@/hooks/useOutfits";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import GlassButton from "@/components/ui/glass-button";
 
 interface OutfitCardProps {
   outfit: Outfit;
   onView?: (outfit: Outfit) => void;
   onEdit?: (outfit: Outfit) => void;
   onDelete?: (outfitId: number) => void;
+  onUseToday?: (outfit: Outfit) => void;
 }
 
 const OutfitCardComponent = ({
@@ -22,6 +24,7 @@ const OutfitCardComponent = ({
   onView,
   onEdit,
   onDelete,
+  onUseToday,
 }: OutfitCardProps) => {
   const { mutate: toggleFavorite, isPending } = useSaveFavoriteOutfit();
   const [isHovered, setIsHovered] = useState(false);
@@ -61,6 +64,18 @@ const OutfitCardComponent = ({
       onView(outfit);
     }
   }, [onView, outfit]);
+
+  const handleUseTodayClick = useCallback(
+    (e?: React.MouseEvent<HTMLButtonElement>) => {
+      if (e) {
+        e.stopPropagation();
+      }
+      if (onUseToday) {
+        onUseToday(outfit);
+      }
+    },
+    [onUseToday, outfit]
+  );
 
   const formattedDate = useCallback(() => {
     return format(new Date(outfit.createdDate), "MMM d, yyyy");
@@ -175,44 +190,66 @@ const OutfitCardComponent = ({
             )}
           </div>
 
-          {/* Content - Fixed Height */}
-          <div className="px-4 h-35 flex flex-col pb-2">
-            <div className="flex-1 min-h-0">
+          {/* Content */}
+          <div className="px-4 pt-3 pb-4 flex flex-col flex-1 min-h-[200px]">
+            {/* Outfit Name */}
+            <div className="mb-2 min-h-20">
               <h3 className="font-bricolage font-semibold text-lg text-white line-clamp-1 break-all">
                 {outfit.name}
               </h3>
-              {outfit.description && (
-                <p className="font-poppins text-sm text-white/80 line-clamp-2 break-all mt-1">
+              {outfit.description ? (
+                <p className="font-poppins text-sm text-white/70 line-clamp-2 break-all mt-1.5">
                   {outfit.description}
                 </p>
+              ) : (
+                <div className="mt-1.5 h-10"></div>
               )}
             </div>
 
             {/* Meta Info */}
-            <div className="flex items-center gap-4 text-xs text-white/70">
-              <div className="flex items-center gap-1">
-                <User className="w-4 h-4 shrink-0" />
+            <div className="flex items-center gap-3 text-xs text-white/60 mb-3">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <User className="w-3.5 h-3.5 shrink-0" />
                 <span className="line-clamp-1 break-all">
                   {outfit.userDisplayName}
                 </span>
               </div>
-              <div className="flex items-center gap-1 shrink-0">
-                <Calendar className="w-4 h-4" />
+              <div className="flex items-center gap-1.5 shrink-0">
+                <Calendar className="w-3.5 h-3.5" />
                 <span>{formattedDate()}</span>
               </div>
             </div>
 
-            {/* Item Count */}
-            <div className="flex items-center justify-between border-t border-white/20">
-              <span className="text-sm font-medium text-white pb-2">
+            {/* Item Count and Saved Badge */}
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium text-white/80">
                 {outfit.items.length}{" "}
                 {outfit.items.length === 1 ? "item" : "items"}
               </span>
               {outfit.isSaved && (
-                <span className="text-xs px-2 py-1 rounded-full bg-blue-500/50 border border-blue-300/70 text-blue-200">
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/40 border border-blue-400/50 text-blue-200 font-medium">
                   Saved
                 </span>
               )}
+            </div>
+
+            {/* Use Outfit Today Button - Always reserve space */}
+            <div className="mt-auto pt-3 border-t border-white/10 min-h-14 flex items-end">
+              {onUseToday ? (
+                <GlassButton
+                  variant="custom"
+                  backgroundColor="rgba(59, 130, 246, 0.4)"
+                  borderColor="rgba(59, 130, 246, 0.6)"
+                  textColor="white"
+                  size="sm"
+                  onClick={handleUseTodayClick}
+                  fullWidth
+                  className="text-sm font-medium shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 transition-all duration-200"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Use Outfit Today
+                </GlassButton>
+              ) : null}
             </div>
           </div>
         </GlassCard>
@@ -254,7 +291,8 @@ export const OutfitCard = memo(OutfitCardComponent, (prevProps, nextProps) => {
   if (
     prevProps.onView !== nextProps.onView ||
     prevProps.onEdit !== nextProps.onEdit ||
-    prevProps.onDelete !== nextProps.onDelete
+    prevProps.onDelete !== nextProps.onDelete ||
+    prevProps.onUseToday !== nextProps.onUseToday
   ) {
     return false;
   }

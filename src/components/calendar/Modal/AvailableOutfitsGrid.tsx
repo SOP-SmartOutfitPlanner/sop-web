@@ -1,6 +1,7 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import { Outfit } from "@/types/outfit";
 import GlassButton from "@/components/ui/glass-button";
 import Image from "next/image";
@@ -16,6 +17,8 @@ interface AvailableOutfitsGridProps {
   onAddSingle: (outfit: Outfit, e?: React.MouseEvent) => void;
 }
 
+const ITEMS_PER_PAGE = 8;
+
 export function AvailableOutfitsGrid({
   outfits,
   selectedOutfits,
@@ -26,6 +29,47 @@ export function AvailableOutfitsGrid({
   onBatchAdd,
   onAddSingle,
 }: AvailableOutfitsGridProps) {
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Calculate pagination
+  const totalPages = Math.ceil(outfits.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const currentPageOutfits = outfits.slice(startIndex, endIndex);
+
+  // Reset to page 1 when outfits change or current page is invalid
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1);
+    }
+  }, [outfits.length, totalPages, currentPage]);
+
+  const handleToggleSelectAll = () => {
+    const currentPageIds = currentPageOutfits.map((o) => o.id);
+    const allSelected = currentPageIds.every((id) =>
+      selectedOutfits.includes(id)
+    );
+    if (allSelected) {
+      // Deselect all in current page
+      onToggleSelectAll(
+        selectedOutfits.filter((id) => !currentPageIds.includes(id))
+      );
+    } else {
+      // Select all in current page (merge with existing selections)
+      const newSelections = [
+        ...selectedOutfits.filter((id) => !currentPageIds.includes(id)),
+        ...currentPageIds,
+      ];
+      onToggleSelectAll(newSelections);
+    }
+  };
+
+  const currentPageSelectedCount = currentPageOutfits.filter((o) =>
+    selectedOutfits.includes(o.id)
+  ).length;
+  const allInCurrentPageSelected =
+    currentPageOutfits.length > 0 &&
+    currentPageOutfits.every((o) => selectedOutfits.includes(o.id));
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
@@ -33,15 +77,30 @@ export function AvailableOutfitsGrid({
           <h5 className="font-bricolage font-semibold text-white text-sm flex items-center gap-2">
             <Plus className="w-4 h-4 text-green-400" />
             Add Outfit to This Occasion
+            {outfits.length > 0 && (
+              <span className="text-xs text-white/50 font-normal">
+                ({outfits.length} available)
+              </span>
+            )}
           </h5>
-          <button
-            onClick={() => onToggleSelectAll(outfits.map((o) => o.id))}
-            className="text-xs text-green-400 hover:text-green-300 font-medium transition-colors"
-          >
-            {outfits.every((o) => selectedOutfits.includes(o.id))
-              ? "Deselect All"
-              : "Select All"}
-          </button>
+          {outfits.length > ITEMS_PER_PAGE && (
+            <button
+              onClick={handleToggleSelectAll}
+              className="text-xs text-green-400 hover:text-green-300 font-medium transition-colors"
+            >
+              {allInCurrentPageSelected ? "Deselect Page" : "Select Page"}
+            </button>
+          )}
+          {outfits.length <= ITEMS_PER_PAGE && (
+            <button
+              onClick={() => onToggleSelectAll(outfits.map((o) => o.id))}
+              className="text-xs text-green-400 hover:text-green-300 font-medium transition-colors"
+            >
+              {outfits.every((o) => selectedOutfits.includes(o.id))
+                ? "Deselect All"
+                : "Select All"}
+            </button>
+          )}
         </div>
         {selectedOutfits.length > 0 && (
           <GlassButton
@@ -63,9 +122,16 @@ export function AvailableOutfitsGrid({
             Loading outfits...
           </p>
         </div>
+      ) : outfits.length === 0 ? (
+        <div className="text-center py-8">
+          <p className="font-poppins text-sm text-white/50">
+            No available outfits
+          </p>
+        </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-          {outfits.map((outfit) => {
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            {currentPageOutfits.map((outfit) => {
             const isSelected = selectedOutfits.includes(outfit.id);
             return (
               <div
@@ -163,7 +229,52 @@ export function AvailableOutfitsGrid({
               </div>
             );
           })}
-        </div>
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="mt-4 flex items-center justify-between">
+              <div className="text-xs text-white/60">
+                Showing {startIndex + 1}-{Math.min(endIndex, outfits.length)} of{" "}
+                {outfits.length} outfits
+                {selectedOutfits.length > 0 && (
+                  <span className="ml-2 text-green-400">
+                    ({selectedOutfits.length} selected)
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <GlassButton
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1 || isLoadingOutfits}
+                  className="min-w-[80px]"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Previous
+                </GlassButton>
+                <div className="flex items-center gap-1 px-3">
+                  <span className="font-poppins text-sm text-white/70">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                </div>
+                <GlassButton
+                  variant="ghost"
+                  size="sm"
+                  onClick={() =>
+                    setCurrentPage((p) => Math.min(totalPages, p + 1))
+                  }
+                  disabled={currentPage === totalPages || isLoadingOutfits}
+                  className="min-w-[80px]"
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4" />
+                </GlassButton>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

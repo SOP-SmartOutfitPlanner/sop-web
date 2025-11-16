@@ -20,16 +20,19 @@ import { Tooltip } from "antd";
 import GlassButton from "@/components/ui/glass-button";
 import { CalendarDayModal } from "./CalendarDayModal";
 import { CalendarEntry } from "@/types/calender";
+import { UserOccasion } from "@/types/userOccasion";
 
 interface WeeklyCalendarProps {
   onShowMonthView?: () => void;
   calendarEntries: CalendarEntry[];
+  userOccasions?: UserOccasion[];
   isLoading: boolean;
 }
 
 export function WeeklyCalendar({
   onShowMonthView,
   calendarEntries,
+  userOccasions = [],
 }: WeeklyCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -52,24 +55,39 @@ export function WeeklyCalendar({
       return occasionDate === dayString;
     });
 
+    // Filter user occasions for this day (including those without outfits)
+    const dayOccasions = userOccasions.filter((occ) => {
+      const occasionDate = format(new Date(occ.dateOccasion), "yyyy-MM-dd");
+      return occasionDate === dayString;
+    });
+
+    // Get occasion IDs that already have calendar entries
+    const occasionsWithOutfits = new Set(
+      dayEntries.map((entry) => entry.userOccasion.id)
+    );
+
+    // Find occasions without outfits
+    const occasionsWithoutOutfits = dayOccasions.filter(
+      (occ) => !occasionsWithOutfits.has(occ.id)
+    );
+
     // Count total outfits for this day
     const totalOutfits = dayEntries.reduce(
       (sum, entry) => sum + entry.outfits.length,
       0
     );
 
-    // Debug log
-    if (dayEntries.length > 2) {
-      console.log(
-        `Day ${dayString} has ${dayEntries.length} occasions`,
-        dayEntries
-      );
-    }
+    // Combine entries with occasions without outfits
+    const allOccasions = [
+      ...dayEntries.map((e) => e.userOccasion),
+      ...occasionsWithoutOutfits,
+    ];
 
     return {
-      occasions: dayEntries.map((e) => e.userOccasion),
+      occasions: allOccasions,
       entries: dayEntries,
-      hasOccasions: dayEntries.length > 0,
+      occasionsWithoutOutfits,
+      hasOccasions: allOccasions.length > 0,
       hasOutfits: totalOutfits > 0,
     };
   };
@@ -100,7 +118,7 @@ export function WeeklyCalendar({
             Weekly Outfit Planner
           </h2>
           <p className="font-bricolage text-white/60 mt-1">
-            Plan your outfits ahead for each day of the week ·{" "}
+            Plan your outfits ahead for each day of the week ·
             {format(currentDate, "yyyy")}-W{format(currentDate, "II")}
           </p>
         </div>
@@ -156,8 +174,8 @@ export function WeeklyCalendar({
                     hover:scale-[1.02] group
                   `}
                 >
-                  {/* Empty State */}
-                  {!dayInfo.hasOutfits && (
+                  {/* Empty State - Only show if no occasions at all */}
+                  {!dayInfo.hasOccasions && (
                     <div className="flex flex-col items-center justify-center h-full text-white/40 group-hover:text-white/60 transition-colors">
                       <div className="w-12 h-12 rounded-full border-2 border-dashed border-current flex items-center justify-center mb-3">
                         <span className="text-2xl font-light">+</span>
@@ -166,8 +184,8 @@ export function WeeklyCalendar({
                     </div>
                   )}
 
-                  {/* Outfit Preview with Images */}
-                  {dayInfo.hasOutfits && (
+                  {/* Occasions and Outfits */}
+                  {dayInfo.hasOccasions && (
                     <div className="space-y-2 h-full overflow-y-auto">
                       {dayInfo.entries.slice(0, 2).map((entry, idx) => {
                         const firstOutfit = entry.outfits[0];
@@ -257,7 +275,7 @@ export function WeeklyCalendar({
                                 {entry.outfits.length > 1 && (
                                   <Tooltip
                                     title={
-                                      <div className="space-y-2 w-[320px]">
+                                      <div className="space-y-2 w-full">
                                         {/* Header */}
                                         <div className="text-xs font-semibold border-b border-white/20 pb-1.5">
                                           {isDaily
@@ -344,6 +362,66 @@ export function WeeklyCalendar({
                                 )}
                               </div>
                             )}
+                          </div>
+                        );
+                      })}
+
+                      {/* Show occasions without outfits */}
+                      {dayInfo.occasionsWithoutOutfits.map((occasion, occIdx) => {
+                        const isDaily = occasion.name?.toLowerCase() === "daily" && occasion.occasionId === null;
+                        
+                        return (
+                          <div
+                            key={`no-outfit-${occasion.id}`}
+                            className="bg-white/5 rounded-lg overflow-hidden border border-white/10 border-dashed hover:border-white/20 transition-all"
+                          >
+                            {/* Occasion Header */}
+                            <div className="px-2 py-1.5 bg-white/5 border-b border-white/10">
+                              <div className="flex items-center gap-1.5">
+                                <div
+                                  className={`w-1.5 h-1.5 rounded-full ${
+                                    isDaily ? "bg-cyan-400" : "bg-purple-400"
+                                  }`}
+                                />
+                                <span className="text-[10px] font-semibold text-white/90 truncate">
+                                  {isDaily
+                                    ? "Daily Outfit"
+                                    : occasion.occasionName || "Occasion"}
+                                </span>
+                              </div>
+                              {!isDaily && occasion.name && (
+                                <p className="text-[9px] text-white/60 truncate mt-0.5">
+                                  {occasion.name}
+                                </p>
+                              )}
+                            </div>
+                            
+                            {/* No Outfit Placeholder */}
+                            <div className="p-4 flex flex-col items-center justify-center min-h-[120px]">
+                              <div className="w-16 h-16 rounded-full border-2 border-dashed border-white/20 flex items-center justify-center mb-2">
+                                <svg
+                                  className="w-8 h-8 text-white/30"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={1.5}
+                                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                  />
+                                </svg>
+                              </div>
+                              <p className="text-[10px] text-white/50 text-center">
+                                No outfit assigned
+                              </p>
+                              {occasion.startTime && (
+                                <p className="text-[9px] text-white/40 mt-1">
+                                  {format(new Date(occasion.startTime), "HH:mm")}
+                                </p>
+                              )}
+                            </div>
                           </div>
                         );
                       })}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useModalScroll } from "@/hooks/useModalScroll";
 import { X, Calendar, Clock, Trash2, Save } from "lucide-react";
 import { format, isBefore, startOfDay } from "date-fns";
 import { Select } from "antd";
@@ -39,11 +40,20 @@ export function UserOccasionFormModal({
 }: UserOccasionFormModalProps) {
   const isEditing = !!editingOccasion;
 
+  // Ensure we always have a valid date string
+  const getInitialDate = () => {
+    try {
+      return selectedDate ? format(selectedDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
+    } catch {
+      return format(new Date(), 'yyyy-MM-dd');
+    }
+  };
+
   const [formData, setFormData] = useState<FormData>({
     occasionId: 0,
     name: "",
     description: "",
-    dateOccasion: format(selectedDate, 'yyyy-MM-dd'),
+    dateOccasion: getInitialDate(),
     startTime: "09:00",
     endTime: "17:00",
     weatherSnapshot: "Sunny",
@@ -63,23 +73,53 @@ export function UserOccasionFormModal({
   const { mutate: deleteOccasion, isPending: isDeleting } = useDeleteUserOccasion();
 
   const [isPastDateDialogOpen, setIsPastDateDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDailyNameDialogOpen, setIsDailyNameDialogOpen] = useState(false);
+
+  // Enable mouse wheel scrolling in modal content area
+  const scrollContainerRef = useModalScroll(open, {
+    smooth: false, // Disable smooth for faster scrolling
+    sensitivity: 1.2, // Slightly faster than default
+  });
 
   // Load editing data
   useEffect(() => {
+    const getDateString = () => {
+      try {
+        return selectedDate ? format(selectedDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
+      } catch {
+        return format(new Date(), 'yyyy-MM-dd');
+      }
+    };
+
     if (editingOccasion) {
       // Parse datetime strings back to separate date/time
-      const dateOccasion = format(new Date(editingOccasion.dateOccasion), 'yyyy-MM-dd');
-      const startTime = format(new Date(editingOccasion.startTime), 'HH:mm');
-      const endTime = format(new Date(editingOccasion.endTime), 'HH:mm');
+      let dateOccasion = "";
+      let startTime = "09:00";
+      let endTime = "17:00";
+      
+      try {
+        if (editingOccasion.dateOccasion) {
+          dateOccasion = format(new Date(editingOccasion.dateOccasion), 'yyyy-MM-dd');
+        }
+        if (editingOccasion.startTime) {
+          startTime = format(new Date(editingOccasion.startTime), 'HH:mm');
+        }
+        if (editingOccasion.endTime) {
+          endTime = format(new Date(editingOccasion.endTime), 'HH:mm');
+        }
+      } catch (error) {
+        console.error('Error parsing dates:', error);
+      }
 
       setFormData({
-        occasionId: editingOccasion.occasionId,
-        name: editingOccasion.name,
-        description: editingOccasion.description,
-        dateOccasion: dateOccasion,
-        startTime: startTime,
-        endTime: endTime,
-        weatherSnapshot: editingOccasion.weatherSnapshot,
+        occasionId: editingOccasion.occasionId || 0,
+        name: editingOccasion.name || "",
+        description: editingOccasion.description || "",
+        dateOccasion: dateOccasion || getDateString(),
+        startTime: startTime || "09:00",
+        endTime: endTime || "17:00",
+        weatherSnapshot: editingOccasion.weatherSnapshot || "",
       });
     } else {
       // Reset for new occasion
@@ -87,7 +127,7 @@ export function UserOccasionFormModal({
         occasionId: 0,
         name: "",
         description: "",
-        dateOccasion: format(selectedDate, 'yyyy-MM-dd'),
+        dateOccasion: getDateString(),
         startTime: "09:00",
         endTime: "17:00",
         weatherSnapshot: "Sunny",
@@ -97,6 +137,13 @@ export function UserOccasionFormModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Check if name is "Daily" (case-insensitive)
+    const trimmedName = formData.name.trim();
+    if (trimmedName.toLowerCase() === "daily") {
+      setIsDailyNameDialogOpen(true);
+      return;
+    }
 
     // Check if date is in the past (only for new occasions, not editing)
     if (!isEditing) {
@@ -121,14 +168,14 @@ export function UserOccasionFormModal({
       weatherSnapshot: formData.weatherSnapshot,
     };
 
-    console.log('📤 Submitting occasion:', { isEditing, payload });
+    // console.log('📤 Submitting occasion:', { isEditing, payload });
 
     if (isEditing && editingOccasion) {
       updateOccasion(
         { id: editingOccasion.id, data: payload },
         {
           onSuccess: () => {
-            console.log('✅ Occasion updated');
+            // console.log('✅ Occasion updated');
             onOpenChange(false);
           },
         }
@@ -136,7 +183,7 @@ export function UserOccasionFormModal({
     } else {
       createOccasion(payload, {
         onSuccess: () => {
-          console.log('✅ Occasion created');
+          // console.log('✅ Occasion created');
           onOpenChange(false);
         },
       });
@@ -145,15 +192,19 @@ export function UserOccasionFormModal({
 
   const handleDelete = () => {
     if (!editingOccasion) return;
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (!editingOccasion) return;
     
-    if (confirm(`Are you sure you want to delete "${editingOccasion.name}"?`)) {
-      deleteOccasion(editingOccasion.id, {
-        onSuccess: () => {
-          console.log('✅ Occasion deleted');
-          onOpenChange(false);
-        },
-      });
-    }
+    deleteOccasion(editingOccasion.id, {
+      onSuccess: () => {
+        // console.log('✅ Occasion deleted');
+        setIsDeleteDialogOpen(false);
+        onOpenChange(false);
+      },
+    });
   };
 
   if (!open) return null;
@@ -174,7 +225,7 @@ export function UserOccasionFormModal({
           className="w-[600px] max-w-[95vw] rounded-3xl overflow-hidden shadow-2xl bg-linear-to-br from-slate-900/95 via-blue-900/95 to-slate-900/95 backdrop-blur-xl border border-white/10"
           onClick={(e) => e.stopPropagation()}
         >
-          <form onSubmit={handleSubmit} className="flex flex-col max-h-[90vh]">
+          <form onSubmit={handleSubmit} className="flex flex-col max-h-[90vh] h-full">
             {/* Header */}
             <div className="px-8 pt-6 pb-4 shrink-0 border-b border-white/10">
               <div className="flex items-center justify-between">
@@ -191,6 +242,8 @@ export function UserOccasionFormModal({
                   onClick={() => onOpenChange(false)}
                   disabled={isPending}
                   className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-all duration-200"
+                  title="Close"
+                  aria-label="Close dialog"
                 >
                   <X className="w-5 h-5 text-white" />
                 </button>
@@ -198,7 +251,21 @@ export function UserOccasionFormModal({
             </div>
 
             {/* Form Content */}
-            <div className="flex-1 px-8 py-6 overflow-y-auto">
+            <div 
+              ref={scrollContainerRef}
+              className="flex-1 px-8 py-6 overflow-y-auto overflow-x-hidden min-h-0 scroll-smooth
+                [&::-webkit-scrollbar]:w-1.5
+                [&::-webkit-scrollbar-track]:bg-white/10
+                [&::-webkit-scrollbar-track]:rounded-full
+                [&::-webkit-scrollbar-thumb]:bg-purple-400/60
+                [&::-webkit-scrollbar-thumb]:rounded-full
+                [&::-webkit-scrollbar-thumb]:hover:bg-purple-400/80"
+              style={{ 
+                WebkitOverflowScrolling: 'touch',
+                overscrollBehavior: 'contain',
+                touchAction: 'pan-y'
+              }}
+            >
               <div className="space-y-5">
                 {/* Occasion Type */}
                 <div>
@@ -226,7 +293,7 @@ export function UserOccasionFormModal({
                   </label>
                   <input
                     type="text"
-                    value={formData.name}
+                    value={formData.name || ""}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="e.g., Team Lunch, Birthday Party"
                     required
@@ -241,7 +308,7 @@ export function UserOccasionFormModal({
                     Description
                   </label>
                   <textarea
-                    value={formData.description}
+                    value={formData.description || ""}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     placeholder="Add details about this occasion..."
                     rows={3}
@@ -259,11 +326,13 @@ export function UserOccasionFormModal({
                     <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
                     <input
                       type="date"
-                      value={formData.dateOccasion}
+                      value={formData.dateOccasion || ""}
                       onChange={(e) => setFormData({ ...formData, dateOccasion: e.target.value })}
                       min={isEditing ? undefined : format(new Date(), 'yyyy-MM-dd')}
                       required
                       disabled={isPending}
+                      title="Date"
+                      aria-label="Date"
                       className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-cyan-400/50"
                     />
                   </div>
@@ -284,10 +353,12 @@ export function UserOccasionFormModal({
                       <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
                       <input
                         type="time"
-                        value={formData.startTime}
+                        value={formData.startTime || ""}
                         onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
                         required
                         disabled={isPending}
+                        title="Start Time"
+                        aria-label="Start Time"
                         className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-cyan-400/50"
                       />
                     </div>
@@ -301,10 +372,12 @@ export function UserOccasionFormModal({
                       <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
                       <input
                         type="time"
-                        value={formData.endTime}
+                        value={formData.endTime || ""}
                         onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
                         required
                         disabled={isPending}
+                        title="End Time"
+                        aria-label="End Time"
                         className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-cyan-400/50"
                       />
                     </div>
@@ -318,10 +391,12 @@ export function UserOccasionFormModal({
                   </label>
                   <input
                     type="text"
-                    value={formData.weatherSnapshot}
+                    value={formData.weatherSnapshot || ""}
                     onChange={(e) => setFormData({ ...formData, weatherSnapshot: e.target.value })}
                     placeholder="e.g., Sunny, 25°C"
                     disabled={isPending}
+                    title="Weather Info"
+                    aria-label="Weather Info"
                     className="w-full px-4 py-2.5 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400/50"
                   />
                 </div>
@@ -399,6 +474,32 @@ export function UserOccasionFormModal({
         onConfirm={() => setIsPastDateDialogOpen(false)}
         title="Cannot Create Occasion in the Past"
         description="You can only create occasions for today or future dates. Please select a valid date."
+        confirmText="OK"
+        cancelText=""
+        variant="warning"
+        isLoading={false}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        onConfirm={confirmDelete}
+        title="Delete Occasion?"
+        description={`Are you sure you want to delete "${editingOccasion?.name || 'this occasion'}"? This will also remove all outfits linked to this occasion. This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        isLoading={isDeleting}
+      />
+
+      {/* Daily Name Warning Dialog */}
+      <ConfirmDialog
+        open={isDailyNameDialogOpen}
+        onOpenChange={setIsDailyNameDialogOpen}
+        onConfirm={() => setIsDailyNameDialogOpen(false)}
+        title="Invalid Occasion Name"
+        description="The name 'Daily' is reserved and cannot be used for custom occasions. Please choose a different name."
         confirmText="OK"
         cancelText=""
         variant="warning"

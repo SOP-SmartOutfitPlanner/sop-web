@@ -259,20 +259,7 @@ export function ViewItemDialog({
                     <div>
                       <p className="text-lg font-medium text-white mb-1.5">Weather Suitable</p>
                       <p className="text-white/90 bg-white/10 rounded-lg px-3 py-2 text-sm">{itemData.weatherSuitable}</p>
-                    </div>
-
-                    {/* AI Description */}
-                    {itemData.aiDescription && (
-                      <div>
-                        <p className="text-lg font-medium text-white mb-1.5">AI Description</p>
-                        <div className="bg-cyan-500/10 border border-cyan-400/30 rounded-lg px-3 py-2">
-                          <p className="text-white/90 text-sm leading-relaxed">{itemData.aiDescription}</p>
-                          {itemData.aiConfidence && (
-                            <p className="text-cyan-300 text-xs mt-1">Confidence: {itemData.aiConfidence}%</p>
-                          )}
-                        </div>
-                      </div>
-                    )}
+                    </div>                 
                   </div>
 
                   {/* Column 3: Tags */}

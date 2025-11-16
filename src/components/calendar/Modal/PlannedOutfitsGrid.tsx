@@ -9,6 +9,7 @@ interface PlannedOutfitsGridProps {
   isDeletingEntry: boolean;
   onDeleteEntry: (entryId: number, e?: React.MouseEvent) => void;
   onEditEntry: (entry: Calender, e?: React.MouseEvent) => void;
+  onViewOutfit?: (outfit: Calender, e?: React.MouseEvent) => void;
   calendarEntries: CalendarEntry[];
 }
 
@@ -16,6 +17,7 @@ export function PlannedOutfitsGrid({
   outfits,
   isDeletingEntry,
   onDeleteEntry,
+  onViewOutfit,
 }: PlannedOutfitsGridProps) {
   return (
     <div>
@@ -27,7 +29,12 @@ export function PlannedOutfitsGrid({
         {outfits.map((outfit) => (
           <div
             key={outfit.calendarId}
-            className="group relative rounded-lg bg-white/5 border border-white/10 hover:border-cyan-400/50 transition-all duration-200 overflow-hidden"
+            className="group relative rounded-lg bg-white/5 border border-white/10 hover:border-cyan-400/50 transition-all duration-200 overflow-hidden cursor-pointer"
+            onClick={(e) => {
+              if (onViewOutfit) {
+                onViewOutfit(outfit, e);
+              }
+            }}
           >
             {/* Image Grid */}
             <div className="aspect-square bg-linear-to-br from-white/5 to-white/10">
@@ -79,7 +86,10 @@ export function PlannedOutfitsGrid({
             {/* Delete Button */}
             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
               <button
-                onClick={(e) => onDeleteEntry(outfit.calendarId, e)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDeleteEntry(outfit.calendarId, e);
+                }}
                 className="p-1.5 bg-red-500/90 hover:bg-red-600 rounded-md transition-colors shadow-lg"
                 title="Remove outfit"
                 disabled={isDeletingEntry}
