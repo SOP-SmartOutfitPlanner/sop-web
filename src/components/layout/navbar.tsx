@@ -38,23 +38,17 @@ const mainNavigationItems = [
   { path: "/daily", label: "Daily", icon: Calendar, enabled: false },
   { path: "/calendar", label: "Calendar", icon: CalendarDays, enabled: true },
   { path: "/community", label: "Community", icon: Users, enabled: true },
-<<<<<<< HEAD
   { path: "/collections", label: "Collection", icon: ImgIcon, enabled: true },
-=======
->>>>>>> 60ba4c70531a3acd2854adef8da637a3cdb382b7
   { path: "/favorites", label: "Favorites", icon: Heart, enabled: false },
 ];
 
 const personalNavigationItems = [
-<<<<<<< HEAD
   {
     path: "/subscription",
     label: "Subscription",
     icon: CreditCard,
     enabled: true,
   },
-=======
->>>>>>> 60ba4c70531a3acd2854adef8da637a3cdb382b7
   { path: "/notifications", label: "Notifications", icon: Bell, enabled: true },
   { path: "/collections", label: "Collections", icon: ImgIcon, enabled: false },
 ];
