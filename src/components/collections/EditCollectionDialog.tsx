@@ -80,6 +80,7 @@ export function EditCollectionDialog({
   useEffect(() => {
     if (collectionQuery.data) {
       const collection = collectionQuery.data;
+      
       setTitle(collection.title);
       setShortDescription(collection.shortDescription || "");
       
@@ -90,14 +91,20 @@ export function EditCollectionDialog({
 
       // Initialize selected outfits from collection
       const outfitsMap = new Map<number, { outfitId: number; description: string }>();
+      
       collection.outfits?.forEach((entry) => {
         if (entry.outfit) {
-          outfitsMap.set(entry.outfit.outfitId, {
-            outfitId: entry.outfit.outfitId,
-            description: entry.description || "",
-          });
+          // API returns outfit.id, not outfit.outfitId
+          const outfitId = (entry.outfit as any)?.id || (entry.outfit as any)?.outfitId;
+          if (outfitId) {
+            outfitsMap.set(outfitId, {
+              outfitId: outfitId,
+              description: entry.description || "",
+            });
+          }
         }
       });
+      
       setSelectedOutfits(outfitsMap);
     }
   }, [collectionQuery.data]);
@@ -160,16 +167,36 @@ export function EditCollectionDialog({
       formData.append("Title", title.trim());
       formData.append("ShortDescription", shortDescription.trim() || "");
 
-      // Only append thumbnail if a new file was selected
+      // Handle thumbnail: API requires ThumbnailImg field
+      let thumbnailToSend: File | null = null;
+      
       if (thumbnailFile) {
-        formData.append("ThumbnailImg", thumbnailFile);
+        // Use new file if selected
+        thumbnailToSend = thumbnailFile;
+      } else if (thumbnailPreview && !thumbnailPreview.startsWith("blob:")) {
+        // Fetch existing image from URL and convert to File
+        try {
+          const response = await fetch(thumbnailPreview);
+          const blob = await response.blob();
+          const urlParts = thumbnailPreview.split("/");
+          const filename = urlParts[urlParts.length - 1] || "thumbnail.jpg";
+          thumbnailToSend = new File([blob], filename, { type: blob.type || "image/jpeg" });
+        } catch (error) {
+          throw new Error("Failed to load existing thumbnail image");
+        }
       }
 
-      // Add outfits as JSON string
-      const outfitsArray = Array.from(selectedOutfits.values());
-      formData.append("Outfits", JSON.stringify(outfitsArray));
+      if (thumbnailToSend) {
+        formData.append("ThumbnailImg", thumbnailToSend);
+      }
 
-      return collectionAPI.updateCollection(collectionId, formData);
+      // Add outfits - use same format as CreateCollectionDialog
+      Array.from(selectedOutfits.values()).forEach((outfit, index) => {
+        formData.append(`Outfits[${index}].OutfitId`, outfit.outfitId.toString());
+        formData.append(`Outfits[${index}].Description`, outfit.description || "");
+      });
+
+      return await collectionAPI.updateCollection(collectionId, formData);
     },
     onSuccess: () => {
       toast.success("Collection updated successfully");
