@@ -29,22 +29,6 @@ export function CollectionInfoSidebar({
         shadowColor="rgba(15, 23, 42, 0.5)"
         className="border border-cyan-500/15 bg-slate-950/45"
       >
-        <h3 className="mb-3 text-base font-semibold text-white">
-          About the collection
-        </h3>
-        <p className="text-sm leading-relaxed text-slate-300">
-          {collection.shortDescription || DEFAULT_DESCRIPTION}
-        </p>
-      </GlassCard>
-
-      <GlassCard
-        padding="1.5rem"
-        blur="18px"
-        glowColor="rgba(94, 234, 212, 0.25)"
-        glowIntensity={14}
-        shadowColor="rgba(15, 23, 42, 0.5)"
-        className="border border-cyan-500/15 bg-slate-950/45"
-      >
         <h3 className="mb-4 text-base font-semibold text-white">Information</h3>
         <div className="space-y-3 text-sm">
           <div className="flex items-center gap-3 text-slate-300">
@@ -92,4 +76,3 @@ export function CollectionInfoSidebar({
     </div>
   );
 }
-

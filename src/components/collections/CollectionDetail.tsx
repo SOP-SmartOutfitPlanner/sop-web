@@ -237,7 +237,7 @@ export function CollectionDetail({ collectionId }: CollectionDetailProps) {
                     className="shrink-0 border-white/40 bg-white/10 text-white hover:bg-white/20"
                   >
                     <UserPlus className="mr-2 h-4 w-4" />
-                    {collection.isFollowing ? "Đang theo dõi" : "+ Theo dõi"}
+                    {collection.isFollowing ? "Following" : "+ Follow"}
                   </Button>
                 )}
               </div>

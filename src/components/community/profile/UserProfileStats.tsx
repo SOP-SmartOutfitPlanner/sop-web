@@ -18,17 +18,17 @@ export function UserProfileStats({
 }: UserProfileStatsProps) {
   const stats = [
     {
-      label: "Người theo dõi",
+      label: "Followers",
       value: followersCount,
       icon: Users,
     },
     {
-      label: "Đang theo dõi",
+      label: "Following",
       value: followingCount,
       icon: UserPlus,
     },
     {
-      label: "Bài viết",
+      label: "Posts",
       value: postsCount,
       icon: ImageIcon,
     },
