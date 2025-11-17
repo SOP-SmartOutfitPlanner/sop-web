@@ -85,7 +85,7 @@ const OutfitGridComponent = ({
 };
 
 // Memoize grid to prevent unnecessary re-renders
-export const OutfitGrid = memo(OutfitGridComponent, (prevProps, nextProps) => {
+export const  OutfitGrid = memo(OutfitGridComponent, (prevProps, nextProps) => {
   // Check if loading state changed
   if (prevProps.isLoading !== nextProps.isLoading) return false;
 

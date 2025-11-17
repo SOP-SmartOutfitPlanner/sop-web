@@ -9,6 +9,7 @@ import {
   Calendar,
   Shirt,
   Clock,
+  Plus,
 } from "lucide-react";
 import { format } from "date-fns";
 import { UserOccasion } from "@/types/userOccasion";
@@ -17,6 +18,7 @@ import { CalendarEntry, Calender } from "@/types/calender";
 import { PlannedOutfitsGrid } from "./PlannedOutfitsGrid";
 import { AvailableOutfitsGrid } from "./AvailableOutfitsGrid";
 import { ViewOutfitDialog } from "@/components/outfit/ViewOutfitDialog";
+import GlassButton from "@/components/ui/glass-button";
 
 interface OccasionItemProps {
   occasion: UserOccasion;
@@ -62,6 +64,7 @@ export function OccasionItem({
   const plannedCount = plannedOutfits.length;
   const [viewingOutfit, setViewingOutfit] = useState<Outfit | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [isAvailableModalOpen, setIsAvailableModalOpen] = useState(false);
 
   // Convert Calender to Outfit format
   const convertCalenderToOutfit = (calender: Calender): Outfit => {
@@ -142,16 +145,26 @@ export function OccasionItem({
             <h4 className="font-bricolage font-bold text-white text-lg">
               {occasion.name}
             </h4>
-            <div className="flex items-center gap-3 mt-1 text-sm text-white/70">
-              {occasion.startTime && (
-                <div className="flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5" />
-                  <span className="text-xs">
-                    {format(new Date(occasion.startTime), "h:mm a")}
-                  </span>
-                </div>
-              )}
-            </div>
+          <div className="flex items-center gap-3 mt-1 text-sm text-white/70">
+            {(occasion.startTime || occasion.endTime) && (
+              <div className="flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5" />
+                <span className="text-xs">
+                  {occasion.startTime
+                    ? format(new Date(occasion.startTime), "h:mm a")
+                    : "--"}
+                </span>
+                {occasion.endTime && (
+                  <>
+                    <span className="text-xs text-white/40">–</span>
+                    <span className="text-xs">
+                      {format(new Date(occasion.endTime), "h:mm a")}
+                    </span>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
           </div>
 
           {/* Action Buttons */}
@@ -200,18 +213,28 @@ export function OccasionItem({
             />
           )}
 
-          {/* Available Outfits to Add */}
+          {/* Available Outfits CTA */}
           {availableOutfits.length > 0 && (
-            <AvailableOutfitsGrid
-              outfits={availableOutfits}
-              selectedOutfits={selectedOutfits}
-              isCreatingEntry={isCreatingEntry}
-              isLoadingOutfits={isLoadingOutfits}
-              onToggleSelection={onToggleSelection}
-              onToggleSelectAll={onToggleSelectAll}
-              onBatchAdd={onBatchAdd}
-              onAddSingle={onAddSingle}
-            />
+            <div className="p-4 rounded-2xl border border-white/10 bg-white/5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <p className="font-bricolage text-base font-semibold text-white">
+                  Add more outfits to this occasion
+                </p>
+                <p className="text-sm text-white/60">
+                  {availableOutfits.length} outfit
+                  {availableOutfits.length > 1 ? "s" : ""} ready to add
+                </p>
+              </div>
+              <GlassButton
+                variant="primary"
+                size="sm"
+                onClick={() => setIsAvailableModalOpen(true)}
+                className="w-full sm:w-auto"
+              >
+                <Plus className="w-4 h-4" />
+                Select outfits
+              </GlassButton>
+            </div>
           )}
 
           {availableOutfits.length === 0 && plannedCount > 0 && (
@@ -231,6 +254,21 @@ export function OccasionItem({
         onOpenChange={setIsViewDialogOpen}
         outfit={viewingOutfit}
       />
+
+      {availableOutfits.length > 0 && (
+        <AvailableOutfitsGrid
+          open={isAvailableModalOpen}
+          onOpenChange={setIsAvailableModalOpen}
+          outfits={availableOutfits}
+          selectedOutfits={selectedOutfits}
+          isCreatingEntry={isCreatingEntry}
+          isLoadingOutfits={isLoadingOutfits}
+          onToggleSelection={onToggleSelection}
+          onToggleSelectAll={onToggleSelectAll}
+          onBatchAdd={onBatchAdd}
+          onAddSingle={onAddSingle}
+        />
+      )}
     </div>
   );
 }

@@ -10,6 +10,23 @@ interface DayOccasionListProps {
   maxVisible?: number;
 }
 
+const formatTime = (time?: string | null) => {
+  if (!time) return null;
+  const date = new Date(time);
+  if (Number.isNaN(date.getTime())) return null;
+  return format(date, "HH:mm");
+};
+
+const formatTimeRange = (start?: string | null, end?: string | null) => {
+  const startLabel = formatTime(start);
+  const endLabel = formatTime(end);
+
+  if (!startLabel && !endLabel) return null;
+  if (startLabel && endLabel) return `${startLabel} – ${endLabel}`;
+  if (startLabel) return startLabel;
+  return `-- – ${endLabel}`;
+};
+
 export function DayOccasionList({
   entries,
   maxVisible = 5,
@@ -50,9 +67,12 @@ export function DayOccasionList({
         {displayEntries.map((entry, idx) => {
           const isDaily = entry.isDaily;
           const outfitCount = entry.outfits.length;
-          const occasionTime =
-            !isDaily && entry.userOccasion?.startTime
-              ? format(new Date(entry.userOccasion.startTime), "HH:mm")
+          const occasionTimeRange =
+            !isDaily && entry.userOccasion
+              ? formatTimeRange(
+                  entry.userOccasion.startTime,
+                  entry.userOccasion.endTime
+                )
               : null;
 
           return (
@@ -76,10 +96,10 @@ export function DayOccasionList({
                           {entry.userOccasion.name}
                         </div>
                       )}
-                      {occasionTime && (
+                      {occasionTimeRange && (
                         <div className="text-[11px] text-white/80">
                           <span className="text-white/50">🕒 Time:</span>{" "}
-                          {occasionTime}
+                          {occasionTimeRange}
                         </div>
                       )}
                     </div>
@@ -152,13 +172,13 @@ export function DayOccasionList({
                       }`}
                     />
                   )}
-                  {!isDaily && occasionTime && (
+                  {!isDaily && occasionTimeRange && (
                     <span
                       className={`text-white/70 font-semibold ${
                         hasMany ? "text-[8px]" : "text-[9px]"
                       }`}
                     >
-                      {occasionTime}
+                      {occasionTimeRange}
                     </span>
                   )}
                   <span
@@ -195,11 +215,11 @@ export function DayOccasionList({
                   {sortedEntries.slice(displayLimit).map((entry, idx) => {
                     const isDaily = entry.isDaily;
                     const outfitCount = entry.outfits.length;
-                    const time =
-                      !isDaily && entry.userOccasion?.startTime
-                        ? format(
-                            new Date(entry.userOccasion.startTime),
-                            "HH:mm"
+                    const timeRange =
+                      !isDaily && entry.userOccasion
+                        ? formatTimeRange(
+                            entry.userOccasion.startTime,
+                            entry.userOccasion.endTime
                           )
                         : null;
                     return (
@@ -212,9 +232,9 @@ export function DayOccasionList({
                             isDaily ? "bg-cyan-400" : "bg-purple-400"
                           }`}
                         />
-                        {time && (
+                        {timeRange && (
                           <span className="text-white/60 font-semibold">
-                            {time}
+                            {timeRange}
                           </span>
                         )}
                         <span className="truncate">

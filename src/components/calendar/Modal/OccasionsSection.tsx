@@ -75,7 +75,7 @@ export function OccasionsSection({
             title={!canAddOccasion ? "Cannot add outfit to calendar in the past" : undefined}
           >
             <Shirt className="w-5 h-5" />
-            Add Outfit
+            Add Outfit Daily
           </GlassButton>
           <GlassButton 
             variant="ghost" 

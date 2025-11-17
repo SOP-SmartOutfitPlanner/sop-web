@@ -9,7 +9,7 @@ export const COLLECTION_QUERY_KEYS = {
   collection: (id: number) => ["collection", id] as const,
   collectionComments: (id: number, pageIndex?: number) =>
     pageIndex !== undefined
-      ? ["collection-comments", id, pageIndex]
+      ? (["collection-comments", id, pageIndex] as const)
       : (["collection-comments", id] as const),
   collectionCommentsCount: (id: number) =>
     ["collection-comments-count", id] as const,

@@ -38,6 +38,23 @@ export function MonthlyCalendar({
 
   const days = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
 
+  const formatTime = (time?: string | null) => {
+    if (!time) return null;
+    const date = new Date(time);
+    if (Number.isNaN(date.getTime())) return null;
+    return format(date, "HH:mm");
+  };
+
+  const formatTimeRange = (start?: string | null, end?: string | null) => {
+    const startLabel = formatTime(start);
+    const endLabel = formatTime(end);
+
+    if (!startLabel && !endLabel) return null;
+    if (startLabel && endLabel) return `${startLabel} – ${endLabel}`;
+    if (startLabel) return startLabel;
+    return `-- – ${endLabel}`;
+  };
+
   // Helper function to check if a day has occasions
   const getDayInfo = (day: Date) => {
     const dayString = format(day, "yyyy-MM-dd");
@@ -69,7 +86,10 @@ export function MonthlyCalendar({
       outfitCount: totalOutfits,
       firstOccasionName: firstEntry?.userOccasion?.name,
       firstOccasionTime: firstEntry?.userOccasion
-        ? format(new Date(firstEntry.userOccasion.startTime), "HH:mm")
+        ? formatTimeRange(
+            firstEntry.userOccasion.startTime,
+            firstEntry.userOccasion.endTime
+          )
         : null,
       firstOutfitName: firstOutfit?.outfitName,
       weatherInfo: firstEntry?.userOccasion?.weatherSnapshot,
