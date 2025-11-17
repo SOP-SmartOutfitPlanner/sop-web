@@ -145,12 +145,14 @@ export function PostFormDialog({
       return;
     }
 
-    // Extract hashtags from caption
+    // Extract hashtags (support Unicode letters/numbers)
+    const HASHTAG_REGEX = /#([\p{L}\p{N}_]+)/gu;
     const hashtags =
-      fullCaption.match(/#\w+/g)?.map((tag) => tag.slice(1)) || [];
+      Array.from(fullCaption.matchAll(HASHTAG_REGEX), (match) => match[1]) ||
+      [];
 
     // Remove hashtags from caption
-    const captionWithoutHashtags = fullCaption.replace(/#\w+/g, "").trim();
+    const captionWithoutHashtags = fullCaption.replace(HASHTAG_REGEX, "").trim();
 
     // Calculate remaining original images (images that are still selected but not new files)
     // In edit mode: selectedImages = [original images...] + [new file previews...]

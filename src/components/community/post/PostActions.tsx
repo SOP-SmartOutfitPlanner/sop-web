@@ -51,9 +51,9 @@ export function PostActions({
               <div className="flex flex-col">
                 <span className="text-sm font-bold text-white">
                   {likeCount}
-                </span>
-                <span className="text-xs text-slate-400 font-medium">
-                  {likeCount === 1 ? "like" : "likes"}
+                  <span className="ml-1 text-xs text-slate-400 font-medium">
+                    {likeCount === 1 ? "like" : "likes"}
+                  </span>
                 </span>
               </div>
             </div>
