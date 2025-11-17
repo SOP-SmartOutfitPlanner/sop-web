@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Image as AntImage, Image } from "antd";
+import { Image as AntdImage } from "antd";
 import { useQuery } from "@tanstack/react-query";
 import { Shirt, Sparkles } from "lucide-react";
 
@@ -22,6 +22,7 @@ import {
   formatDate as formatCollectionDate,
 } from "@/lib/collections/utils";
 import { useScrollLock } from "@/hooks/useScrollLock";
+import { parseColors } from "@/lib/utils/color-utils";
 
 interface CollectionItemDetailDialogProps {
   open: boolean;
@@ -51,6 +52,7 @@ function normalizeDetail(detail?: DetailSource | null) {
 
   const colorLabel =
     parseColorNames(detail.color ?? null) ?? detail.color ?? undefined;
+  const colorRaw = detail.color ?? undefined;
 
   return {
     id: detail.itemId ?? (isApiItem ? detail.id : undefined),
@@ -58,7 +60,8 @@ function normalizeDetail(detail?: DetailSource | null) {
     categoryName,
     brand: detail.brand ?? undefined,
     aiDescription: detail.aiDescription ?? undefined,
-    color: colorLabel,
+    colorLabel,
+    colorRaw,
     weather: detail.weatherSuitable ?? undefined,
     pattern: detail.pattern ?? undefined,
     fabric: detail.fabric ?? undefined,
@@ -143,11 +146,15 @@ export function CollectionItemDetailDialog({
         { label: "Fabric", value: normalized.fabric },
         { label: "Pattern", value: normalized.pattern },
         { label: "Weather", value: normalized.weather },
-        { label: "Color palette", value: normalized.color },
         { label: "Worn", value: normalized.frequency },
         { label: "Last worn", value: lastWorn },
       ].filter((row) => Boolean(row.value))
     : [];
+
+  const colorSwatches = useMemo(() => {
+    if (!normalized?.colorRaw) return [];
+    return parseColors(normalized.colorRaw);
+  }, [normalized?.colorRaw]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -175,10 +182,10 @@ export function CollectionItemDetailDialog({
               <div className="md:w-1/2 md:shrink-0 md:sticky md:top-6">
                 <div className="aspect-square rounded-xl overflow-hidden bg-white/5 relative ">
                   {normalized.imageUrl ? (
-                    <Image
+                    <AntdImage
                       src={normalized.imageUrl}
                       alt={normalized.name}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover cursor-zoom-in"
                       preview={{
                         mask: (
                           <div className="text-xs uppercase tracking-[0.3em] text-white">
@@ -186,6 +193,7 @@ export function CollectionItemDetailDialog({
                           </div>
                         ),
                       }}
+                      style={{ height: "100%", width: "100%", objectFit: "cover", cursor: "zoom-in" }}
                     />
                   ) : (
                     <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-cyan-300/70">
@@ -216,6 +224,36 @@ export function CollectionItemDetailDialog({
                     </div>
                   ))}
                 </div>
+
+                {(colorSwatches.length > 0 || normalized.colorLabel) && (
+                  <div className="space-y-2">
+                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
+                      Color palette
+                    </p>
+                    {colorSwatches.length > 0 ? (
+                      <div className="flex flex-wrap gap-3">
+                        {colorSwatches.map(({ name, hex }, index) => (
+                          <div
+                            key={`${name}-${hex}-${index}`}
+                            className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1"
+                          >
+                            <span
+                              className="h-4 w-4 rounded-full border border-white/20"
+                              style={{ backgroundColor: hex }}
+                            />
+                            <span className="text-xs font-medium text-slate-100">
+                              {name}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm font-semibold text-white">
+                        {normalized.colorLabel}
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 {normalized.aiDescription && (
                   <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/5 p-4 text-sm text-slate-200">
