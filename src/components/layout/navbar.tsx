@@ -320,8 +320,10 @@ export function Navbar() {
                           <motion.span
                             initial={{ scale: 0 }}
                             animate={{ scale: 1 }}
-                            className="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-slate-900"
-                          />
+                            className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 rounded-full  text-[10px] font-semibold text-white flex items-center justify-center"
+                          >
+                            {unreadCount > 99 ? "99+" : unreadCount}
+                          </motion.span>
                         )}
                     </Button>
                   );
