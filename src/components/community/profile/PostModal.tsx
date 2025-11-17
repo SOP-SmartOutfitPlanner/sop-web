@@ -32,8 +32,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Post } from "@/types/community";
-import { formatDistanceToNow } from "date-fns";
-import { vi } from "date-fns/locale";
+import { format, formatDistanceToNow } from "date-fns";
 import CommentSection from "@/components/community/comment/CommentSection";
 import { CommentInput } from "@/components/community/comment/CommentInput";
 import { useAuthStore } from "@/store/auth-store";
@@ -44,6 +43,12 @@ import { usePostModal } from "@/hooks/community/usePostModal";
 import { ReportDialog } from "@/components/community/report/ReportDialog";
 import { EditPostDialog } from "@/components/community/EditPostDialog";
 import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface PostModalProps {
   post: Post;
@@ -93,6 +98,15 @@ export function PostModal({
     handleNextImage,
     handlePrevImage,
   } = usePostModal({ post, isOpen });
+
+  const hasTimestamp = Boolean(post.timestamp);
+  const relativeTimestamp = hasTimestamp
+    ? formatDistanceToNow(new Date(post.timestamp), { addSuffix: true })
+    : "Recently";
+
+  const absoluteTimestamp = hasTimestamp
+    ? format(new Date(post.timestamp), "PPP 'at' HH:mm")
+    : undefined;
 
   const handleCommentButtonClick = () => {
     commentInputRef.current?.focus();
@@ -346,19 +360,27 @@ export function PostModal({
                       {isAuthorStylist && (
                         <Badge
                           variant="secondary"
-                          className="text-xs bg-primary/10 text-primary border-primary/20"
+                          className="text-xs uppercase tracking-wide bg-gradient-to-r from-cyan-500/25 via-blue-500/25 to-purple-500/25 text-cyan-100 border border-cyan-400/40 shadow-[0_0_12px_rgba(34,211,238,0.35)]"
                         >
                           <Star className="w-3 h-3 mr-1 fill-current" />
                           Stylist
                         </Badge>
                       )}
                     </div>
-                    <div className="text-xs text-slate-400 font-medium">
-                      {formatDistanceToNow(new Date(post.timestamp), {
-                        addSuffix: true,
-                        locale: vi,
-                      })}
-                    </div>
+                    <TooltipProvider delayDuration={150}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="text-xs text-slate-400 font-medium cursor-default">
+                            {relativeTimestamp}
+                          </span>
+                        </TooltipTrigger>
+                        {absoluteTimestamp && (
+                          <TooltipContent className="backdrop-blur-md bg-slate-900/80 border border-cyan-400/20 text-white/90">
+                            {absoluteTimestamp}
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
                 </div>
                 <DropdownMenu>
@@ -458,12 +480,8 @@ export function PostModal({
                       >
                         <MessageCircle className="w-6 h-6" />
                       </button>
-                      <button className="p-2 rounded-lg hover:bg-cyan-500/10 transition-all text-white hover:text-cyan-300">
-                        <Share2 className="w-6 h-6" />
-                      </button>
                     </div>
                   </div>
-
                   {/* Like count */}
                   <div>
                     <div className="font-semibold text-sm text-white">

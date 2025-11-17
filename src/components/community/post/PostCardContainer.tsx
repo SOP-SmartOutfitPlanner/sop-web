@@ -104,6 +104,7 @@ export function PostCardContainer({
               onFollow={onFollow}
               onDelete={onDelete}
               onEdit={onEdit}
+              onTimestampClick={onComment}
             />
           </div>
 

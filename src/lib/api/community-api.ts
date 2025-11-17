@@ -289,7 +289,6 @@ class CommunityAPI {
         },
       }
     );
-
     // API returns { statusCode, message, data: CommunityPost }
     // Axios unwraps to apiResponse.data which is the whole response
     // We need to return just the data part
