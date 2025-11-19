@@ -106,10 +106,10 @@ class NotificationAPI {
         queryParams.append("type", type.toString());
       }
       if (page !== undefined) {
-        queryParams.append("page", page.toString());
+        queryParams.append("page-index", page.toString());
       }
       if (pageSize !== undefined) {
-        queryParams.append("pageSize", pageSize.toString());
+        queryParams.append("page-size", pageSize.toString());
       }
       
       const queryString = queryParams.toString();

@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect, Suspense } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Check } from "lucide-react";
 import GlassButton from "@/components/ui/glass-button";
@@ -27,7 +27,9 @@ import {
 } from "@/components/notifications/utils";
 
 // Constants
-const PAGE_SIZE = 50;
+// Number of notifications to fetch per page.
+// Keep this small to improve initial load UX; additional pages are loaded on scroll.
+const PAGE_SIZE = 10;
 const STALE_TIME_MS = 1000 * 60; // 1 minute
 
 // Helper: Determine which notification types to fetch based on filter
@@ -50,13 +52,22 @@ const mergeNotifications = (
 ): NotificationsListResponse => {
   const allNotifications: Notification[] = [];
   let totalCount = 0;
+  let hasNext = false;
+  let currentPage = 1;
+  let totalPages = 1;
 
   responses.forEach((response) => {
-    if (response.data?.data) {
-      allNotifications.push(...response.data.data);
+    const payload = response.data;
+
+    if (payload?.data) {
+      allNotifications.push(...payload.data);
     }
-    if (response.data?.metaData) {
-      totalCount += response.data.metaData.totalCount;
+
+    if (payload?.metaData) {
+      totalCount += payload.metaData.totalCount;
+      hasNext = hasNext || payload.metaData.hasNext;
+      currentPage = Math.max(currentPage, payload.metaData.currentPage);
+      totalPages = Math.max(totalPages, payload.metaData.totalPages);
     }
   });
 
@@ -70,10 +81,10 @@ const mergeNotifications = (
     metaData: {
       totalCount,
       pageSize: PAGE_SIZE,
-      currentPage: 1,
-      totalPages: Math.ceil(totalCount / PAGE_SIZE),
-      hasNext: allNotifications.length >= PAGE_SIZE,
-      hasPrevious: false,
+      currentPage,
+      totalPages,
+      hasNext,
+      hasPrevious: currentPage > 1,
     },
   };
 };
@@ -126,9 +137,20 @@ function NotificationsPageContent({
   }, [initialNotificationId]);
 
   // Fetch notifications from API
-  const { data, isLoading, error, refetch } = useQuery({
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+
+  const {
+    data,
+    isLoading,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    refetch,
+  } = useInfiniteQuery<NotificationsListResponse | null, Error>({
     queryKey: ["notifications", user?.id, filter],
-    queryFn: async () => {
+    initialPageParam: 1,
+    queryFn: async ({ pageParam }) => {
       if (!user?.id) {
         return null;
       }
@@ -149,7 +171,7 @@ function NotificationsPageContent({
           notificationAPI.getNotifications({
             userId,
             type: systemType,
-            page: 1,
+            page: pageParam as number,
             pageSize: PAGE_SIZE,
           })
         );
@@ -160,7 +182,7 @@ function NotificationsPageContent({
           notificationAPI.getNotifications({
             userId,
             type: userType,
-            page: 1,
+            page: pageParam as number,
             pageSize: PAGE_SIZE,
           })
         );
@@ -168,7 +190,39 @@ function NotificationsPageContent({
 
       // Fetch all notifications in parallel
       const responses = await Promise.all(promises);
-      return mergeNotifications(responses);
+
+      // Debug: log raw API responses and page size
+      console.log("[Notifications] Fetch responses", {
+        userId,
+        filter,
+        pageSize: PAGE_SIZE,
+        pageParam,
+        sources: responses.map((res) => ({
+          totalCount: res.data?.metaData?.totalCount,
+          pageSize: res.data?.metaData?.pageSize,
+          currentPage: res.data?.metaData?.currentPage,
+          hasNext: res.data?.metaData?.hasNext,
+        })),
+      });
+
+      const merged = mergeNotifications(responses);
+
+      console.log("[Notifications] Merged notifications summary", {
+        totalCount: merged.metaData.totalCount,
+        pageSize: merged.metaData.pageSize,
+        currentPage: merged.metaData.currentPage,
+        totalPages: merged.metaData.totalPages,
+        hasNext: merged.metaData.hasNext,
+        returnedCount: merged.data.length,
+      });
+
+      return merged;
+    },
+    getNextPageParam: (lastPage) => {
+      if (!lastPage || !lastPage.metaData) return undefined;
+      return lastPage.metaData.hasNext
+        ? lastPage.metaData.currentPage + 1
+        : undefined;
     },
     enabled: !!user?.id,
     staleTime: STALE_TIME_MS,
@@ -176,11 +230,22 @@ function NotificationsPageContent({
 
   // Transform API notifications to component format
   const notifications = useMemo<NotificationItem[]>(() => {
-    if (!data?.data) {
+    const apiNotifications: Notification[] =
+      data?.pages?.flatMap((page) => page?.data ?? []) ?? [];
+
+    if (apiNotifications.length === 0) {
       return localNotifications;
     }
 
-    const transformed = data.data.map(
+    // Deduplicate notifications by ID (in case multiple sources/pages return same item)
+    const uniqueNotifications: Notification[] = Array.from(
+      new Map(apiNotifications.map((notif) => [notif.id, notif])).values()
+    ).sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+
+    const transformed = uniqueNotifications.map(
       (notif: Notification): NotificationItem => ({
         id: notif.id,
         title: notif.title,
@@ -195,7 +260,17 @@ function NotificationsPageContent({
 
     // Merge with local state (for optimistic updates)
     const localMap = new Map(localNotifications.map((n) => [n.id, n]));
-    return transformed.map((notif) => localMap.get(notif.id) || notif);
+    const finalNotifications = transformed.map(
+      (notif) => localMap.get(notif.id) || notif
+    );
+
+    // Debug: log how many notifications are currently loaded (all pages combined)
+    console.log("[Notifications] Total loaded notifications", {
+      total: finalNotifications.length,
+      pageSize: PAGE_SIZE,
+    });
+
+    return finalNotifications;
   }, [data, localNotifications]);
 
   // Fetch unread count from API
@@ -342,6 +417,34 @@ function NotificationsPageContent({
     }
   }, []);
 
+  // Infinite scroll: auto-load more when Load More section enters viewport
+  useEffect(() => {
+    if (!hasNextPage || !loadMoreRef.current) return;
+
+    const element = loadMoreRef.current;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      },
+      {
+        root: null,
+        rootMargin: "0px 0px 200px 0px",
+        threshold: 0.1,
+      }
+    );
+
+    observer.observe(element);
+
+    return () => {
+      observer.unobserve(element);
+      observer.disconnect();
+    };
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
   return (
     <div className="min-h-screen pt-32">
       <div className="container max-w-5xl mx-auto px-4 py-6 space-y-8">
@@ -439,17 +542,30 @@ function NotificationsPageContent({
           )}
         </motion.div>
 
-        {/* Load More */}
+        {/* Load More (also used as infinite scroll sentinel) */}
         {filteredNotifications.length > 0 && (
           <motion.div
+            ref={loadMoreRef}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.3 }}
             className="text-center py-8"
           >
-            <GlassButton variant="ghost" size="lg">
-              Load More Notifications
-            </GlassButton>
+            {hasNextPage ? (
+              <GlassButton
+                variant="ghost"
+                size="lg"
+                onClick={() => fetchNextPage()}
+                disabled={isFetchingNextPage}
+                className="min-w-[220px]"
+              >
+                {isFetchingNextPage ? "Loading more..." : "Load More Notifications"}
+              </GlassButton>
+            ) : (
+              <p className="text-sm text-cyan-300/70">
+                You&apos;re all caught up on notifications.
+              </p>
+            )}
           </motion.div>
         )}
       </div>
