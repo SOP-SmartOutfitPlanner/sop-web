@@ -24,7 +24,7 @@ COPY --from=deps /app/postcss.config.mjs ./
 COPY --from=deps /app/next.config.ts ./
 COPY --from=deps /app/components.json ./
 COPY --from=deps /app/middleware.ts ./
-
+COPY .env .env
 # Copy source files
 COPY src ./src
 COPY public ./public
