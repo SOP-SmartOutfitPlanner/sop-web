@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import Image from "next/image";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { collectionAPI, outfitAPI } from "@/lib/api";
@@ -16,6 +16,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { toast } from "sonner";
 import {
   Upload,
@@ -27,11 +29,22 @@ import {
   Sparkles,
   AlertCircle,
   Loader2,
+  CalendarDays,
 } from "lucide-react";
 import type { Outfit } from "@/types/outfit";
 import { cn } from "@/lib/utils";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { COLLECTION_QUERY_KEYS } from "@/lib/collections/constants";
+import {
+  format,
+  subDays,
+  startOfToday,
+  startOfDay,
+  endOfDay,
+  isSameDay,
+  subYears,
+} from "date-fns";
+import type { DateRange } from "react-day-picker";
 
 interface CreateCollectionDialogProps {
   open: boolean;
@@ -59,25 +72,142 @@ export function CreateCollectionDialog({
     Map<number, { outfitId: number; description: string }>
   >(new Map());
   const [searchQuery, setSearchQuery] = useState("");
+  const today = useMemo(() => new Date(), []);
+  const minSelectableDate = useMemo(() => subYears(today, 5), [today]);
+  const maxSelectableDate = today;
+
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState<Date>(today);
   const [isDragging, setIsDragging] = useState(false);
+
+  const isDateRangeInvalid =
+    dateRange?.from && dateRange?.to ? dateRange.from > dateRange.to : false;
+
+  const formatDateForApi = (date?: Date, endOfDayFlag = false) => {
+    if (!date) return undefined;
+    const bucket = endOfDayFlag ? endOfDay(date) : startOfDay(date);
+    return bucket.toISOString();
+  };
+
+  const handleRangeSelect = (range?: DateRange) => {
+    setDateRange(range);
+    console.log("[CreateCollectionDialog] Date range selected:", range);
+    if (range?.from) {
+      setCalendarMonth(range.from);
+    }
+    if (range?.from && range?.to) {
+      setIsCalendarOpen(false);
+    }
+  };
+
+  const clearDateRange = () => {
+    setDateRange(undefined);
+    setCalendarMonth(new Date());
+    console.log("[CreateCollectionDialog] Date range cleared");
+  };
+
+  const presetOptions = useMemo(
+    () => [
+      {
+        label: "Today",
+        range: {
+          from: startOfToday(),
+          to: startOfToday(),
+        } as DateRange,
+      },
+      {
+        label: "Last 7 days",
+        range: {
+          from: subDays(startOfToday(), 6),
+          to: startOfToday(),
+        } as DateRange,
+      },
+      {
+        label: "Last 30 days",
+        range: {
+          from: subDays(startOfToday(), 29),
+          to: startOfToday(),
+        } as DateRange,
+      },
+      {
+        label: "All time",
+        range: undefined,
+      },
+    ],
+    []
+  );
+
+  const isPresetActive = (range?: DateRange) => {
+    if (!range) {
+      return !dateRange?.from && !dateRange?.to;
+    }
+
+    return (
+      !!dateRange?.from &&
+      !!dateRange?.to &&
+      !!range.from &&
+      !!range.to &&
+      isSameDay(dateRange.from, range.from) &&
+      isSameDay(dateRange.to, range.to)
+    );
+  };
+
+  const handlePresetSelect = (range?: DateRange) => {
+    if (!range) {
+      clearDateRange();
+      return;
+    }
+    setDateRange(range);
+    if (range.from) {
+      setCalendarMonth(range.from);
+    }
+    console.log("[CreateCollectionDialog] Preset range selected:", range);
+    setIsCalendarOpen(false);
+  };
+
+  useEffect(() => {
+    if (dateRange?.from) {
+      setCalendarMonth(dateRange.from);
+    }
+  }, [dateRange?.from]);
+
+  const handleCalendarOpenChange = (open: boolean) => {
+    setIsCalendarOpen(open);
+    if (open) {
+      setCalendarMonth(dateRange?.from ?? new Date());
+    }
+  };
 
   // Fetch user outfits
   const outfitsQuery = useQuery({
-    queryKey: ["user-outfits", user?.id],
+    queryKey: [
+      "user-outfits",
+      user?.id,
+      dateRange?.from ? startOfDay(dateRange.from).toISOString() : null,
+      dateRange?.to ? endOfDay(dateRange.to).toISOString() : null,
+    ],
     queryFn: async () => {
-      const response = await outfitAPI.getOutfits({
+      const startDateParam = formatDateForApi(dateRange?.from);
+      const endDateParam = formatDateForApi(dateRange?.to, true);
+      const payload = {
         pageIndex: 1,
         pageSize: 100,
         takeAll: true,
-      });
+        startDate: startDateParam,
+        endDate: endDateParam,
+      };
+      console.log("[CreateCollectionDialog] Fetch outfits payload:", payload);
+      const response = await outfitAPI.getOutfits(payload);
       return response.data?.data ?? [];
     },
-    enabled: open && !!user?.id,
+    enabled: open && !!user?.id && !isDateRangeInvalid,
     staleTime: 1000 * 60,
   });
 
   // Filter outfits based on search
   const filteredOutfits = useMemo(() => {
+    if (isDateRangeInvalid) return [];
     if (!outfitsQuery.data) return [];
     if (!searchQuery.trim()) return outfitsQuery.data;
 
@@ -87,7 +217,29 @@ export function CreateCollectionDialog({
         outfit.name.toLowerCase().includes(query) ||
         outfit.description?.toLowerCase().includes(query)
     );
-  }, [outfitsQuery.data, searchQuery]);
+  }, [isDateRangeInvalid, outfitsQuery.data, searchQuery]);
+
+  const rangeSummaryText = useMemo(() => {
+    if (dateRange?.from && dateRange?.to) {
+      return `Showing outfits from ${format(
+        dateRange.from,
+        "MMM d, yyyy"
+      )} -> ${format(dateRange.to, "MMM d, yyyy")}`;
+    }
+
+    if (dateRange?.from) {
+      return `Showing outfits since ${format(
+        dateRange.from,
+        "MMM d, yyyy"
+      )}`;
+    }
+
+    if (dateRange?.to) {
+      return `Showing outfits before ${format(dateRange.to, "MMM d, yyyy")}`;
+    }
+
+    return null;
+  }, [dateRange]);
 
   // Validation
   const validation = useMemo(
@@ -225,6 +377,8 @@ export function CreateCollectionDialog({
     setThumbnailPreview(null);
     setSelectedOutfits(new Map());
     setSearchQuery("");
+    setDateRange(undefined);
+    setIsCalendarOpen(false);
     setIsDragging(false);
     onOpenChange(false);
   };
@@ -462,6 +616,9 @@ export function CreateCollectionDialog({
           <div className="w-[60%] flex flex-col bg-gradient-to-b from-slate-900/30 to-slate-900/20">
             {/* Header - Sticky */}
             <div className="p-6 border-b border-slate-700/50 bg-gradient-to-b from-slate-900/80 to-slate-900/60 backdrop-blur-sm sticky top-0 z-10 shadow-[0_4px_20px_rgba(0,0,0,0.2)]">
+              {outfitsQuery.isFetching && (
+                <div className="absolute left-0 right-0 top-0 h-0.5 bg-gradient-to-r from-cyan-400 via-blue-500 to-cyan-400 animate-pulse" />
+              )}
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <div className="p-1.5 rounded-md bg-cyan-500/20 border border-cyan-500/30">
@@ -480,18 +637,111 @@ export function CreateCollectionDialog({
                 )}
               </div>
 
-              {/* Search Bar - Sticky */}
-              {outfitsQuery.data && outfitsQuery.data.length > 0 && (
+              {/* Search & Date Filters */}
+              <div className="space-y-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <Input
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search outfits by name or description..."
-                    className="pl-10 bg-slate-800/60 border-slate-600/50 text-white placeholder:text-slate-500 focus:border-cyan-500/70 focus:ring-2 focus:ring-cyan-500/20 transition-all"
+                    className="pl-10 pr-12 bg-slate-800/60 border-slate-600/50 text-white placeholder:text-slate-500 focus:border-cyan-500/70 focus:ring-2 focus:ring-cyan-500/20 transition-all"
                   />
+                  <Popover
+                    open={isCalendarOpen}
+                    onOpenChange={handleCalendarOpenChange}
+                  >
+                    <PopoverTrigger asChild>
+                      <button
+                        type="button"
+                        className={cn(
+                          "absolute right-2 top-1/2 -translate-y-1/2 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-600/60 bg-slate-900/60 text-slate-300 transition-all hover:border-cyan-500/70 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40",
+                          isDateRangeInvalid &&
+                            "border-rose-500/70 text-rose-200 shadow-[0_0_12px_rgba(244,63,94,0.35)]"
+                        )}
+                      >
+                        <CalendarDays className="h-4 w-4" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto border-slate-700/70 bg-slate-900/95 text-white">
+                      <Calendar
+                        mode="range"
+                        selected={dateRange}
+                        onSelect={handleRangeSelect}
+                        numberOfMonths={2}
+                        month={calendarMonth}
+                        onMonthChange={setCalendarMonth}
+                        startMonth={minSelectableDate}
+                        endMonth={maxSelectableDate}
+                        autoFocus={isCalendarOpen}
+                        disabled={{
+                          before: minSelectableDate,
+                          after: maxSelectableDate,
+                        }}
+                      />
+                      <div className="mt-3 flex items-center justify-between text-xs text-slate-400">
+                        <span>Select start & end dates</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            clearDateRange();
+                            setIsCalendarOpen(false);
+                          }}
+                          className="h-7 px-2 text-slate-200 hover:text-white hover:bg-slate-800/80"
+                        >
+                          Reset
+                        </Button>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 </div>
-              )}
+
+                <div className="flex flex-wrap gap-2">
+                  {presetOptions.map((preset) => (
+                    <Button
+                      key={preset.label}
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePresetSelect(preset.range)}
+                      className={cn(
+                        "rounded-full border-slate-600/60 bg-slate-900/40 text-xs font-medium text-slate-200 hover:bg-slate-800/60 hover:text-white",
+                        isPresetActive(preset.range) &&
+                          "border-cyan-400/70 bg-cyan-500/20 text-cyan-200 shadow-lg shadow-cyan-500/20"
+                      )}
+                    >
+                      {preset.label}
+                    </Button>
+                  ))}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3 text-xs">
+                  <p className={cn("text-slate-400", !rangeSummaryText && "text-slate-500")}>
+                    {rangeSummaryText ?? "No date filter applied"}
+                  </p>
+                  {(dateRange?.from || dateRange?.to) && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={clearDateRange}
+                      className="flex items-center gap-1 rounded-full border border-slate-600/60 bg-slate-800/60 px-3 py-1 text-[0.7rem] text-slate-200 hover:bg-slate-700/60 hover:text-white"
+                    >
+                      <X className="h-3 w-3" />
+                      Reset dates
+                    </Button>
+                  )}
+                </div>
+
+                {isDateRangeInvalid && (
+                  <div className="flex items-center gap-1.5 text-xs text-amber-300">
+                    <AlertCircle className="h-3.5 w-3.5" />
+                    <span>Start date must be earlier than end date.</span>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Scrollable Outfits List */}

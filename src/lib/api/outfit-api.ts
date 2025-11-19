@@ -40,6 +40,14 @@ class OutfitAPI {
     if (data.isSaved !== undefined) {
       params['is-saved'] = data.isSaved;
     }
+
+    if (data.startDate) {
+      params['start-date'] = data.startDate;
+    }
+
+    if (data.endDate) {
+      params['end-date'] = data.endDate;
+    }
     
     const response = await apiClient.get<GetOutfitsResponse>("/outfits/user", { params });
 

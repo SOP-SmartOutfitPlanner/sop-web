@@ -138,19 +138,6 @@ export function CollectionDetail({ collectionId }: CollectionDetailProps) {
   return (
     <div className="relative mx-auto w-full max-w-6xl px-6 pt-35 space-y-8">
       <div className="absolute inset-0 -z-10 bg-gradient-to-b from-cyan-500/10 via-slate-950 to-slate-950 blur-3xl" />
-
-      <div className="flex items-center gap-4">
-        <Link href="/collections">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-slate-200 hover:text-white"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" /> Back
-          </Button>
-        </Link>
-      </div>
-
       {/* Hero Section with Thumbnail and Collection Info */}
       <div className="grid gap-8 lg:grid-cols-[1fr_1fr]">
         {/* Left: Thumbnail Image */}
