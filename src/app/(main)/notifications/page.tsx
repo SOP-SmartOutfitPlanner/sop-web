@@ -190,33 +190,7 @@ function NotificationsPageContent({
 
       // Fetch all notifications in parallel
       const responses = await Promise.all(promises);
-
-      // Debug: log raw API responses and page size
-      console.log("[Notifications] Fetch responses", {
-        userId,
-        filter,
-        pageSize: PAGE_SIZE,
-        pageParam,
-        sources: responses.map((res) => ({
-          totalCount: res.data?.metaData?.totalCount,
-          pageSize: res.data?.metaData?.pageSize,
-          currentPage: res.data?.metaData?.currentPage,
-          hasNext: res.data?.metaData?.hasNext,
-        })),
-      });
-
-      const merged = mergeNotifications(responses);
-
-      console.log("[Notifications] Merged notifications summary", {
-        totalCount: merged.metaData.totalCount,
-        pageSize: merged.metaData.pageSize,
-        currentPage: merged.metaData.currentPage,
-        totalPages: merged.metaData.totalPages,
-        hasNext: merged.metaData.hasNext,
-        returnedCount: merged.data.length,
-      });
-
-      return merged;
+      return mergeNotifications(responses);
     },
     getNextPageParam: (lastPage) => {
       if (!lastPage || !lastPage.metaData) return undefined;
@@ -260,17 +234,7 @@ function NotificationsPageContent({
 
     // Merge with local state (for optimistic updates)
     const localMap = new Map(localNotifications.map((n) => [n.id, n]));
-    const finalNotifications = transformed.map(
-      (notif) => localMap.get(notif.id) || notif
-    );
-
-    // Debug: log how many notifications are currently loaded (all pages combined)
-    console.log("[Notifications] Total loaded notifications", {
-      total: finalNotifications.length,
-      pageSize: PAGE_SIZE,
-    });
-
-    return finalNotifications;
+    return transformed.map((notif) => localMap.get(notif.id) || notif);
   }, [data, localNotifications]);
 
   // Fetch unread count from API
