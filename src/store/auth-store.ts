@@ -132,20 +132,9 @@ export const useAuthStore = create<AuthStore>((set) => ({
         pendingVerificationEmail: null,
       });
 
-      // Log login success
-      console.log("🔐 User logged in successfully (Email/Password):", {
-        userId: user.id,
-        email: user.email,
-        displayName: user.displayName,
-        role: user.role,
-        isFirstTime,
-      });
-
       // Register device token for notifications (non-blocking)
       // Register device token regardless of permission status
       if (typeof window !== "undefined") {
-        console.log("📱 Starting device token registration process...");
-        
         // Get device token first
         const deviceToken = getDeviceToken();
         const userId = parseInt(userInfo.id, 10);
@@ -153,13 +142,9 @@ export const useAuthStore = create<AuthStore>((set) => ({
         if (isNaN(userId)) {
           console.error("❌ Invalid userId for device registration:", userInfo.id);
         } else {
-          console.log("📱 Device token and userId ready:", { userId, deviceToken });
-          
           // Request permission (but don't wait for it)
           requestNotificationPermission()
-            .then((hasPermission) => {
-              console.log("📱 Notification permission status:", hasPermission ? "granted" : "denied/default");
-            })
+            .then(() => {})
             .catch((err) => {
               console.warn("⚠️ Error requesting notification permission:", err);
             });
@@ -240,19 +225,9 @@ export const useAuthStore = create<AuthStore>((set) => ({
         successMessage: "Admin login successful",
       });
 
-      // Log admin login success
-      console.log("🔐 Admin logged in successfully:", {
-        userId: user.id,
-        email: user.email,
-        displayName: user.displayName,
-        role: user.role,
-      });
-
       // Register device token for notifications (non-blocking)
       // Register device token regardless of permission status
       if (typeof window !== "undefined") {
-        console.log("📱 Starting device token registration process (Admin)...");
-        
         // Get device token first
         const deviceToken = getDeviceToken();
         const userId = parseInt(userInfo.id, 10);
@@ -260,13 +235,9 @@ export const useAuthStore = create<AuthStore>((set) => ({
         if (isNaN(userId)) {
           console.error("❌ Invalid userId for device registration:", userInfo.id);
         } else {
-          console.log("📱 Device token and userId ready:", { userId, deviceToken });
-          
           // Request permission (but don't wait for it)
           requestNotificationPermission()
-            .then((hasPermission) => {
-              console.log("📱 Notification permission status:", hasPermission ? "granted" : "denied/default");
-            })
+            .then(() => {})
             .catch((err) => {
               console.warn("⚠️ Error requesting notification permission:", err);
             });
@@ -299,7 +270,6 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
     try {
       const response = await authAPI.loginWithGoogle(credential);
-      console.log(response);
         // Case 1: New user - requires email verification (201)
         if (response.statusCode === 201) {
           const email = (response.data as { email?: string }).email;
@@ -393,20 +363,9 @@ export const useAuthStore = create<AuthStore>((set) => ({
         pendingVerificationEmail: null,
       });
 
-      // Log Google login success
-      console.log("🔐 User logged in successfully (Google OAuth):", {
-        userId: user.id,
-        email: user.email,
-        displayName: user.displayName,
-        role: user.role,
-        isFirstTime,
-      });
-
       // Register device token for notifications (non-blocking)
       // Register device token regardless of permission status
       if (typeof window !== "undefined") {
-        console.log("📱 Starting device token registration process (Google OAuth)...");
-        
         // Get device token first
         const deviceToken = getDeviceToken();
         const userId = parseInt(userInfo.id, 10);
@@ -414,13 +373,9 @@ export const useAuthStore = create<AuthStore>((set) => ({
         if (isNaN(userId)) {
           console.error("❌ Invalid userId for device registration:", userInfo.id);
         } else {
-          console.log("📱 Device token and userId ready:", { userId, deviceToken });
-          
           // Request permission (but don't wait for it)
           requestNotificationPermission()
-            .then((hasPermission) => {
-              console.log("📱 Notification permission status:", hasPermission ? "granted" : "denied/default");
-            })
+            .then(() => {})
             .catch((err) => {
               console.warn("⚠️ Error requesting notification permission:", err);
             });

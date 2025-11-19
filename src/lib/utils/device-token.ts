@@ -17,7 +17,6 @@ export function generateDeviceToken(): string {
   // Check if we already have a device token stored
   const storedToken = localStorage.getItem("deviceToken");
   if (storedToken) {
-    console.log("📱 Device token retrieved from storage:", storedToken);
     return storedToken;
   }
 
@@ -31,8 +30,6 @@ export function generateDeviceToken(): string {
   
   // Store in localStorage for persistence
   localStorage.setItem("deviceToken", deviceToken);
-  
-  console.log("📱 New device token generated:", deviceToken);
   
   return deviceToken;
 }
@@ -55,7 +52,6 @@ export function removeStoredDeviceToken(): string | null {
   const token = localStorage.getItem("deviceToken");
   if (token) {
     localStorage.removeItem("deviceToken");
-    console.log("📱 Device token removed from storage:", token);
   }
   return token;
 }
@@ -71,20 +67,15 @@ export async function requestNotificationPermission(): Promise<boolean> {
   }
 
   const currentPermission = Notification.permission;
-  console.log("📱 Current notification permission:", currentPermission);
-
   // Check if permission is already granted
   if (currentPermission === "granted") {
-    console.log("✅ Notification permission already granted");
     return true;
   }
 
   // Request permission
   if (currentPermission === "default") {
     try {
-      console.log("📱 Requesting notification permission...");
       const permission = await Notification.requestPermission();
-      console.log("📱 Notification permission result:", permission);
       return permission === "granted";
     } catch (error) {
       console.error("❌ Error requesting notification permission:", error);
@@ -93,7 +84,6 @@ export async function requestNotificationPermission(): Promise<boolean> {
   }
 
   // Permission was previously denied
-  console.log("⚠️ Notification permission was previously denied");
   return false;
 }
 
@@ -111,11 +101,6 @@ export async function registerDeviceForNotifications(
   });
 
   try {
-    console.log("📱 Registering device token:", {
-      userId,
-      deviceToken,
-    });
-    
     // Import notification API dynamically to avoid circular dependencies
     const { notificationAPI } = await import("@/lib/api/notification-api");
     
@@ -123,8 +108,6 @@ export async function registerDeviceForNotifications(
       userId,
       deviceToken,
     });
-    
-    console.log("✅ Device token registered successfully:", deviceToken);
     
     // Show success toast
     toast.success("Đăng ký thiết bị thành công!", {
