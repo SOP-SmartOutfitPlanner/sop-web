@@ -11,6 +11,7 @@ interface CommunityHeaderProps {
   onNewPostOpenChange: (open: boolean) => void;
   onCreatePost: (postData: {
     caption: string;
+    captionHtml: string;
     tags: string[];
     files?: File[]; // Changed to File[] for upload
   }) => Promise<void>;

@@ -63,6 +63,7 @@ export default function Community() {
   // Handle post creation and close dialog
   const handleCreatePost = async (postData: {
     caption: string;
+    captionHtml: string;
     tags: string[];
     files?: File[]; // Changed to File[] for upload
   }) => {

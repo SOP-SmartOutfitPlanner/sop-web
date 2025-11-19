@@ -4,6 +4,7 @@ interface NewPostDialogProps {
   isOpen?: boolean;
   onCreatePost: (data: {
     caption: string;
+    captionHtml: string;
     tags: string[];
     files?: File[];
   }) => void;

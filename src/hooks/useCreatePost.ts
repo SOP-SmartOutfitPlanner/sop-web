@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 interface CreatePostData {
   caption: string;
+  captionHtml: string;
   tags: string[];
   files?: File[]; // Changed to File[] for actual file upload
 }
@@ -38,7 +39,7 @@ export function useCreatePost() {
         // - Returns post with image URLs from API
         const response = await communityAPI.createPost({
           userId: parseInt(user.id),
-          body: postData.caption,
+          body: postData.captionHtml || postData.caption,
           hashtags: postData.tags,
           images: postData.files || [], // Pass raw files directly
         });

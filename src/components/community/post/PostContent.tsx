@@ -1,6 +1,7 @@
-import { KeyboardEvent } from "react";
+import { KeyboardEvent, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Hashtag } from "@/lib/api/community-api";
+import DOMPurify from "isomorphic-dompurify";
 
 interface PostContentProps {
   caption: string;
@@ -16,11 +17,21 @@ export function PostContent({ caption, tags, onTagClick }: PostContentProps) {
     }
   };
 
+  const sanitizedCaption = useMemo(
+    () =>
+      DOMPurify.sanitize(caption, {
+        ALLOWED_TAGS: ["b", "strong", "i", "em", "u", "span", "p", "br"],
+        ALLOWED_ATTR: ["style"],
+      }),
+    [caption]
+  );
+
   return (
     <div className="space-y-2 px-4">
-      <p className="text-white font-semibold text-base leading-relaxed">
-        {caption}
-      </p>
+      <div
+        className="text-white font-semibold text-base leading-relaxed prose prose-invert prose-sm max-w-none"
+        dangerouslySetInnerHTML={{ __html: sanitizedCaption }}
+      />
 
       {tags.length > 0 && (
         <div className="flex flex-wrap gap-2 pb-2">

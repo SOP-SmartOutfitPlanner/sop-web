@@ -7,6 +7,7 @@ import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
+import Underline from "@tiptap/extension-underline";
 import { Post } from "@/types/community";
 import { PostFormHeader, type PostFormMode } from "./post-form-header";
 import { PostFormContent } from "./post-form-content";
@@ -18,8 +19,10 @@ interface PostFormDialogProps {
   isOpen?: boolean; // To lock/unlock body scroll
   onSubmit: (data: {
     caption: string;
+    captionHtml: string;
     tags: string[];
     files?: File[];
+    existingImageUrls?: string[];
   }) => void | Promise<void>;
   isSubmitting?: boolean;
 }
@@ -58,6 +61,7 @@ export function PostFormDialog({
       Placeholder.configure({
         placeholder: "What's on your mind?",
       }),
+      Underline,
     ],
     editorProps: {
       attributes: {
@@ -139,20 +143,28 @@ export function PostFormDialog({
       return;
     }
 
-    const fullCaption = editor.getText().trim();
+    const plainTextCaption = editor.getText().trim();
+    const captionHtmlRaw = editor.getHTML().trim();
 
-    if (!fullCaption) {
+    if (!plainTextCaption) {
       return;
     }
 
     // Extract hashtags (support Unicode letters/numbers)
     const HASHTAG_REGEX = /#([\p{L}\p{N}_]+)/gu;
     const hashtags =
-      Array.from(fullCaption.matchAll(HASHTAG_REGEX), (match) => match[1]) ||
+      Array.from(plainTextCaption.matchAll(HASHTAG_REGEX), (match) => match[1]) ||
       [];
 
     // Remove hashtags from caption
-    const captionWithoutHashtags = fullCaption.replace(HASHTAG_REGEX, "").trim();
+    const captionWithoutHashtags = plainTextCaption.replace(
+      /#([\p{L}\p{N}_]+)/gu,
+      ""
+    ).trim();
+    const captionHtmlWithoutHashtags = captionHtmlRaw.replace(
+      /#([\p{L}\p{N}_]+)/gu,
+      ""
+    ).trim();
 
     // Calculate remaining original images (images that are still selected but not new files)
     // In edit mode: selectedImages = [original images...] + [new file previews...]
@@ -174,6 +186,7 @@ export function PostFormDialog({
 
     const submitData = {
       caption: captionWithoutHashtags,
+      captionHtml: captionHtmlWithoutHashtags,
       tags: hashtags,
       files: selectedFiles.length > 0 ? selectedFiles : undefined,
       existingImageUrls: isEditMode ? remainingOriginalImages : undefined,
@@ -220,6 +233,7 @@ export function PostFormDialog({
       <PostFormFooter
         mode={mode}
         caption={caption}
+        editor={editor}
         isSubmitting={isSubmitting}
         onImageUploadClick={handleImageUpload}
         onSubmit={handleSubmit}

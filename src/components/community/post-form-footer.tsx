@@ -1,14 +1,16 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { ImageIcon, Users, MapPin, MoreHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { Editor } from "@tiptap/react";
+import { ImageIcon, Bold, Italic, Underline as UnderlineIcon } from "lucide-react";
 
 export type PostFormMode = "create" | "edit";
 
 interface PostFormFooterProps {
   mode: PostFormMode;
   caption: string;
+  editor?: Editor | null;
   isSubmitting?: boolean;
   onImageUploadClick?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSubmit?: (e: React.FormEvent) => void;
@@ -17,6 +19,7 @@ interface PostFormFooterProps {
 export function PostFormFooter({
   mode,
   caption,
+  editor,
   isSubmitting = false,
   onImageUploadClick,
   onSubmit,
@@ -30,6 +33,32 @@ export function PostFormFooter({
     ? "Update"
     : "Post";
 
+  const formattingActions = [
+    {
+      key: "bold",
+      label: "Bold",
+      icon: Bold,
+      isActive: () => editor?.isActive("bold"),
+      command: () => editor?.chain().focus().toggleBold().run(),
+    },
+    {
+      key: "italic",
+      label: "Italic",
+      icon: Italic,
+      isActive: () => editor?.isActive("italic"),
+      command: () => editor?.chain().focus().toggleItalic().run(),
+    },
+    {
+      key: "underline",
+      label: "Underline",
+      icon: UnderlineIcon,
+      isActive: () => editor?.isActive("underline"),
+      command: () => editor?.chain().focus().toggleUnderline().run(),
+    },
+  ] as const;
+
+  const isFormattingDisabled = !editor || !editor.isEditable;
+
   return (
     <div className="flex-shrink-0 border-t border-cyan-400/15 px-6 py-4 bg-gradient-to-r from-cyan-950/50 via-blue-950/50 to-indigo-950/50 backdrop-blur-lg space-y-3">
       {/* Add to post */}
@@ -37,7 +66,37 @@ export function PostFormFooter({
         <div className="text-xs font-bold mb-2.5 text-cyan-100">
           Add to your post
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            {formattingActions.map((action) => {
+              const Icon = action.icon;
+              const activeClass =
+                action.isActive() && !isFormattingDisabled
+                  ? "bg-cyan-500/20 border-cyan-400/60 text-white shadow-lg shadow-cyan-500/30"
+                  : "border-cyan-400/20 text-cyan-100/80";
+
+              return (
+                <button
+                  key={action.key}
+                  type="button"
+                  aria-label={action.label}
+                  disabled={isFormattingDisabled}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    if (isFormattingDisabled) return;
+                    action.command();
+                  }}
+                  className={cn(
+                    "flex h-9 w-9 items-center justify-center rounded-full border transition-all duration-200 hover:border-cyan-400/60 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed",
+                    activeClass
+                  )}
+                >
+                  <Icon className="h-4 w-4" />
+                </button>
+              );
+            })}
+          </div>
+
           <label className="cursor-pointer group">
             <input
               type="file"

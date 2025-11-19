@@ -21,6 +21,7 @@ export function EditPostDialog({
 
   const handleSubmit = async (data: {
     caption: string;
+    captionHtml: string;
     tags: string[];
     files?: File[];
     existingImageUrls?: string[];
@@ -29,7 +30,7 @@ export function EditPostDialog({
       setIsSubmitting(true);
 
       const formData = new FormData();
-      formData.append("Body", data.caption);
+      formData.append("Body", data.captionHtml || data.caption);
 
       // Add hashtags
       data.tags.forEach((tag) => {
