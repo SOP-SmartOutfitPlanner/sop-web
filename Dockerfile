@@ -13,15 +13,24 @@ COPY middleware.ts ./
 RUN npm install --frozen-lockfile
 
 # Stage 2: Builder
+# Stage 2: Builder
 FROM node:18-alpine AS builder
 WORKDIR /app
 
+# copy từ stage deps
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/tsconfig.json ./
 COPY --from=deps /app/postcss.config.mjs ./
 COPY --from=deps /app/next.config.ts ./
 COPY --from=deps /app/components.json ./
 COPY --from=deps /app/middleware.ts ./
+
+ARG NEXT_PUBLIC_API_BASE_URL
+ARG NEXT_PUBLIC_GOOGLE_CLIENT_ID
+
+ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
+ENV NEXT_PUBLIC_GOOGLE_CLIENT_ID=$NEXT_PUBLIC_GOOGLE_CLIENT_ID
+
 
 # Copy source files
 COPY src ./src
