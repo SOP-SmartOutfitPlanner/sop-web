@@ -2,7 +2,12 @@ import { create } from "zustand";
 import { authAPI, ApiError, apiClient, userAPI } from "@/lib/api";
 import { extractUserFromToken, isAdminUser } from "@/lib/utils/jwt";
 import { queryClient } from "@/lib/query-client";
-import { getDeviceToken, registerDeviceForNotifications, requestNotificationPermission } from "@/lib/utils/device-token";
+import {
+  getDeviceToken,
+  registerDeviceForNotifications,
+  requestNotificationPermission,
+  removeStoredDeviceToken,
+} from "@/lib/utils/device-token";
 import type {
   User,
   LoginRequest,
@@ -543,13 +548,44 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
   logout: async () => {
     set({ isLoading: true });
-    
+
+    let deviceToken: string | null = null;
+    let deleteDeviceTokenPromise: Promise<void> | null = null;
+
+    if (typeof window !== "undefined") {
+      deviceToken = localStorage.getItem("deviceToken");
+      if (deviceToken) {
+        deleteDeviceTokenPromise = import("@/lib/api/notification-api")
+          .then(async ({ notificationAPI }) => {
+            try {
+              await notificationAPI.deleteDeviceToken({
+                deviceToken: deviceToken as string,
+              });
+            } catch (error) {
+              console.error("❌ Failed to delete device token:", error);
+            }
+          })
+          .catch((error) => {
+            console.error("❌ Failed to load notification API:", error);
+          });
+      }
+    }
+
     try {
       // Call logout API (will send Authorization header automatically)
       await authAPI.logout();
     } catch {
       // Continue with local logout even if API fails
     } finally {
+      // Wait for device token deletion (if triggered) before clearing storage
+      if (deleteDeviceTokenPromise) {
+        await deleteDeviceTokenPromise;
+      }
+
+      if (typeof window !== "undefined") {
+        removeStoredDeviceToken();
+      }
+
       // Clear all storage
       if (typeof window !== 'undefined') {
         localStorage.removeItem('user');

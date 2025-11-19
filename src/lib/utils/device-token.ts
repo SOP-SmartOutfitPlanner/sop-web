@@ -45,6 +45,22 @@ export function getDeviceToken(): string {
 }
 
 /**
+ * Remove stored device token (used during logout)
+ */
+export function removeStoredDeviceToken(): string | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const token = localStorage.getItem("deviceToken");
+  if (token) {
+    localStorage.removeItem("deviceToken");
+    console.log("📱 Device token removed from storage:", token);
+  }
+  return token;
+}
+
+/**
  * Request notification permission from user
  * Returns true if permission is granted or already granted
  */

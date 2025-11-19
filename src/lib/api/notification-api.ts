@@ -9,6 +9,10 @@ export interface RegisterDeviceTokenRequest {
   deviceToken: string;
 }
 
+export interface DeleteDeviceTokenParams {
+  deviceToken: string;
+}
+
 /**
  * Notification type enum
  */
@@ -86,6 +90,25 @@ class NotificationAPI {
       return response;
     } catch (error) {
       console.error("❌ Device token registration API error:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete device token for push notifications
+   * DELETE /api/v1/user-devices/{deviceToken}
+   */
+  async deleteDeviceToken(
+    params: DeleteDeviceTokenParams
+  ): Promise<ApiResponse<null>> {
+    try {
+      const response = await apiClient.delete<ApiResponse<null>>(
+        `${this.BASE_PATH}/${params.deviceToken}`
+      );
+
+      return response;
+    } catch (error) {
+      console.error("❌ Device token deletion API error:", error);
       throw error;
     }
   }
