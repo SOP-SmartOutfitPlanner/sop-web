@@ -8,15 +8,6 @@ import { PostModal } from "./PostModal";
 interface PostGridProps {
   userId: string;
 }
-
-/**
- * ✅ OPTIMIZED: Instagram-style 3-column photo grid
- * - Uses usePostGridData hook for data management
- * - Uses PostGridLayout component for rendering
- * - Uses useModalState hook for modal state
- * - Reduced from ~250 lines to ~50 lines
- * - 80% cleaner and more maintainable
- */
 export function PostGrid({ userId }: PostGridProps) {
   // Data management hook
   const {
