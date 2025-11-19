@@ -2,6 +2,7 @@
 
 import { useRef, useState, useEffect } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import {
   Heart,
   MessageCircle,
@@ -43,6 +44,7 @@ import { usePostModal } from "@/hooks/community/usePostModal";
 import { ReportDialog } from "@/components/community/report/ReportDialog";
 import { EditPostDialog } from "@/components/community/EditPostDialog";
 import { Badge } from "@/components/ui/badge";
+import { PostContent } from "@/components/community/post/PostContent";
 import {
   Tooltip,
   TooltipContent,
@@ -73,6 +75,7 @@ export function PostModal({
   onPostUpdated,
   onPostDeleted,
 }: PostModalProps) {
+  const router = useRouter();
   const { user } = useAuthStore();
   const commentInputRef = useRef<HTMLInputElement>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -432,29 +435,11 @@ export function PostModal({
               <div className="flex-1 overflow-y-auto px-4 flex flex-col min-h-0">
                 {/* Caption Content */}
                 <div className="py-4 border-b border-slate-700/20">
-                  <p
-                    className={`text-white font-medium leading-relaxed ${
-                      post.caption && post.caption.length < 100
-                        ? "text-lg"
-                        : "text-base"
-                    }`}
-                  >
-                    {post.caption}
-                  </p>
-
-                  {/* Tags */}
-                  {post.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-3">
-                      {post.tags.map((tag, index) => (
-                        <span
-                          key={`${tag.id}-${index}`}
-                          className="text-xs px-3 py-1 rounded-full bg-slate-800/25 hover:bg-slate-800/40 border border-slate-400/45 hover:border-cyan-400/50 text-slate-200 hover:text-cyan-300 font-medium transition-all duration-300 cursor-pointer"
-                        >
-                          #{tag.name}
-                        </span>
-                      ))}
-                    </div>
-                  )}
+                  <PostContent
+                    caption={post.caption}
+                    tags={post.tags}
+                    onTagClick={(tag) => router.push(`/community?hashtag=${tag.id}`)}
+                  />
                 </div>
 
                 {/* Interactions Bar */}
