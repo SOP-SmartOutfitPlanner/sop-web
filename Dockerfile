@@ -25,13 +25,6 @@ COPY --from=deps /app/next.config.ts ./
 COPY --from=deps /app/components.json ./
 COPY --from=deps /app/middleware.ts ./
 
-ARG NEXT_PUBLIC_API_BASE_URL
-ARG NEXT_PUBLIC_GOOGLE_CLIENT_ID
-
-ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
-ENV NEXT_PUBLIC_GOOGLE_CLIENT_ID=$NEXT_PUBLIC_GOOGLE_CLIENT_ID
-
-
 # Copy source files
 COPY src ./src
 COPY public ./public
