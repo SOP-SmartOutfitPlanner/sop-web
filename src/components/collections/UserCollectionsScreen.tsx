@@ -17,9 +17,7 @@ import { CreateCollectionDialog } from "./CreateCollectionDialog";
 import { EditCollectionDialog } from "./EditCollectionDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import {
-  filterCollectionsByStatus,
-} from "@/lib/collections/utils";
+import { filterCollectionsByStatus } from "@/lib/collections/utils";
 import { COLLECTION_QUERY_KEYS } from "@/lib/collections/constants";
 import {
   RefreshCw,
@@ -48,8 +46,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+type CollectionsScreenVariant = "standalone" | "embedded";
+
 interface UserCollectionsScreenProps {
   userId: number;
+  variant?: CollectionsScreenVariant;
 }
 
 interface CollectionListData {
@@ -57,7 +58,10 @@ interface CollectionListData {
   count: number;
 }
 
-export function UserCollectionsScreen({ userId }: UserCollectionsScreenProps) {
+export function UserCollectionsScreen({
+  userId,
+  variant = "standalone",
+}: UserCollectionsScreenProps) {
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -201,183 +205,213 @@ export function UserCollectionsScreen({ userId }: UserCollectionsScreenProps) {
     collectionsQuery.data?.collections[0]?.userDisplayName ||
     "Stylist";
 
+  const isEmbedded = variant === "embedded";
+
   return (
-    <div className="relative mx-auto w-full max-w-6xl px-6 pb-24 pt-20 space-y-16">
-      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-slate-950 via-slate-950 to-slate-950 blur-3xl" />
+    <div
+      className={cn(
+        "w-full",
+        isEmbedded ? "space-y-10" : "space-y-16",
+        isEmbedded
+          ? "relative px-0 pt-0 pb-8"
+          : "relative mx-auto max-w-6xl px-6 pb-24 pt-20"
+      )}
+    >
+      {!isEmbedded && (
+        <>
+          <div className="absolute inset-0 -z-10 bg-gradient-to-b from-slate-950 via-slate-950 to-slate-950 blur-3xl" />
+          <header className="space-y-4">
+            <GlassCard
+              padding="2rem"
+              blur="20px"
+              glowColor="rgba(56, 189, 248, 0.6)"
+              glowIntensity={28}
+              shadowColor="rgba(15, 23, 42, 0.55)"
+              className="relative overflow-hidden border-2 border-cyan-400/50 bg-gradient-to-br from-slate-900/70 via-slate-800/60 to-slate-900/70 shadow-2xl shadow-cyan-500/20"
+            >
+              <div className="pointer-events-none absolute inset-0">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.75),transparent_60%)] opacity-90" />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(76,29,149,0.75),transparent_65%)] opacity-90" />
+                <div className="absolute inset-0 bg-gradient-to-r from-slate-900/75 via-slate-800/60 to-slate-900/40 backdrop-blur-sm" />
+                <div className="absolute inset-y-0 left-0 w-full md:w-2/3 bg-gradient-to-r from-black/40 via-black/20 to-transparent" />
+              </div>
+              <div className="relative space-y-4">
+                <p className="inline-flex items-center gap-2 rounded-full border-2 border-cyan-400/60 bg-gradient-to-r from-cyan-500/30 to-blue-500/30 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.4em] text-white backdrop-blur-md shadow-lg shadow-cyan-500/30">
+                  Stylist Collections
+                </p>
 
-      <header className="space-y-4">
-        <GlassCard
-          padding="2rem"
-          blur="20px"
-          glowColor="rgba(56, 189, 248, 0.6)"
-          glowIntensity={28}
-          shadowColor="rgba(15, 23, 42, 0.55)"
-          className="relative overflow-hidden border-2 border-cyan-400/50 bg-gradient-to-br from-slate-900/70 via-slate-800/60 to-slate-900/70 shadow-2xl shadow-cyan-500/20"
-        >
-          <div className="pointer-events-none absolute inset-0">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.75),transparent_60%)] opacity-90" />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(76,29,149,0.75),transparent_65%)] opacity-90" />
-            <div className="absolute inset-0 bg-gradient-to-r from-slate-900/75 via-slate-800/60 to-slate-900/40 backdrop-blur-sm" />
-            <div className="absolute inset-y-0 left-0 w-2/3 bg-gradient-to-r from-black/40 via-black/20 to-transparent" />
-          </div>
-          <div className="relative space-y-4">
-            <p className="inline-flex items-center gap-2 rounded-full border-2 border-cyan-400/60 bg-gradient-to-r from-cyan-500/30 to-blue-500/30 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.4em] text-white backdrop-blur-md shadow-lg shadow-cyan-500/30">
-              Stylist Collections
-            </p>
-
-            {/* User Info Section */}
-            <div className="flex flex-col gap-6 md:flex-row md:items-start">
-              {/* Avatar */}
-              <div className="relative h-28 w-28 shrink-0 md:h-32 md:w-32">
-                {/* Glow ring effect */}
-                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400 opacity-75 blur-xl animate-pulse" />
-                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-cyan-400/60 via-blue-400/60 to-indigo-400/60 p-[3px]">
-                  <div className="h-full w-full rounded-full bg-slate-900/90 backdrop-blur-sm" />
-                </div>
-                <div className="relative h-full w-full overflow-hidden rounded-full border-2 border-cyan-400/80 bg-slate-800/50 shadow-2xl shadow-cyan-500/50 ring-4 ring-cyan-500/30 ring-offset-2 ring-offset-slate-900">
-                  {userQuery.data?.avtUrl ? (
-                    <Image
-                      src={userQuery.data.avtUrl}
-                      alt={userDisplayName}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 768px) 112px, 128px"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center">
-                      <UserPlus className="h-14 w-14 md:h-16 md:w-16 text-cyan-300" />
+                {/* User Info Section */}
+                <div className="flex flex-col gap-6 md:flex-row md:items-start">
+                  {/* Avatar */}
+                  <div className="relative h-28 w-28 shrink-0 md:h-32 md:w-32">
+                    {/* Glow ring effect */}
+                    <div className="absolute inset-0 rounded-full bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400 opacity-75 blur-xl animate-pulse" />
+                    <div className="absolute inset-0 rounded-full bg-gradient-to-r from-cyan-400/60 via-blue-400/60 to-indigo-400/60 p-[3px]">
+                      <div className="h-full w-full rounded-full bg-slate-900/90 backdrop-blur-sm" />
                     </div>
-                  )}
+                    <div className="relative h-full w-full overflow-hidden rounded-full border-2 border-cyan-400/80 bg-slate-800/50 shadow-2xl shadow-cyan-500/50 ring-4 ring-cyan-500/30 ring-offset-2 ring-offset-slate-900">
+                      {userQuery.data?.avtUrl ? (
+                        <Image
+                          src={userQuery.data.avtUrl}
+                          alt={userDisplayName}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 768px) 112px, 128px"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center">
+                          <UserPlus className="h-14 w-14 md:h-16 md:w-16 text-cyan-300" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* User Details */}
+                  <div className="flex-1 space-y-3">
+                    <div>
+                      <h1 className="text-3xl font-black leading-tight text-white drop-shadow-lg md:text-4xl">
+                        <span className="bg-gradient-to-r from-cyan-300 via-blue-300 to-indigo-300 bg-clip-text text-transparent">
+                          {userDisplayName}
+                        </span>
+                      </h1>
+                      {userQuery.data?.jobName && (
+                        <p className="mt-1 text-sm text-cyan-300/80">
+                          {userQuery.data.jobName}
+                        </p>
+                      )}
+                    </div>
+
+                    {userQuery.data?.bio && (
+                      <p className="max-w-2xl text-base text-slate-200 leading-relaxed">
+                        {userQuery.data.bio}
+                      </p>
+                    )}
+
+                    {/* Stats */}
+                    <div className="flex flex-wrap items-center gap-5 md:gap-6">
+                      <div className="flex items-center gap-2 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-3 py-1.5">
+                        <Users className="h-4 w-4 text-cyan-300" />
+                        <span className="text-sm font-semibold text-white">
+                          {followerCountQuery.data ?? 0}
+                        </span>
+                        <span className="text-xs text-slate-300">
+                          Followers
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 rounded-lg border border-purple-500/30 bg-purple-500/10 px-3 py-1.5">
+                        <Sparkles className="h-4 w-4 text-purple-300" />
+                        <span className="text-sm font-semibold text-white">
+                          {stylistProfileQuery.data
+                            ?.publishedCollectionsCount ??
+                            filteredCollections.length ??
+                            0}
+                        </span>
+                        <span className="text-xs text-slate-300">
+                          Published
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-1.5">
+                        <Heart className="h-4 w-4 text-rose-300" />
+                        <span className="text-sm font-semibold text-white">
+                          {stylistProfileQuery.data?.totalCollectionsLikes ?? 0}
+                        </span>
+                        <span className="text-xs text-slate-300">
+                          Total Likes
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5">
+                        <Bookmark className="h-4 w-4 text-amber-300" />
+                        <span className="text-sm font-semibold text-white">
+                          {stylistProfileQuery.data?.totalCollectionsSaves ?? 0}
+                        </span>
+                        <span className="text-xs text-slate-300">
+                          Total Saves
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* User Styles */}
+                    {userQuery.data?.userStyles &&
+                      userQuery.data.userStyles.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {userQuery.data.userStyles
+                            .slice(0, 5)
+                            .map((style) => (
+                              <Badge
+                                key={style.id}
+                                className="border-cyan-400/30 bg-cyan-500/15 text-cyan-200 px-2.5 py-1 text-xs"
+                              >
+                                {style.styleName}
+                              </Badge>
+                            ))}
+                        </div>
+                      )}
+                  </div>
                 </div>
               </div>
-
-              {/* User Details */}
-              <div className="flex-1 space-y-3">
-                <div>
-                  <h1 className="text-3xl font-black leading-tight text-white drop-shadow-lg md:text-4xl">
-                    <span className="bg-gradient-to-r from-cyan-300 via-blue-300 to-indigo-300 bg-clip-text text-transparent">
-                      {userDisplayName}
-                    </span>
-                  </h1>
-                  {userQuery.data?.jobName && (
-                    <p className="mt-1 text-sm text-cyan-300/80">
-                      {userQuery.data.jobName}
-                    </p>
-                  )}
-                </div>
-
-                {userQuery.data?.bio && (
-                  <p className="max-w-2xl text-base text-slate-200 leading-relaxed">
-                    {userQuery.data.bio}
-                  </p>
-                )}
-
-                {/* Stats */}
-                <div className="flex flex-wrap items-center gap-5 md:gap-6">
-                  <div className="flex items-center gap-2 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-3 py-1.5">
-                    <Users className="h-4 w-4 text-cyan-300" />
-                    <span className="text-sm font-semibold text-white">
-                      {followerCountQuery.data ?? 0}
-                    </span>
-                    <span className="text-xs text-slate-300">Followers</span>
-                  </div>
-                  <div className="flex items-center gap-2 rounded-lg border border-purple-500/30 bg-purple-500/10 px-3 py-1.5">
-                    <Sparkles className="h-4 w-4 text-purple-300" />
-                    <span className="text-sm font-semibold text-white">
-                      {stylistProfileQuery.data?.publishedCollectionsCount ??
-                        filteredCollections.length ??
-                        0}
-                    </span>
-                    <span className="text-xs text-slate-300">Published</span>
-                  </div>
-                  <div className="flex items-center gap-2 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-1.5">
-                    <Heart className="h-4 w-4 text-rose-300" />
-                    <span className="text-sm font-semibold text-white">
-                      {stylistProfileQuery.data?.totalCollectionsLikes ?? 0}
-                    </span>
-                    <span className="text-xs text-slate-300">Total Likes</span>
-                  </div>
-                  <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5">
-                    <Bookmark className="h-4 w-4 text-amber-300" />
-                    <span className="text-sm font-semibold text-white">
-                      {stylistProfileQuery.data?.totalCollectionsSaves ?? 0}
-                    </span>
-                    <span className="text-xs text-slate-300">Total Saves</span>
-                  </div>
-                </div>
-
-                {/* User Styles */}
-                {userQuery.data?.userStyles &&
-                  userQuery.data.userStyles.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {userQuery.data.userStyles.slice(0, 5).map((style) => (
-                        <Badge
-                          key={style.id}
-                          className="border-cyan-400/30 bg-cyan-500/15 text-cyan-200 px-2.5 py-1 text-xs"
-                        >
-                          {style.styleName}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-              </div>
-            </div>
-          </div>
-        </GlassCard>
-      </header>
+            </GlassCard>
+          </header>
+        </>
+      )}
 
       <section className="space-y-8">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-4">
-            {isOwnProfile && (
-              <div className="inline-flex items-center gap-1 rounded-full border border-cyan-500/30 bg-slate-900/80 p-1.5 backdrop-blur-lg shadow-lg shadow-cyan-500/10">
-                <button
-                  onClick={() => setActiveTab("published")}
-                  className={cn(
-                    "inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold transition-all duration-300 relative",
-                    activeTab === "published"
-                      ? "bg-gradient-to-r from-cyan-500/90 to-blue-500/90 text-white shadow-lg shadow-cyan-500/30 scale-105"
-                      : "text-slate-300 hover:text-white hover:bg-white/5"
-                  )}
+        <div className="rounded-3xl border border-white/10 bg-slate-950/60 px-4 py-5 shadow-lg shadow-black/40">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-col gap-2">
+              {isOwnProfile ? (
+                <div className="inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-slate-900/80 p-2 backdrop-blur-lg shadow-lg shadow-cyan-500/10">
+                  <button
+                    onClick={() => setActiveTab("published")}
+                    className={cn(
+                      "inline-flex min-w-[140px] items-center justify-center gap-2 rounded-full px-5 py-2 text-sm font-semibold transition-all duration-300",
+                      activeTab === "published"
+                        ? "bg-gradient-to-r from-cyan-500/90 to-blue-500/90 text-white shadow-lg shadow-cyan-500/30"
+                        : "text-slate-300 hover:text-white hover:bg-white/5"
+                    )}
+                  >
+                    <Globe2 className="h-4 w-4" />
+                    Published
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("drafts")}
+                    className={cn(
+                      "inline-flex min-w-[140px] items-center justify-center gap-2 rounded-full px-5 py-2 text-sm font-semibold transition-all duration-300",
+                      activeTab === "drafts"
+                        ? "bg-gradient-to-r from-cyan-500/90 to-blue-500/90 text-white shadow-lg shadow-cyan-500/30"
+                        : "text-slate-300 hover:text-white hover:bg-white/5"
+                    )}
+                  >
+                    <FileText className="h-4 w-4" />
+                    Drafts
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <p className="text-xs uppercase tracking-[0.4em] text-slate-400">
+                    Stylist collections
+                  </p>
+                  <h2 className="text-2xl font-semibold text-white">
+                    Published Collections
+                  </h2>
+                </>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="rounded-full border border-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.4em] text-slate-300">
+                {filteredCollections.length}{" "}
+                {activeTab === "published" ? "Published" : "Draft"}
+              </span>
+              {isOwnProfile && (
+                <Button
+                  onClick={() => setIsCreateDialogOpen(true)}
+                  className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-cyan-500 to-indigo-500 px-6 py-2.5 text-sm font-semibold text-white shadow-cyan-500/30 transition-all duration-300 hover:scale-[1.02]"
                 >
-                  <Globe2 className="h-4 w-4" />
-                  Published
-                </button>
-                <button
-                  onClick={() => setActiveTab("drafts")}
-                  className={cn(
-                    "inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold transition-all duration-300 relative",
-                    activeTab === "drafts"
-                      ? "bg-gradient-to-r from-cyan-500/90 to-blue-500/90 text-white shadow-lg shadow-cyan-500/30 scale-105"
-                      : "text-slate-300 hover:text-white hover:bg-white/5"
-                  )}
-                >
-                  <FileText className="h-4 w-4" />
-                  Drafts
-                </button>
-              </div>
-            )}
-            {!isOwnProfile && (
-              <h2 className="text-2xl font-semibold text-white">
-                Published Collections
-              </h2>
-            )}
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-slate-400">
-              {filteredCollections.length}{" "}
-              {activeTab === "published" ? "published" : "draft"} collection
-              {filteredCollections.length !== 1 ? "s" : ""}
-            </span>
-            {isOwnProfile && (
-              <Button
-                onClick={() => setIsCreateDialogOpen(true)}
-                className="inline-flex items-center gap-2 bg-gradient-to-r from-cyan-500/90 via-blue-500/90 to-indigo-500/90 text-white shadow-2xl shadow-cyan-500/40 hover:from-cyan-500 hover:to-indigo-500 hover:shadow-cyan-500/50 hover:scale-105 transition-all duration-300 font-semibold px-6 py-2.5"
-              >
-                <Plus className="h-4 w-4" />
-                Create Collection
-              </Button>
-            )}
+                  <Plus className="h-4 w-4" />
+                  Create Collection
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -411,7 +445,7 @@ export function UserCollectionsScreen({ userId }: UserCollectionsScreenProps) {
             </p>
           </GlassCard>
         ) : (
-          <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {filteredCollections.map((collection) => (
               <div key={collection.id} className="relative group">
                 <CollectionCard

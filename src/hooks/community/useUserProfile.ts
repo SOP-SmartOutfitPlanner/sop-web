@@ -12,6 +12,8 @@ interface UserProfileData {
   followersCount: number;
   followingCount: number;
   postsCount: number;
+  isStylist: boolean;
+  styles: string[];
 }
 
 export function useUserProfile(userId: string) {
@@ -35,6 +37,9 @@ export function useUserProfile(userId: string) {
 
         const userData = userResponse.data;
 
+        const styles =
+          userData.userStyles?.map((style) => style.styleName) ?? [];
+
         setUserProfile({
           id: userId,
           name: userData.displayName,
@@ -48,6 +53,8 @@ export function useUserProfile(userId: string) {
           followersCount: followersCount || 0,
           followingCount: followingCount || 0,
           postsCount: postsResponse.metaData.totalCount || 0,
+          isStylist: Boolean(userData.isStylist),
+          styles,
         });
       } catch (error) {
         console.error("Error fetching user profile:", error);

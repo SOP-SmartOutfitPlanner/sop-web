@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth-store";
@@ -14,11 +14,12 @@ import { ProfileInfo } from "./ProfileInfo";
 import { useUserProfile } from "@/hooks/community/useUserProfile";
 import { useUserPosts } from "@/hooks/community/useUserPosts";
 import { useFollowUser } from "@/hooks/community/useFollowUser";
-import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { EditPostDialog } from "@/components/community/EditPostDialog";
 import { Post } from "@/types/community";
 import { LoadingScreen } from "@/components/community";
+import { UserCollectionsScreen } from "@/components/collections/UserCollectionsScreen";
+import { USER_ROLES } from "@/lib/constants/auth";
 
 interface UserProfileProps {
   userId: string;
@@ -36,8 +37,13 @@ export function UserProfile({ userId }: UserProfileProps) {
   const [followersModalOpen, setFollowersModalOpen] = useState(false);
   const [followingModalOpen, setFollowingModalOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<Post | null>(null);
+  const [activeSection, setActiveSection] = useState<"posts" | "collections">(
+    "posts"
+  );
 
   const isOwnProfile = currentUser?.id?.toString() === userId;
+  const numericUserId = parseInt(userId, 10);
+  const normalizedCurrentRole = currentUser?.role?.toUpperCase();
 
   // Custom hooks
   const { userProfile, isLoading, refreshCounts, setUserProfile } =
@@ -76,10 +82,6 @@ export function UserProfile({ userId }: UserProfileProps) {
   }, [userId, currentUser?.id, isOwnProfile, setIsFollowing]);
 
   // Handlers
-  const handleMessage = () => {
-    // TODO: Implement chat functionality
-  };
-
   const handleShare = () => {
     const url = `${window.location.origin}/community/profile/${userId}`;
     navigator.clipboard.writeText(url);
@@ -162,6 +164,20 @@ export function UserProfile({ userId }: UserProfileProps) {
   };
 
   // Loading state
+  useEffect(() => {
+    setActiveSection("posts");
+  }, [userId]);
+
+  const showCollectionsTab =
+    Boolean(userProfile?.isStylist) ||
+    (isOwnProfile && normalizedCurrentRole === USER_ROLES.STYLIST);
+
+  useEffect(() => {
+    if (!showCollectionsTab && activeSection === "collections") {
+      setActiveSection("posts");
+    }
+  }, [showCollectionsTab, activeSection]);
+
   if (isLoading || isInitialLoading) {
     return <LoadingScreen message="Loading profile..." />;
   }
@@ -187,16 +203,27 @@ export function UserProfile({ userId }: UserProfileProps) {
             userProfile={userProfile}
             isOwnProfile={isOwnProfile}
             isFollowing={isFollowing}
+            isStylist={showCollectionsTab}
             onFollowToggle={handleFollowToggleWithUpdate}
-            onMessage={handleMessage}
             onShare={handleShare}
             onFollowersClick={() => setFollowersModalOpen(true)}
             onFollowingClick={() => setFollowingModalOpen(true)}
+            activeSection={activeSection}
+            onSectionChange={
+              showCollectionsTab ? setActiveSection : undefined
+            }
           />
 
           {/* Feed */}
           <div className="border-t border-border">
-            {posts.length === 0 ? (
+            {activeSection === "collections" && showCollectionsTab ? (
+              <div className="py-10">
+                <UserCollectionsScreen
+                  userId={numericUserId}
+                  variant="embedded"
+                />
+              </div>
+            ) : posts.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20">
                 <p className="text-muted-foreground">No posts found</p>
               </div>

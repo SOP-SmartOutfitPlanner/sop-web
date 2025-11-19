@@ -27,8 +27,11 @@ const SKELETON_COUNT = 4;
 export function CollectionsScreen() {
   const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState<TabType>("all");
-  
-  const userId = useMemo(() => (user?.id ? parseInt(user.id, 10) : null), [user?.id]);
+
+  const userId = useMemo(
+    () => (user?.id ? parseInt(user.id, 10) : null),
+    [user?.id]
+  );
   const isStylist = useMemo(
     () => user?.role?.toUpperCase() === "STYLIST",
     [user?.role]
@@ -50,10 +53,13 @@ export function CollectionsScreen() {
 
   // Fetch stylist's own collections (for tab "published" and "drafts")
   const stylistCollectionsQuery = useQuery<CollectionListData>({
-    queryKey: [...COLLECTION_QUERY_KEYS.collections, { type: "stylist", userId }],
+    queryKey: [
+      ...COLLECTION_QUERY_KEYS.collections,
+      { type: "stylist", userId },
+    ],
     queryFn: async () => {
       if (!userId) throw new Error("User ID is required");
-      
+
       const { data } = await collectionAPI.getCollectionsByUserId(userId);
       return {
         collections: data?.data ?? [],
@@ -61,7 +67,10 @@ export function CollectionsScreen() {
       };
     },
     staleTime: STALE_TIME,
-    enabled: isStylist && (activeTab === "published" || activeTab === "drafts") && !!userId,
+    enabled:
+      isStylist &&
+      (activeTab === "published" || activeTab === "drafts") &&
+      !!userId,
   });
 
   // Fetch saved collections
@@ -69,7 +78,7 @@ export function CollectionsScreen() {
     queryKey: userId ? COLLECTION_QUERY_KEYS.savedCollections(userId) : [],
     queryFn: async () => {
       if (!userId) throw new Error("User not authenticated");
-      
+
       const { data } = await collectionAPI.getSavedCollectionsByUserId(userId, {
         takeAll: true,
       });
@@ -86,20 +95,20 @@ export function CollectionsScreen() {
     switch (activeTab) {
       case "saved":
         return savedCollectionsQuery.data?.collections ?? [];
-      
+
       case "all": {
         const collections = allCollectionsQuery.data?.collections ?? [];
-        return isStylist 
-          ? collections 
+        return isStylist
+          ? collections
           : collections.filter((c) => c.isPublished);
       }
-      
+
       case "published":
       case "drafts": {
         const collections = stylistCollectionsQuery.data?.collections ?? [];
         return filterCollectionsByStatus(collections, activeTab);
       }
-      
+
       default:
         return [];
     }
@@ -120,13 +129,22 @@ export function CollectionsScreen() {
       default:
         return stylistCollectionsQuery.isLoading;
     }
-  }, [activeTab, allCollectionsQuery.isLoading, stylistCollectionsQuery.isLoading, savedCollectionsQuery.isLoading]);
+  }, [
+    activeTab,
+    allCollectionsQuery.isLoading,
+    stylistCollectionsQuery.isLoading,
+    savedCollectionsQuery.isLoading,
+  ]);
 
   const count = useMemo(() => {
     return activeTab === "saved"
       ? savedCollectionsQuery.data?.count ?? 0
       : filteredCollections.length;
-  }, [activeTab, savedCollectionsQuery.data?.count, filteredCollections.length]);
+  }, [
+    activeTab,
+    savedCollectionsQuery.data?.count,
+    filteredCollections.length,
+  ]);
 
   return (
     <div className="relative mx-auto w-full max-w-6xl px-6 pb-24 pt-20 space-y-16">
@@ -161,19 +179,6 @@ export function CollectionsScreen() {
                   mood, and silhouette into immersive, wearable stories.
                 </p>
               </div>
-              {isStylist && userId && (
-                <div className="relative z-10 mb-18 px-3">
-                  <Link href={`/collections/user/${userId}`}>
-                    <Button
-                      size="lg"
-                      className="inline-flex items-center gap-2 bg-gradient-to-r from-cyan-500/90 via-blue-500/90 to-indigo-500/90 text-white shadow-2xl shadow-cyan-500/40 hover:from-cyan-500 hover:to-indigo-500 hover:shadow-cyan-500/50 hover:scale-105 transition-all duration-300 font-semibold px-6 py-6"
-                    >
-                      <Sparkles className="h-5 w-5" />
-                      Go to Studio
-                    </Button>
-                  </Link>
-                </div>
-              )}
             </div>
           </div>
         </GlassCard>
@@ -243,10 +248,13 @@ export function CollectionsScreen() {
 
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-semibold text-white">
-            {activeTab === "saved" ? "Saved Collections" :
-             activeTab === "drafts" ? "Draft collections" :
-             activeTab === "published" ? "Published collections" :
-             "All collections"}
+            {activeTab === "saved"
+              ? "Saved Collections"
+              : activeTab === "drafts"
+              ? "Draft collections"
+              : activeTab === "published"
+              ? "Published collections"
+              : "All collections"}
           </h2>
           <span className="text-sm text-slate-400">
             {count} {activeTab === "saved" ? "saved" : "curated"}{" "}
@@ -288,7 +296,7 @@ export function CollectionsScreen() {
             </p>
           </GlassCard>
         ) : (
-          <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             {filteredCollections.map((collection) => (
               <CollectionCard
                 key={collection.id}

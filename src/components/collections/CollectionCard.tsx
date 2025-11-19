@@ -112,7 +112,7 @@ export function CollectionCard({
         icon: <Globe2 className="h-3 w-3" />,
         label: "Published",
         className:
-          "bg-emerald-500/25 text-emerald-50 border border-emerald-400/40",
+          "bg-cyan-500/30 text-cyan-50 border border-cyan-300/60 shadow-cyan-500/40",
       }
     : {
         icon: <Lock className="h-3 w-3" />,
@@ -202,7 +202,7 @@ export function CollectionCard({
               <h3 className="text-2xl font-bold text-white transition-colors group-hover:text-cyan-100 md:text-[26px]">
                 {collection.title}
               </h3>
-              <p className="text-sm leading-relaxed text-slate-300">
+              <p className="text-sm leading-relaxed text-slate-300 line-clamp-2">
                 {collection.shortDescription}
               </p>
             </div>
@@ -221,7 +221,7 @@ export function CollectionCard({
                 </div>
               </div>
 
-              <div className="flex items-center gap-5 text-sm text-white/85">
+              <div className="flex items-center gap-3 text-sm text-white/85">
                 <span className="inline-flex items-center gap-2">
                   <Heart className="h-5 w-5 text-rose-300" />
                   {collection.likeCount}

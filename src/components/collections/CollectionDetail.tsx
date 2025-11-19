@@ -217,7 +217,7 @@ export function CollectionDetail({ collectionId }: CollectionDetailProps) {
             <div className="flex-1">
               <div className="flex items-center gap-3">
                 <Link
-                  href={`/collections/user/${collection.userId}`}
+                  href={`/community/profile/${collection.userId}`}
                   className="text-lg font-semibold text-white hover:text-cyan-300 transition-colors cursor-pointer"
                 >
                   {collection.userDisplayName}
