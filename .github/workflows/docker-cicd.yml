@@ -29,6 +29,9 @@ jobs:
           push: true
           tags: |
             lion3993vn/sop-web:latest
+          build-args: |
+            NEXT_PUBLIC_API_BASE_URL=${{ secrets.NEXT_PUBLIC_API_BASE_URL }}
+            NEXT_PUBLIC_GOOGLE_CLIENT_ID=${{ secrets.NEXT_PUBLIC_GOOGLE_CLIENT_ID }}
 
   deploy:
     runs-on: self-hosted
@@ -48,7 +51,7 @@ jobs:
       - name: Deploy to VPS
         run: |
           docker pull lion3993vn/sop-web:latest
-          docker run -d --name sop-web --env-file ${{ secrets.PATH_ENV }} -p 6969:6969 lion3993vn/sop-web:latest
+          docker run -d --name sop-web -p 6969:6969 lion3993vn/sop-web:latest
 
       - name: Verify running containers
         run: docker ps -a
