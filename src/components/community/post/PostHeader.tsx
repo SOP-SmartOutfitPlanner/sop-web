@@ -235,20 +235,24 @@ export function PostHeader({
       />
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete post</AlertDialogTitle>
-            <AlertDialogDescription>
+        <AlertDialogContent className="max-w-md border-2 border-cyan-400/25 bg-gradient-to-br from-cyan-950/80 via-blue-950/70 to-indigo-950/80 text-white shadow-2xl shadow-cyan-500/20 backdrop-blur-2xl">
+          <AlertDialogHeader className="space-y-2">
+            <AlertDialogTitle className="text-xl font-bold text-white">
+              Delete post
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-sm leading-relaxed text-slate-200/80">
               Are you sure you want to delete this post? This action cannot be
               undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="flex gap-3">
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+            <AlertDialogCancel className="flex-1 rounded-lg border border-cyan-400/30 bg-white/5 text-white hover:bg-white/10 hover:text-white focus-visible:ring-cyan-400/40">
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
               disabled={isDeleting}
-              className="bg-destructive hover:bg-destructive/90"
+              className="flex-1 rounded-lg bg-gradient-to-r from-red-500 via-rose-500 to-pink-500 text-white font-semibold shadow-lg shadow-red-500/30 hover:from-red-500/90 hover:via-rose-500/90 hover:to-pink-500/90 focus-visible:ring-red-400/50 disabled:opacity-60"
             >
               {isDeleting ? "Deleting..." : "Delete"}
             </AlertDialogAction>
