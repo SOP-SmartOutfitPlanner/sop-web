@@ -15,7 +15,6 @@ function Calendar({
 }: CalendarProps) {
   const defaultMonths = numberOfMonthsProp ?? 2;
   const [monthsToShow, setMonthsToShow] = React.useState(defaultMonths);
-
   React.useEffect(() => {
     const updateMonths = () => {
       if (typeof window === "undefined") return;
@@ -34,9 +33,8 @@ function Calendar({
     <DayPicker
       showOutsideDays={showOutsideDays}
       className={cn("p-3 text-slate-200", className)}
-      numberOfMonths={1}
-      navLayout="around"
       mode="range"
+      navLayout="around"
       captionLayout="dropdown-years"
       animate
       modifiersClassNames={{
