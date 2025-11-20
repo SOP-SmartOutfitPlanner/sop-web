@@ -26,7 +26,7 @@ function OutfitItemCard({ item, index, onSelect }: OutfitItemCardProps) {
       aria-label={`Xem chi tiết ${item.name}`}
     >
       <div className="flex flex-col gap-3">
-        <div className="relative aspect-square w-full overflow-hidden rounded-2xl border border-slate-700/40 bg-slate-900/50 transition group-hover:border-cyan-400/40 group-hover:shadow-[0_0_25px_rgba(34,211,238,0.25)]">
+        <div className="relative aspect-square w-full overflow-hidden rounded-2xl border border-slate-700/40 bg-slate-900/10 transition group-hover:border-cyan-400/40 group-hover:shadow-[0_0_25px_rgba(34,211,238,0.25)]">
           {item.imgUrl ? (
             <Image
               src={item.imgUrl}
@@ -90,10 +90,10 @@ export function OutfitCard({ outfit, entry, items }: OutfitCardProps) {
     <GlassCard
       padding="1.75rem"
       blur="18px"
-      glowColor="rgba(94, 234, 212, 0.25)"
+      glowColor="rgba(59, 130, 246, 0.4)"
       glowIntensity={14}
       shadowColor="rgba(15, 23, 42, 0.5)"
-      className="flex flex-col gap-6 border border-cyan-500/15 bg-slate-950/45"
+      className="flex flex-col gap-6 border border-cyan-500/20 "
     >
       <div className="space-y-3">
         <div className="flex items-center justify-between gap-2">
@@ -115,7 +115,7 @@ export function OutfitCard({ outfit, entry, items }: OutfitCardProps) {
           )}
         </div>
         {showDescription && outfitDescription && (
-          <div className="rounded-lg border border-cyan-500/20 bg-cyan-500/5 p-3 mb-3">
+          <div className="rounded-lg border border-cyan-500/30  p-3 mb-3">
             <p className="text-sm leading-relaxed text-slate-300">
               {outfitDescription}
             </p>
@@ -125,7 +125,7 @@ export function OutfitCard({ outfit, entry, items }: OutfitCardProps) {
 
       <div className="flex flex-1 flex-col gap-3">
         {items.length === 0 ? (
-          <div className="flex flex-1 items-center justify-center rounded-2xl border border-slate-700/40 bg-slate-900/50 text-sm text-slate-400">
+          <div className="flex flex-1 items-center justify-center rounded-2xl border  text-sm text-slate-400">
             No items listed for this outfit yet.
           </div>
         ) : (

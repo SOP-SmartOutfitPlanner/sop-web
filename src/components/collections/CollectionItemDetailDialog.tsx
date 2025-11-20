@@ -158,7 +158,7 @@ export function CollectionItemDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full max-w-5xl sm:max-w-5xl md:max-w-5xl border border-cyan-500/30 bg-gradient-to-br from-slate-950/80 via-slate-900/75 to-slate-950/85 backdrop-blur-2xl shadow-[0_30px_90px_rgba(2,6,23,0.7)]">
+      <DialogContent className="w-full max-w-5xl sm:max-w-5xl md:max-w-5xl border border-cyan-500/10 bg-gradient-to-br from-slate-950/20 via-slate-900/25 to-slate-950/35 backdrop-blur-2xl shadow-[0_30px_90px_rgba(2,6,23,0.7)]">
         {!normalized && isLoading ? (
           <DetailSkeleton />
         ) : isError ? (
@@ -193,7 +193,12 @@ export function CollectionItemDetailDialog({
                           </div>
                         ),
                       }}
-                      style={{ height: "100%", width: "100%", objectFit: "cover", cursor: "zoom-in" }}
+                      style={{
+                        height: "100%",
+                        width: "100%",
+                        objectFit: "cover",
+                        cursor: "zoom-in",
+                      }}
                     />
                   ) : (
                     <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-cyan-300/70">

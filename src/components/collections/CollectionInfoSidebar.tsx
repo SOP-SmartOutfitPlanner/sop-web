@@ -24,10 +24,10 @@ export function CollectionInfoSidebar({
       <GlassCard
         padding="1.5rem"
         blur="18px"
-        glowColor="rgba(94, 234, 212, 0.25)"
+        glowColor="rgba(59, 130, 246, 0.4)"
         glowIntensity={14}
         shadowColor="rgba(15, 23, 42, 0.5)"
-        className="border border-cyan-500/15 bg-slate-950/45"
+        className="border border-cyan-500/20 "
       >
         <h3 className="mb-4 text-base font-semibold text-white">Information</h3>
         <div className="space-y-3 text-sm">
@@ -67,7 +67,7 @@ export function CollectionInfoSidebar({
       <div className="flex flex-col gap-3">
         <Button
           variant="outline"
-          className="w-full border-white/40 bg-white/10 text-white hover:bg-white/20"
+          className="w-full rounded-2xl border-white/40 bg-white/10 text-white hover:bg-white/20"
         >
           <Share2 className="mr-2 h-4 w-4" />
           Share

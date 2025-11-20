@@ -17,7 +17,7 @@ import {
 import GlassCard from "@/components/ui/glass-card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { CollectionRecord, CollectionItemDetail } from "@/lib/api";
 
 interface CollectionCardProps {
@@ -129,16 +129,16 @@ export function CollectionCard({
       <GlassCard
         padding="1.5rem"
         blur="18px"
-        glowColor="rgba(94, 234, 212, 0.35)"
+        glowColor="rgba(59, 130, 246, 0.4)"
         glowIntensity={18}
         shadowColor="rgba(15, 23, 42, 0.55)"
         className={cn(
-          "relative h-full w-full flex-col gap-5 border border-cyan-500/15 bg-slate-950/45 transition-all duration-500 ease-out",
+          "relative h-full w-full flex-col gap-5 border border-cyan-500/20  transition-all duration-500 ease-out",
           "group-hover:-translate-y-2 group-hover:border-cyan-400/40 group-hover:shadow-[0_28px_60px_-28px_rgba(56,189,248,0.55)]"
         )}
       >
         <div className="flex w-full flex-col gap-5">
-          <div className="relative w-full overflow-hidden rounded-2xl border border-slate-700/40 bg-slate-900/60">
+          <div className="relative w-full overflow-hidden rounded-2xl border border-slate-700/40 ">
             <div className="relative aspect-[4/3] w-full">
               {thumbnail ? (
                 <>
@@ -149,7 +149,7 @@ export function CollectionCard({
                     className="object-cover transition-transform duration-700 group-hover:scale-105"
                     sizes="(max-width: 768px) 100vw, 33vw"
                   />
-                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-900/35 to-transparent" />
+                  <div className="pointer-events-none absolute inset-0   to-transparent" />
                 </>
               ) : fallbackImages.length > 0 ? (
                 <div className="grid h-full w-full grid-cols-2 grid-rows-2">
@@ -210,6 +210,13 @@ export function CollectionCard({
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3 text-sm">
                 <Avatar className="h-10 w-10 border border-white/20 bg-slate-800/80">
+                  {collection.avtUrl ? (
+                    <AvatarImage
+                      src={collection.avtUrl}
+                      alt={collection.userDisplayName}
+                      className="object-cover"
+                    />
+                  ) : null}
                   <AvatarFallback className="bg-cyan-500/25 text-sm font-semibold uppercase tracking-wide text-white">
                     {getAuthorInitials(collection.userDisplayName)}
                   </AvatarFallback>

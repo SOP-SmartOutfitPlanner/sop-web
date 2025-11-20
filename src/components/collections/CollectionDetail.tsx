@@ -19,7 +19,6 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { collectionAPI } from "@/lib/api";
-import type { CollectionRecord } from "@/lib/api";
 import { useAuthStore } from "@/store/auth-store";
 import {
   getWeatherSuitableFromCollection,
@@ -95,11 +94,11 @@ export function CollectionDetail({ collectionId }: CollectionDetailProps) {
   if (query.isLoading) {
     return (
       <div className="max-w-5xl mx-auto px-6 py-24 space-y-8">
-        <Skeleton className="h-48 w-full rounded-3xl bg-slate-900/40" />
-        <Skeleton className="h-40 w-full rounded-3xl bg-slate-900/30" />
+        <Skeleton className="h-48 w-full rounded-3xl " />
+        <Skeleton className="h-40 w-full rounded-3xl " />
         <div className="grid gap-6 sm:grid-cols-2">
-          <Skeleton className="h-64 rounded-3xl bg-slate-900/40" />
-          <Skeleton className="h-64 rounded-3xl bg-slate-900/40" />
+          <Skeleton className="h-64 rounded-3xl " />
+          <Skeleton className="h-64 rounded-3xl " />
         </div>
       </div>
     );
@@ -114,7 +113,7 @@ export function CollectionDetail({ collectionId }: CollectionDetailProps) {
           glowColor="rgba(248, 113, 113, 0.35)"
           glowIntensity={16}
           shadowColor="rgba(15, 23, 42, 0.5)"
-          className="border border-red-500/30 bg-red-500/5 text-red-100"
+          className="border border-red-500/30  text-red-100"
         >
           <h2 className="text-xl font-semibold">Unable to load collection</h2>
           <p className="mt-2 text-sm text-red-200/80">
@@ -137,11 +136,11 @@ export function CollectionDetail({ collectionId }: CollectionDetailProps) {
 
   return (
     <div className="relative mx-auto w-full max-w-6xl px-6 pt-35 space-y-8">
-      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-cyan-500/10 via-slate-950 to-slate-950 blur-3xl" />
+      <div className="absolute inset-0 -z-10 bg-gradient-to-b  blur-3xl" />
       {/* Hero Section with Thumbnail and Collection Info */}
       <div className="grid gap-8 lg:grid-cols-[1fr_1fr]">
         {/* Left: Thumbnail Image */}
-        <div className="relative aspect-[4/3] w-full overflow-hidden rounded-3xl border border-slate-700/40 bg-slate-900/50">
+        <div className="relative aspect-[4/3] w-full overflow-hidden rounded-3xl border border-slate-700/40 ">
           {collection.thumbnailURL ? (
             <Image
               src={collection.thumbnailURL}
@@ -184,7 +183,7 @@ export function CollectionDetail({ collectionId }: CollectionDetailProps) {
           {/* Stylist Info */}
           <div className="flex items-center gap-3">
             <Link
-              href={`/collections/user/${collection.userId}`}
+              href={`/community/profile/${collection.userId}`}
               className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full border border-white/20 bg-white/10 hover:border-cyan-400/50 transition-colors cursor-pointer"
             >
               {collection.avtUrl ? (
@@ -332,7 +331,7 @@ export function CollectionDetail({ collectionId }: CollectionDetailProps) {
                 glowColor="rgba(148, 163, 184, 0.35)"
                 glowIntensity={14}
                 shadowColor="rgba(15, 23, 42, 0.4)"
-                className="border border-slate-700/40 bg-slate-900/50 text-center text-sm text-slate-300"
+                className=" text-center text-sm text-slate-300"
               >
                 No outfits have been added to this collection yet.
               </GlassCard>

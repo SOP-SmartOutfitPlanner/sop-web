@@ -1,5 +1,5 @@
 import { Share2 } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Image as AntImage } from "antd";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -62,16 +62,37 @@ export function ProfileInfo(props: ProfileInfoProps) {
       <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-5">
           <div className="relative group">
-            <Avatar className="w-24 h-24 md:w-28 md:h-28 ring-4 ring-cyan-400/30 group-hover:ring-cyan-400/50 transition-all shadow-lg shadow-cyan-500/20">
-              <AvatarImage src={userProfile.avatar} alt={userProfile.name} />
-              <AvatarFallback className="text-4xl font-bold bg-gradient-to-br from-cyan-400 to-blue-500 text-white">
-                {userProfile.name.charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div className="absolute inset-0 rounded-full bg-cyan-400/0 group-hover:bg-cyan-400/10 transition-colors" />
+            <div className="w-24 h-24 md:w-28 md:h-28 ring-4 ring-cyan-400/30 group-hover:ring-cyan-400/50 transition-all shadow-lg shadow-cyan-500/20 rounded-full overflow-hidden bg-slate-900/70 border border-white/10">
+              {userProfile.avatar ? (
+                <AntImage
+                  src={userProfile.avatar}
+                  alt={userProfile.name}
+                  className="h-full w-full"
+                  style={{
+                    height: "100%",
+                    width: "100%",
+                    objectFit: "cover",
+                    borderRadius: "9999px",
+                  }}
+                  preview={{
+                    mask: (
+                      <div className="text-xs uppercase tracking-[0.3em] text-white">
+                        Preview
+                      </div>
+                    ),
+                  }}
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-4xl font-bold bg-gradient-to-br from-cyan-400 to-blue-500 text-white">
+                  {userProfile.name.charAt(0).toUpperCase()}
+                </div>
+              )}
+            </div>
           </div>
           <div className="space-y-1">
-            <div className="text-2xl font-bold text-white">{userProfile.name}</div>
+            <div className="text-2xl font-bold text-white">
+              {userProfile.name}
+            </div>
             {userProfile.location && (
               <p className="text-sm text-slate-300 flex items-center gap-2">
                 📍 {userProfile.location}
@@ -164,7 +185,7 @@ export function ProfileInfo(props: ProfileInfoProps) {
 
       {isStylist && onSectionChange && (
         <div className="pt-4">
-          <div className="flex overflow-hidden rounded-2xl border border-cyan-500/30 bg-slate-900/70 shadow-lg shadow-cyan-500/15">
+          <div className="flex overflow-hidden rounded-2xl border border-cyan-500/30 bg-slate-900/30 shadow-lg shadow-cyan-500/15">
             {(["posts", "collections"] as ProfileSection[]).map((section) => {
               const isActive = activeSection === section;
               return (

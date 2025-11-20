@@ -373,10 +373,10 @@ export function CommentsSection({
     <GlassCard
       padding="1.75rem"
       blur="18px"
-      glowColor="rgba(148, 163, 184, 0.25)"
+      glowColor="rgba(59, 130, 246, 0.4)"
       glowIntensity={14}
       shadowColor="rgba(15, 23, 42, 0.5)"
-      className="border border-slate-700/40 bg-slate-950/45"
+      className="border border-slate-700/40 "
     >
       <div className="mb-4 flex items-center gap-2">
         <MessageCircle className="h-5 w-5 text-cyan-300" />
