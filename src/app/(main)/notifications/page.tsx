@@ -3,7 +3,12 @@
 import { useState, useMemo, useCallback, useEffect, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import type { InfiniteData, QueryKey } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Check } from "lucide-react";
 import GlassButton from "@/components/ui/glass-button";
@@ -120,9 +125,6 @@ function NotificationsPageContent({
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<FilterType>("all");
-  const [localNotifications, setLocalNotifications] = useState<
-    NotificationItem[]
-  >([]);
   const [selectedNotificationId, setSelectedNotificationId] = useState<
     number | null
   >(null);
@@ -202,13 +204,55 @@ function NotificationsPageContent({
     staleTime: STALE_TIME_MS,
   });
 
+  type NotificationsQuerySnapshot = Array<
+    [QueryKey, InfiniteData<NotificationsListResponse | null> | undefined]
+  >;
+
+  const applyNotificationUpdate = useCallback(
+    (
+      updater: (
+        page: NotificationsListResponse | null
+      ) => NotificationsListResponse | null
+    ): NotificationsQuerySnapshot => {
+      if (!user?.id) {
+        return [];
+      }
+
+      const queries =
+        queryClient.getQueriesData<InfiniteData<NotificationsListResponse | null>>(
+          {
+            queryKey: ["notifications", user.id],
+          }
+        );
+
+      const snapshots: NotificationsQuerySnapshot = queries.map(
+        ([key, value]) => [key, value]
+      );
+
+      snapshots.forEach(([key, value]) => {
+        if (!value) return;
+        const updatedPages = value.pages.map((page) => updater(page));
+        queryClient.setQueryData<InfiniteData<NotificationsListResponse | null>>(
+          key,
+          {
+            ...value,
+            pages: updatedPages,
+          }
+        );
+      });
+
+      return snapshots;
+    },
+    [user?.id, queryClient]
+  );
+
   // Transform API notifications to component format
   const notifications = useMemo<NotificationItem[]>(() => {
     const apiNotifications: Notification[] =
       data?.pages?.flatMap((page) => page?.data ?? []) ?? [];
 
     if (apiNotifications.length === 0) {
-      return localNotifications;
+      return [];
     }
 
     // Deduplicate notifications by ID (in case multiple sources/pages return same item)
@@ -219,7 +263,7 @@ function NotificationsPageContent({
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
 
-    const transformed = uniqueNotifications.map(
+    return uniqueNotifications.map(
       (notif: Notification): NotificationItem => ({
         id: notif.id,
         title: notif.title,
@@ -231,11 +275,7 @@ function NotificationsPageContent({
         href: notif.href || undefined,
       })
     );
-
-    // Merge with local state (for optimistic updates)
-    const localMap = new Map(localNotifications.map((n) => [n.id, n]));
-    return transformed.map((notif) => localMap.get(notif.id) || notif);
-  }, [data, localNotifications]);
+  }, [data]);
 
   // Fetch unread count from API
   const { data: unreadCountData } = useQuery({
@@ -278,10 +318,30 @@ function NotificationsPageContent({
   // Handlers
   const markAsRead = useCallback(
     async (id: number) => {
-      // Optimistic update
-      setLocalNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-      );
+      const rollbackEntries = applyNotificationUpdate((page) => {
+        if (!page) return page;
+        let changed = false;
+        const updatedData = page.data.map((notif) => {
+          if (notif.id !== id || notif.isRead) {
+            return notif;
+          }
+          changed = true;
+          return {
+            ...notif,
+            isRead: true,
+            readAt: notif.readAt ?? new Date().toISOString(),
+          };
+        });
+
+        if (!changed) {
+          return page;
+        }
+
+        return {
+          ...page,
+          data: updatedData,
+        };
+      });
 
       try {
         await notificationAPI.markAsRead(id);
@@ -303,18 +363,17 @@ function NotificationsPageContent({
         //   duration: 2000,
         // });
       } catch (error) {
+        rollbackEntries.forEach(([key, value]) => {
+          queryClient.setQueryData(key, value);
+        });
         console.error("Failed to mark notification as read:", error);
-        // Revert optimistic update on error
-        setLocalNotifications((prev) =>
-          prev.map((n) => (n.id === id ? { ...n, read: false } : n))
-        );
         toast.error("Failed to mark notification as read", {
           description:
             error instanceof Error ? error.message : "Please try again",
         });
       }
     },
-    [user?.id, queryClient]
+    [applyNotificationUpdate, queryClient, user?.id]
   );
 
   const markAllAsRead = useCallback(async () => {
@@ -323,8 +382,31 @@ function NotificationsPageContent({
     const userId = parseInt(user.id, 10);
     if (isNaN(userId)) return;
 
-    // Optimistic update
-    setLocalNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    const optimisticTimestamp = new Date().toISOString();
+    const rollbackEntries = applyNotificationUpdate((page) => {
+      if (!page) return page;
+      let changed = false;
+      const updatedData = page.data.map((notif) => {
+        if (notif.isRead) {
+          return notif;
+        }
+        changed = true;
+        return {
+          ...notif,
+          isRead: true,
+          readAt: notif.readAt ?? optimisticTimestamp,
+        };
+      });
+
+      if (!changed) {
+        return page;
+      }
+
+      return {
+        ...page,
+        data: updatedData,
+      };
+    });
 
     const toastId = toast.loading("Marking all notifications as read...");
 
@@ -345,19 +427,37 @@ function NotificationsPageContent({
       });
     } catch (error) {
       console.error("Failed to mark all notifications as read:", error);
-      // Revert optimistic update on error
-      setLocalNotifications((prev) => prev.map((n) => ({ ...n, read: false })));
+      rollbackEntries.forEach(([key, value]) => {
+        queryClient.setQueryData(key, value);
+      });
       toast.error("Failed to mark all notifications as read", {
         id: toastId,
         description:
           error instanceof Error ? error.message : "Please try again",
       });
     }
-  }, [user?.id, queryClient]);
+  }, [user?.id, queryClient, applyNotificationUpdate]);
 
   const deleteNotification = useCallback(
     (id: number) => {
-      setLocalNotifications((prev) => prev.filter((n) => n.id !== id));
+      applyNotificationUpdate((page) => {
+        if (!page) return page;
+        const filteredData = page.data.filter((notif) => notif.id !== id);
+        if (filteredData.length === page.data.length) {
+          return page;
+        }
+
+        return {
+          ...page,
+          data: filteredData,
+          metaData: page.metaData
+            ? {
+                ...page.metaData,
+                totalCount: Math.max(0, page.metaData.totalCount - 1),
+              }
+            : page.metaData,
+        };
+      });
       // Invalidate unread count to refresh
       if (user?.id) {
         queryClient.invalidateQueries({
@@ -366,7 +466,7 @@ function NotificationsPageContent({
       }
       // TODO: Call API to delete notification
     },
-    [user?.id, queryClient]
+    [user?.id, queryClient, applyNotificationUpdate]
   );
 
   const handleViewDetail = useCallback((id: number) => {
