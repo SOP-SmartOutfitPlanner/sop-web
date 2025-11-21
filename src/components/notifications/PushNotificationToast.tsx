@@ -87,18 +87,6 @@ export function PushNotificationToast({
         className={`relative overflow-hidden rounded-3xl border-2 bg-gradient-to-br from-slate-950/95 to-slate-900/90 ${variantStyle.gradient} ${variantStyle.border} ${variantStyle.shadow} ring-1 ring-white/10`}
         whileHover={{ boxShadow: variantStyle.shadow }}
       >
-        {/* Animated gradient overlay */}
-        <motion.div
-          className="absolute inset-0 bg-[radial-gradient(circle_at_85%_15%,rgba(255,255,255,0.15),transparent_50%)] opacity-90"
-          animate={{
-            opacity: [0.8, 1, 0.8],
-          }}
-          transition={{
-            duration: 3,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent"></div>
 
         <div className="relative flex gap-4 sm:gap-5 p-5 sm:p-6">
@@ -106,7 +94,12 @@ export function PushNotificationToast({
             <motion.div
               initial={{ scale: 0, rotate: -180 }}
               animate={{ scale: 1, rotate: 0 }}
-              transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.1 }}
+              transition={{
+                type: "spring",
+                stiffness: 200,
+                damping: 15,
+                delay: 0.1,
+              }}
               className="relative h-14 w-14 sm:h-16 sm:w-16 shrink-0 overflow-hidden rounded-2xl border-2 border-white/20 shadow-xl ring-2 ring-white/10"
             >
               <Image
@@ -122,7 +115,12 @@ export function PushNotificationToast({
             <motion.div
               initial={{ scale: 0, rotate: -180 }}
               animate={{ scale: 1, rotate: 0 }}
-              transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.1 }}
+              transition={{
+                type: "spring",
+                stiffness: 200,
+                damping: 15,
+                delay: 0.1,
+              }}
               className={`flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-white/15 to-white/5 ${iconColor[variant]} shadow-xl ring-2 ring-white/10`}
             >
               <Bell className="h-7 w-7 sm:h-8 sm:w-8" strokeWidth={2} />
@@ -155,9 +153,7 @@ export function PushNotificationToast({
                     )}
                     {metaLabel && (
                       <>
-                        {actorName && (
-                          <span className="text-white/30">•</span>
-                        )}
+                        {actorName && <span className="text-white/30">•</span>}
                         <span className="px-2.5 py-1 rounded-md bg-white/8 border border-white/15 text-white/70 font-medium">
                           {metaLabel}
                         </span>
@@ -171,7 +167,11 @@ export function PushNotificationToast({
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.1 }}
-                  whileHover={{ scale: 1.15, rotate: 90, backgroundColor: "rgba(255, 255, 255, 0.2)" }}
+                  whileHover={{
+                    scale: 1.15,
+                    rotate: 90,
+                    backgroundColor: "rgba(255, 255, 255, 0.2)",
+                  }}
                   whileTap={{ scale: 0.85 }}
                   onClick={onDismiss}
                   className="inline-flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl border border-white/25 bg-white/8 text-white/80 transition-all hover:bg-white/20 hover:text-white hover:border-white/40 hover:shadow-md hover:shadow-white/10 shrink-0"
@@ -211,53 +211,9 @@ export function PushNotificationToast({
                 <ArrowUpRight className="h-3.5 w-3.5" strokeWidth={2.5} />
               </motion.a>
             )}
-
-            {/* Live Alert Indicator */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.35 }}
-              className="flex items-center gap-3 pt-3 border-t border-white/15"
-            >
-              <motion.span
-                initial={{ opacity: 0, x: -5 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.4 }}
-                className="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-500/20 to-blue-500/15 border border-cyan-400/30 text-[11px] uppercase tracking-wider font-bold text-cyan-100 shadow-sm shadow-cyan-500/10"
-              >
-                <motion.span
-                  className="relative h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-sm shadow-cyan-400/50"
-                  animate={{
-                    scale: [1, 1.4, 1],
-                    opacity: [0.9, 1, 0.9],
-                  }}
-                  transition={{
-                    duration: 1.5,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  }}
-                >
-                  <motion.span
-                    className="absolute inset-0 rounded-full bg-cyan-400"
-                    animate={{
-                      scale: [1, 2.5, 1],
-                      opacity: [0.6, 0, 0.6],
-                    }}
-                    transition={{
-                      duration: 1.5,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                    }}
-                  />
-                </motion.span>
-                <span className="relative z-10">Live Alert</span>
-              </motion.span>
-              <div className="h-px flex-1 bg-gradient-to-r from-cyan-400/20 via-white/10 to-transparent"></div>
-            </motion.div>
           </div>
         </div>
       </motion.div>
     </motion.div>
   );
 }
-

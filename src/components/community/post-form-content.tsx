@@ -87,7 +87,7 @@ export function PostFormContent({
         <div className="relative rounded-lg overflow-hidden border-2 border-cyan-400/20 bg-cyan-950/30">
           {/* 1 Image: Full width */}
           {selectedImages.length === 1 && (
-            <div className="relative w-full h-56">
+            <div className="relative w-full aspect-square">
               <Image
                 src={selectedImages[0]}
                 alt="Selected image"

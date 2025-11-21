@@ -45,11 +45,9 @@ export default function AuthLayout({
   }
 
   return (
-    <div className="">
-      <div className="relative z-10 h-full">
-        <AnimatedBackground />
-        {children}
-      </div>
+    <div className="relative z-10 h-full">
+      <AnimatedBackground />
+      {children}
     </div>
   );
 }

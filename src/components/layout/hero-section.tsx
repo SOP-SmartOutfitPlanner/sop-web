@@ -19,7 +19,10 @@ export default function HeroSection() {
   };
 
   return (
-    <section id="hero-section" className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
+    <section
+      id="hero-section"
+      className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900"
+    >
       {/* Animated gradient mesh background */}
       <div className="absolute inset-0 overflow-hidden">
         <motion.div
@@ -31,7 +34,7 @@ export default function HeroSection() {
           transition={{
             duration: 20,
             repeat: Infinity,
-            ease: "easeInOut"
+            ease: "easeInOut",
           }}
           className="absolute -top-1/2 -left-1/4 w-[600px] h-[600px] bg-gradient-to-br from-blue-500/40 to-cyan-500/40 rounded-full blur-3xl"
         />
@@ -44,22 +47,11 @@ export default function HeroSection() {
           transition={{
             duration: 25,
             repeat: Infinity,
-            ease: "easeInOut"
+            ease: "easeInOut",
           }}
           className="absolute -bottom-1/2 -right-1/4 w-[700px] h-[700px] bg-gradient-to-tl from-indigo-500/30 to-purple-500/30 rounded-full blur-3xl"
         />
-        <motion.div
-          animate={{
-            scale: [1, 1.1, 1],
-            rotate: [0, 180, 360],
-          }}
-          transition={{
-            duration: 30,
-            repeat: Infinity,
-            ease: "linear"
-          }}
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-gradient-to-r from-teal-500/20 to-blue-500/20 rounded-full blur-3xl"
-        />
+       
       </div>
 
       <div className="container mx-auto px-4 py-32 relative z-10">
@@ -105,7 +97,8 @@ export default function HeroSection() {
               transition={{ delay: 0.4, duration: 0.6 }}
               className="font-bricolage text-xl md:text-2xl text-blue-100 mb-8 leading-relaxed"
             >
-              Never waste time choosing what to wear. Get personalized outfit recommendations based on weather, calendar, and your unique style.
+              Never waste time choosing what to wear. Get personalized outfit
+              recommendations based on weather, calendar, and your unique style.
             </motion.p>
 
             <motion.div
@@ -130,7 +123,10 @@ export default function HeroSection() {
                 backgroundColor="rgba(6, 182, 212, 1)"
               >
                 Suggest My Outfit
-                <ArrowRight className="ml-2 inline-block group-hover:translate-x-1 transition-transform" size={20} />
+                <ArrowRight
+                  className="ml-2 inline-block group-hover:translate-x-1 transition-transform"
+                  size={20}
+                />
               </GlassButton>
               <GlassButton
                 className="font-bricolage font-bold text-lg"
@@ -160,11 +156,15 @@ export default function HeroSection() {
             >
               <div className="flex items-center gap-2">
                 <Check className="text-green-400" size={20} />
-                <span className="font-bricolage text-sm">14-day free trial</span>
+                <span className="font-bricolage text-sm">
+                  14-day free trial
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <Check className="text-green-400" size={20} />
-                <span className="font-bricolage text-sm">No credit card required</span>
+                <span className="font-bricolage text-sm">
+                  No credit card required
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <Check className="text-green-400" size={20} />
@@ -200,7 +200,9 @@ export default function HeroSection() {
                   {/* Mock outfit card */}
                   <div className="bg-gradient-to-br from-white/10 to-white/5 rounded-2xl p-6 mb-4">
                     <div className="flex items-center justify-between mb-4">
-                      <span className="text-white font-bricolage font-semibold text-lg">Today&apos;s Pick</span>
+                      <span className="text-white font-bricolage font-semibold text-lg">
+                        Today&apos;s Pick
+                      </span>
                       <span className="px-3 py-1 bg-green-400/20 text-green-100 text-sm rounded-full font-bricolage font-semibold">
                         Perfect Match
                       </span>
@@ -211,12 +213,12 @@ export default function HeroSection() {
                       <motion.div
                         animate={{
                           rotate: [-5, 5, -5],
-                          y: [0, -10, 0]
+                          y: [0, -10, 0],
                         }}
                         transition={{
                           duration: 4,
                           repeat: Infinity,
-                          ease: "easeInOut"
+                          ease: "easeInOut",
                         }}
                         className="absolute left-1/4 top-1/4"
                       >
@@ -233,12 +235,12 @@ export default function HeroSection() {
                       <motion.div
                         animate={{
                           rotate: [5, -5, 5],
-                          y: [0, 10, 0]
+                          y: [0, 10, 0],
                         }}
                         transition={{
                           duration: 4.5,
                           repeat: Infinity,
-                          ease: "easeInOut"
+                          ease: "easeInOut",
                         }}
                         className="absolute right-1/4 bottom-1/4"
                       >
@@ -310,7 +312,9 @@ export default function HeroSection() {
               >
                 <div className="text-white text-center">
                   <div className="font-dela-gothic text-2xl font-bold">85%</div>
-                  <div className="font-bricolage text-xs text-white/80">Confidence</div>
+                  <div className="font-bricolage text-xs text-white/80">
+                    Confidence
+                  </div>
                 </div>
               </GlassCard>
             </motion.div>
@@ -333,8 +337,12 @@ export default function HeroSection() {
                 className="shadow-xl"
               >
                 <div className="text-white text-center">
-                  <div className="font-dela-gothic text-2xl font-bold">62°F</div>
-                  <div className="font-bricolage text-xs text-white/80">Partly Cloudy</div>
+                  <div className="font-dela-gothic text-2xl font-bold">
+                    62°F
+                  </div>
+                  <div className="font-bricolage text-xs text-white/80">
+                    Partly Cloudy
+                  </div>
                 </div>
               </GlassCard>
             </motion.div>

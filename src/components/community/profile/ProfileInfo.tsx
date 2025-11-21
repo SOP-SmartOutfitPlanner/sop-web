@@ -100,22 +100,22 @@ export function ProfileInfo(props: ProfileInfoProps) {
             )}
           </div>
         </div>
-        <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-3">
-          {stats.map(({ k, v, onClick }) => (
-            <button
-              key={k}
-              onClick={onClick}
-              className="rounded-2xl px-4 py-3 bg-slate-900/60 border border-white/10 hover:border-cyan-400/40 transition-all duration-300 text-left shadow-lg shadow-indigo-900/40"
-            >
-              <p className="text-xs uppercase tracking-[0.4em] text-slate-400">
-                {k}
-              </p>
-              <p className="text-2xl font-bold text-white">
-                {k === "followers" ? v.toLocaleString() : v}
-              </p>
-            </button>
-          ))}
-        </div>
+      </div>
+      <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-3">
+        {stats.map(({ k, v, onClick }) => (
+          <button
+            key={k}
+            onClick={onClick}
+            className="rounded-2xl px-4 py-3 bg-slate-900/60 border border-white/10 hover:border-cyan-400/40 transition-all duration-300 text-left shadow-lg shadow-indigo-900/40"
+          >
+            <p className="text-xs uppercase tracking-[0.4em] text-slate-400">
+              {k}
+            </p>
+            <p className="text-2xl font-bold text-white">
+              {k === "followers" ? v.toLocaleString() : v}
+            </p>
+          </button>
+        ))}
       </div>
 
       {/* Bio Section */}

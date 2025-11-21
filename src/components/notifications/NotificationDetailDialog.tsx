@@ -38,7 +38,7 @@ export function NotificationDetailDialog({
 }: NotificationDetailDialogProps) {
   const queryClient = useQueryClient();
   const hasMarkedAsReadRef = useRef<Set<number>>(new Set());
-  
+
   // Lock scroll when dialog is open
   useScrollLock(open);
 
@@ -142,16 +142,6 @@ export function NotificationDetailDialog({
                     <span className="inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-1">
                       {formatDate(notification.createdAt)}
                     </span>
-                    <span
-                      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 ${
-                        notification.isRead
-                          ? "border-emerald-500/40 text-emerald-200"
-                          : "border-cyan-400/40 text-cyan-100"
-                      }`}
-                    >
-                      <CheckCircle2 className="h-4 w-4" />
-                      {notification.isRead ? "Read" : "Unread"}
-                    </span>
                   </div>
                 </div>
                 <DialogClose className="text-slate-400 hover:text-white">
@@ -161,30 +151,6 @@ export function NotificationDetailDialog({
             </DialogHeader>
 
             <div className="space-y-6">
-              {notification.actorDisplayName && (
-                <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-                  <div className="relative h-12 w-12 rounded-full overflow-hidden border border-white/10 bg-slate-800/70 flex items-center justify-center uppercase font-semibold">
-                    {notification.actorAvatarUrl ? (
-                      <Image
-                        src={notification.actorAvatarUrl}
-                        alt={notification.actorDisplayName}
-                        fill
-                        sizes="48px"
-                        className="object-cover"
-                      />
-                    ) : (
-                      notification.actorDisplayName.charAt(0)
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-sm text-slate-400">From</p>
-                    <p className="font-semibold text-white">
-                      {notification.actorDisplayName}
-                    </p>
-                  </div>
-                </div>
-              )}
-
               <div className="bg-slate-900/60 rounded-2xl p-6 border border-white/5">
                 <DialogDescription
                   id="notification-dialog-description"

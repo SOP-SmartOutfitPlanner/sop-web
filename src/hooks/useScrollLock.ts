@@ -41,8 +41,17 @@ export function useScrollLock(isLocked: boolean) {
       document.body.style.left = "0";
       document.body.style.right = "0";
 
-      // Prevent scroll on wheel and touchmove
+      // Prevent scroll on wheel and touchmove, but allow scrolling inside modals/dialogs
       const preventScroll = (e: Event) => {
+        // Allow scrolling inside modal/dialog containers
+        const target = e.target as HTMLElement;
+        if (target) {
+          // Check if the event is inside a modal/dialog or scrollable container
+          const scrollableContainer = target.closest('[role="dialog"], [data-radix-dialog-content], .overflow-y-auto, .overflow-auto');
+          if (scrollableContainer) {
+            return; // Allow scroll inside modal
+          }
+        }
         e.preventDefault();
         e.stopPropagation();
       };

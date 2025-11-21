@@ -81,6 +81,73 @@ export interface CategoryStats {
   itemCount: number;
 }
 
+export type ReportType = "POST" | "COMMENT";
+export type ReportStatus = "PENDING" | "RESOLVED" | "REJECTED" | "IN_PROGRESS";
+export type ReportAction = "NONE" | "HIDE" | "DELETE" | "SUSPEND" | "WARN";
+export type ResolveReportAction = Exclude<ReportAction, "NONE">;
+
+export interface AdminReport {
+  id: number;
+  userId: number;
+  postId: number | null;
+  commentId: number | null;
+  type: ReportType;
+  action: ReportAction;
+  status: ReportStatus;
+  description: string;
+  createdDate: string;
+  reporter?: AdminReportUser;
+  author?: AdminReportUser;
+}
+
+export interface AdminReportUser {
+  id: number;
+  displayName: string;
+  email: string;
+  avatarUrl: string | null;
+}
+
+export interface ReportedContent {
+  contentId: number;
+  contentType: ReportType;
+  body: string;
+  images?: string[];
+  isHidden: boolean;
+  isDeleted: boolean;
+  createdDate: string;
+}
+
+export interface AdminReportDetail extends AdminReport {
+  reporter: AdminReportUser;
+  content: ReportedContent;
+  author: AdminReportUser;
+  resolvedByAdminId: number | null;
+  resolvedAt: string | null;
+  resolutionNotes: string | null;
+  hiddenStatus: string | null;
+  authorWarningCount: number;
+  authorSuspensionCount: number;
+}
+
+export interface GetReportsParams {
+  pageIndex?: number;
+  pageSize?: number;
+  type?: ReportType;
+  status?: ReportStatus;
+  fromDate?: string;
+  toDate?: string;
+}
+
+export interface ResolveNoViolationPayload {
+  notes: string;
+}
+
+export interface ResolveWithActionPayload {
+  action: ResolveReportAction;
+  notes: string;
+  suspensionDays?: number;
+}
+
 // ============================================================================
 // Admin API Functions
 // ============================================================================
@@ -243,6 +310,45 @@ export const adminAPI = {
     }));
     return { statusCode: 200, message: "Success", data: stats };
   },
+  getReports: async (
+    params?: GetReportsParams
+  ): Promise<ApiResponse<AdminReport[]>> => {
+    const queryString = buildReportQueryString(params);
+    const url = `/reports${queryString ? `?${queryString}` : ""}`;
+    return apiClient.get<ApiResponse<AdminReport[]>>(url);
+  },
+  getPendingReports: async (
+    params?: Omit<GetReportsParams, "status">
+  ): Promise<ApiResponse<AdminReport[]>> => {
+    const queryString = buildReportQueryString(params);
+    const url = `/reports/pending${queryString ? `?${queryString}` : ""}`;
+    return apiClient.get<ApiResponse<AdminReport[]>>(url);
+  },
+  getReportDetails: async (
+    reportId: number
+  ): Promise<ApiResponse<AdminReportDetail>> => {
+    return apiClient.get<ApiResponse<AdminReportDetail>>(
+      `/reports/${reportId}/details`
+    );
+  },
+  resolveReportNoViolation: async (
+    reportId: number,
+    payload: ResolveNoViolationPayload
+  ): Promise<ApiResponse<AdminReport>> => {
+    return apiClient.post<ApiResponse<AdminReport>>(
+      `/reports/${reportId}/resolve-no-violation`,
+      payload
+    );
+  },
+  resolveReportWithAction: async (
+    reportId: number,
+    payload: ResolveWithActionPayload
+  ): Promise<ApiResponse<AdminReport>> => {
+    return apiClient.post<ApiResponse<AdminReport>>(
+      `/reports/${reportId}/resolve-with-action`,
+      payload
+    );
+  },
   getItems: async (data: ItemsListRequest): Promise<ItemsListResponse> => {
     // Transform PascalCase params to kebab-case as required by API
     const params: Record<string, string | number | boolean> = {
@@ -290,3 +396,32 @@ export const adminAPI = {
     return apiClient.delete<ApiResponse<void>>(`/occasions/${id}`);
   },
 }
+
+const buildReportQueryString = (params?: GetReportsParams) => {
+  const queryParams = new URLSearchParams();
+
+  if (!params) {
+    return queryParams.toString();
+  }
+
+  if (params.pageIndex) {
+    queryParams.append("PageIndex", params.pageIndex.toString());
+  }
+  if (params.pageSize) {
+    queryParams.append("PageSize", params.pageSize.toString());
+  }
+  if (params.type) {
+    queryParams.append("Type", params.type);
+  }
+  if (params.status) {
+    queryParams.append("Status", params.status);
+  }
+  if (params.fromDate) {
+    queryParams.append("FromDate", params.fromDate);
+  }
+  if (params.toDate) {
+    queryParams.append("ToDate", params.toDate);
+  }
+
+  return queryParams.toString();
+};

@@ -159,43 +159,10 @@ const NotificationCard = memo<NotificationCardProps>(
                   <div className="flex-1 space-y-2.5 min-w-0">
                     {/* Actor & Type Row */}
                     <div className="flex items-center gap-3 flex-wrap">
-                      {notification.actorName && (
-                        <div className="flex items-center gap-2">
-                          <div className="relative h-8 w-8 sm:h-9 sm:w-9 rounded-full border-2 border-white/20 overflow-hidden bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center uppercase text-xs font-bold shadow-md">
-                            {notification.actorAvatar ? (
-                              <Image
-                                src={notification.actorAvatar}
-                                alt={notification.actorName}
-                                fill
-                                sizes="36px"
-                                className="object-cover"
-                              />
-                            ) : (
-                              <span className="text-slate-200">
-                                {notification.actorName.charAt(0)}
-                              </span>
-                            )}
-                          </div>
-                          <span className="font-semibold text-sm text-slate-200 tracking-tight">
-                            {notification.actorName}
-                          </span>
-                        </div>
-                      )}
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="inline-flex items-center gap-1.5 rounded-md bg-slate-800/60 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-300 border border-slate-700/50">
                           {notification.type}
                         </span>
-                        {notification.read ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-slate-800/80 px-2.5 py-1 text-[10px] font-medium text-slate-400 border border-slate-700/50">
-                            <div className="w-1.5 h-1.5 rounded-full bg-slate-500" />
-                            Read
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-cyan-500/20 px-2.5 py-1 text-[10px] font-semibold text-cyan-100 border border-cyan-400/30 shadow-sm shadow-cyan-500/10">
-                            <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-                            Unread
-                          </span>
-                        )}
                       </div>
                     </div>
 
@@ -212,23 +179,6 @@ const NotificationCard = memo<NotificationCardProps>(
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
-                    {!notification.read && !selectable && (
-                      <motion.button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onMarkAsRead(notification.id);
-                        }}
-                        whileHover={{ scale: 1.08, y: -2 }}
-                        whileTap={{ scale: 0.92 }}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-cyan-400/50 bg-cyan-500/15 px-3.5 py-2 text-xs font-semibold text-cyan-100 transition-all hover:bg-cyan-500/25 hover:border-cyan-400/70 hover:shadow-md hover:shadow-cyan-500/20 active:scale-95"
-                        aria-label="Mark notification as read"
-                        title="Mark as read"
-                      >
-                        <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
-                        <span className="hidden sm:inline">Mark read</span>
-                        <span className="sm:hidden">Read</span>
-                      </motion.button>
-                    )}
                     {!selectable && (
                       <motion.button
                         onClick={(e) => {
@@ -268,24 +218,6 @@ const NotificationCard = memo<NotificationCardProps>(
                       </time>
                     </span>
                   </div>
-                  {notification.href && !selectable && (
-                    <motion.button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (onViewDetail) {
-                          onViewDetail(notification.id);
-                        } else if (notification.href) {
-                          window.open(notification.href, "_blank");
-                        }
-                      }}
-                      whileHover={{ scale: 1.05, x: 2 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-400/40 bg-cyan-500/10 px-3 py-1.5 text-xs font-semibold text-cyan-100 transition-all hover:bg-cyan-500/20 hover:border-cyan-400/60 hover:shadow-md hover:shadow-cyan-500/10"
-                    >
-                      View detail
-                      <ArrowUpRight className="h-3.5 w-3.5" />
-                    </motion.button>
-                  )}
                 </div>
               </div>
             </div>

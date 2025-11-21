@@ -7,7 +7,8 @@ import {
   Users,
   Shirt,
   Tags,
-  Shield
+  Shield,
+  Flag
 } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { cn } from "@/lib/utils";
@@ -47,6 +48,11 @@ const menuItems = [
     title: "Styles",
     icon: Tags,
     href: "/admin/styles",
+  },
+  {
+    title: "Reports",
+    icon: Flag,
+    href: "/admin/reports",
   }
   // {
   //   title: "Thống kê",
