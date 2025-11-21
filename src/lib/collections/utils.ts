@@ -1,4 +1,4 @@
-import type { CollectionRecord, CollectionItemDetail } from "@/lib/api";
+import type { CollectionRecord } from "@/lib/api";
 
 /**
  * Parse color names from JSON string

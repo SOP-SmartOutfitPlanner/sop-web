@@ -6,7 +6,7 @@ import { MonthlyCalendar } from "./MonthlyCalendar";
 import { useCalendarEntries, useUserOccasions } from "@/hooks/useCalendar";
 
 export function OutfitCalendar() {
-  const [viewMode, setViewMode] = useState<"week" | "month">("month");
+  const [viewMode, setViewMode] = useState<"week" | "month">("week");
 
   // Fetch calendar entries
   const { data: calendarData, isLoading } = useCalendarEntries({
