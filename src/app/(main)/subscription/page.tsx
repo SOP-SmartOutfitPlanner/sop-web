@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   SubscriptionHero,
@@ -10,7 +11,7 @@ import {
   type SubscriptionCard,
   type SubscriptionCardVariant,
 } from "@/components/subscription";
-import { useScription } from "@/hooks/subscription/useScription";
+import { useCurrentSubscription, useSubscription } from "@/hooks/subscription/useScription";
 import type { UserSubscription } from "@/types/subscription";
 
 const CARD_VARIANTS: SubscriptionCardVariant[] = ["outline", "primary", "ghost"];
@@ -53,12 +54,13 @@ const resolveVariantByIndex = (
 
 const mapSubscriptionToCard = (
   plan: UserSubscription,
-  index: number
+  index: number,
+  currentPlanId?: number
 ): SubscriptionCard => {
   const variant = resolveVariantByIndex(index);
   const isPopular = variant === "primary";
   const isPremium = variant === "ghost";
-  const isActivePlan = plan.status?.toLowerCase() === "active";
+  const isCurrent = typeof currentPlanId !== "undefined" && plan.id === currentPlanId;
 
   return {
     id: plan.id,
@@ -76,7 +78,8 @@ const mapSubscriptionToCard = (
     isPopular,
     isPremium,
     isFree: plan.price === 0,
-    cta: isActivePlan ? "Current plan" : "Subscribe now",
+    isCurrent,
+    cta: isCurrent ? "Current plan" : "Get started",
     badge: isPopular
       ? "Most Popular"
       : isPremium
@@ -86,22 +89,29 @@ const mapSubscriptionToCard = (
 };
 
 export default function SubscriptionContentPage() {
-  const { data, isLoading, isError, error, refetch } = useScription();
-  useEffect(() => {
-    console.log(data);
-  }, [data]);
+  const router = useRouter();
+  const { data, isLoading, isError, error, refetch } = useSubscription();
+  const { data: currentData } = useCurrentSubscription();
+
+  const currentPlanId = currentData?.data?.subscriptionPlanId;
+  // useEffect(() => {
+  //   console.log(data);
+  // }, [data]);
   const pricingPlans = useMemo<SubscriptionCard[]>(() => {
     if (!data?.data || !Array.isArray(data.data)) {
       return [];
     }
     return data.data.map((plan, index) =>
-      mapSubscriptionToCard(plan, index)
+      mapSubscriptionToCard(plan, index, currentPlanId)
     );
-  }, [data]);
+  }, [data, currentPlanId]);
 
-  const handleGetStarted = useCallback((planId: number) => {
-    console.info("Selected subscription plan:", planId);
-  }, []);
+  const handleGetStarted = useCallback(
+    (planId: number) => {
+      router.push(`/purchase?planId=${planId}`);
+    },
+    [router]
+  );
 
   const errorMessage =
     error?.message ?? "Unable to load subscription plans.";

@@ -13,6 +13,7 @@ export type SubscriptionCard = {
   isPopular: boolean;
   isPremium: boolean;
   isFree: boolean;
+  isCurrent: boolean;
   cta: string;
   badge?: string;
 };

@@ -15,6 +15,8 @@ const SubscriptionPlanCardComponent = ({
     ? plan.features
     : ["No benefits information available yet"];
 
+  const isCurrentPlan = plan.isCurrent;
+
   return (
     <motion.div
       key={plan.id}
@@ -161,16 +163,21 @@ const SubscriptionPlanCardComponent = ({
       </ul>
 
       <motion.button
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-        onClick={() => onGetStarted(plan.id)}
+        whileHover={isCurrentPlan ? undefined : { scale: 1.02 }}
+        whileTap={isCurrentPlan ? undefined : { scale: 0.98 }}
+        disabled={isCurrentPlan}
+        onClick={() => {
+          if (!isCurrentPlan) {
+            onGetStarted(plan.id);
+          }
+        }}
         className={`w-full py-4 px-6 font-bricolage font-bold rounded-xl transition-all shadow-lg ${
           plan.isPopular
             ? "bg-white text-blue-600 hover:bg-blue-50 hover:shadow-2xl"
             : plan.isPremium
             ? "bg-linear-to-r from-cyan-400 via-blue-400 to-cyan-500 text-slate-900 hover:from-cyan-300 hover:via-blue-300 hover:to-cyan-400 hover:shadow-2xl shadow-cyan-500/50"
             : "bg-linear-to-r from-blue-600 to-cyan-600 text-white hover:from-blue-700 hover:to-cyan-700 hover:shadow-xl"
-        }`}
+        } ${isCurrentPlan ? "cursor-not-allowed opacity-90" : "cursor-pointer"}`}
       >
         {plan.cta}
       </motion.button>
