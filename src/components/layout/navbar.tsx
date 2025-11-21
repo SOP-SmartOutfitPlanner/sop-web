@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { useQuery } from "@tanstack/react-query";
 import {
   Shirt,
   Sparkles,
@@ -28,7 +27,7 @@ import {
 import { useAuthStore } from "@/store/auth-store";
 import GlassCard from "@/components/ui/glass-card";
 import { NavbarAuthSection } from "@/components/layout/navbar-auth-section";
-import { notificationAPI } from "@/lib/api";
+import { useUnreadCount } from "@/hooks/notifications/useUnreadCount";
 
 // -------------------- nav data --------------------
 const mainNavigationItems = [
@@ -63,18 +62,8 @@ export function Navbar() {
   const [lastScrollY, setLastScrollY] = useState(0);
 
   // Fetch unread notification count (only for badge display)
-  const { data: unreadCount } = useQuery({
-    queryKey: ["notifications-unread-count", user?.id],
-    queryFn: async () => {
-      if (!user?.id) return null;
-      const userId = parseInt(user.id, 10);
-      if (isNaN(userId)) return null;
-      const response = await notificationAPI.getUnreadCount(userId);
-      return response.data ?? null;
-    },
-    enabled: !!user?.id && !isFirstTime,
-    staleTime: 1000 * 30, // 30 seconds
-    refetchInterval: 1000 * 30, // Refetch every 30 seconds
+  const { data: unreadCount } = useUnreadCount(user?.id, {
+    poll: !!user?.id && !isFirstTime,
   });
 
   useEffect(() => {

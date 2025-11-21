@@ -1,9 +1,5 @@
 import { useMemo } from "react";
-import {
-  useInfiniteQuery,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { notificationAPI } from "@/lib/api";
 import type {
   Notification,
@@ -17,6 +13,7 @@ import {
   mapNotificationType,
   getNotificationIcon,
 } from "@/components/notifications/utils";
+import { useUnreadCount } from "./useUnreadCount";
 
 const PAGE_SIZE = 10;
 const STALE_TIME_MS = 1000 * 60; // 1 minute
@@ -74,6 +71,9 @@ export function useNotifications(userId: string | undefined, filter: FilterType)
     },
     enabled: !!userId,
     staleTime: STALE_TIME_MS,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+    refetchOnWindowFocus: false,
   });
 
   const notifications = useMemo<NotificationItem[]>(() => {
@@ -106,21 +106,7 @@ export function useNotifications(userId: string | undefined, filter: FilterType)
     );
   }, [data]);
 
-  const { data: unreadCountData } = useQuery({
-    queryKey: ["notifications-unread-count", userId],
-    queryFn: async () => {
-      if (!userId) return null;
-
-      const numericUserId = parseInt(userId, 10);
-      if (isNaN(numericUserId)) return null;
-
-      const response = await notificationAPI.getUnreadCount(numericUserId);
-      return response.data ?? 0;
-    },
-    enabled: !!userId,
-    staleTime: STALE_TIME_MS,
-    refetchInterval: 30000,
-  });
+  const { data: unreadCountData } = useUnreadCount(userId, { poll: false });
 
   const unreadCount = useMemo(() => {
     if (unreadCountData !== null && unreadCountData !== undefined) {

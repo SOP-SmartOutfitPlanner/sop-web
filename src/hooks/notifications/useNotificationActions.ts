@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { InfiniteData, QueryKey } from "@tanstack/react-query";
@@ -11,6 +11,37 @@ type NotificationsQuerySnapshot = Array<
 
 export function useNotificationActions(userId: string | undefined) {
   const queryClient = useQueryClient();
+  const numericUserId = useMemo(() => {
+    if (!userId) return undefined;
+    const parsed = parseInt(userId, 10);
+    return Number.isNaN(parsed) ? undefined : parsed;
+  }, [userId]);
+
+  const updateUnreadCache = useCallback(
+    (updater: (prev: number) => number) => {
+      if (!userId) return;
+      queryClient.setQueryData<number>(
+        ["notifications-unread-count", userId],
+        (prev) => {
+          const base = typeof prev === "number" ? prev : 0;
+          const next = updater(base);
+          return next < 0 ? 0 : next;
+        }
+      );
+    },
+    [queryClient, userId]
+  );
+
+  const setUnreadCache = useCallback(
+    (value: number) => {
+      if (!userId) return;
+      queryClient.setQueryData<number>(
+        ["notifications-unread-count", userId],
+        Math.max(0, value)
+      );
+    },
+    [queryClient, userId]
+  );
 
   const applyNotificationUpdate = useCallback(
     (
@@ -74,15 +105,14 @@ export function useNotificationActions(userId: string | undefined) {
 
         if (userId) {
           queryClient.invalidateQueries({
-            queryKey: ["notifications-unread-count", userId],
-          });
-          queryClient.invalidateQueries({
             queryKey: ["notifications", userId],
           });
           queryClient.invalidateQueries({
             queryKey: ["notification-detail", id],
           });
         }
+
+        updateUnreadCache((prev) => prev - 1);
       } catch (error) {
         rollbackEntries.forEach(([key, value]) => {
           queryClient.setQueryData(key, value);
@@ -98,10 +128,7 @@ export function useNotificationActions(userId: string | undefined) {
   );
 
   const markAllAsRead = useCallback(async () => {
-    if (!userId) return;
-
-    const numericUserId = parseInt(userId, 10);
-    if (isNaN(numericUserId)) return;
+    if (!numericUserId || !userId) return;
 
     const optimisticTimestamp = new Date().toISOString();
     const rollbackEntries = applyNotificationUpdate((page) => {
@@ -129,10 +156,6 @@ export function useNotificationActions(userId: string | undefined) {
 
     try {
       await notificationAPI.markAllAsRead(numericUserId);
-
-      queryClient.invalidateQueries({
-        queryKey: ["notifications-unread-count", userId],
-      });
       queryClient.invalidateQueries({
         queryKey: ["notifications", userId],
       });
@@ -141,6 +164,8 @@ export function useNotificationActions(userId: string | undefined) {
         id: toastId,
         duration: 2000,
       });
+
+      setUnreadCache(0);
     } catch (error) {
       console.error("Failed to mark all notifications as read:", error);
       rollbackEntries.forEach(([key, value]) => {
@@ -155,7 +180,7 @@ export function useNotificationActions(userId: string | undefined) {
   }, [userId, queryClient, applyNotificationUpdate]);
 
   const deleteNotification = useCallback(
-    async (id: number) => {
+    async (id: number, options?: { unreadDelta?: number }) => {
       const rollbackEntries = applyNotificationUpdate((page) => {
         if (!page) return page;
         const filteredData = page.data.filter((notif) => notif.id !== id);
@@ -189,10 +214,9 @@ export function useNotificationActions(userId: string | undefined) {
           }
         );
 
-        if (userId) {
-          queryClient.invalidateQueries({
-            queryKey: ["notifications-unread-count", userId],
-          });
+        const unreadDelta = options?.unreadDelta ?? 0;
+        if (unreadDelta !== 0) {
+          updateUnreadCache((prev) => prev + unreadDelta);
         }
 
         return true;
@@ -212,7 +236,7 @@ export function useNotificationActions(userId: string | undefined) {
   );
 
   const deleteNotificationsBulk = useCallback(
-    async (ids: number[]) => {
+    async (ids: number[], options?: { unreadDelta?: number }) => {
       if (ids.length === 0) return false;
 
       const idsSet = new Set(ids);
@@ -262,10 +286,9 @@ export function useNotificationActions(userId: string | undefined) {
           }
         );
 
-        if (userId) {
-          queryClient.invalidateQueries({
-            queryKey: ["notifications-unread-count", userId],
-          });
+        const unreadDelta = options?.unreadDelta ?? 0;
+        if (unreadDelta !== 0) {
+          updateUnreadCache((prev) => prev + unreadDelta);
         }
 
         return true;
@@ -281,7 +304,7 @@ export function useNotificationActions(userId: string | undefined) {
         return false;
       }
     },
-    [applyNotificationUpdate, queryClient, userId]
+    [applyNotificationUpdate, queryClient, updateUnreadCache, userId]
   );
 
   return {

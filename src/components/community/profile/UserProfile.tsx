@@ -1,25 +1,59 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth-store";
 import { communityAPI, Hashtag } from "@/lib/api/community-api";
 import { toast } from "sonner";
 import { AnimatedBackground } from "@/components/ui/animated-background";
-import { EnhancedPostCard } from "@/components/community/post/EnhancedPostCard";
-import { FollowersModal } from "./FollowersModal";
 import { ProfileHeader } from "./ProfileHeader";
 import { ProfileInfo } from "./ProfileInfo";
 import { useUserProfile } from "@/hooks/community/useUserProfile";
 import { useUserPosts } from "@/hooks/community/useUserPosts";
 import { useFollowUser } from "@/hooks/community/useFollowUser";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { EditPostDialog } from "@/components/community/EditPostDialog";
 import { Post } from "@/types/community";
 import { LoadingScreen } from "@/components/community";
-import { UserCollectionsScreen } from "@/components/collections/UserCollectionsScreen";
 import { USER_ROLES } from "@/lib/constants/auth";
+
+const EnhancedPostCard = dynamic(
+  () =>
+    import("@/components/community/post/EnhancedPostCard").then(
+      (m) => m.EnhancedPostCard
+    ),
+  {
+    ssr: false,
+  }
+);
+
+const FollowersModal = dynamic(
+  () => import("./FollowersModal").then((m) => m.FollowersModal),
+  {
+    ssr: false,
+  }
+);
+
+const UserCollectionsScreen = dynamic(
+  () =>
+    import("@/components/collections/UserCollectionsScreen").then(
+      (m) => m.UserCollectionsScreen
+    ),
+  {
+    ssr: false,
+  }
+);
+
+const EditPostDialog = dynamic(
+  () =>
+    import("@/components/community/EditPostDialog").then(
+      (m) => m.EditPostDialog
+    ),
+  {
+    ssr: false,
+  }
+);
 
 interface UserProfileProps {
   userId: string;

@@ -128,7 +128,9 @@ export function useRealtimeNotifications(
     (async () => {
       const messaging = await getFirebaseMessaging();
       if (!messaging) {
-        console.warn("[RealtimeNotifications] Firebase messaging not supported");
+        console.warn(
+          "[RealtimeNotifications] Firebase messaging not supported"
+        );
         return;
       }
 
@@ -137,7 +139,7 @@ export function useRealtimeNotifications(
         userId
       );
       unsubscribe = onMessage(messaging, (payload) => {
-        console.log("[RealtimeNotifications] FCM payload:", payload);
+        // console.log("[RealtimeNotifications] FCM payload:", payload);
         const data = payload.data || {};
 
         const notificationPayload = {
@@ -146,8 +148,7 @@ export function useRealtimeNotifications(
             data.title ?? payload.notification?.title ?? "New notification",
           message: data.message ?? payload.notification?.body ?? "",
           type: data.type ?? "SYSTEM",
-          href:
-            data.href && data.href !== "string" ? data.href : undefined,
+          href: data.href && data.href !== "string" ? data.href : undefined,
           actorName: data.actorDisplayName,
           actorAvatarUrl:
             data.imageUrl ?? payload.notification?.image ?? undefined,
@@ -182,4 +183,3 @@ export function useRealtimeNotifications(
 
   return null;
 }
-

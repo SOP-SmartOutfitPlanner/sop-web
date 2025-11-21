@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useMemo, useCallback, useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PostSkeleton } from "./PostSkeleton";
 import { useFeed } from "@/hooks/useFeed";
@@ -15,10 +16,17 @@ import {
 } from "./FeedStates";
 import { FeedPostList } from "./FeedPostList";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { EditPostDialog } from "@/components/community/EditPostDialog";
 import { toast } from "sonner";
 import { Hashtag } from "@/lib/api/community-api";
 import { communityAPI } from "@/lib/api/community-api";
+
+const EditPostDialog = dynamic(
+  () =>
+    import("@/components/community/EditPostDialog").then(
+      (mod) => mod.EditPostDialog
+    ),
+  { ssr: false }
+);
 
 interface InfiniteScrollFeedProps {
   searchQuery?: string;
