@@ -4,6 +4,7 @@ import type {
   CurrentSubscriptionResponse,
   PurchaseRequest,
   PurchaseResponse,
+  SubscriptionHistoryResponse,
   UserSubscriptionResponse,
 } from "@/types/subscription";
 
@@ -13,6 +14,9 @@ export const subscriptionAPI = {
   },
   getCurrentSubscription: async (): Promise<CurrentSubscriptionResponse> => {
     return apiClient.get<CurrentSubscriptionResponse>("/subscriptions/me");
+  },
+  getSubscriptionHistory: async (): Promise<SubscriptionHistoryResponse> => {
+    return apiClient.get<SubscriptionHistoryResponse>("/subscriptions/history");
   },
   purchaseSubscription: async (
     data: PurchaseRequest

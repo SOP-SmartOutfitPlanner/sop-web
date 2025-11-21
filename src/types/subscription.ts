@@ -83,3 +83,44 @@ export interface CancelPurchaseResponse {
         subscriptionPlanName: string;
     }
 }
+
+//================Payment Status Streaming===========================
+export interface PaymentStatusUpdate {
+    transactionId: number;
+    status: string;
+    message?: string;
+    paidAt?: string;
+    amount?: number;
+    subscriptionPlanId?: number;
+    subscriptionPlanName?: string;
+    metadata?: Record<string, unknown>;
+    data?: PaymentStatusDetails;
+}
+
+export interface PaymentStatusDetails {
+    userId: number;
+    transactionId: number;
+    transactionCode: number;
+    status: "PENDING" | "COMPLETED" | "FAILED" | "CANCEL";
+    userSubscriptionId: number;
+    isActive: boolean;
+    dateExp: string;
+    subscriptionPlanName: string;
+}
+
+export interface SubscriptionHistoryResponse {
+    statusCode: number;
+    message: string;
+    data: SubscriptionHistory[];
+}
+export interface SubscriptionHistory {
+    id: number;
+    userId: number;
+    subscriptionPlanId: number;
+    dateExp: string;
+    isActive: boolean;
+    benefitUsage: BenefitUsage[];
+    subscriptionPlan: UserSubscription;
+    transactions: Transaction[];
+    createdDate: string;
+}
