@@ -56,6 +56,11 @@ export interface NotificationsListResponse {
   metaData: PaginationMetaData;
 }
 
+export interface DeleteNotificationsResponse {
+  deletedCount: number;
+  requestedCount: number;
+}
+
 /**
  * Get notifications parameters
  */
@@ -109,6 +114,27 @@ class NotificationAPI {
       return response;
     } catch (error) {
       console.error("❌ Device token deletion API error:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete one or many notifications for the authenticated user
+   * DELETE /api/v1/notifications
+   */
+  async deleteNotifications(
+    notificationIds: number[]
+  ): Promise<ApiResponse<DeleteNotificationsResponse>> {
+    try {
+      const response = await apiClient.delete<
+        ApiResponse<DeleteNotificationsResponse>
+      >(this.NOTIFICATIONS_PATH, {
+        data: { notificationIds },
+      });
+
+      return response;
+    } catch (error) {
+      console.error("❌ Failed to delete notifications:", error);
       throw error;
     }
   }

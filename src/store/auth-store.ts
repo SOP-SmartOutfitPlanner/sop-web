@@ -58,6 +58,11 @@ export const useAuthStore = create<AuthStore>((set) => ({
           const user = JSON.parse(userStr);
           const isFirstTime = isFirstTimeStr === 'true';
           set({ user, isAuthenticated: true, isFirstTime, isInitialized: true });
+
+          const userIdNumber = parseInt(user.id, 10);
+          if (!isNaN(userIdNumber)) {
+            registerUserDevice(userIdNumber);
+          }
         } catch {
           localStorage.removeItem('user');
           localStorage.removeItem('accessToken');

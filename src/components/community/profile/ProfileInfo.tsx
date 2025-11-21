@@ -61,27 +61,27 @@ export function ProfileInfo(props: ProfileInfoProps) {
       {/* Avatar + Stats Row */}
       <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-5">
-          <div className="relative group">
-            <div className="w-24 h-24 md:w-28 md:h-28 ring-4 ring-cyan-400/30 group-hover:ring-cyan-400/50 transition-all shadow-lg shadow-cyan-500/20 rounded-full overflow-hidden bg-slate-900/70 border border-white/10">
+          <div className="relative group shrink-0">
+            <div className="relative w-24 h-24 md:w-28 md:h-28 ring-4 ring-cyan-400/30 group-hover:ring-cyan-400/50 transition-all shadow-lg shadow-cyan-500/20 rounded-full overflow-hidden bg-slate-900/70 border border-white/10">
               {userProfile.avatar ? (
-                <AntImage
-                  src={userProfile.avatar}
-                  alt={userProfile.name}
-                  className="h-full w-full"
-                  style={{
-                    height: "100%",
-                    width: "100%",
-                    objectFit: "cover",
-                    borderRadius: "9999px",
-                  }}
-                  preview={{
-                    mask: (
-                      <div className="text-xs uppercase tracking-[0.3em] text-white">
-                        Preview
-                      </div>
-                    ),
-                  }}
-                />
+                <div className="h-full w-full [&_.ant-image]:!h-full [&_.ant-image]:!w-full [&_.ant-image-img]:!h-full [&_.ant-image-img]:!w-full [&_.ant-image-img]:!object-cover [&_.ant-image-img]:!rounded-full">
+                  <AntImage
+                    src={userProfile.avatar}
+                    alt={userProfile.name}
+                    style={{
+                      height: "100%",
+                      width: "100%",
+                      display: "block",
+                    }}
+                    preview={{
+                      mask: (
+                        <div className="text-xs uppercase tracking-[0.3em] text-white">
+                          Preview
+                        </div>
+                      ),
+                    }}
+                  />
+                </div>
               ) : (
                 <div className="flex h-full w-full items-center justify-center text-4xl font-bold bg-gradient-to-br from-cyan-400 to-blue-500 text-white">
                   {userProfile.name.charAt(0).toUpperCase()}
@@ -183,7 +183,7 @@ export function ProfileInfo(props: ProfileInfoProps) {
         )}
       </div>
 
-      {isStylist && onSectionChange && (
+      {isStylist && (
         <div className="pt-4">
           <div className="flex overflow-hidden rounded-2xl border border-cyan-500/30 bg-slate-900/30 shadow-lg shadow-cyan-500/15">
             {(["posts", "collections"] as ProfileSection[]).map((section) => {
@@ -191,10 +191,12 @@ export function ProfileInfo(props: ProfileInfoProps) {
               return (
                 <button
                   key={section}
-                  onClick={() => onSectionChange(section)}
+                  onClick={() => onSectionChange?.(section)}
+                  disabled={!onSectionChange}
                   className={cn(
                     "relative flex-1 py-3 text-sm font-semibold uppercase tracking-[0.4em] transition-all duration-300",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50",
+                    !onSectionChange && "cursor-not-allowed opacity-60",
                     isActive
                       ? "text-white bg-gradient-to-r from-cyan-500/20 to-blue-500/20"
                       : "text-slate-300 hover:text-white"

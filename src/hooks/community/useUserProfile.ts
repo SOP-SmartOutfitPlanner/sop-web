@@ -13,7 +13,9 @@ interface UserProfileData {
   followingCount: number;
   postsCount: number;
   isStylist: boolean;
+  role?: number; // Add role to check if user is stylist
   styles: string[];
+  isStylistVerified?: boolean; // Additional check via stylist endpoint
 }
 
 export function useUserProfile(userId: string) {
@@ -40,6 +42,19 @@ export function useUserProfile(userId: string) {
         const styles =
           userData.userStyles?.map((style) => style.styleName) ?? [];
 
+        // Try to verify if user is stylist by calling stylist endpoint
+        // If endpoint succeeds, user is definitely a stylist
+        let isStylistVerified = Boolean(userData.isStylist);
+        try {
+          // Try to fetch stylist profile - if successful, user is a stylist
+          await userAPI.getStylistProfile(numericUserId);
+          isStylistVerified = true;
+        } catch (error) {
+          // If endpoint fails, user might not be a stylist
+          // But we still check isStylist flag and role
+          isStylistVerified = Boolean(userData.isStylist);
+        }
+
         setUserProfile({
           id: userId,
           name: userData.displayName,
@@ -53,8 +68,10 @@ export function useUserProfile(userId: string) {
           followersCount: followersCount || 0,
           followingCount: followingCount || 0,
           postsCount: postsResponse.metaData.totalCount || 0,
-          isStylist: Boolean(userData.isStylist),
+          isStylist: isStylistVerified || Boolean(userData.isStylist),
+          role: userData.role, // Add role from API
           styles,
+          isStylistVerified,
         });
       } catch (error) {
         console.error("Error fetching user profile:", error);

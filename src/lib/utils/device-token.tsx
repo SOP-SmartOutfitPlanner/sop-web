@@ -5,10 +5,9 @@
  * Generate and manage device tokens for push notifications
  */
 
-import { getToken, onMessage } from "firebase/messaging";
+import { getToken } from "firebase/messaging";
 import { toast } from "sonner";
 import { getFirebaseMessaging } from "@/lib/firebase";
-import { PushNotificationToast } from "@/components/notifications/PushNotificationToast";
 
 /**
  * Generate a unique device token
@@ -44,35 +43,6 @@ async function retrieveFcmToken(): Promise<string | null> {
 
     if (token) {
       localStorage.setItem("deviceToken", token);
-      onMessage(messaging, (payload) => {
-        const title =
-          payload.notification?.title ?? payload.data?.title ?? "Notification";
-        const message =
-          payload.notification?.body ?? payload.data?.message ?? "";
-        const variant =
-          (payload.data?.type as "info" | "success" | "warning" | "error") ||
-          "info";
-
-        toast.custom(
-          (id) => (
-            <PushNotificationToast
-              title={title}
-              message={message}
-              metaLabel={payload.data?.category}
-              variant={variant}
-              actorName={payload.data?.actorDisplayName}
-              actorAvatarUrl={payload.data?.imageUrl}
-              actionHref={payload.data?.href}
-              onDismiss={() => toast.dismiss(id)}
-            />
-          ),
-          {
-            duration: 6000,
-            position: "bottom-right",
-            className: "glass-toast",
-          }
-        );
-      });
     }
 
     return token ?? null;

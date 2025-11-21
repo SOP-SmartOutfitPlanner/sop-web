@@ -1,14 +1,17 @@
 "use client";
 
+import Image from "next/image";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, CheckCircle2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
+  DialogClose,
 } from "@/components/ui/dialog";
 import GlassButton from "@/components/ui/glass-button";
 import { useScrollLock } from "@/hooks/useScrollLock";
@@ -82,6 +85,12 @@ export function NotificationDetailDialog({
     }
   };
 
+  const handleMarkAsRead = () => {
+    if (notification && !notification.isRead && onMarkAsRead) {
+      onMarkAsRead(notification.id);
+    }
+  };
+
   if (!notification && !isLoading) {
     return null;
   }
@@ -91,8 +100,9 @@ export function NotificationDetailDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        showCloseButton={false}
-        className="max-w-2xl bg-slate-900/95 backdrop-blur-xl border-slate-700/50"
+        className="max-w-2xl bg-slate-950/90 backdrop-blur-xl border-white/10 text-white"
+        aria-labelledby="notification-dialog-title"
+        aria-describedby="notification-dialog-description"
       >
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
@@ -110,7 +120,7 @@ export function NotificationDetailDialog({
               <div className="flex items-start gap-4 mb-4">
                 {Icon && (
                   <div
-                    className={`w-16 h-16 rounded-xl bg-linear-to-br ${getTypeColor(
+                    className={`w-16 h-16 rounded-2xl bg-linear-to-br ${getTypeColor(
                       notification.type.toLowerCase()
                     )} border shrink-0 shadow-lg flex items-center justify-center`}
                   >
@@ -121,40 +131,103 @@ export function NotificationDetailDialog({
                     />
                   </div>
                 )}
-                <div className="flex-1">
-                  <DialogTitle className="text-2xl font-bricolage text-white mb-2">
+                <div className="flex-1 space-y-2">
+                  <DialogTitle
+                    id="notification-dialog-title"
+                    className="text-2xl font-bricolage text-white"
+                  >
                     {notification.title}
                   </DialogTitle>
-                  <DialogDescription className="text-slate-400 font-poppins">
-                    {formatDate(notification.createdAt)}
-                  </DialogDescription>
+                  <div className="flex flex-wrap items-center gap-3 text-sm text-slate-300">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-1">
+                      {formatDate(notification.createdAt)}
+                    </span>
+                    <span
+                      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 ${
+                        notification.isRead
+                          ? "border-emerald-500/40 text-emerald-200"
+                          : "border-cyan-400/40 text-cyan-100"
+                      }`}
+                    >
+                      <CheckCircle2 className="h-4 w-4" />
+                      {notification.isRead ? "Read" : "Unread"}
+                    </span>
+                  </div>
                 </div>
+                <DialogClose className="text-slate-400 hover:text-white">
+                  <span className="sr-only">Close</span>
+                </DialogClose>
               </div>
             </DialogHeader>
 
             <div className="space-y-6">
-              {/* Message Content */}
-              <div className="bg-slate-800/50 rounded-lg p-6 border border-slate-700/30">
-                <p className="text-slate-200 font-poppins text-base leading-relaxed whitespace-pre-wrap">
-                  {notification.message}
-                </p>
-              </div>
-
-              {/* Actions */}
-              {notification.href && notification.href !== "string" && (
-                <div className="flex items-center gap-3 pt-4 border-t border-slate-700/30">
-                  <GlassButton
-                    variant="ghost"
-                    size="md"
-                    onClick={handleOpenLink}
-                    className="bg-cyan-500/20 border-cyan-400/30 hover:bg-cyan-500/30"
-                  >
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    Open Link
-                  </GlassButton>
+              {notification.actorDisplayName && (
+                <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                  <div className="relative h-12 w-12 rounded-full overflow-hidden border border-white/10 bg-slate-800/70 flex items-center justify-center uppercase font-semibold">
+                    {notification.actorAvatarUrl ? (
+                      <Image
+                        src={notification.actorAvatarUrl}
+                        alt={notification.actorDisplayName}
+                        fill
+                        sizes="48px"
+                        className="object-cover"
+                      />
+                    ) : (
+                      notification.actorDisplayName.charAt(0)
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm text-slate-400">From</p>
+                    <p className="font-semibold text-white">
+                      {notification.actorDisplayName}
+                    </p>
+                  </div>
                 </div>
               )}
+
+              <div className="bg-slate-900/60 rounded-2xl p-6 border border-white/5">
+                <DialogDescription
+                  id="notification-dialog-description"
+                  className="text-slate-200 font-poppins text-base leading-relaxed whitespace-pre-wrap"
+                >
+                  {notification.message}
+                </DialogDescription>
+              </div>
             </div>
+
+            <DialogFooter className="mt-6">
+              <GlassButton
+                variant="ghost"
+                size="md"
+                className="bg-white/10 text-white border border-white/20"
+                onClick={() => onOpenChange(false)}
+              >
+                Dismiss
+              </GlassButton>
+
+              {!notification.isRead && onMarkAsRead && (
+                <GlassButton
+                  variant="ghost"
+                  size="md"
+                  onClick={handleMarkAsRead}
+                  className="bg-emerald-500/20 border border-emerald-400/30 text-emerald-100"
+                >
+                  Mark as read
+                </GlassButton>
+              )}
+
+              {notification.href && notification.href !== "string" && (
+                <GlassButton
+                  variant="ghost"
+                  size="md"
+                  onClick={handleOpenLink}
+                  className="bg-cyan-500/20 border-cyan-400/30 hover:bg-cyan-500/30"
+                >
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  View details
+                </GlassButton>
+              )}
+            </DialogFooter>
           </>
         ) : null}
       </DialogContent>

@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth-store";
+import { AnimatedBackground } from "@/components/ui/animated-background";
 
 export default function AuthLayout({
   children,
@@ -25,12 +26,12 @@ export default function AuthLayout({
   useEffect(() => {
     const html = document.documentElement;
     const body = document.body;
-    
+
     html.style.overflow = "hidden";
     html.style.height = "100vh";
     body.style.overflow = "hidden";
     body.style.height = "100vh";
-    
+
     return () => {
       html.style.overflow = "";
       html.style.height = "";
@@ -44,9 +45,11 @@ export default function AuthLayout({
   }
 
   return (
-    <div className="fixed inset-0 overflow-hidden">
-      {children}
+    <div className="">
+      <div className="relative z-10 h-full">
+        <AnimatedBackground />
+        {children}
+      </div>
     </div>
   );
 }
-

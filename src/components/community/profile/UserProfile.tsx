@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth-store";
@@ -168,9 +168,19 @@ export function UserProfile({ userId }: UserProfileProps) {
     setActiveSection("posts");
   }, [userId]);
 
-  const showCollectionsTab =
-    Boolean(userProfile?.isStylist) ||
-    (isOwnProfile && normalizedCurrentRole === USER_ROLES.STYLIST);
+  // Check if the viewed user is a stylist
+  const viewedUserRole = userProfile?.role;
+  const isViewedUserStylist = 
+    Boolean(userProfile?.isStylist) || 
+    Boolean(userProfile?.isStylistVerified) ||
+    (typeof viewedUserRole === 'number' && viewedUserRole === 2);
+  
+  const showCollectionsTab = useMemo(() => {
+    return (
+      isViewedUserStylist ||
+      (isOwnProfile && normalizedCurrentRole === USER_ROLES.STYLIST)
+    );
+  }, [isViewedUserStylist, isOwnProfile, normalizedCurrentRole]);
 
   useEffect(() => {
     if (!showCollectionsTab && activeSection === "collections") {
