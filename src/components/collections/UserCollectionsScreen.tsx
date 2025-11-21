@@ -355,11 +355,11 @@ export function UserCollectionsScreen({
       )}
 
       <section className="space-y-8">
-        <div className="rounded-3xl border border-white/10 bg-slate-950/60 px-4 py-5 shadow-lg shadow-black/40">
+        <div className="rounded-3xl border border-white/10  px-4 py-5 shadow-lg shadow-black/40">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex flex-col gap-2">
               {isOwnProfile ? (
-                <div className="inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-slate-900/80 p-2 backdrop-blur-lg shadow-lg shadow-cyan-500/10">
+                <div className="inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-slate-900/30 p-2 backdrop-blur-lg shadow-lg shadow-cyan-500/10">
                   <button
                     onClick={() => setActiveTab("published")}
                     className={cn(

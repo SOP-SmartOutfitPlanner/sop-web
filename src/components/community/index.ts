@@ -29,12 +29,12 @@ export * from "./post";
 export * from "./comment";
 
 // ===========================
-// Profile Components
-// ===========================
-export * from "./profile";
-
-// ===========================
 // Post Creation Dialog (Root Level)
 // ===========================
 export { NewPostDialog } from "./NewPostDialog";
+
+// Lazy-only exports
+export { ProfileInfo } from "./profile/ProfileInfo";
+export { ProfileHeader } from "./profile/ProfileHeader";
+export { UserProfile } from "./profile/UserProfile";
 

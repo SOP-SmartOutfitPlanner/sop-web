@@ -1,18 +1,36 @@
 "use client";
 
 import { useCallback, useState, Suspense } from "react";
+import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { useCommunityAuth } from "@/hooks/useCommunityAuth";
 import { useCommunityFilters } from "@/hooks/useCommunityFilters";
 import { useCreatePost } from "@/hooks/useCreatePost";
+import { LoadingScreen } from "@/components/community";
 
-import {
-  CommunityLayout,
-  CommunityHeader,
-  CommunityFilters,
-  InfiniteScrollFeed,
-  LoadingScreen,
-} from "@/components/community";
+const CommunityLayout = dynamic(
+  () =>
+    import("@/components/community").then((mod) => mod.CommunityLayout),
+  { ssr: false }
+);
+
+const CommunityHeader = dynamic(
+  () =>
+    import("@/components/community").then((mod) => mod.CommunityHeader),
+  { ssr: false }
+);
+
+const CommunityFilters = dynamic(
+  () =>
+    import("@/components/community").then((mod) => mod.CommunityFilters),
+  { ssr: false }
+);
+
+const InfiniteScrollFeed = dynamic(
+  () =>
+    import("@/components/community").then((mod) => mod.InfiniteScrollFeed),
+  { ssr: false }
+);
 
 /**
  * Component that reads search params - needs to be wrapped in Suspense

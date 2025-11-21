@@ -5,12 +5,12 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeft, Eye, EyeOff, Mail, User } from "lucide-react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { registerSchema } from "@/lib/validations/auth";
 import type { RegisterFormValues } from "@/lib/types";
+import GlassButton from "@/components/ui/glass-button";
+import { FormField } from "@/components/auth/FormField";
+import { Input } from "@/components/ui/input";
 
 export function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
@@ -34,85 +34,76 @@ export function RegisterForm() {
     await handleRegister(data);
   };
 
+  const inputClasses =
+    "h-11 w-full rounded-2xl bg-white/5 border border-white/15 text-white placeholder-white/40 text-sm transition focus:bg-white/10 focus:border-cyan-300 focus:ring-2 focus:ring-cyan-400/40 focus:outline-none";
+
   return (
-    <div className="w-full">
+    <div className="w-full text-white">
       {/* Header */}
-      <div className="flex items-center mb-6">
-        <Link href="/" className="mr-3">
-          <ArrowLeft className="w-5 h-5 text-gray-500 hover:text-gray-700" />
+      <div className="flex items-center mb-8">
+        <Link
+          href="/"
+          className="mr-4 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-white/70 transition hover:text-white"
+        >
+          <ArrowLeft className="w-5 h-5" />
         </Link>
         <div>
-          <h1 className="text-xl font-bold text-gray-900 mb-0.5">
+          <h1 className="text-3xl font-semibold text-white mb-1">
             Create new account
           </h1>
-          <p className="text-xs text-gray-500">
-            Start your fashion journey
-          </p>
+          <p className="text-sm text-white/60">Start your fashion journey</p>
         </div>
       </div>
 
       {/* Form */}
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        {/* Name Field */}
-        <div className="space-y-1.5">
-          <Label htmlFor="displayName" className="text-xs font-medium text-gray-700">
-            Full name
-          </Label>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+        <FormField
+          label="Full name"
+          htmlFor="displayName"
+          error={errors.displayName?.message}
+        >
           <div className="relative">
-            <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <User className="absolute left-4 top-1/2 -translate-y-1/2 text-white/45 w-4 h-4" />
             <Input
               id="displayName"
               type="text"
               placeholder="John Doe"
-              className="pl-9 h-10 text-sm bg-gray-50 border-gray-200 focus:bg-white focus:border-blue-500 rounded-xl"
+              className={`pl-11 ${inputClasses}`}
               {...register("displayName")}
             />
           </div>
-          {errors.displayName && (
-            <p className="text-xs text-red-600">{errors.displayName.message}</p>
-          )}
-        </div>
+        </FormField>
 
-        {/* Email Field */}
-        <div className="space-y-1.5">
-          <Label htmlFor="email" className="text-xs font-medium text-gray-700">
-            Email
-          </Label>
+        <FormField label="Email" htmlFor="email" error={errors.email?.message}>
           <div className="relative">
-            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-black/45 w-4 h-4" />
             <Input
               id="email"
               type="email"
               placeholder="name@example.com"
-              className="pl-9 h-10 text-sm bg-gray-50 border-gray-200 focus:bg-white focus:border-blue-500 rounded-xl"
+              className={`pl-11 ${inputClasses}`}
               {...register("email")}
             />
           </div>
-          {errors.email && (
-            <p className="text-xs text-red-600">{errors.email.message}</p>
-          )}
-        </div>
+        </FormField>
 
-        {/* Password Field */}
-        <div className="space-y-1.5">
-          <Label
-            htmlFor="password"
-            className="text-xs font-medium text-gray-700"
-          >
-            Password
-          </Label>
+        <FormField
+          label="Password"
+          htmlFor="password"
+          error={errors.password?.message}
+        >
           <div className="relative">
             <Input
               id="password"
               type={showPassword ? "text" : "password"}
               placeholder="••••••"
-              className="pr-9 h-10 text-sm bg-gray-50 border-gray-200 focus:bg-white focus:border-blue-500 rounded-xl"
+              className={`pr-11 ${inputClasses}`}
               {...register("password")}
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-black/50 hover:text-white"
             >
               {showPassword ? (
                 <EyeOff className="w-4 h-4" />
@@ -121,31 +112,25 @@ export function RegisterForm() {
               )}
             </button>
           </div>
-          {errors.password && (
-            <p className="text-xs text-red-600">{errors.password.message}</p>
-          )}
-        </div>
+        </FormField>
 
-        {/* Confirm Password Field */}
-        <div className="space-y-1.5">
-          <Label
-            htmlFor="confirmPassword"
-            className="text-xs font-medium text-gray-700"
-          >
-            Confirm password
-          </Label>
+        <FormField
+          label="Confirm password"
+          htmlFor="confirmPassword"
+          error={errors.confirmPassword?.message}
+        >
           <div className="relative">
             <Input
               id="confirmPassword"
               type={showPassword ? "text" : "password"}
               placeholder="••••••"
-              className="pr-9 h-10 text-sm bg-gray-50 border-gray-200 focus:bg-white focus:border-blue-500 rounded-xl"
+              className={`pr-11 ${inputClasses}`}
               {...register("confirmPassword")}
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-white/50 hover:text-white"
             >
               {showPassword ? (
                 <EyeOff className="w-4 h-4" />
@@ -154,36 +139,38 @@ export function RegisterForm() {
               )}
             </button>
           </div>
-          {errors.confirmPassword && (
-            <p className="text-xs text-red-600">{errors.confirmPassword.message}</p>
-          )}
-        </div>
+        </FormField>
 
         {/* Terms */}
-        <div className="flex items-start space-x-2">
+        <div className="flex items-start space-x-2 text-white/70">
           <input
             type="checkbox"
             id="terms"
-            className="mt-0.5 w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            className="mt-1 h-4 w-4 rounded border-white/30 bg-transparent text-cyan-300 focus:ring-cyan-400/60"
             required
           />
-          <label htmlFor="terms" className="text-xs text-gray-600 leading-tight">
+          <label htmlFor="terms" className="text-xs leading-tight">
             I agree to the{" "}
-            <Link href="/terms" className="text-blue-600 hover:text-blue-500">
+            <Link href="/terms" className="text-cyan-200 hover:text-white">
               Terms of service
             </Link>{" "}
             and{" "}
-            <Link href="/privacy" className="text-blue-600 hover:text-blue-500">
+            <Link href="/privacy" className="text-cyan-200 hover:text-white">
               Privacy policy
             </Link>
           </label>
         </div>
 
         {/* Submit Button */}
-        <Button
+        <GlassButton
           type="submit"
+          fullWidth
           disabled={isLoading}
-          className="w-full h-10 text-sm bg-gradient-to-r from-login-navy to-login-blue hover:from-login-navy/90 hover:to-login-blue/90 text-white font-semibold rounded-xl transition-all duration-300 hover:scale-[1.02] shadow-lg"
+          backgroundColor="linear-gradient(90deg,#2563eb 0%,#38bdf8 100%)"
+          glowColor="rgba(125,211,252,0.4)"
+          glowIntensity={8}
+          borderRadius="999px"
+          className="h-11 text-base uppercase tracking-[0.18em] md:tracking-[0.32em]"
         >
           {isLoading ? (
             <div className="flex items-center justify-center">
@@ -193,15 +180,15 @@ export function RegisterForm() {
           ) : (
             "Create account"
           )}
-        </Button>
+        </GlassButton>
 
         {/* Divider */}
-        <div className="relative my-4">
+        <div className="relative my-6">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-200" />
+            <div className="w-full border-t border-white/10" />
           </div>
-          <div className="relative flex justify-center text-xs">
-            <span className="px-3 bg-white text-gray-500">or</span>
+          <div className="relative flex justify-center text-xs uppercase tracking-[0.35em] text-white/50">
+            <span className="px-3 bg-transparent">or</span>
           </div>
         </div>
 
@@ -233,11 +220,11 @@ export function RegisterForm() {
 
         {/* Login Link */}
         <div className="text-center pt-2">
-          <p className="text-xs text-gray-600">
+          <p className="text-sm text-white/60">
             Already have an account?{" "}
             <Link
               href="/login"
-              className="text-blue-600 hover:text-blue-500 font-medium"
+              className="text-cyan-200 hover:text-white font-semibold"
             >
               Login now
             </Link>

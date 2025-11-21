@@ -11,11 +11,9 @@ import { AuthProvider } from "@/components/providers/auth-provider";
 import { GoogleAuthProvider } from "@/components/providers/google-oauth-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { OnboardingProvider } from "@/components/providers/onboarding-provider";
-import { LenisProvider } from "@/components/providers/lenis-provider";
-import { PageLoadingProvider } from "@/components/providers/page-loading-provider";
-import { GlobalUploadToast } from "@/components/upload/GlobalUploadToast";
-import { GlobalEditModal } from "@/components/modals/GlobalEditModal";
-import { RealtimeNotificationListener } from "@/components/notifications/RealtimeNotificationListener";
+import { LenisProviderBoundary } from "@/components/providers/LenisProviderBoundary";
+import { PageLoadingBoundary } from "@/components/providers/PageLoadingBoundary";
+import { RealtimeNotificationBoundary } from "@/components/notifications/RealtimeNotificationBoundary";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -56,24 +54,22 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${poppins.variable} ${bricolageGrotesque.variable} antialiased`}
         suppressHydrationWarning={true}
       >
-        <LenisProvider>
+        <LenisProviderBoundary>
           <AuthProvider>
             <QueryProvider>
               <GoogleAuthProvider>
                 <OnboardingProvider>
                   {children}
                   <Toaster />
-                  <GlobalUploadToast />
-                  <GlobalEditModal />
-                  <RealtimeNotificationListener />
+                  <RealtimeNotificationBoundary />
                   <Suspense fallback={null}>
-                    <PageLoadingProvider />
+                    <PageLoadingBoundary />
                   </Suspense>
                 </OnboardingProvider>
               </GoogleAuthProvider>
             </QueryProvider>
           </AuthProvider>
-        </LenisProvider>
+        </LenisProviderBoundary>
       </body>
     </html>
   );

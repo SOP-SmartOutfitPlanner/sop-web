@@ -6,6 +6,8 @@ export interface GetOutfitsRequest {
     search?: string;
     isFavorite?: boolean;
     isSaved?: boolean;
+    startDate?: string;
+    endDate?: string;
 }
 
 export interface CreateOutfitRequest {

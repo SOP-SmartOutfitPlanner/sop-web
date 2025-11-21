@@ -147,22 +147,20 @@ export function CollectionsScreen() {
   ]);
 
   return (
-    <div className="relative mx-auto w-full max-w-6xl px-6 pb-24 pt-20 space-y-16">
-      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-slate-950 via-slate-950 to-slate-950 blur-3xl" />
+    <div className="relative mx-auto w-full max-w-6xl px-6 pb-24 pt-20 space-y-5">
+      <div className="absolute inset-0 -z-10  blur-3xl" />
 
-      <header className="space-y-4">
+      <header>
         <GlassCard
           padding="2rem"
           blur="20px"
           glowColor="rgba(59, 130, 246, 0.4)"
           glowIntensity={20}
           shadowColor="rgba(15, 23, 42, 0.55)"
-          className="relative overflow-hidden border border-cyan-500/20 bg-slate-950/40"
+          className="relative overflow-hidden border border-cyan-500/20 "
         >
           <div className="pointer-events-none absolute inset-0">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.55),transparent_60%)] opacity-70" />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(76,29,149,0.55),transparent_65%)] opacity-80" />
-            <div className="absolute inset-0 bg-gradient-to-r from-slate-950/92 via-slate-950/70 to-slate-900/55 backdrop-blur-sm" />
+            <div className="absolute inset-0  backdrop-blur-sm" />
           </div>
           <div className="relative space-y-3">
             <p className="inline-flex items-center gap-2 rounded-full border border-cyan-500/40 bg-cyan-500/20 px-3 py-1 text-xs uppercase tracking-[0.4em] text-white backdrop-blur-md font-semibold">
@@ -187,7 +185,14 @@ export function CollectionsScreen() {
       <section className="space-y-8">
         {/* Tabs */}
         <div className="flex items-center gap-4 flex-wrap">
-          <div className="inline-flex items-center gap-1 rounded-full border border-cyan-500/30 bg-slate-900/80 p-1.5 backdrop-blur-lg shadow-lg shadow-cyan-500/10">
+          <GlassCard
+            padding="1rem"
+            blur="12px"
+            glowColor="rgba(59, 130, 246, 0.4)"
+            glowIntensity={20}
+            shadowColor="rgba(15, 23, 42, 0.55)"
+            className="inline-flex items-center gap-1 rounded-full border border-cyan-500/30  p-1.5 backdrop-blur-lg shadow-lg shadow-cyan-500/10"
+          >
             <button
               onClick={() => setActiveTab("all")}
               className={cn(
@@ -243,7 +248,7 @@ export function CollectionsScreen() {
                 </button>
               </>
             )}
-          </div>
+          </GlassCard>
         </div>
 
         <div className="flex items-center justify-between">

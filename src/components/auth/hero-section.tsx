@@ -1,86 +1,99 @@
 import { Logo } from "@/components/ui/logo";
+import GlassBadge from "@/components/ui/glass-badge";
+import GlassButton from "@/components/ui/glass-button";
+import GlassCard from "@/components/ui/glass-card";
 import { Sparkles, Shirt, Calendar, Heart } from "lucide-react";
+
+const featureCards = [
+  {
+    icon: Sparkles,
+    label: "AI suggestion",
+    colors: "from-cyan-400 to-blue-500",
+  },
+  {
+    icon: Shirt,
+    label: "Wardrobe curation",
+    colors: "from-blue-500 to-indigo-500",
+  },
+  {
+    icon: Calendar,
+    label: "Smart scheduling",
+    colors: "from-sky-500 to-blue-500",
+  },
+  {
+    icon: Heart,
+    label: "Favorites & mood",
+    colors: "from-indigo-500 to-purple-500",
+  },
+];
 
 export function HeroSection() {
   return (
-    <div className="hidden lg:flex lg:w-2/5 xl:w-1/2 relative overflow-hidden h-full">
-      {/* Background with gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50"></div>
-      
-      {/* Decorative circles */}
-      <div className="absolute top-20 -right-20 w-96 h-96 bg-blue-200/30 rounded-full blur-3xl"></div>
-      <div className="absolute bottom-20 -left-20 w-96 h-96 bg-cyan-200/30 rounded-full blur-3xl"></div>
-      
-      {/* Content */}
-      <div className="relative w-full h-full flex items-center justify-center p-8 xl:p-12">
-        <div className="text-center max-w-md space-y-8">
-          {/* Logo Section */}
-          <div
-            className="animate-in fade-in zoom-in duration-1000"
-            suppressHydrationWarning
-          >
-            <div className="relative inline-block">
-              {/* Glow effect */}
-              <div className="absolute inset-0 blur-2xl opacity-40 bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 rounded-full animate-pulse"></div>
+    <div className="hidden lg:flex lg:w-2/5 xl:w-1/2 relative overflow-hidden h-full px-8 py-10">
+      {/* Aurora gradient */}
 
-              {/* Logo */}
-              <div className="relative z-10">
-                <Logo
-                  variant="icon"
-                  width={160}
-                  height={160}
-                  showGlow={false}
-                  className="mx-auto"
-                />
-              </div>
-            </div>
+      <div className="relative z-10 w-full h-full flex flex-col justify-center">
+        <div className="max-w-xl space-y-8 text-center mx-auto">
+          <div className="relative inline-flex items-center justify-center">
+            <div className="absolute -inset-10 rounded-full bg-gradient-to-r from-cyan-500/30 via-blue-500/30 to-indigo-500/30 blur-3xl animate-pulse" />
+            <Logo
+              variant="icon"
+              width={140}
+              height={140}
+              showGlow={false}
+              className="mx-auto drop-shadow-[0_15px_35px_rgba(15,118,230,0.45)]"
+            />
           </div>
 
-          {/* Title */}
-          <div className="space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-200">
-            <h1 className="font-poppins text-4xl xl:text-5xl font-bold tracking-tight">
-              <span className="bg-gradient-to-r from-blue-600 via-cyan-600 to-blue-600 bg-clip-text text-transparent">
-                Smart Outfit Planner
-              </span>
+          <div className="space-y-4">
+            <GlassBadge
+              variant="info"
+              size="lg"
+              dot
+              pulse
+              className="mx-auto uppercase tracking-[0.4em]"
+            >
+              SMART OUTFIT PLANNER
+            </GlassBadge>
+            <h1 className="text-4xl xl:text-5xl font-semibold leading-tight text-white">
+              Manifest your{" "}
+              <span className="text-transparent bg-gradient-to-r from-cyan-200 via-white to-indigo-200 bg-clip-text">
+                signature style
+              </span>{" "}
+              with glassy precision.
             </h1>
-            <div className="h-1 w-24 mx-auto bg-gradient-to-r from-transparent via-cyan-500 to-transparent rounded-full"></div>
+            <p className="text-base text-white/70 leading-relaxed">
+              Smart Outfit Planner blends AI-driven recommendations with tactile
+              wardrobe management so every session feels like a curated atelier
+              visit.
+            </p>
           </div>
 
-          {/* Description */}
-          <p className="text-lg text-gray-600 leading-relaxed animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-300">
-            Discover your personal style with smart AI. Create outfits
-            perfect for every occasion.
-          </p>
-
-          {/* Features Grid */}
-          <div className="grid grid-cols-2 gap-4 pt-4 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-500">
-            <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mx-auto mb-2">
-                <Sparkles className="w-5 h-5 text-white" />
-              </div>
-              <p className="text-sm font-medium text-gray-700">AI Suggestion</p>
-            </div>
-
-            <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center mx-auto mb-2">
-                <Shirt className="w-5 h-5 text-white" />
-              </div>
-              <p className="text-sm font-medium text-gray-700">Wardrobe management</p>
-            </div>
-
-            <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
-              <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-xl flex items-center justify-center mx-auto mb-2">
-                <Calendar className="w-5 h-5 text-white" />
-              </div>
-              <p className="text-sm font-medium text-gray-700">Schedule</p>
-            </div>
-
-            <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
-              <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-blue-500 rounded-xl flex items-center justify-center mx-auto mb-2">
-                <Heart className="w-5 h-5 text-white" />
-              </div>
-              <p className="text-sm font-medium text-gray-700">Favourite</p>
-            </div>
+          <div className="grid grid-cols-2 gap-4 pt-2">
+            {featureCards.map(({ icon: Icon, label, colors }) => (
+              <GlassCard
+                key={label}
+                borderRadius="30px"
+                padding="1.5rem"
+                blur="18px"
+                brightness={1.2}
+                glowColor="rgba(255,255,255,0.25)"
+                glowIntensity={6}
+                borderColor="rgba(255,255,255,0.18)"
+                backgroundColor="rgba(255,255,255,0.05)"
+                className="group transition hover:-translate-y-1"
+              >
+                <div
+                  className={`mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${colors} text-white shadow-[0_12px_30px_rgba(14,165,233,0.25)]`}
+                >
+                  <Icon className="h-5 w-5" />
+                </div>
+                <p className="text-sm font-medium text-white/80 group-hover:text-white">
+                  {label}
+                </p>
+                <div className="mt-3 h-px bg-white/10" />
+              </GlassCard>
+            ))}
           </div>
         </div>
       </div>

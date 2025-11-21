@@ -4,7 +4,7 @@ import { RegisterForm } from "@/components/auth/register-form";
 
 export default function RegisterPage() {
   return (
-    <div className="h-full flex bg-gradient-to-br from-slate-50 to-blue-50">
+    <div className="flex h-full w-full flex-col overflow-hidden lg:flex-row">
       <HeroSection />
       <AuthContainer>
         <RegisterForm />

@@ -5,10 +5,10 @@ import { LoginForm } from "@/components/auth/login-form";
 
 export default function LoginPage() {
   return (
-    <div className="h-full flex bg-gradient-to-br from-slate-50 to-blue-50">
+    <div className="flex h-full w-full flex-col overflow-hidden lg:flex-row">
       <HeroSection />
       <AuthContainer>
-        <Suspense fallback={<div>Loading...</div>}>
+        <Suspense fallback={<div className="text-white">Loading...</div>}>
           <LoginForm />
         </Suspense>
       </AuthContainer>

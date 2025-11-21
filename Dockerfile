@@ -1,5 +1,5 @@
 # Stage 1: Dependencies
-FROM node:18-alpine AS deps
+FROM node:20-alpine AS deps
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
@@ -13,8 +13,7 @@ COPY middleware.ts ./
 RUN npm install --frozen-lockfile
 
 # Stage 2: Builder
-# Stage 2: Builder
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 WORKDIR /app
 
 # copy từ stage deps
@@ -24,17 +23,20 @@ COPY --from=deps /app/postcss.config.mjs ./
 COPY --from=deps /app/next.config.ts ./
 COPY --from=deps /app/components.json ./
 COPY --from=deps /app/middleware.ts ./
-COPY .env .env
+
 # Copy source files
 COPY src ./src
 COPY public ./public
 COPY package.json package-lock.json* ./
 
+# Copy .env file (created by GitHub Actions before docker build)
+COPY .env .env
+
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
 # Stage 3: Runner
-FROM node:18-alpine AS runner
+FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 

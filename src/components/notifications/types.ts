@@ -9,8 +9,10 @@ export interface NotificationItem {
   read: boolean;
   icon: typeof Bell;
   href?: string;
+  actorName?: string | null;
+  actorAvatar?: string | null;
 }
 
-export type FilterType = "all" | "unread" | "system" | "social" | "ai" | "calendar" | "weather" | "achievement";
+export type FilterType = "all" | "unread" | "system" | "user";
 
 

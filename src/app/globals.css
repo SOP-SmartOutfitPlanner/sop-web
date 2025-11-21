@@ -3,6 +3,33 @@
 
 @import "tailwindcss";
 
+/* DayPicker overrides */
+
+.rdp-chevron {
+  fill: whitesmoke !important;
+}
+.rdp-root {
+  --rdp-accent-color: indigo;
+  --rdp-caption-label-color: black !important;
+  --rdp-button-background-color: black !important;
+}
+.rdp-root .rdp-dropdown_root select {
+  color: #facc15;
+  background-color: transparent;
+  font-weight: 600;
+  border: none;
+  padding-right: 1rem;
+}
+.rdp-root .rdp-dropdown_root option {
+  color: #0ea5e9;
+  background-color: #0f172a;
+}
+.rdp-root .rdp-dropdown_root option:checked,
+.rdp-root .rdp-dropdown_root option:hover {
+  background-color: #1d4ed8;
+  color: #fff;
+}
+
 /* Custom Scrollbar Styling */
 .custom-scrollbar::-webkit-scrollbar {
   width: 8px;
