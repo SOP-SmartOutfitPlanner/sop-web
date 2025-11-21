@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import QRCode from "react-qr-code";
 import { useMutation } from "@tanstack/react-query";
@@ -28,6 +28,22 @@ const formatTimeLeft = (msRemaining: number) => {
 };
 
 export default function PurchasePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          <p className="font-poppins text-sm text-gray-300">
+            Preparing purchase flow...
+          </p>
+        </div>
+      }
+    >
+      <PurchaseContent />
+    </Suspense>
+  );
+}
+
+function PurchaseContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const planIdParam = searchParams.get("planId");

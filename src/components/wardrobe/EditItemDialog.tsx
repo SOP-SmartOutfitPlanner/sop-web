@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { X, Save, Loader2, Plus } from "lucide-react";
+import { X, Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Image, Select, ColorPicker, TreeSelect } from "antd";
 import type { Color } from "antd/es/color-picker";
