@@ -59,11 +59,10 @@ export default function OutfitPage() {
   } = useOutfitStore();
 
   const { mutate: deleteOutfit } = useDeleteOutfit();
-  const { mutate: createCalendarEntry, isPending: isCreatingEntry } = useCreateCalendarEntry();
+  const { mutate: createCalendarEntry } = useCreateCalendarEntry();
   const [isPastDateDialogOpen, setIsPastDateDialogOpen] = useState(false);
 
   // Fetch today's occasions to find existing Daily occasion
-  const today = new Date();
   const { data: todayOccasionsData } = useUserOccasions({
     PageIndex: 1,
     PageSize: 100,

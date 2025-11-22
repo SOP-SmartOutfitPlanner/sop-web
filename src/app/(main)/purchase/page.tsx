@@ -73,7 +73,6 @@ function PurchaseContent() {
 
   const {
     mutate: createPurchase,
-    isPending,
     isError,
     error,
   } = useMutation({
@@ -82,6 +81,19 @@ function PurchaseContent() {
     onSuccess: (response) => {
       setPurchase(response.data);
       setExpiresAt(normalizeExpiry(response.data.expiredAt));
+      // Lưu thông tin pending payment vào localStorage
+      if (response.data.transactionId) {
+        localStorage.setItem(
+          "pendingPayment",
+          JSON.stringify({
+            transactionId: response.data.transactionId,
+            planId: planId,
+            planName: response.data.subscriptionPlanName,
+            amount: response.data.amount,
+            expiredAt: normalizeExpiry(response.data.expiredAt),
+          })
+        );
+      }
     },
   });
 
@@ -171,6 +183,9 @@ function PurchaseContent() {
         params.set("amount", amountValue.toString());
       }
 
+      // Xóa pending payment từ localStorage khi complete/failed/cancel
+      localStorage.removeItem("pendingPayment");
+      
       setTimeout(() => {
         router.push(`/purchase/result?${params.toString()}`);
       }, 1500);
@@ -199,6 +214,8 @@ function PurchaseContent() {
         });
         setPurchase(null);
         setExpiresAt(null);
+        // Xóa pending payment từ localStorage
+        localStorage.removeItem("pendingPayment");
       },
       onError: (cancelError) => {
         setCancelFeedback({
@@ -209,6 +226,7 @@ function PurchaseContent() {
       },
     });
   }, [cancelSubscription, purchase]);
+
 
   const planName = purchase?.subscriptionPlanName;
   const amountLabel = purchase?.amount;
@@ -384,13 +402,7 @@ function PurchaseContent() {
           >
             Back to plans
           </Button>
-          <Button
-            disabled={isPending}
-            onClick={handleRetry}
-            className="bg-linear-to-r from-blue-600 to-cyan-600 text-white hover:from-blue-500 hover:to-cyan-500 disabled:opacity-60"
-          >
-            {isExpired ? "Generate new QR" : "Refresh QR"}
-          </Button>
+          
           <Button
             disabled={!purchase || isCancelling}
             onClick={handleCancelPurchase}
@@ -422,6 +434,7 @@ function PurchaseContent() {
           </div>
         </div>
       )}
+
     </div>
   );
 }

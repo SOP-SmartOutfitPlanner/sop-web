@@ -28,7 +28,6 @@ export function FeatureUsageCard({ feature }: FeatureUsageCardProps) {
             </span>
           </div>
           <div className="w-full bg-gray-700 rounded-full h-2">
-            { }
             <div
               className={`h-2 rounded-full transition-all ${
                 feature.remaining > feature.limit * 0.2
@@ -38,7 +37,7 @@ export function FeatureUsageCard({ feature }: FeatureUsageCardProps) {
                   : "bg-red-400"
               }`}
               style={{
-                width: `${Math.min(100, (feature.remaining / feature.limit) * 100)}%`,
+                width: `${Math.min(100, (feature.used / feature.limit) * 100)}%`,
               }}
             />
           </div>

@@ -8,4 +8,5 @@ export * from "./current-subscription-tab";
 export * from "./subscription-history-tab";
 export * from "./feature-usage-card";
 export * from "./subscription-utils";
+export * from "./pending-payment-dialog";
 

@@ -57,7 +57,8 @@ export function calculateRemainingUsage(
     plan.benefitLimit?.map((limit) => {
       const used = usageMap.get(limit.featureCode);
       const usedCount = used?.usage ?? 0;
-      const remaining = Math.max(0, limit.usage - usedCount);
+      // remaining = limit.usage (tổng số có thể dùng từ benefitLimit)
+      const remaining = limit.usage;
 
       return {
         featureCode: limit.featureCode,
