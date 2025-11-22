@@ -1,7 +1,26 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Shirt, TrendingUp, Activity } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  RadioGroup,
+  RadioGroupItem,
+} from "@/components/ui/radio-group";
+import { Users, Shirt, TrendingUp, Activity, Bell } from "lucide-react";
+import { usePushNotification } from "@/hooks/admin/usePushNotification";
+import { Loader2 } from "lucide-react";
 import {
   LineChart,
   Line,
@@ -52,6 +71,49 @@ const activityData = [
 const COLORS = ["#3B82F6", "#8B5CF6", "#10B981", "#F59E0B"];
 
 export default function AdminDashboardPage() {
+  const [isPushDialogOpen, setIsPushDialogOpen] = useState(false);
+  const [notificationType, setNotificationType] = useState<"all" | "user">("all");
+  const [formTitle, setFormTitle] = useState("");
+  const [formMessage, setFormMessage] = useState("");
+  const [formHref, setFormHref] = useState("");
+  const [formImageUrl, setFormImageUrl] = useState("");
+  const [formUserId, setFormUserId] = useState("");
+
+  const pushNotificationMutation = usePushNotification();
+
+  const handlePushNotification = async () => {
+    if (!formTitle.trim()) {
+      return;
+    }
+    if (!formMessage.trim()) {
+      return;
+    }
+
+    const actorUserId = notificationType === "all" ? 1 : parseInt(formUserId);
+    if (notificationType === "user" && (!formUserId || isNaN(actorUserId))) {
+      return;
+    }
+
+    try {
+      await pushNotificationMutation.mutateAsync({
+        title: formTitle,
+        message: formMessage,
+        href: formHref.trim() || undefined,
+        imageUrl: formImageUrl.trim() || undefined,
+        actorUserId,
+      });
+      setIsPushDialogOpen(false);
+      setFormTitle("");
+      setFormMessage("");
+      setFormHref("");
+      setFormImageUrl("");
+      setFormUserId("");
+      setNotificationType("all");
+    } catch {
+      // Error handled by mutation
+    }
+  };
+
   const stats = [
     {
       title: "Total Users",
@@ -86,11 +148,20 @@ export default function AdminDashboardPage() {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600 mt-2">
-          Tổng quan hệ thống và thống kê 
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-gray-600 mt-2">
+            Tổng quan hệ thống và thống kê 
+          </p>
+        </div>
+        <Button
+          onClick={() => setIsPushDialogOpen(true)}
+          className="bg-blue-600 hover:bg-blue-700"
+        >
+          <Bell className="w-4 h-4 mr-2" />
+          Push Notification
+        </Button>
       </div>
 
       {/* Stats Grid */}
@@ -235,6 +306,120 @@ export default function AdminDashboardPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Push Notification Dialog */}
+      <Dialog open={isPushDialogOpen} onOpenChange={setIsPushDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Push Notification</DialogTitle>
+            <DialogDescription>
+              Send a push notification to users. Use actorUserId = 1 to send to all users.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="notification-type">Recipient</Label>
+              <RadioGroup
+                value={notificationType}
+                onValueChange={(value) => setNotificationType(value as "all" | "user")}
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="all" id="all" />
+                  <Label htmlFor="all" className="font-normal cursor-pointer">
+                    All Users (Broadcast)
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="user" id="user" />
+                  <Label htmlFor="user" className="font-normal cursor-pointer">
+                    Specific User
+                  </Label>
+                </div>
+              </RadioGroup>
+            </div>
+
+            {notificationType === "user" && (
+              <div className="space-y-2">
+                <Label htmlFor="user-id">User ID</Label>
+                <Input
+                  id="user-id"
+                  type="number"
+                  placeholder="Enter user ID..."
+                  value={formUserId}
+                  onChange={(e) => setFormUserId(e.target.value)}
+                />
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="title">Title *</Label>
+              <Input
+                id="title"
+                placeholder="Enter notification title..."
+                value={formTitle}
+                onChange={(e) => setFormTitle(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="message">Message *</Label>
+              <Textarea
+                id="message"
+                placeholder="Enter notification message..."
+                value={formMessage}
+                onChange={(e) => setFormMessage(e.target.value)}
+                rows={4}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="href">Link (Optional)</Label>
+              <Input
+                id="href"
+                placeholder="e.g., /wardrobe, /profile/123"
+                value={formHref}
+                onChange={(e) => setFormHref(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="image-url">Image URL (Optional)</Label>
+              <Input
+                id="image-url"
+                type="url"
+                placeholder="https://example.com/image.jpg"
+                value={formImageUrl}
+                onChange={(e) => setFormImageUrl(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsPushDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handlePushNotification}
+              disabled={pushNotificationMutation.isPending}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {pushNotificationMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Bell className="w-4 h-4 mr-2" />
+                  Send Notification
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

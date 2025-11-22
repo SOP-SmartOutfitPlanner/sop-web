@@ -148,6 +148,65 @@ export interface ResolveWithActionPayload {
   suspensionDays?: number;
 }
 
+export interface Season {
+  id: number;
+  name: string;
+}
+
+export interface SeasonsListResponse {
+  data: Season[];
+  metaData: PaginationMetaData;
+}
+
+export interface Style {
+  id: number;
+  name: string;
+  description: string;
+  createdBy: string | null;
+  createdDate: string | null;
+  updatedDate: string | null;
+}
+
+export interface StylesListResponse {
+  data: Style[];
+  metaData: PaginationMetaData;
+}
+
+export interface AISetting {
+  id: number;
+  name: string;
+  value: string;
+  type: string;
+  createdDate: string;
+  updatedDate: string | null;
+}
+
+export type AISettingType =
+  | "API_ITEM_ANALYZING"
+  | "MODEL_ANALYZING"
+  | "DESCRIPTION_ITEM_PROMPT"
+  | "VALIDATE_ITEM_PROMPT"
+  | "MODEL_EMBEDDING"
+  | "API_EMBEDDING"
+  | "CATEGORY_ITEM_ANALYSIS_PROMPT"
+  | "API_SUGGESTION"
+  | "OUTFIT_GENERATION_PROMPT"
+  | "OUTFIT_CHOOSE_PROMPT"
+  | "MODEL_SUGGESTION";
+
+export interface PushNotificationRequest {
+  title: string;
+  message: string;
+  href?: string;
+  imageUrl?: string;
+  actorUserId: number; // 1 = all users, otherwise specific user ID
+}
+
+export interface PushNotificationResponse {
+  notificationId: number;
+  message: string;
+}
+
 // ============================================================================
 // Admin API Functions
 // ============================================================================
@@ -394,6 +453,181 @@ export const adminAPI = {
   },
   deleteOccasion: async (id: number): Promise<ApiResponse<void>> => {
     return apiClient.delete<ApiResponse<void>>(`/occasions/${id}`);
+  },
+  // ============================================================================
+  // Seasons Management
+  // ============================================================================
+
+  /**
+   * Get list of seasons
+   */
+  getSeasons: async (params?: {
+    page?: number;
+    pageSize?: number;
+  }): Promise<ApiResponse<SeasonsListResponse>> => {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append("page", params.page.toString());
+    if (params?.pageSize)
+      queryParams.append("pageSize", params.pageSize.toString());
+
+    const url = `/seasons${
+      queryParams.toString() ? `?${queryParams.toString()}` : ""
+    }`;
+    return apiClient.get<ApiResponse<SeasonsListResponse>>(url);
+  },
+
+  /**
+   * Create season
+   */
+  createSeason: async (data: {
+    name: string;
+  }): Promise<ApiResponse<Season>> => {
+    return apiClient.post<ApiResponse<Season>>("/seasons", data);
+  },
+
+  /**
+   * Update season
+   */
+  updateSeason: async (data: {
+    id: number;
+    name: string;
+  }): Promise<ApiResponse<Season>> => {
+    return apiClient.put<ApiResponse<Season>>("/seasons", data);
+  },
+
+  /**
+   * Delete season
+   */
+  deleteSeason: async (id: number): Promise<ApiResponse<void>> => {
+    return apiClient.delete<ApiResponse<void>>(`/seasons/${id}`);
+  },
+  // ============================================================================
+  // Styles Management
+  // ============================================================================
+
+  /**
+   * Get list of styles
+   */
+  getStyles: async (params?: {
+    pageIndex?: number;
+    pageSize?: number;
+    search?: string;
+  }): Promise<ApiResponse<StylesListResponse>> => {
+    const queryParams: Record<string, string | number> = {};
+    if (params?.pageIndex) queryParams["page-index"] = params.pageIndex;
+    if (params?.pageSize) queryParams["page-size"] = params.pageSize;
+    if (params?.search) queryParams["search"] = params.search;
+
+    return apiClient.get<ApiResponse<StylesListResponse>>("/styles", {
+      params: queryParams,
+    });
+  },
+
+  /**
+   * Create style
+   */
+  createStyle: async (data: {
+    name: string;
+    description: string;
+  }): Promise<ApiResponse<Style>> => {
+    return apiClient.post<ApiResponse<Style>>("/styles", data);
+  },
+
+  /**
+   * Update style
+   */
+  updateStyle: async (data: {
+    id: number;
+    name: string;
+    description: string;
+  }): Promise<ApiResponse<Style>> => {
+    return apiClient.put<ApiResponse<Style>>("/styles", data);
+  },
+
+  /**
+   * Delete style
+   */
+  deleteStyle: async (id: number): Promise<ApiResponse<void>> => {
+    return apiClient.delete<ApiResponse<void>>(`/styles/${id}`);
+  },
+  // ============================================================================
+  // AI Settings Management
+  // ============================================================================
+
+  /**
+   * Get list of AI settings
+   */
+  getAISettings: async (): Promise<ApiResponse<AISetting[]>> => {
+    return apiClient.get<ApiResponse<AISetting[]>>("/ai-settings");
+  },
+
+  /**
+   * Get AI setting by ID
+   */
+  getAISettingById: async (id: number): Promise<ApiResponse<AISetting>> => {
+    return apiClient.get<ApiResponse<AISetting>>(`/ai-settings/${id}`);
+  },
+
+  /**
+   * Get AI setting by type
+   */
+  getAISettingByType: async (
+    type: string
+  ): Promise<ApiResponse<AISetting>> => {
+    return apiClient.get<ApiResponse<AISetting>>(`/ai-settings/type/${type}`);
+  },
+
+  /**
+   * Create AI setting
+   */
+  createAISetting: async (data: {
+    name: string;
+    value: string;
+    type: string;
+  }): Promise<ApiResponse<AISetting>> => {
+    return apiClient.post<ApiResponse<AISetting>>("/ai-settings", data);
+  },
+
+  /**
+   * Update AI setting
+   */
+  updateAISetting: async (
+    id: number,
+    data: {
+      name: string;
+      value: string;
+      type: string;
+    }
+  ): Promise<ApiResponse<AISetting>> => {
+    return apiClient.put<ApiResponse<AISetting>>(`/ai-settings/${id}`, data);
+  },
+
+  /**
+   * Delete AI setting
+   */
+  deleteAISetting: async (id: number): Promise<ApiResponse<void>> => {
+    return apiClient.delete<ApiResponse<void>>(`/ai-settings/${id}`);
+  },
+  // ============================================================================
+  // Notifications Management
+  // ============================================================================
+
+  /**
+   * Push notification
+   * @param data - Notification data
+   * @param data.actorUserId - If 1, push to all users. Otherwise, push to specific user
+   */
+  pushNotification: async (data: {
+    title: string;
+    message: string;
+    href?: string;
+    imageUrl?: string;
+    actorUserId: number; // 1 = all users, otherwise specific user ID
+  }): Promise<ApiResponse<{ notificationId: number; message: string }>> => {
+    return apiClient.post<ApiResponse<{ notificationId: number; message: string }>>(
+      "/notifications/push",
+      data
+    );
   },
 }
 
