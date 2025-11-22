@@ -8,7 +8,8 @@ import {
   Shirt,
   Tags,
   Shield,
-  Flag
+  Flag,
+  Bot
 } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { cn } from "@/lib/utils";
@@ -53,6 +54,11 @@ const menuItems = [
     title: "Reports",
     icon: Flag,
     href: "/admin/reports",
+  },
+  {
+    title: "AI Settings",
+    icon: Bot,
+    href: "/admin/ai-settings",
   }
   // {
   //   title: "Thống kê",
