@@ -46,7 +46,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
   pendingVerificationEmail: null,
 
   // Initialize auth from localStorage
-  initializeAuth: () => {
+  initializeAuth: async () => {
     if (typeof window !== 'undefined') {
       const userStr = localStorage.getItem('user');
       const accessToken = localStorage.getItem('accessToken');
@@ -62,6 +62,23 @@ export const useAuthStore = create<AuthStore>((set) => ({
           const userIdNumber = parseInt(user.id, 10);
           if (!isNaN(userIdNumber)) {
             registerUserDevice(userIdNumber);
+          }
+
+          try {
+            const profileResponse = await userAPI.getUserProfile();
+            const updatedUser = { ...user };
+
+            if (profileResponse.data.avtUrl) {
+              updatedUser.avatar = profileResponse.data.avtUrl;
+            }
+            if (profileResponse.data.location) {
+              updatedUser.location = profileResponse.data.location;
+            }
+
+            set({ user: updatedUser });
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+          } catch (profileError) {
+            console.error("Failed to fetch profile on init:", profileError);
           }
         } catch {
           localStorage.removeItem('user');
@@ -122,7 +139,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
         updatedAt: undefined,
       };
 
-      // Fetch user profile to check isFirstTime and get avatar
+      // Fetch user profile to check isFirstTime, get avatar, and location
       let isFirstTime = false;
       try {
         const profileResponse = await userAPI.getUserProfile();
@@ -130,6 +147,10 @@ export const useAuthStore = create<AuthStore>((set) => ({
         // Update avatar from profile
         if (profileResponse.data.avtUrl) {
           user.avatar = profileResponse.data.avtUrl;
+        }
+        // Update location from profile
+        if (profileResponse.data.location) {
+          user.location = profileResponse.data.location;
         }
       } catch (profileError) {
         console.error("Failed to fetch user profile:", profileError);
@@ -317,7 +338,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
         updatedAt: undefined,
       };
 
-      // Fetch user profile to check isFirstTime and get avatar
+      // Fetch user profile to check isFirstTime, get avatar, and location
       let isFirstTime = false;
       try {
         const profileResponse = await userAPI.getUserProfile();
@@ -325,6 +346,10 @@ export const useAuthStore = create<AuthStore>((set) => ({
         // Update avatar from profile
         if (profileResponse.data.avtUrl) {
           user.avatar = profileResponse.data.avtUrl;
+        }
+        // Update location from profile
+        if (profileResponse.data.location) {
+          user.location = profileResponse.data.location;
         }
       } catch (profileError) {
         console.error("Failed to fetch user profile:", profileError);

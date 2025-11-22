@@ -13,6 +13,7 @@ export interface User {
   email: string;
   role: string; // "User" | "Admin" | "SuperAdmin"
   avatar?: string;
+  location?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -146,7 +147,7 @@ export interface AuthStore extends AuthState {
     message: string;
   }>;
   logout: () => void;
-  initializeAuth: () => void;
+  initializeAuth: () => Promise<void>;
 
   // Helpers
   clearError: () => void;

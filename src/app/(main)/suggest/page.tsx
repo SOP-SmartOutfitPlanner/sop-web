@@ -2,18 +2,31 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Sparkles } from "lucide-react";
+import { MapPin, AlertCircle } from "lucide-react";
 import { useAuthStore } from "@/store/auth-store";
 import GlassCard from "@/components/ui/glass-card";
+import GlassButton from "@/components/ui/glass-button";
+import { useWeather } from "@/hooks/useWeather";
+import { WeatherCard } from "@/components/suggest/WeatherCard";
 
 export default function SuggestPage() {
   const router = useRouter();
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const { isAuthenticated, user } = useAuthStore();
 
+  // Weather hook
+  const {
+    todayForecast,
+    cityName,
+    isLoading: isLoadingWeather,
+    error: weatherError,
+    requestLocation,
+    isRequestingLocation,
+    locationError,
+  } = useWeather();
+
   // Redirect to login if not authenticated
   useEffect(() => {
-    // Give time for AuthProvider to initialize
     const timer = setTimeout(() => {
       if (!isAuthenticated && !user) {
         router.push("/login");
@@ -45,7 +58,7 @@ export default function SuggestPage() {
           <div>
             <h4 className="font-dela-gothic text-2xl md:text-3xl lg:text-4xl leading-tight">
               <span className="bg-clip-text text-transparent bg-linear-to-r from-white via-blue-100 to-cyan-200">
-                AI Suggest
+                What to wear today?
               </span>
             </h4>
             <p className="bg-clip-text text-transparent bg-linear-to-r from-white via-blue-100 to-cyan-200">
@@ -54,103 +67,80 @@ export default function SuggestPage() {
           </div>
         </div>
 
-        {/* Main Content */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <GlassCard
-            padding="24px"
-            borderRadius="24px"
-            blur="10px"
-            brightness={1.02}
-            glowColor="rgba(34, 211, 238, 0.2)"
-            borderColor="rgba(255, 255, 255, 0.2)"
-            borderWidth="2px"
-            className="bg-gradient-to-br from-cyan-300/20 via-blue-200/10 to-indigo-300/20"
-          >
-            <div className="flex flex-col items-center text-center space-y-4">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center">
-                <Sparkles className="w-8 h-8 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold text-white">
-                Daily Suggestions
-              </h3>
-              <p className="text-white/70 text-sm">
-                Get AI-powered outfit suggestions based on weather, occasion, and your style preferences
-              </p>
-            </div>
-          </GlassCard>
+        {/* Weather Section */}
+        <div className="space-y-4">
+            <h4 className="font-bricolage font-bold text-xl md:text-2xl lg:text-3xl leading-tight">
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-cyan-200">
+                Today&apos;s weather
+              </span>
+            </h4>
 
-          <GlassCard
-            padding="24px"
-            borderRadius="24px"
-            blur="10px"
-            brightness={1.02}
-            glowColor="rgba(34, 211, 238, 0.2)"
-            borderColor="rgba(255, 255, 255, 0.2)"
-            borderWidth="2px"
-            className="bg-gradient-to-br from-cyan-300/20 via-blue-200/10 to-indigo-300/20"
-          >
-            <div className="flex flex-col items-center text-center space-y-4">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center">
-                <Sparkles className="w-8 h-8 text-white" />
+          {/* Loading State */}
+          {isLoadingWeather && (
+            <GlassCard
+              padding="24px"
+              borderRadius="24px"
+              blur="10px"
+              brightness={1.02}
+              glowColor="rgba(34, 211, 238, 0.2)"
+              borderColor="rgba(255, 255, 255, 0.2)"
+              borderWidth="2px"
+              className="bg-gradient-to-br from-cyan-300/20 via-blue-200/10 to-indigo-300/20"
+            >
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin mx-auto mb-4" />
+                  <p className="text-white/70">
+                    {isRequestingLocation
+                      ? "Getting your location..."
+                      : "Loading weather..."}
+                  </p>
+                </div>
               </div>
-              <h3 className="text-xl font-semibold text-white">
-                Smart Matching
-              </h3>
-              <p className="text-white/70 text-sm">
-                Discover new outfit combinations from your wardrobe items
-              </p>
-            </div>
-          </GlassCard>
+            </GlassCard>
+          )}
 
-          <GlassCard
-            padding="24px"
-            borderRadius="24px"
-            blur="10px"
-            brightness={1.02}
-            glowColor="rgba(34, 211, 238, 0.2)"
-            borderColor="rgba(255, 255, 255, 0.2)"
-            borderWidth="2px"
-            className="bg-gradient-to-br from-cyan-300/20 via-blue-200/10 to-indigo-300/20"
-          >
-            <div className="flex flex-col items-center text-center space-y-4">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center">
-                <Sparkles className="w-8 h-8 text-white" />
+          {/* Error State */}
+          {weatherError && !isLoadingWeather && (
+            <GlassCard
+              padding="24px"
+              borderRadius="24px"
+              blur="10px"
+              brightness={1.02}
+              glowColor="rgba(239, 68, 68, 0.2)"
+              borderColor="rgba(248, 113, 113, 0.3)"
+              borderWidth="2px"
+              className="bg-gradient-to-br from-red-300/20 via-orange-200/10 to-red-300/20"
+            >
+              <div className="flex items-start gap-4">
+                <AlertCircle className="w-6 h-6 text-red-300 flex-shrink-0 mt-1" />
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-white mb-2">
+                    Unable to Get Weather
+                  </h3>
+                  <p className="text-white/70 text-sm mb-4">
+                    {typeof weatherError === "string"
+                      ? weatherError
+                      : locationError ||
+                        "We couldn't get your weather information. Please try sharing your location."}
+                  </p>
+                  <GlassButton
+                    onClick={requestLocation}
+                    disabled={isRequestingLocation}
+                    className="bg-white/10 hover:bg-white/20 text-white border-white/20"
+                  >
+                    <MapPin className="w-4 h-4 mr-2" />
+                    {isRequestingLocation ? "Getting location..." : "Share Location"}
+                  </GlassButton>
+                </div>
               </div>
-              <h3 className="text-xl font-semibold text-white">
-                Trend Analysis
-              </h3>
-              <p className="text-white/70 text-sm">
-                Stay updated with the latest fashion trends tailored to your style
-              </p>
-            </div>
-          </GlassCard>
-        </div>
+            </GlassCard>
+          )}
 
-        {/* Coming Soon Notice */}
-        <div className="mt-12">
-          <GlassCard
-            padding="32px"
-            borderRadius="24px"
-            blur="10px"
-            brightness={1.02}
-            glowColor="rgba(147, 51, 234, 0.3)"
-            borderColor="rgba(168, 85, 247, 0.3)"
-            borderWidth="2px"
-            className="bg-gradient-to-br from-purple-300/20 via-pink-200/10 to-purple-300/20"
-          >
-            <div className="text-center space-y-4">
-              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-purple-400 to-pink-500 animate-pulse">
-                <Sparkles className="w-10 h-10 text-white" />
-              </div>
-              <h2 className="text-3xl font-bold text-white">
-                AI Suggestions Coming Soon
-              </h2>
-              <p className="text-white/80 text-lg max-w-2xl mx-auto">
-                We&apos;re working on bringing you intelligent outfit suggestions powered by advanced AI.
-                Stay tuned for personalized recommendations based on your unique style!
-              </p>
-            </div>
-          </GlassCard>
+          {/* Weather Card */}
+          {todayForecast && !isLoadingWeather && (
+            <WeatherCard forecast={todayForecast} cityName={cityName} />
+          )}
         </div>
       </div>
     </div>
