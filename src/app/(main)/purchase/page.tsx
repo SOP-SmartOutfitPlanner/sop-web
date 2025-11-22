@@ -60,7 +60,15 @@ function PurchaseContent() {
 
   const normalizeExpiry = useCallback((expiry: number) => {
     if (!expiry) return null;
-    return expiry > 1_000_000_000_000 ? expiry : expiry * 1000;
+    
+
+    const MILLISECONDS_THRESHOLD = 1_000_000_000_000; // 1 trillion
+    
+    if (expiry >= MILLISECONDS_THRESHOLD) {
+
+      return expiry;
+    }
+    return expiry * 1000;
   }, []);
 
   const {
@@ -98,13 +106,18 @@ function PurchaseContent() {
     }
   );
 
+  // timeLeft = 1763795855000 - now (milliseconds)
   const timeLeftLabel = useMemo(
-    () =>
-      expiresAt
-        ? formatTimeLeft(expiresAt - now)
-        : planIdParam
-        ? "Preparing payment request..."
-        : "",
+    () => {
+      if (!expiresAt) {
+        return planIdParam ? "Preparing payment request..." : "";
+      }
+      
+      // Đảm bảo cả expiresAt và now đều là milliseconds
+      const timeLeft = expiresAt - now;
+      
+      return formatTimeLeft(timeLeft);
+    },
     [expiresAt, now, planIdParam]
   );
 
@@ -113,9 +126,14 @@ function PurchaseContent() {
     createPurchase(planId);
   }, [planId, createPurchase]);
 
+  // Cập nhật now mỗi giây để đếm ngược thời gian
   useEffect(() => {
     if (!expiresAt) return;
 
+    // Cập nhật ngay lập tức
+    setNow(Date.now());
+
+    // Sau đó cập nhật mỗi giây
     const interval = setInterval(() => {
       setNow(Date.now());
     }, 1000);
