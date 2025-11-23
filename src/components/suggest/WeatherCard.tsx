@@ -104,7 +104,7 @@ export const WeatherCard = ({ forecast, cityName }: WeatherCardProps) => {
                 <p className="text-white/50 text-xs uppercase tracking-wider mb-1 flex items-center gap-1">
                   <ArrowUp className="w-3 h-3" /> High
                 </p>
-                <p className="text-white text-lg md:text-xl font-bold">{Math.round(forecast.maxTemperature)}</p>
+                <p className="text-white text-lg md:text-xl font-bold">{Math.round(forecast.maxTemperature)}°C</p>
               </div>
               <div>
                 <p className="text-white/50 text-xs uppercase tracking-wider mb-1 flex items-center gap-1">

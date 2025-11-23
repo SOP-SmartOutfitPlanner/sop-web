@@ -8,10 +8,12 @@ import GlassCard from "@/components/ui/glass-card";
 import GlassButton from "@/components/ui/glass-button";
 import { useWeather } from "@/hooks/useWeather";
 import { WeatherCard } from "@/components/suggest/WeatherCard";
+import { OutfitSuggestionModal } from "@/components/suggest/OutfitSuggestionModal";
 
 export default function SuggestPage() {
   const router = useRouter();
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [isSuggestionModalOpen, setIsSuggestionModalOpen] = useState(false);
   const { isAuthenticated, user } = useAuthStore();
 
   // Weather hook
@@ -142,6 +144,22 @@ export default function SuggestPage() {
             <WeatherCard forecast={todayForecast} cityName={cityName} />
           )}
         </div>
+
+        {/* Suggest Outfit Button*/}
+        <div className="flex justify-center mt-12 pb-8">
+          <GlassButton
+            onClick={() => setIsSuggestionModalOpen(true)}
+            className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white px-8 py-6 text-lg font-semibold shadow-lg"
+          >
+            Suggest Today
+          </GlassButton>
+        </div>
+
+        {/* Outfit Suggestion Modal */}
+        <OutfitSuggestionModal
+          open={isSuggestionModalOpen}
+          onOpenChange={setIsSuggestionModalOpen}
+        />
       </div>
     </div>
   );
