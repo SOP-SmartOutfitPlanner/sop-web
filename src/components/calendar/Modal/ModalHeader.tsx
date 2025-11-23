@@ -2,7 +2,7 @@
 
 import { X, Calendar, Shirt } from "lucide-react";
 import { format } from "date-fns";
-import { CalendarEntry } from "@/types/calender";
+import { CalendarEntry } from "@/types/calendar";
 import { UserOccasion } from "@/types/userOccasion";
 
 interface ModalHeaderProps {

@@ -19,7 +19,7 @@ import {
 import { Tooltip } from "antd";
 import GlassButton from "@/components/ui/glass-button";
 import { CalendarDayModal } from "./CalendarDayModal";
-import { CalendarEntry } from "@/types/calender";
+import { CalendarEntry } from "@/types/calendar";
 import { UserOccasion } from "@/types/userOccasion";
 
 interface WeeklyCalendarProps {
@@ -367,7 +367,7 @@ export function WeeklyCalendar({
                       })}
 
                       {/* Show occasions without outfits */}
-                      {dayInfo.occasionsWithoutOutfits.map((occasion, occIdx) => {
+                      {dayInfo.occasionsWithoutOutfits.map((occasion) => {
                         const isDaily = occasion.name?.toLowerCase() === "daily" && occasion.occasionId === null;
                         
                         return (

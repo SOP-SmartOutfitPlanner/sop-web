@@ -1,7 +1,7 @@
 "use client";
 
 import { Tooltip } from "antd";
-import { CalendarEntry } from "@/types/calender";
+import { CalendarEntry } from "@/types/calendar";
 import { format } from "date-fns";
 import Image from "next/image";
 

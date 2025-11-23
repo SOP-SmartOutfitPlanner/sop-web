@@ -1,9 +1,20 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { CheckCircle2, AlertCircle } from "lucide-react";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  CheckCircle2,
+  AlertCircle,
+  CreditCard,
+  Calendar,
+  ChevronDown,
+  ChevronUp,
+  Package,
+  Clock,
+  DollarSign,
+} from "lucide-react";
 import { SubscriptionStateCard } from "./index";
-import { getFeatureDisplayName } from "./subscription-utils";
+import { getFeatureDisplayName, formatCurrency } from "./subscription-utils";
 import type { SubscriptionHistory } from "@/types/subscription";
 
 interface SubscriptionHistoryTabProps {
@@ -21,6 +32,20 @@ export function SubscriptionHistoryTab({
   error,
   refetch,
 }: SubscriptionHistoryTabProps) {
+  // State để quản lý expanded state cho từng history item
+  // Phải được gọi ở top level, trước các early returns
+  const [expandedStates, setExpandedStates] = useState<Record<number, {
+    transactions: boolean;
+    features: boolean;
+  }>>(() => {
+    // Initialize all items with transactions expanded
+    const initial: Record<number, { transactions: boolean; features: boolean }> = {};
+    data?.data?.forEach((history) => {
+      initial[history.id] = { transactions: true, features: false };
+    });
+    return initial;
+  });
+
   const errorMessage =
     error?.message ?? "Unable to load subscription history.";
 
@@ -58,9 +83,38 @@ export function SubscriptionHistoryTab({
     );
   }
 
+  const toggleTransactions = (historyId: number) => {
+    setExpandedStates((prev) => {
+      const current = prev[historyId];
+      return {
+        ...prev,
+        [historyId]: {
+          transactions: current ? !current.transactions : true,
+          features: current?.features ?? false,
+        },
+      };
+    });
+  };
+
+  const toggleFeatures = (historyId: number) => {
+    setExpandedStates((prev) => {
+      const current = prev[historyId];
+      return {
+        ...prev,
+        [historyId]: {
+          transactions: current?.transactions ?? true,
+          features: current ? !current.features : false,
+        },
+      };
+    });
+  };
+
   return (
-    <div className="space-y-4">
-      {data.data.map((history) => {
+    <div className="space-y-6">
+      {data.data.map((history, index) => {
+        const isTransactionsExpanded = expandedStates[history.id]?.transactions ?? true;
+        const isFeaturesExpanded = expandedStates[history.id]?.features ?? false;
+
         const formattedDate = (() => {
           try {
             return new Date(history.createdDate).toLocaleDateString("vi-VN", {
@@ -79,76 +133,301 @@ export function SubscriptionHistoryTab({
               year: "numeric",
               month: "long",
               day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
             });
           } catch {
             return history.dateExp;
           }
         })();
 
+        const totalAmount = history.transactions?.reduce(
+          (sum, t) => sum + (t.price || 0),
+          0
+        ) || 0;
+
         return (
           <motion.div
             key={history.id}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-            className="rounded-2xl bg-white/10 border border-white/20 backdrop-blur-xl p-6"
+            transition={{ duration: 0.3, delay: index * 0.1 }}
+            className="rounded-3xl bg-white/10 border border-white/20 backdrop-blur-xl p-6 lg:p-8 shadow-lg hover:shadow-xl transition-shadow"
           >
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="font-dela-gothic text-xl text-white mb-1">
-                  {history.subscriptionPlan.name}
-                </h3>
-                <p className="font-poppins text-sm text-gray-400">
-                  Started: {formattedDate}
-                </p>
+            {/* Header Section */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 pb-6 border-b border-white/10">
+              <div className="flex items-start gap-4">
+                <div className="p-3 rounded-2xl bg-linear-to-br from-blue-500/20 to-cyan-500/20 border border-blue-400/30">
+                  <Package className="w-6 h-6 text-blue-300" />
+                </div>
+                <div>
+                  <h3 className="font-dela-gothic text-2xl text-white mb-2">
+                    {history.subscriptionPlan.name}
+                  </h3>
+                  <div className="flex flex-wrap items-center gap-3 text-sm">
+                    <p className="font-poppins text-gray-400 flex items-center gap-1.5">
+                      <Clock className="w-4 h-4" />
+                      Started: {formattedDate}
+                    </p>
+                  </div>
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 {history.isActive ? (
-                  <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-semibold border border-emerald-400/40 flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3" />
+                  <span className="px-4 py-2 rounded-full bg-emerald-500/20 text-emerald-300 text-sm font-semibold border border-emerald-400/40 flex items-center gap-2 shadow-lg shadow-emerald-500/10">
+                    <CheckCircle2 className="w-4 h-4" />
                     Active
                   </span>
                 ) : (
-                  <span className="px-3 py-1 rounded-full bg-gray-500/20 text-gray-300 text-xs font-semibold border border-gray-400/40 flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
+                  <span className="px-4 py-2 rounded-full bg-gray-500/20 text-gray-300 text-sm font-semibold border border-gray-400/40 flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4" />
                     Expired
                   </span>
                 )}
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div className="p-3 rounded-xl bg-white/5 border border-white/10">
-                <p className="text-xs text-gray-400 font-medium mb-1">Expires On</p>
-                <p className="font-semibold text-white">{formattedExpiry}</p>
-              </div>
-              {history.transactions && history.transactions.length > 0 && (
-                <div className="p-3 rounded-xl bg-white/5 border border-white/10">
-                  <p className="text-xs text-gray-400 font-medium mb-1">
-                    Total Transactions
-                  </p>
-                  <p className="font-semibold text-white">
-                    {history.transactions.length}
+            {/* Info Cards Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+              <div className="p-4 rounded-2xl bg-linear-to-br from-white/5 to-white/10 border border-white/10 hover:border-white/20 transition-colors">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 rounded-lg bg-blue-500/20">
+                    <Calendar className="w-4 h-4 text-blue-300" />
+                  </div>
+                  <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">
+                    Expires On
                   </p>
                 </div>
+                <p className="font-semibold text-white text-lg">{formattedExpiry}</p>
+              </div>
+
+              {history.transactions && history.transactions.length > 0 && (
+                <>
+                  <div className="p-4 rounded-2xl bg-linear-to-br from-white/5 to-white/10 border border-white/10 hover:border-white/20 transition-colors">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="p-2 rounded-lg bg-purple-500/20">
+                        <CreditCard className="w-4 h-4 text-purple-300" />
+                      </div>
+                      <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">
+                        Transactions
+                      </p>
+                    </div>
+                    <p className="font-semibold text-white text-lg">
+                      {history.transactions.length}
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-linear-to-br from-white/5 to-white/10 border border-white/10 hover:border-white/20 transition-colors">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="p-2 rounded-lg bg-emerald-500/20">
+                        <DollarSign className="w-4 h-4 text-emerald-300" />
+                      </div>
+                      <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">
+                        Total Amount
+                      </p>
+                    </div>
+                    <p className="font-semibold text-white text-lg">
+                      {formatCurrency(totalAmount)}
+                    </p>
+                  </div>
+                </>
               )}
             </div>
 
+            {/* Transactions Section */}
+            {history.transactions && history.transactions.length > 0 && (
+              <div className="mb-6">
+                <button
+                  onClick={() => toggleTransactions(history.id)}
+                  className="w-full flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-purple-500/20 group-hover:bg-purple-500/30 transition-colors">
+                      <CreditCard className="w-5 h-5 text-purple-300" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-semibold text-white text-base">
+                        Transactions ({history.transactions.length})
+                      </p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        Click to {isTransactionsExpanded ? "collapse" : "expand"}
+                      </p>
+                    </div>
+                  </div>
+                  {isTransactionsExpanded ? (
+                    <ChevronUp className="w-5 h-5 text-gray-400" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5 text-gray-400" />
+                  )}
+                </button>
+
+                <AnimatePresence>
+                  {isTransactionsExpanded && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="mt-4 space-y-3">
+                        {history.transactions.map((transaction, txIndex) => {
+                          const formattedTransactionDate = (() => {
+                            try {
+                              return new Date(
+                                transaction.createdDate
+                              ).toLocaleDateString("vi-VN", {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              });
+                            } catch {
+                              return transaction.createdDate;
+                            }
+                          })();
+
+                          const getStatusColor = (status: string) => {
+                            const upperStatus = status.toUpperCase();
+                            if (
+                              upperStatus === "COMPLETED" ||
+                              upperStatus === "SUCCESS"
+                            ) {
+                              return "bg-emerald-500/20 text-emerald-300 border-emerald-400/40 shadow-lg shadow-emerald-500/10";
+                            }
+                            if (upperStatus === "PENDING") {
+                              return "bg-amber-500/20 text-amber-300 border-amber-400/40 shadow-lg shadow-amber-500/10";
+                            }
+                            if (
+                              upperStatus === "FAILED" ||
+                              upperStatus === "CANCEL" ||
+                              upperStatus === "CANCELLED"
+                            ) {
+                              return "bg-red-500/20 text-red-300 border-red-400/40 shadow-lg shadow-red-500/10";
+                            }
+                            return "bg-gray-500/20 text-gray-300 border-gray-400/40";
+                          };
+
+                          return (
+                            <motion.div
+                              key={transaction.id}
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ duration: 0.2, delay: txIndex * 0.05 }}
+                              className="p-5 rounded-2xl bg-linear-to-br from-white/5 to-white/10 border border-white/10 hover:border-white/20 hover:shadow-lg transition-all group"
+                            >
+                              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                <div className="flex items-start gap-4 flex-1">
+                                  <div className="p-3 rounded-xl bg-linear-to-br from-blue-500/20 to-cyan-500/20 border border-blue-400/30 group-hover:scale-110 transition-transform">
+                                    <CreditCard className="w-5 h-5 text-blue-300" />
+                                  </div>
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-3 mb-2">
+                                      <p className="font-semibold text-white">
+                                        Transaction #{transaction.id}
+                                      </p>
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-4 text-sm">
+                                      <p className="text-gray-400 flex items-center gap-1.5">
+                                        <Calendar className="w-4 h-4" />
+                                        {formattedTransactionDate}
+                                      </p>
+                                      <div className="flex items-center gap-2">
+                                        <DollarSign className="w-4 h-4 text-emerald-300" />
+                                        <p className="font-semibold text-white">
+                                          {formatCurrency(transaction.price)}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="flex items-center justify-end">
+                                  <span
+                                    className={`px-4 py-2 rounded-full text-xs font-semibold border flex items-center gap-2 ${getStatusColor(
+                                      transaction.status
+                                    )}`}
+                                  >
+                                    {transaction.status === "COMPLETED" ||
+                                    transaction.status === "SUCCESS" ? (
+                                      <CheckCircle2 className="w-4 h-4" />
+                                    ) : transaction.status === "PENDING" ? (
+                                      <AlertCircle className="w-4 h-4" />
+                                    ) : null}
+                                    {transaction.status.toUpperCase()}
+                                  </span>
+                                </div>
+                              </div>
+                            </motion.div>
+                          );
+                        })}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
+
+            {/* Feature Usage Section */}
             {history.benefitUsage && history.benefitUsage.length > 0 && (
               <div>
-                <p className="text-xs text-gray-400 font-medium mb-2">
-                  Feature Usage
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {history.benefitUsage.map((usage) => (
-                    <span
-                      key={usage.featureCode}
-                      className="px-2 py-1 rounded-lg bg-white/5 border border-white/10 text-xs text-gray-300"
+                <button
+                  onClick={() => toggleFeatures(history.id)}
+                  className="w-full flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all group mb-4"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-cyan-500/20 group-hover:bg-cyan-500/30 transition-colors">
+                      <Package className="w-5 h-5 text-cyan-300" />
+                    </div>
+                    <p className="font-semibold text-white text-base">
+                      Feature Usage ({history.benefitUsage.length})
+                    </p>
+                  </div>
+                  {isFeaturesExpanded ? (
+                    <ChevronUp className="w-5 h-5 text-gray-400" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5 text-gray-400" />
+                  )}
+                </button>
+
+                <AnimatePresence>
+                  {isFeaturesExpanded && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="overflow-hidden"
                     >
-                      {getFeatureDisplayName(usage.featureCode)}: {usage.usage}
-                    </span>
-                  ))}
-                </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {history.benefitUsage.map((usage, usageIndex) => (
+                          <motion.div
+                            key={usage.featureCode}
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{
+                              duration: 0.2,
+                              delay: usageIndex * 0.05,
+                            }}
+                            className="p-4 rounded-xl bg-linear-to-br from-white/5 to-white/10 border border-white/10 hover:border-white/20 hover:shadow-lg transition-all"
+                          >
+                            <p className="font-semibold text-white text-sm mb-1">
+                              {getFeatureDisplayName(usage.featureCode)}
+                            </p>
+                            <div className="flex items-center justify-between mt-2">
+                              <span className="text-xs text-gray-400 bg-white/5 px-2 py-1 rounded">
+                                {usage.benefitType}
+                              </span>
+                              <span className="font-bold text-cyan-300">
+                                {usage.usage}
+                              </span>
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             )}
           </motion.div>

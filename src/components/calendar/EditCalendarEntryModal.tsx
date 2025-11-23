@@ -5,7 +5,7 @@ import { Calendar, Shirt, Sparkles, X } from "lucide-react";
 import { format } from "date-fns";
 import GlassButton from "@/components/ui/glass-button";
 import { useUpdateCalendarEntry } from "@/hooks/useCalendar";
-import { Calender, EditCalenderRequest } from "@/types/calender";
+import { Calender, EditCalenderRequest } from "@/types/calendar";
 import { UserOccasion } from "@/types/userOccasion";
 import { Outfit } from "@/types/outfit";
 

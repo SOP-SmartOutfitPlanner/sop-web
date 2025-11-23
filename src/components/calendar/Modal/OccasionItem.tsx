@@ -14,7 +14,7 @@ import {
 import { format } from "date-fns";
 import { UserOccasion } from "@/types/userOccasion";
 import { Outfit } from "@/types/outfit";
-import { CalendarEntry, Calender } from "@/types/calender";
+import { CalendarEntry, Calender } from "@/types/calendar";
 import { PlannedOutfitsGrid } from "./PlannedOutfitsGrid";
 import { AvailableOutfitsGrid } from "./AvailableOutfitsGrid";
 import { ViewOutfitDialog } from "@/components/outfit/ViewOutfitDialog";

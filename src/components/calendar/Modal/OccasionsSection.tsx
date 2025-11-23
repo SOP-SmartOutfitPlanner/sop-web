@@ -2,10 +2,9 @@
 
 import { Calendar, Plus, Shirt } from "lucide-react";
 import GlassButton from "@/components/ui/glass-button";
-import Image from "next/image";
 import { UserOccasion } from "@/types/userOccasion";
 import { Outfit } from "@/types/outfit";
-import { CalendarEntry, Calender } from "@/types/calender";
+import { CalendarEntry, Calender } from "@/types/calendar";
 import { OccasionItem } from "./OccasionItem";
 
 interface OccasionsSectionProps {

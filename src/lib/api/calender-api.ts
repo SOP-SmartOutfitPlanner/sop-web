@@ -15,7 +15,7 @@ import {
   CreateCalenderResponse,
   EditCalenderRequest,
   EditCalenderResponse
-} from "@/types/calender";
+} from "@/types/calendar";
 
 export const CalenderAPI = {
   // Occasions

@@ -44,7 +44,7 @@ export interface Transaction {
     id:number;
     userId:number;
     subscriptionPlanId:number;
-    amount:number;
+    price:number;
     status:string;
     createdDate:string;
 }

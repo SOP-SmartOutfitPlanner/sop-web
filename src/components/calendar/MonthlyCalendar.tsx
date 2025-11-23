@@ -14,7 +14,7 @@ import {
 } from "date-fns";
 import GlassButton from "@/components/ui/glass-button";
 import { CalendarDayModal } from "./CalendarDayModal";
-import { CalendarEntry } from "@/types/calender";
+import { CalendarEntry } from "@/types/calendar";
 import { DayOccasionList } from "./DayOccasionList";
 
 interface MonthlyCalendarProps {

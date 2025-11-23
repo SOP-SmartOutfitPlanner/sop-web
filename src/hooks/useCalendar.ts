@@ -10,7 +10,7 @@ import {
   GetCalenderRequest,
   CreateCalenderRequest,
   EditCalenderRequest,
-} from "@/types/calender";
+} from "@/types/calendar";
 import { OccasionsListRequest } from "@/types/occasion";
 
 /**

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { format, isBefore, startOfDay } from "date-fns";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
@@ -15,7 +15,7 @@ import { useScrollLock } from "@/hooks/useScrollLock";
 import { useModalScroll } from "@/hooks/useModalScroll";
 import { UserOccasion } from "@/types/userOccasion";
 import { Outfit } from "@/types/outfit";
-import { Calender } from "@/types/calender";
+import { Calender } from "@/types/calendar";
 import { UserOccasionFormModal } from "./UserOccasionFormModal";
 import { EditCalendarEntryModal } from "./EditCalendarEntryModal";
 import { AddDailyOutfitModal } from "./Modal/AddDailyOutfitModal";
@@ -123,26 +123,7 @@ export function CalendarDayModal({
     }
   }, [open]);
 
-  useEffect(() => {
-    if (!open) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onOpenChange(false);
-        return;
-      }
-
-      if (e.key === "n" && !e.ctrlKey && !e.metaKey) {
-        handleAddOccasion();
-        return;
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [open, onOpenChange]);
-
-  const handleAddOccasion = () => {
+  const handleAddOccasion = useCallback(() => {
     // Check if selected date is in the past
     const today = startOfDay(new Date());
     const selectedDateOnly = startOfDay(selectedDate);
@@ -155,7 +136,7 @@ export function CalendarDayModal({
 
     setEditingOccasion(null);
     setIsOccasionFormOpen(true);
-  };
+  }, [selectedDate, setPastDateDialogMessage, setIsPastDateDialogOpen, setEditingOccasion, setIsOccasionFormOpen]);
 
   const handleAddDailyOutfit = () => {
     // Check if selected date is in the past

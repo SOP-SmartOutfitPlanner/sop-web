@@ -2,9 +2,8 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import QRCode from "react-qr-code";
+import QRCode from "react-qrcode-logo";
 import { useMutation } from "@tanstack/react-query";
-
 import subscriptionAPI from "@/lib/api/subscription-api";
 import { useCancelPurchaseSubscriptionMutation } from "@/hooks/subscription/useSubscription";
 import { usePaymentStatusUpdates } from "@/hooks/subscription/usePaymentStatusUpdates";
@@ -12,8 +11,43 @@ import type { PurchaseResponse } from "@/types/subscription";
 import { Button } from "@/components/ui/button";
 import { SubscriptionStateCard } from "@/components/subscription";
 import { useAuthStore } from "@/store/auth-store";
-
+import logoImage from "../../../../public/SOP-logo-bg.png";
 type PurchaseData = PurchaseResponse["data"];
+
+// Utility function để tạo logo với border-radius
+const createRoundedLogo = async (
+  imageSrc: string,
+  size: number,
+  borderRadius: number
+): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        reject(new Error("Could not get canvas context"));
+        return;
+      }
+
+      // Tạo clipping path với border-radius
+      ctx.beginPath();
+      ctx.roundRect(0, 0, size, size, borderRadius);
+      ctx.clip();
+
+      // Vẽ logo
+      ctx.drawImage(img, 0, 0, size, size);
+
+      // Convert thành data URL
+      resolve(canvas.toDataURL("image/png"));
+    };
+    img.onerror = (err) => reject(err);
+    img.src = imageSrc;
+  });
+};
 
 const formatTimeLeft = (msRemaining: number) => {
   if (msRemaining <= 0) return "Expired";
@@ -53,6 +87,7 @@ function PurchaseContent() {
   const [expiresAt, setExpiresAt] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [isRedirecting, setIsRedirecting] = useState(false);
+  const [roundedLogo, setRoundedLogo] = useState<string | null>(null);
   const [cancelFeedback, setCancelFeedback] = useState<{
     status: "success" | "error";
     message: string;
@@ -132,6 +167,21 @@ function PurchaseContent() {
     },
     [expiresAt, now, planIdParam]
   );
+
+  // Tạo logo với border-radius khi component mount
+  useEffect(() => {
+    const logoSrc =
+      typeof logoImage === "string"
+        ? logoImage
+        : logoImage.src || "/SOP-logo-bg.png";
+    createRoundedLogo(logoSrc, 65, 12)
+      .then(setRoundedLogo)
+      .catch((err: Error) => {
+        console.error("Error creating rounded logo:", err);
+        // Fallback to original logo
+        setRoundedLogo(logoSrc);
+      });
+  }, []);
 
   useEffect(() => {
     if (!Number.isFinite(planId)) return;
@@ -293,22 +343,42 @@ function PurchaseContent() {
         )}
 
         {/* QR Code */}
-        <div className="mt-4 flex flex-col items-center gap-4">
-          {purchase ? (
-            <>
-              <div className="bg-white p-4 rounded-2xl shadow-lg">
-                <QRCode value={purchase.qrCode} size={220} />
-              </div>
-              <p className="font-poppins text-xs text-gray-200">
-                Scan the QR code with your banking app to pay.
+        {!isExpired && (
+          <div className="mt-4 flex flex-col items-center gap-4 ">
+            {purchase ? (
+              <>
+                <div className="bg-white rounded-2xl shadow-lg inline-block">
+                  {/* QR Code với logo embedded ở giữa */}
+                  <QRCode
+                    value={purchase.qrCode}
+                    size={240}
+                    logoImage={
+                      roundedLogo ||
+                      (typeof logoImage === "string"
+                        ? logoImage
+                        : logoImage.src || "/SOP-logo-bg.png")
+                    }
+                    logoWidth={65}
+                    logoHeight={65}
+                    logoPadding={4}
+                    logoPaddingStyle="circle"
+                    logoPaddingRadius={12}
+                    removeQrCodeBehindLogo={true}
+                    ecLevel="H"
+                    quietZone={10}
+                  />
+                </div>
+                <p className="font-poppins text-xs text-gray-200">
+                  Scan the QR code with your banking app to pay.
+                </p>
+              </>
+            ) : (
+              <p className="font-poppins text-sm text-gray-200">
+                Generating payment request, please wait...
               </p>
-            </>
-          ) : (
-            <p className="font-poppins text-sm text-gray-200">
-              Generating payment request, please wait...
-            </p>
-          )}
-        </div>
+            )}
+          </div>
+        )}
 
         {/* Bank Information */}
         {purchase?.bankInfo && (
@@ -367,26 +437,28 @@ function PurchaseContent() {
         )}
 
         {/* Connection Status */}
-        <div className="rounded-2xl border border-white/20 bg-white/5 p-4 text-center">
-          <div className="flex items-center justify-center gap-2">
-            <span
-              className={`w-2 h-2 rounded-full ${
-                connectionState === "connected"
-                  ? "bg-emerald-400 animate-pulse"
+        {!isExpired && (
+          <div className="rounded-2xl border border-white/20 bg-white/5 p-4 text-center">
+            <div className="flex items-center justify-center gap-2">
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  connectionState === "connected"
+                    ? "bg-emerald-400 animate-pulse"
+                    : connectionState === "connecting"
+                    ? "bg-amber-400 animate-pulse"
+                    : "bg-gray-400"
+                }`}
+              />
+              <p className="text-sm text-gray-300">
+                {connectionState === "connected"
+                  ? "Tracking payment status..."
                   : connectionState === "connecting"
-                  ? "bg-amber-400 animate-pulse"
-                  : "bg-gray-400"
-              }`}
-            />
-            <p className="text-sm text-gray-300">
-              {connectionState === "connected"
-                ? "Tracking payment status..."
-                : connectionState === "connecting"
-                ? "Connecting to payment tracker..."
-                : "Waiting for connection..."}
-            </p>
+                  ? "Connecting to payment tracker..."
+                  : "Waiting for connection..."}
+              </p>
+            </div>
           </div>
-        </div>
+        )}
 
         {cancelFeedback?.status === "error" && (
           <p className="font-poppins text-sm text-red-300">

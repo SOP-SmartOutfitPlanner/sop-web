@@ -1,7 +1,7 @@
 "use client";
 
 import { Shirt, Trash2 } from "lucide-react";
-import { CalendarEntry, Calender } from "@/types/calender";
+import { CalendarEntry, Calender } from "@/types/calendar";
 import Image from "next/image";
 
 interface PlannedOutfitsGridProps {
