@@ -1095,3 +1095,89 @@
 .glass-toast[data-type="info"] [data-icon] {
   color: rgb(96, 165, 250) !important;
 }
+
+/* Glass Radio Group - Custom Styling */
+.glass-radio-group {
+  display: inline-flex !important;
+  border-radius: 14px !important;
+  background: rgba(15, 23, 42, 0.4) !important;
+  backdrop-filter: blur(12px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(180%) !important;
+  padding: 6px !important;
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+  box-shadow: inset 2px 2px 0px -2px rgba(255, 255, 255, 0.3),
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    0 0 20px rgba(6, 182, 212, 0.1) !important;
+}
+
+.glass-radio-button {
+  font-family: var(--font-poppins), sans-serif !important;
+  font-weight: 500 !important;
+  font-size: 14px !important;
+  padding: 10px 20px !important;
+  height: auto !important;
+  line-height: 1.4 !important;
+  border: none !important;
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  border-radius: 10px !important;
+  position: relative !important;
+}
+
+.glass-radio-button:hover:not(.ant-radio-button-wrapper-disabled) {
+  color: rgba(255, 255, 255, 0.9) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
+.glass-radio-button.ant-radio-button-wrapper-checked {
+  background: linear-gradient(
+    135deg,
+    rgba(59, 130, 246, 0.3),
+    rgba(6, 182, 212, 0.3)
+  ) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(34, 211, 238, 0.4) !important;
+  box-shadow: inset 2px 2px 0px -2px rgba(255, 255, 255, 0.4),
+    0 2px 8px rgba(6, 182, 212, 0.3),
+    0 0 16px rgba(6, 182, 212, 0.2) !important;
+}
+
+.glass-radio-button.ant-radio-button-wrapper-checked:hover {
+  background: linear-gradient(
+    135deg,
+    rgba(59, 130, 246, 0.4),
+    rgba(6, 182, 212, 0.4)
+  ) !important;
+  box-shadow: inset 2px 2px 0px -2px rgba(255, 255, 255, 0.5),
+    0 4px 12px rgba(6, 182, 212, 0.4),
+    0 0 24px rgba(6, 182, 212, 0.3) !important;
+}
+
+.glass-radio-button.ant-radio-button-wrapper-disabled {
+  color: rgba(255, 255, 255, 0.3) !important;
+  background: transparent !important;
+  cursor: not-allowed !important;
+  opacity: 0.5 !important;
+}
+
+.glass-radio-button svg {
+  color: inherit !important;
+}
+
+/* Override Ant Design default Radio styles */
+.glass-radio-group .ant-radio-button-wrapper::before {
+  display: none !important;
+}
+
+.glass-radio-group .ant-radio-button-wrapper:not(:first-child)::before {
+  display: none !important;
+}
+
+.glass-radio-group .ant-radio-button-wrapper:first-child {
+  border-radius: 10px !important;
+}
+
+.glass-radio-group .ant-radio-button-wrapper:last-child {
+  border-radius: 10px !important;
+}

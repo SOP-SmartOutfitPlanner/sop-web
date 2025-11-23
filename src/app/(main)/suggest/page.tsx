@@ -2,18 +2,34 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { MapPin, AlertCircle } from "lucide-react";
+import { MapPin, AlertCircle, Navigation2 } from "lucide-react";
+import { Radio } from "antd";
 import { useAuthStore } from "@/store/auth-store";
 import GlassCard from "@/components/ui/glass-card";
 import GlassButton from "@/components/ui/glass-button";
 import { useWeather } from "@/hooks/useWeather";
 import { WeatherCard } from "@/components/suggest/WeatherCard";
 import { OutfitSuggestionModal } from "@/components/suggest/OutfitSuggestionModal";
+import LocationMapModal from "@/components/suggest/LocationMapModal";
+import { weatherAPI } from "@/lib/api/weather-api";
+import { DailyForecast } from "@/types/weather";
+import { toast } from "sonner";
+
+type WeatherTab = "my-location" | "selected-location";
 
 export default function SuggestPage() {
   const router = useRouter();
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [isSuggestionModalOpen, setIsSuggestionModalOpen] = useState(false);
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<WeatherTab>("my-location");
+  const [customWeather, setCustomWeather] = useState<{
+    forecast: DailyForecast;
+    cityName: string;
+    lat: number;
+    lng: number;
+  } | null>(null);
+  const [isLoadingCustomWeather, setIsLoadingCustomWeather] = useState(false);
   const { isAuthenticated, user } = useAuthStore();
 
   // Weather hook
@@ -71,14 +87,72 @@ export default function SuggestPage() {
 
         {/* Weather Section */}
         <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <h4 className="font-bricolage font-bold text-xl md:text-2xl lg:text-3xl leading-tight">
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-cyan-200">
                 Today&apos;s weather
               </span>
             </h4>
+              
+            {/* Weather Tabs */}
+            <Radio.Group
+              value={activeTab}
+              onChange={(e) => setActiveTab(e.target.value)}
+              buttonStyle="solid"
+              size="large"
+              className="glass-radio-group"
+            >
+              <Radio.Button value="my-location" className="glass-radio-button">
+                <div className="flex items-center gap-2">
+                  <span>My Location</span>
+                </div>
+              </Radio.Button>
+              <Radio.Button 
+                value="selected-location"
+                disabled={!customWeather}
+                className="glass-radio-button"
+              >
+                <div className="flex items-center gap-2">
+                  <span>Selected Location</span>
+                </div>
+              </Radio.Button>
+            </Radio.Group>
+
+            <div className="glass-button-hover">
+              <GlassButton
+                variant="custom"
+                borderRadius="14px"
+                blur="8px"
+                brightness={1.12}
+                glowColor="rgba(59,130,246,0.45)"
+                glowIntensity={6}
+                borderColor="rgba(255,255,255,0.28)"
+                borderWidth="1px"
+                textColor="#ffffffff"
+                className="px-4 h-12 font-semibold"
+                displacementScale={5}
+                onClick={() => setIsLocationModalOpen(true)}
+              >
+                <span className="hidden sm:inline">Choose Another Location</span>
+                <span className="sm:hidden">Change</span>
+              </GlassButton>
+            </div>
+          </div>
+
+          <style jsx>{`
+            .glass-button-hover {
+              transition: transform 0.2s ease;
+            }
+            .glass-button-hover:hover {
+              transform: scale(1.04);
+            }
+            .glass-button-hover:active {
+              transform: scale(0.98);
+            }
+          `}</style>
 
           {/* Loading State */}
-          {isLoadingWeather && (
+          {(isLoadingWeather || isLoadingCustomWeather) && (
             <GlassCard
               padding="24px"
               borderRadius="24px"
@@ -103,7 +177,7 @@ export default function SuggestPage() {
           )}
 
           {/* Error State */}
-          {weatherError && !isLoadingWeather && (
+          {weatherError && !isLoadingWeather && !isLoadingCustomWeather && !customWeather && (
             <GlassCard
               padding="24px"
               borderRadius="24px"
@@ -140,8 +214,21 @@ export default function SuggestPage() {
           )}
 
           {/* Weather Card */}
-          {todayForecast && !isLoadingWeather && (
-            <WeatherCard forecast={todayForecast} cityName={cityName} />
+          {!isLoadingWeather && !isLoadingCustomWeather && (
+            <>
+              {activeTab === "my-location" && todayForecast && (
+                <WeatherCard 
+                  forecast={todayForecast} 
+                  cityName={cityName} 
+                />
+              )}
+              {activeTab === "selected-location" && customWeather && (
+                <WeatherCard 
+                  forecast={customWeather.forecast} 
+                  cityName={customWeather.cityName} 
+                />
+              )}
+            </>
           )}
         </div>
 
@@ -159,6 +246,50 @@ export default function SuggestPage() {
         <OutfitSuggestionModal
           open={isSuggestionModalOpen}
           onOpenChange={setIsSuggestionModalOpen}
+        />
+
+        {/* Location Map Modal */}
+        <LocationMapModal
+          open={isLocationModalOpen}
+          onOpenChange={setIsLocationModalOpen}
+          initialLocation={customWeather ? {
+            lat: customWeather.lat,
+            lng: customWeather.lng,
+            address: customWeather.cityName,
+          } : undefined}
+          onLocationSelect={async (lat, lng, address) => {
+            console.log("Selected location:", { lat, lng, address });
+            setIsLocationModalOpen(false);
+            
+            // Fetch weather for selected location
+            setIsLoadingCustomWeather(true);
+            const loadingToast = toast.loading("Loading weather for selected location...");
+            
+            try {
+              const response = await weatherAPI.getWeatherByCoordinates(lat, lng, 1);
+              
+              if (response.statusCode === 200 && response.data.dailyForecasts.length > 0) {
+                setCustomWeather({
+                  forecast: response.data.dailyForecasts[0],
+                  cityName: address,
+                  lat,
+                  lng,
+                });
+                setActiveTab("selected-location");
+                toast.success("Weather updated!", { id: loadingToast });
+              } else {
+                throw new Error("Failed to fetch weather data");
+              }
+            } catch (error) {
+              console.error("Error fetching weather:", error);
+              toast.error(
+                error instanceof Error ? error.message : "Failed to load weather for selected location",
+                { id: loadingToast }
+              );
+            } finally {
+              setIsLoadingCustomWeather(false);
+            }
+          }}
         />
       </div>
     </div>

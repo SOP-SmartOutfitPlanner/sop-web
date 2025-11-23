@@ -33,6 +33,7 @@ declare module '@goongmaps/goong-js' {
     on(event: string, callback: (e?: MapMouseEvent | { error: Error }) => void): this;
     addControl(control: Control | NavigationControl, position?: string): this;
     flyTo(options: { center: [number, number]; zoom: number }): this;
+    getCenter(): LngLat;
     remove(): void;
   }
 
