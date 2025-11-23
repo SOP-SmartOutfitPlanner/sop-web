@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,7 +47,7 @@ export default function AdminUsersPage() {
   const pageSize = 10;
 
   // Fetch users from API
-  const { data, isLoading, error } = useAdminUsers({
+  const { data, isLoading, error, isFetching } = useAdminUsers({
     page: currentPage,
     pageSize,
     search: searchQuery || undefined,
@@ -250,6 +250,21 @@ export default function AdminUsersPage() {
   const users = data?.data || [];
   const metaData = data?.metaData;
 
+  // Auto-reset to last valid page if current page exceeds totalPages
+  useEffect(() => {
+    if (
+      !isLoading &&
+      !isFetching &&
+      metaData &&
+      currentPage > metaData.totalPages
+    ) {
+      const timer = setTimeout(() => {
+        setCurrentPage(metaData.totalPages);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, isFetching, metaData, currentPage]);
+
   // Initialize TanStack Table
   const table = useReactTable({
     data: users,
@@ -285,7 +300,9 @@ export default function AdminUsersPage() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <p className="text-red-600 mb-4">An error occurred while loading data</p>
+          <p className="text-red-600 mb-4">
+            An error occurred while loading data
+          </p>
           <Button onClick={() => window.location.reload()}>Thử lại</Button>
         </div>
       </div>
@@ -423,18 +440,34 @@ export default function AdminUsersPage() {
           </div>
 
           {/* Pagination */}
-          {metaData && metaData.totalPages > 1 && (
+          {metaData && metaData.totalPages > 0 && (
             <div className="flex items-center justify-between mt-6">
               <div className="text-sm text-gray-600">
-                Showing {(currentPage - 1) * pageSize + 1} to{" "}
-                {Math.min(currentPage * pageSize, metaData.totalCount)} of{" "}
-                {metaData.totalCount} users
+                {users.length > 0 ? (
+                  <>
+                    Showing{" "}
+                    <span className="font-medium">
+                      {(currentPage - 1) * pageSize + 1}
+                    </span>{" "}
+                    to{" "}
+                    <span className="font-medium">
+                      {Math.min(currentPage * pageSize, metaData.totalCount)}
+                    </span>{" "}
+                    of{" "}
+                    <span className="font-medium">{metaData.totalCount}</span>{" "}
+                    users
+                  </>
+                ) : (
+                  <span>No users found</span>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  disabled={!metaData.hasPrevious}
+                  disabled={
+                    !metaData.hasPrevious || isFetching || currentPage === 1
+                  }
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 >
                   <ChevronLeft className="w-4 h-4 mr-1" />
@@ -444,11 +477,15 @@ export default function AdminUsersPage() {
                   { length: Math.min(5, metaData.totalPages) },
                   (_: unknown, i: number): React.ReactElement | null => {
                     const page = i + 1;
+                    if (page > metaData.totalPages) {
+                      return null;
+                    }
                     return (
                       <Button
                         key={page}
                         variant={page === currentPage ? "default" : "outline"}
                         size="sm"
+                        disabled={isFetching || page > metaData.totalPages}
                         onClick={() => setCurrentPage(page)}
                         className={
                           page === currentPage ? "bg-blue-600 text-white" : ""
@@ -462,7 +499,11 @@ export default function AdminUsersPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  disabled={!metaData.hasNext}
+                  disabled={
+                    !metaData.hasNext ||
+                    isFetching ||
+                    currentPage >= metaData.totalPages
+                  }
                   onClick={() => setCurrentPage((p) => p + 1)}
                 >
                   Next

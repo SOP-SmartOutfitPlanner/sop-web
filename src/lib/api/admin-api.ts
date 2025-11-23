@@ -6,13 +6,13 @@
 import { apiClient } from "./client";
 import type { ApiResponse } from "@/lib/types/api.types";
 import { ItemsListRequest, ItemsListResponse } from "@/types/item";
-import { 
-  OccasionsListRequest, 
-  OccasionsListResponse, 
+import {
+  OccasionsListRequest,
+  OccasionsListResponse,
   CreateOccasionRequest,
   CreateOccasionResponse,
-  UpdateOccasionRequest, 
-  UpdateOccasionResponse 
+  UpdateOccasionRequest,
+  UpdateOccasionResponse,
 } from "@/types/occasion";
 
 // ============================================================================
@@ -411,44 +411,50 @@ export const adminAPI = {
   getItems: async (data: ItemsListRequest): Promise<ItemsListResponse> => {
     // Transform PascalCase params to kebab-case as required by API
     const params: Record<string, string | number | boolean> = {
-      'page-index': data.PageIndex,
-      'page-size': data.PageSize,
+      "page-index": data.PageIndex,
+      "page-size": data.PageSize,
     };
-    
+
     if (data.Search) {
-      params['search'] = data.Search;
+      params["search"] = data.Search;
     }
-    
+
     if (data.takeAll !== undefined) {
-      params['take-all'] = data.takeAll;
+      params["take-all"] = data.takeAll;
     }
-    
+
     return apiClient.get<ItemsListResponse>(`/items`, { params });
   },
-  getOccasions: async (data: OccasionsListRequest): Promise<OccasionsListResponse> => {
+  getOccasions: async (
+    data: OccasionsListRequest
+  ): Promise<OccasionsListResponse> => {
     // Transform PascalCase params to kebab-case as required by API
     const params: Record<string, string | number | boolean> = {
-      'page-index': data.PageIndex,
-      'page-size': data.PageSize,
+      "page-index": data.PageIndex,
+      "page-size": data.PageSize,
     };
-    
+
     if (data.Search) {
-      params['search'] = data.Search;
+      params["search"] = data.Search;
     }
-    
+
     if (data.takeAll !== undefined) {
-      params['take-all'] = data.takeAll;
+      params["take-all"] = data.takeAll;
     }
-    
+
     return apiClient.get<OccasionsListResponse>(`/occasions`, { params });
   },
-  createOccasion: async (data: CreateOccasionRequest): Promise<CreateOccasionResponse> => {
+  createOccasion: async (
+    data: CreateOccasionRequest
+  ): Promise<CreateOccasionResponse> => {
     return apiClient.post<CreateOccasionResponse>(`/occasions`, data);
   },
-  editOccasion: async (data: UpdateOccasionRequest): Promise<UpdateOccasionResponse> => {
-    return apiClient.put<UpdateOccasionResponse>(`/occasions`, { 
-      id: data.id, 
-      name: data.name 
+  editOccasion: async (
+    data: UpdateOccasionRequest
+  ): Promise<UpdateOccasionResponse> => {
+    return apiClient.put<UpdateOccasionResponse>(`/occasions`, {
+      id: data.id,
+      name: data.name,
     });
   },
   deleteOccasion: async (id: number): Promise<ApiResponse<void>> => {
@@ -571,9 +577,7 @@ export const adminAPI = {
   /**
    * Get AI setting by type
    */
-  getAISettingByType: async (
-    type: string
-  ): Promise<ApiResponse<AISetting>> => {
+  getAISettingByType: async (type: string): Promise<ApiResponse<AISetting>> => {
     return apiClient.get<ApiResponse<AISetting>>(`/ai-settings/type/${type}`);
   },
 
@@ -624,12 +628,11 @@ export const adminAPI = {
     imageUrl?: string;
     actorUserId: number; // 1 = all users, otherwise specific user ID
   }): Promise<ApiResponse<{ notificationId: number; message: string }>> => {
-    return apiClient.post<ApiResponse<{ notificationId: number; message: string }>>(
-      "/notifications/push",
-      data
-    );
+    return apiClient.post<
+      ApiResponse<{ notificationId: number; message: string }>
+    >("/notifications/push", data);
   },
-}
+};
 
 const buildReportQueryString = (params?: GetReportsParams) => {
   const queryParams = new URLSearchParams();
@@ -638,11 +641,12 @@ const buildReportQueryString = (params?: GetReportsParams) => {
     return queryParams.toString();
   }
 
+  // API expects lowercase with dash: page-index, page-size
   if (params.pageIndex) {
-    queryParams.append("PageIndex", params.pageIndex.toString());
+    queryParams.append("page-index", params.pageIndex.toString());
   }
   if (params.pageSize) {
-    queryParams.append("PageSize", params.pageSize.toString());
+    queryParams.append("page-size", params.pageSize.toString());
   }
   if (params.type) {
     queryParams.append("Type", params.type);

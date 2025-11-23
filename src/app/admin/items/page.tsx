@@ -12,7 +12,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Eye, Trash2, Loader2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
+import {
+  Search,
+  Eye,
+  Trash2,
+  Loader2,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+} from "lucide-react";
 import { useAdminItems } from "@/hooks/admin/useAdminItem";
 import Image from "next/image";
 
@@ -34,30 +43,50 @@ export default function AdminItemsPage() {
   }, [searchQuery]);
 
   // Fetch items using the hook
-  const { data, isLoading, error } = useAdminItems({
+  const { data, isLoading, error, isFetching } = useAdminItems({
     PageIndex: currentPage,
     PageSize: pageSize,
     Search: debouncedSearch || undefined,
   });
 
-  // Debug logging
-  useEffect(() => {
-    console.log('Fetching with params:', {
-      PageIndex: currentPage,
-      PageSize: pageSize,
-      Search: debouncedSearch || undefined,
-    });
-  }, [currentPage, pageSize, debouncedSearch]);
-
   const items = data?.data.data || [];
   const metaData = data?.data.metaData;
+
+  // Auto-reset to page 1 if current page returns empty array and we're not on page 1
+  useEffect(() => {
+    if (
+      !isLoading &&
+      !isFetching &&
+      items.length === 0 &&
+      currentPage > 1 &&
+      metaData
+    ) {
+      // Page doesn't exist (returned empty array), reset to page 1
+      const timer = setTimeout(() => {
+        setCurrentPage(1);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, isFetching, items.length, currentPage, metaData]);
 
   // Category counts (you can calculate from items or fetch separately)
   const categoryStats = {
     total: metaData?.totalCount || 0,
-    tops: items.filter(item => item.categoryName.toLowerCase().includes('top') || item.categoryName.toLowerCase().includes('áo')).length,
-    bottoms: items.filter(item => item.categoryName.toLowerCase().includes('bottom') || item.categoryName.toLowerCase().includes('quần')).length,
-    footwear: items.filter(item => item.categoryName.toLowerCase().includes('shoe') || item.categoryName.toLowerCase().includes('giày')).length,
+    tops: items.filter(
+      (item) =>
+        item.categoryName.toLowerCase().includes("top") ||
+        item.categoryName.toLowerCase().includes("áo")
+    ).length,
+    bottoms: items.filter(
+      (item) =>
+        item.categoryName.toLowerCase().includes("bottom") ||
+        item.categoryName.toLowerCase().includes("quần")
+    ).length,
+    footwear: items.filter(
+      (item) =>
+        item.categoryName.toLowerCase().includes("shoe") ||
+        item.categoryName.toLowerCase().includes("giày")
+    ).length,
   };
 
   return (
@@ -66,9 +95,7 @@ export default function AdminItemsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Item Management</h1>
-          <p className="text-gray-600 mt-2">
-            Manage all user wardrobe items
-          </p>
+          <p className="text-gray-600 mt-2">Manage all user wardrobe items</p>
         </div>
         {/* <Button className="bg-blue-600 hover:bg-blue-700">
           <Plus className="w-4 h-4 mr-2" />
@@ -81,7 +108,11 @@ export default function AdminItemsPage() {
         <Card className="border-0 shadow">
           <CardContent className="pt-6">
             <div className="text-2xl font-bold text-gray-900">
-              {isLoading ? <Loader2 className="w-6 h-6 animate-spin" /> : categoryStats.total.toLocaleString()}
+              {isLoading ? (
+                <Loader2 className="w-6 h-6 animate-spin" />
+              ) : (
+                categoryStats.total.toLocaleString()
+              )}
             </div>
             <p className="text-sm text-gray-600 mt-1">Total Items</p>
           </CardContent>
@@ -89,7 +120,11 @@ export default function AdminItemsPage() {
         <Card className="border-0 shadow">
           <CardContent className="pt-6">
             <div className="text-2xl font-bold text-blue-600">
-              {isLoading ? <Loader2 className="w-6 h-6 animate-spin" /> : categoryStats.tops}
+              {isLoading ? (
+                <Loader2 className="w-6 h-6 animate-spin" />
+              ) : (
+                categoryStats.tops
+              )}
             </div>
             <p className="text-sm text-gray-600 mt-1">Tops</p>
           </CardContent>
@@ -97,7 +132,11 @@ export default function AdminItemsPage() {
         <Card className="border-0 shadow">
           <CardContent className="pt-6">
             <div className="text-2xl font-bold text-purple-600">
-              {isLoading ? <Loader2 className="w-6 h-6 animate-spin" /> : categoryStats.bottoms}
+              {isLoading ? (
+                <Loader2 className="w-6 h-6 animate-spin" />
+              ) : (
+                categoryStats.bottoms
+              )}
             </div>
             <p className="text-sm text-gray-600 mt-1">Bottoms</p>
           </CardContent>
@@ -105,7 +144,11 @@ export default function AdminItemsPage() {
         <Card className="border-0 shadow">
           <CardContent className="pt-6">
             <div className="text-2xl font-bold text-green-600">
-              {isLoading ? <Loader2 className="w-6 h-6 animate-spin" /> : categoryStats.footwear}
+              {isLoading ? (
+                <Loader2 className="w-6 h-6 animate-spin" />
+              ) : (
+                categoryStats.footwear
+              )}
             </div>
             <p className="text-sm text-gray-600 mt-1">Footwear</p>
           </CardContent>
@@ -138,10 +181,13 @@ export default function AdminItemsPage() {
                 <SelectItem value="Accessories">Accessories</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={pageSize.toString()} onValueChange={(value: string) => {
-              setPageSize(parseInt(value));
-              setCurrentPage(1); // Reset to first page when changing page size
-            }}>
+            <Select
+              value={pageSize.toString()}
+              onValueChange={(value: string) => {
+                setPageSize(parseInt(value));
+                setCurrentPage(1); // Reset to first page when changing page size
+              }}
+            >
               <SelectTrigger className="w-full sm:w-[120px]">
                 <SelectValue />
               </SelectTrigger>
@@ -167,7 +213,9 @@ export default function AdminItemsPage() {
       {/* Error State */}
       {error && (
         <div className="text-center py-12">
-          <p className="text-red-600">An error occurred while loading items. Please try again.</p>
+          <p className="text-red-600">
+            An error occurred while loading items. Please try again.
+          </p>
         </div>
       )}
 
@@ -182,7 +230,10 @@ export default function AdminItemsPage() {
       {!isLoading && !error && items.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {items.map((item) => (
-            <Card key={item.id} className="border-0 shadow-lg hover:shadow-xl transition-shadow">
+            <Card
+              key={item.id}
+              className="border-0 shadow-lg hover:shadow-xl transition-shadow"
+            >
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -239,7 +290,11 @@ export default function AdminItemsPage() {
                       <span className="text-gray-600">Styles:</span>
                       <div className="flex flex-wrap gap-1">
                         {item.styles.map((style) => (
-                          <Badge key={style.id} variant="outline" className="text-xs">
+                          <Badge
+                            key={style.id}
+                            variant="outline"
+                            className="text-xs"
+                          >
                             {style.name}
                           </Badge>
                         ))}
@@ -254,7 +309,11 @@ export default function AdminItemsPage() {
                     <Eye className="w-4 h-4 mr-1" />
                     View
                   </Button>
-                  <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
@@ -271,11 +330,23 @@ export default function AdminItemsPage() {
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               {/* Pagination Info */}
               <div className="text-sm text-gray-600">
-                Showing <span className="font-medium">{((currentPage - 1) * pageSize) + 1}</span> to{" "}
-                <span className="font-medium">
-                  {Math.min(currentPage * pageSize, metaData.totalCount)}
-                </span>{" "}
-                of <span className="font-medium">{metaData.totalCount}</span> items
+                {items.length > 0 ? (
+                  <>
+                    Showing{" "}
+                    <span className="font-medium">
+                      {(currentPage - 1) * pageSize + 1}
+                    </span>{" "}
+                    to{" "}
+                    <span className="font-medium">
+                      {Math.min(currentPage * pageSize, metaData.totalCount)}
+                    </span>{" "}
+                    of{" "}
+                    <span className="font-medium">{metaData.totalCount}</span>{" "}
+                    items
+                  </>
+                ) : (
+                  <span>No items found</span>
+                )}
               </div>
 
               {/* Pagination Controls */}
@@ -284,7 +355,7 @@ export default function AdminItemsPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  disabled={currentPage === 1}
+                  disabled={currentPage === 1 || isFetching}
                   onClick={() => setCurrentPage(1)}
                   className="hidden sm:flex"
                 >
@@ -295,7 +366,7 @@ export default function AdminItemsPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  disabled={!metaData.hasPrevious}
+                  disabled={!metaData.hasPrevious || isFetching}
                   onClick={() => setCurrentPage((prev) => prev - 1)}
                 >
                   <ChevronLeft className="w-4 h-4 mr-1" />
@@ -304,7 +375,10 @@ export default function AdminItemsPage() {
 
                 {/* Page Numbers */}
                 <div className="flex items-center gap-1">
-                  {Array.from({ length: metaData.totalPages }, (_, i) => i + 1).map((page) => {
+                  {Array.from(
+                    { length: metaData.totalPages },
+                    (_, i) => i + 1
+                  ).map((page) => {
                     // Show first page, last page, current page, and pages around current
                     const showPage =
                       page === 1 ||
@@ -313,7 +387,10 @@ export default function AdminItemsPage() {
 
                     if (!showPage) {
                       // Show ellipsis for skipped pages (only once)
-                      if (page === currentPage - 2 || page === currentPage + 2) {
+                      if (
+                        page === currentPage - 2 ||
+                        page === currentPage + 2
+                      ) {
                         return (
                           <span key={page} className="px-2 text-gray-400">
                             ...
@@ -328,6 +405,7 @@ export default function AdminItemsPage() {
                         key={page}
                         variant={page === currentPage ? "default" : "outline"}
                         size="sm"
+                        disabled={isFetching}
                         className={
                           page === currentPage
                             ? "bg-blue-600 hover:bg-blue-700 text-white min-w-9"
@@ -345,7 +423,7 @@ export default function AdminItemsPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  disabled={!metaData.hasNext}
+                  disabled={!metaData.hasNext || isFetching}
                   onClick={() => setCurrentPage((prev) => prev + 1)}
                 >
                   <span className="hidden sm:inline">Next</span>
@@ -356,7 +434,7 @@ export default function AdminItemsPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  disabled={currentPage === metaData.totalPages}
+                  disabled={currentPage === metaData.totalPages || isFetching}
                   onClick={() => setCurrentPage(metaData.totalPages)}
                   className="hidden sm:flex"
                 >
@@ -388,4 +466,3 @@ export default function AdminItemsPage() {
     </div>
   );
 }
-

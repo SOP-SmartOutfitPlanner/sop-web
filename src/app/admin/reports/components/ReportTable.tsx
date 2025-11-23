@@ -3,10 +3,20 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Eye, Loader2, AlertCircle, ShieldAlert } from "lucide-react";
+import {
+  Eye,
+  Loader2,
+  AlertCircle,
+  ShieldAlert,
+  Ban,
+  Trash2,
+  EyeOff,
+  Minus,
+} from "lucide-react";
 import type { AdminReport } from "@/lib/api/admin-api";
 import { StatusBadge } from "./StatusBadge";
 import { formatDate } from "../utils";
+import { cn } from "@/lib/utils";
 
 interface ReportTableProps {
   reports: AdminReport[];
@@ -15,6 +25,51 @@ interface ReportTableProps {
   pageSize: number;
   onSelectReport: (report: AdminReport) => void;
   onRetry: () => void;
+}
+
+function ActionBadge({ action }: { action: string }) {
+  const actionConfig = {
+    SUSPEND: {
+      icon: Ban,
+      className:
+        "bg-red-100 text-red-700 border-red-300 hover:bg-red-200 font-semibold",
+      iconColor: "text-red-600",
+    },
+    DELETE: {
+      icon: Trash2,
+      className:
+        "bg-orange-100 text-orange-700 border-orange-300 hover:bg-orange-200 font-semibold",
+      iconColor: "text-orange-600",
+    },
+    HIDE: {
+      icon: EyeOff,
+      className:
+        "bg-yellow-100 text-yellow-700 border-yellow-300 hover:bg-yellow-200 font-semibold",
+      iconColor: "text-yellow-600",
+    },
+    NONE: {
+      icon: Minus,
+      className: "bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200",
+      iconColor: "text-gray-500",
+    },
+  };
+
+  const config =
+    actionConfig[action as keyof typeof actionConfig] || actionConfig.NONE;
+  const Icon = config.icon;
+
+  return (
+    <Badge
+      variant="outline"
+      className={cn(
+        "inline-flex items-center gap-1.5 px-3 py-1.5 border-2 shadow-sm transition-colors",
+        config.className
+      )}
+    >
+      <Icon className={cn("h-3.5 w-3.5", config.iconColor)} />
+      <span className="font-medium">{action}</span>
+    </Badge>
+  );
 }
 
 export function ReportTable({
@@ -123,7 +178,7 @@ export function ReportTable({
                       <StatusBadge status={report.status} size="sm" />
                     </td>
                     <td className="px-6 py-4">
-                      <Badge variant="secondary">{report.action}</Badge>
+                      <ActionBadge action={report.action} />
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
                       {formatDate(report.createdDate)}
@@ -149,4 +204,3 @@ export function ReportTable({
     </Card>
   );
 }
-
