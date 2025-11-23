@@ -11,7 +11,7 @@ export function useAdminUsers(params: GetUsersParams = {}) {
       const response = await adminAPI.getUsers(params);
       return response.data;
     },
-    staleTime: 30000, // 30 seconds
+    staleTime: 30000,
   });
 }
 

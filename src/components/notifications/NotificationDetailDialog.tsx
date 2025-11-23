@@ -171,17 +171,6 @@ export function NotificationDetailDialog({
                 Dismiss
               </GlassButton>
 
-              {!notification.isRead && onMarkAsRead && (
-                <GlassButton
-                  variant="ghost"
-                  size="md"
-                  onClick={handleMarkAsRead}
-                  className="bg-emerald-500/20 border border-emerald-400/30 text-emerald-100"
-                >
-                  Mark as read
-                </GlassButton>
-              )}
-
               {notification.href && notification.href !== "string" && (
                 <GlassButton
                   variant="ghost"

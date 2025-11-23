@@ -1,10 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronsLeft } from "lucide-react";
 
 interface PaginationProps {
   pageIndex: number;
@@ -23,23 +19,31 @@ export function Pagination({
   canGoPrev,
   onPageChange,
 }: PaginationProps) {
-  const startItem = (pageIndex - 1) * pageSize + 1;
-  const endItem = Math.min(
-    pageIndex * pageSize,
-    (pageIndex - 1) * pageSize + totalItems
-  );
+  const startItem = totalItems > 0 ? (pageIndex - 1) * pageSize + 1 : 0;
+  const endItem =
+    totalItems > 0
+      ? Math.min(pageIndex * pageSize, (pageIndex - 1) * pageSize + totalItems)
+      : 0;
   const totalDisplay = canGoNext
     ? `${pageIndex * pageSize}+`
-    : (pageIndex - 1) * pageSize + totalItems;
+    : totalItems > 0
+    ? (pageIndex - 1) * pageSize + totalItems
+    : 0;
 
   return (
     <Card className="border-0 shadow">
       <CardContent className="pt-6">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="text-sm text-gray-600">
-            Showing <span className="font-medium">{startItem}</span> to{" "}
-            <span className="font-medium">{endItem}</span> of{" "}
-            <span className="font-medium">{totalDisplay}</span> reports
+            {totalItems > 0 ? (
+              <>
+                Showing <span className="font-medium">{startItem}</span> to{" "}
+                <span className="font-medium">{endItem}</span> of{" "}
+                <span className="font-medium">{totalDisplay}</span> reports
+              </>
+            ) : (
+              <span>No reports found on this page</span>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
@@ -102,4 +106,3 @@ export function Pagination({
     </Card>
   );
 }
-

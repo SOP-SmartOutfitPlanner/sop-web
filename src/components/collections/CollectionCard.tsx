@@ -199,7 +199,7 @@ export function CollectionCard({
 
           <header className="flex flex-col gap-4">
             <div className="space-y-2">
-              <h3 className="text-2xl font-bold text-white transition-colors group-hover:text-cyan-100 md:text-[26px]">
+              <h3 className="text-2xl h-15 font-bold text-white transition-colors group-hover:text-cyan-100 md:text-[26px]">
                 {collection.title}
               </h3>
               <p className="text-sm leading-relaxed text-slate-300 line-clamp-2">

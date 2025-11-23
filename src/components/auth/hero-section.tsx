@@ -1,6 +1,5 @@
 import { Logo } from "@/components/ui/logo";
 import GlassBadge from "@/components/ui/glass-badge";
-import GlassButton from "@/components/ui/glass-button";
 import GlassCard from "@/components/ui/glass-card";
 import { Sparkles, Shirt, Calendar, Heart } from "lucide-react";
 

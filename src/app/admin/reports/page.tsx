@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2, RefreshCw } from "lucide-react";
 import {
@@ -8,7 +8,11 @@ import {
   usePendingReports,
   useAdminReportDetails,
 } from "@/hooks/admin/useAdminReports";
-import type { AdminReport, ReportType, ReportStatus } from "@/lib/api/admin-api";
+import type {
+  AdminReport,
+  ReportType,
+  ReportStatus,
+} from "@/lib/api/admin-api";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { useReportFilters } from "@/hooks/admin/useReportFilters";
 import { useReportDetailModal } from "@/hooks/admin/useReportDetailModal";
@@ -39,7 +43,9 @@ export default function AdminReportsPage() {
   } = useReportFilters(defaultFromDate);
 
   // Selected report state
-  const [selectedReportId, setSelectedReportId] = useState<number | undefined>();
+  const [selectedReportId, setSelectedReportId] = useState<
+    number | undefined
+  >();
 
   // Detail modal hook
   const {
@@ -97,9 +103,35 @@ export default function AdminReportsPage() {
     defaultFromDate,
   });
 
-  // Pagination helpers
-  const canGoNext = reports.length === filters.pageSize;
+  // Pagination helpers - based on pageIndex and pageSize
+  // Logic: Only allow next if current page has exactly pageSize items
+  // If current page has fewer items than pageSize, there's no next page
+  // This is the correct logic: if we get less than pageSize, we've reached the end
+  const canGoNext = reports.length === filters.pageSize && reports.length > 0;
   const canGoPrev = filters.pageIndex > 1;
+
+  // Auto-reset to page 1 if current page returns empty array and we're not on page 1
+  // This handles the case where user navigates to a page that doesn't exist
+  useEffect(() => {
+    if (
+      !isLoading &&
+      !isFetching &&
+      reports.length === 0 &&
+      filters.pageIndex > 1
+    ) {
+      // Page doesn't exist (returned empty array), reset to page 1
+      const timer = setTimeout(() => {
+        handleFilterChange("pageIndex", 1);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [
+    isLoading,
+    isFetching,
+    reports.length,
+    filters.pageIndex,
+    handleFilterChange,
+  ]);
 
   // Handlers
   const handleSelectReport = (report: AdminReport) => {
@@ -183,7 +215,7 @@ export default function AdminReportsPage() {
         onRetry={() => refetch()}
       />
 
-      {!isLoading && !error && reports.length > 0 && (
+      {!isLoading && !error && (
         <Pagination
           pageIndex={filters.pageIndex}
           pageSize={filters.pageSize}

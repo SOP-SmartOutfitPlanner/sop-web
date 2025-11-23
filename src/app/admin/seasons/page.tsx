@@ -59,7 +59,7 @@ export default function AdminSeasonsPage() {
   const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState<Season | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage] = useState(1);
   const [pageSize] = useState(10);
 
   // Form states
@@ -328,9 +328,7 @@ export default function AdminSeasonsPage() {
                     <TableCell>
                       <Badge variant="outline">{season.id}</Badge>
                     </TableCell>
-                    <TableCell className="font-medium">
-                      {season.name}
-                    </TableCell>
+                    <TableCell className="font-medium">{season.name}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <Button
@@ -497,8 +495,8 @@ export default function AdminSeasonsPage() {
             <AlertDialogTitle>Confirm Bulk Deletion</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete{" "}
-              <strong>{selectedIds.size} seasons</strong>? This action cannot
-              be undone.
+              <strong>{selectedIds.size} seasons</strong>? This action cannot be
+              undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -523,4 +521,3 @@ export default function AdminSeasonsPage() {
     </div>
   );
 }
-

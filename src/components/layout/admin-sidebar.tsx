@@ -9,7 +9,7 @@ import {
   Tags,
   Shield,
   Flag,
-  Bot
+  Bot,
 } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { cn } from "@/lib/utils";
@@ -21,12 +21,12 @@ const menuItems = [
     href: "/admin/dashboard",
   },
   {
-    title: "Quản lý Users",
+    title: "Manage Users",
     icon: Users,
     href: "/admin/users",
   },
   {
-    title: "Quản lý Items",
+    title: "Manage Items",
     icon: Shirt,
     href: "/admin/items",
   },
@@ -59,7 +59,7 @@ const menuItems = [
     title: "AI Settings",
     icon: Bot,
     href: "/admin/ai-settings",
-  }
+  },
   // {
   //   title: "Thống kê",
   //   icon: BarChart3,
@@ -84,7 +84,12 @@ export function AdminSidebar() {
             <Shield className="w-6 h-6 text-white" />
           </div>
           <div>
-            <Logo variant="rectangle" width={100} height={30} className="brightness-0 invert" />
+            <Logo
+              variant="rectangle"
+              width={100}
+              height={30}
+              className="brightness-0 invert"
+            />
             <p className="text-xs text-slate-400 mt-0.5">Admin Portal</p>
           </div>
         </div>
@@ -94,8 +99,9 @@ export function AdminSidebar() {
       <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
         {menuItems.map((item) => {
           const Icon = item.icon;
-          const isActive = pathname === item.href || pathname?.startsWith(item.href + "/");
-          
+          const isActive =
+            pathname === item.href || pathname?.startsWith(item.href + "/");
+
           return (
             <Link
               key={item.href}
@@ -117,11 +123,8 @@ export function AdminSidebar() {
 
       {/* Footer */}
       <div className="p-4 border-t border-slate-800">
-        <div className="text-xs text-slate-500 text-center">
-          SOP Admin v1.0
-        </div>
+        <div className="text-xs text-slate-500 text-center">SOP Admin v1.0</div>
       </div>
     </aside>
   );
 }
-

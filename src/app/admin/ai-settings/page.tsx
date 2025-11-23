@@ -2,27 +2,6 @@
 
 import { useState, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,25 +12,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Plus,
-  Edit,
-  Trash2,
-  Loader2,
-  Search,
-  CheckSquare,
-  XSquare,
-  Eye,
-  EyeOff,
-} from "lucide-react";
+import { Loader2, Sparkles, AlertTriangle } from "lucide-react";
 import {
   useAdminAISettings,
   useCreateAISetting,
@@ -61,6 +22,12 @@ import {
 } from "@/hooks/admin/useAdminAISettings";
 import type { AISetting, AISettingType } from "@/lib/api/admin-api";
 import { toast } from "sonner";
+import { StatsCards } from "./components/StatsCards";
+import { SearchFilters } from "./components/SearchFilters";
+import { SelectionToolbar } from "./components/SelectionToolbar";
+import { SettingsTable } from "./components/SettingsTable";
+import { AISettingFormDialog } from "./components/AISettingFormDialog";
+import { ViewValueDialog } from "./components/ViewValueDialog";
 
 const AI_SETTING_TYPES: AISettingType[] = [
   "API_ITEM_ANALYZING",
@@ -88,9 +55,6 @@ export default function AdminAISettingsPage() {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
-  const [showSensitiveValues, setShowSensitiveValues] = useState<
-    Set<number>
-  >(new Set());
 
   // Form states
   const [formName, setFormName] = useState("");
@@ -98,9 +62,9 @@ export default function AdminAISettingsPage() {
   const [formType, setFormType] = useState<string>("");
 
   // Fetch data
-  const { data, isLoading, refetch } = useAdminAISettings();
+  const { data, isLoading } = useAdminAISettings();
 
-  const allSettings = data?.data || [];
+  const allSettings = useMemo(() => data?.data || [], [data?.data]);
 
   // Filter and search
   const filteredSettings = useMemo(() => {
@@ -150,21 +114,8 @@ export default function AdminAISettingsPage() {
     setSelectedIds(new Set());
   };
 
-  const toggleShowValue = (id: number) => {
-    const newSet = new Set(showSensitiveValues);
-    if (newSet.has(id)) {
-      newSet.delete(id);
-    } else {
-      newSet.add(id);
-    }
-    setShowSensitiveValues(newSet);
-  };
-
   const maskSensitiveValue = (value: string, id: number): string => {
     // Mask API keys and sensitive values
-    if (showSensitiveValues.has(id)) {
-      return value;
-    }
     // Check if it looks like an API key (starts with common prefixes)
     if (
       value.startsWith("AIza") ||
@@ -290,466 +241,141 @@ export default function AdminAISettingsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-8">
       {/* Page Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">
-            AI Settings Management
-          </h1>
-          <p className="text-gray-600 mt-2">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-lg">
+              <Sparkles className="w-6 h-6" />
+            </div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+              AI Settings Management
+            </h1>
+          </div>
+          <p className="text-gray-600 ml-15">
             Manage AI configuration settings, API keys, models, and prompts
           </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => refetch()}>
-            <Loader2 className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
-          <Button
-            onClick={() => {
-              setFormName("");
-              setFormValue("");
-              setFormType("");
-              setIsCreateOpen(true);
-            }}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Setting
-          </Button>
         </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="border-0 shadow">
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-gray-900">
-              {isLoading ? (
-                <Loader2 className="w-6 h-6 animate-spin" />
-              ) : (
-                allSettings.length
-              )}
-            </div>
-            <p className="text-sm text-gray-600 mt-1">Total Settings</p>
-          </CardContent>
-        </Card>
-        <Card className="border-0 shadow">
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-blue-600">
-              {isLoading ? (
-                <Loader2 className="w-6 h-6 animate-spin" />
-              ) : (
-                allSettings.filter((s) => s.type.includes("API")).length
-              )}
-            </div>
-            <p className="text-sm text-gray-600 mt-1">API Keys</p>
-          </CardContent>
-        </Card>
-        <Card className="border-0 shadow">
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-purple-600">
-              {isLoading ? (
-                <Loader2 className="w-6 h-6 animate-spin" />
-              ) : (
-                allSettings.filter((s) => s.type.includes("MODEL")).length
-              )}
-            </div>
-            <p className="text-sm text-gray-600 mt-1">Models</p>
-          </CardContent>
-        </Card>
-        <Card className="border-0 shadow">
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-green-600">
-              {isLoading ? (
-                <Loader2 className="w-6 h-6 animate-spin" />
-              ) : (
-                allSettings.filter((s) => s.type.includes("PROMPT")).length
-              )}
-            </div>
-            <p className="text-sm text-gray-600 mt-1">Prompts</p>
-          </CardContent>
-        </Card>
-      </div>
+      <StatsCards isLoading={isLoading} allSettings={allSettings} />
 
       {/* Search & Filters */}
-      <Card className="border-0 shadow">
-        <CardContent className="pt-6">
-          <div className="flex gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <Input
-                placeholder="Search settings by name, type, or value..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Filter by type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                {AI_SETTING_TYPES.map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {type.replace(/_/g, " ")}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {selectedIds.size > 0 && (
-              <Button
-                variant="destructive"
-                onClick={() => setIsBulkDeleteOpen(true)}
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Delete Selected ({selectedIds.size})
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      <SearchFilters
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        typeFilter={typeFilter}
+        onTypeFilterChange={setTypeFilter}
+        aiSettingTypes={AI_SETTING_TYPES}
+      />
 
       {/* Selection Toolbar */}
-      {selectedIds.size > 0 && (
-        <Card className="border-blue-500 border-2 bg-blue-50">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <CheckSquare className="w-5 h-5 text-blue-600" />
-                <span className="font-medium text-gray-900">
-                  {selectedIds.size} setting(s) selected
-                </span>
-              </div>
-              <Button variant="outline" size="sm" onClick={clearSelection}>
-                <XSquare className="w-4 h-4 mr-2" />
-                Clear Selection
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <SelectionToolbar
+        selectedCount={selectedIds.size}
+        onClearSelection={clearSelection}
+      />
 
       {/* Table */}
       <Card className="border-0 shadow-lg">
         <CardContent className="pt-6">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-              <span className="ml-3 text-gray-600">Loading AI settings...</span>
-            </div>
-          ) : filteredSettings.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-gray-600">No settings found.</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">
-                      <Checkbox
-                        checked={
-                          filteredSettings.length > 0 &&
-                          filteredSettings.every((setting) =>
-                            selectedIds.has(setting.id)
-                          )
-                        }
-                        onCheckedChange={(checked: boolean) =>
-                          checked ? selectAll() : clearSelection()
-                        }
-                      />
-                    </TableHead>
-                    <TableHead>ID</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Value</TableHead>
-                    <TableHead>Created Date</TableHead>
-                    <TableHead>Updated Date</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredSettings.map((setting: AISetting) => (
-                    <TableRow key={setting.id}>
-                      <TableCell>
-                        <Checkbox
-                          checked={selectedIds.has(setting.id)}
-                          onCheckedChange={() => toggleSelect(setting.id)}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{setting.id}</Badge>
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {setting.name}
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={getTypeColor(setting.type)}>
-                          {setting.type.replace(/_/g, " ")}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="max-w-md">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-gray-600 truncate">
-                            {maskSensitiveValue(setting.value, setting.id)}
-                          </span>
-                          {setting.value.length > 100 && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6"
-                              onClick={() => openViewValueDialog(setting)}
-                            >
-                              <Eye className="w-3 h-3" />
-                            </Button>
-                          )}
-                          {(setting.value.startsWith("AIza") ||
-                            setting.value.startsWith("sk-") ||
-                            setting.value.length > 50) && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6"
-                              onClick={() => toggleShowValue(setting.id)}
-                            >
-                              {showSensitiveValues.has(setting.id) ? (
-                                <EyeOff className="w-3 h-3" />
-                              ) : (
-                                <Eye className="w-3 h-3" />
-                              )}
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-gray-600 text-sm">
-                        {setting.createdDate
-                          ? new Date(setting.createdDate).toLocaleDateString(
-                              "en-US",
-                              {
-                                year: "numeric",
-                                month: "short",
-                                day: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              }
-                            )
-                          : "N/A"}
-                      </TableCell>
-                      <TableCell className="text-gray-600 text-sm">
-                        {setting.updatedDate
-                          ? new Date(setting.updatedDate).toLocaleDateString(
-                              "en-US",
-                              {
-                                year: "numeric",
-                                month: "short",
-                                day: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              }
-                            )
-                          : "N/A"}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => openEditDialog(setting)}
-                            className="h-8 w-8"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => openDeleteDialog(setting)}
-                            className="h-8 w-8 text-red-600 hover:text-red-700"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
+          <SettingsTable
+            isLoading={isLoading}
+            filteredSettings={filteredSettings}
+            selectedIds={selectedIds}
+            onToggleSelect={toggleSelect}
+            onSelectAll={selectAll}
+            onClearSelection={clearSelection}
+            onEdit={openEditDialog}
+            onDelete={openDeleteDialog}
+            onViewValue={openViewValueDialog}
+            maskSensitiveValue={maskSensitiveValue}
+            getTypeColor={getTypeColor}
+          />
         </CardContent>
       </Card>
 
       {/* Create Dialog */}
-      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Create New AI Setting</DialogTitle>
-            <DialogDescription>
-              Add a new AI configuration setting
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Setting Name</Label>
-              <Input
-                id="name"
-                placeholder="Enter setting name..."
-                value={formName}
-                onChange={(e) => setFormName(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="type">Type</Label>
-              <Select value={formType} onValueChange={setFormType}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select setting type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {AI_SETTING_TYPES.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type.replace(/_/g, " ")}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="value">Value</Label>
-              <Textarea
-                id="value"
-                placeholder="Enter setting value (API key, model name, prompt, etc.)..."
-                value={formValue}
-                onChange={(e) => setFormValue(e.target.value)}
-                rows={10}
-                className="font-mono text-sm"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleCreate} disabled={createMutation.isPending}>
-              {createMutation.isPending ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Creating...
-                </>
-              ) : (
-                "Create"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AISettingFormDialog
+        isOpen={isCreateOpen}
+        onClose={() => {
+          setIsCreateOpen(false);
+          setFormName("");
+          setFormValue("");
+          setFormType("");
+        }}
+        title="Create New AI Setting"
+        description="Add a new AI configuration setting to the system"
+        formName={formName}
+        formValue={formValue}
+        formType={formType}
+        onNameChange={setFormName}
+        onValueChange={setFormValue}
+        onTypeChange={setFormType}
+        onSubmit={handleCreate}
+        isSubmitting={createMutation.isPending}
+        submitLabel="Create Setting"
+        aiSettingTypes={AI_SETTING_TYPES}
+      />
 
       {/* Edit Dialog */}
-      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit AI Setting</DialogTitle>
-            <DialogDescription>Update AI setting information</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-name">Setting Name</Label>
-              <Input
-                id="edit-name"
-                placeholder="Enter setting name..."
-                value={formName}
-                onChange={(e) => setFormName(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-type">Type</Label>
-              <Select value={formType} onValueChange={setFormType}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select setting type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {AI_SETTING_TYPES.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type.replace(/_/g, " ")}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-value">Value</Label>
-              <Textarea
-                id="edit-value"
-                placeholder="Enter setting value..."
-                value={formValue}
-                onChange={(e) => setFormValue(e.target.value)}
-                rows={10}
-                className="font-mono text-sm"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleEdit} disabled={updateMutation.isPending}>
-              {updateMutation.isPending ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                "Save"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AISettingFormDialog
+        isOpen={isEditOpen}
+        onClose={() => {
+          setIsEditOpen(false);
+          setSelectedSetting(null);
+          setFormName("");
+          setFormValue("");
+          setFormType("");
+        }}
+        title="Edit AI Setting"
+        description="Update AI setting information"
+        formName={formName}
+        formValue={formValue}
+        formType={formType}
+        onNameChange={setFormName}
+        onValueChange={setFormValue}
+        onTypeChange={setFormType}
+        onSubmit={handleEdit}
+        isSubmitting={updateMutation.isPending}
+        submitLabel="Save Changes"
+        aiSettingTypes={AI_SETTING_TYPES}
+      />
 
       {/* View Value Dialog */}
-      <Dialog open={isViewValueOpen} onOpenChange={setIsViewValueOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>View Setting Value</DialogTitle>
-            <DialogDescription>
-              {selectedSetting?.name} - {selectedSetting?.type}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Full Value</Label>
-              <div className="p-4 bg-gray-50 rounded-md border">
-                <pre className="whitespace-pre-wrap break-words text-sm font-mono">
-                  {selectedSetting?.value}
-                </pre>
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsViewValueOpen(false)}>
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ViewValueDialog
+        isOpen={isViewValueOpen}
+        onClose={() => {
+          setIsViewValueOpen(false);
+          setSelectedSetting(null);
+        }}
+        setting={selectedSetting}
+      />
 
       {/* Delete Confirmation */}
       <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
-            <AlertDialogDescription>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-red-100 text-red-600">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <AlertDialogTitle className="text-xl">
+                Confirm Deletion
+              </AlertDialogTitle>
+            </div>
+            <AlertDialogDescription className="text-base">
               Are you sure you want to delete the setting{" "}
-              <strong>{selectedSetting?.name}</strong>? This action cannot be
-              undone.
+              <strong className="text-gray-900">{selectedSetting?.name}</strong>
+              ? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel className="border-2">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-red-600 hover:bg-red-700 text-white shadow-md hover:shadow-lg transition-all"
               disabled={deleteMutation.isPending}
             >
               {deleteMutation.isPending ? (
@@ -758,7 +384,7 @@ export default function AdminAISettingsPage() {
                   Deleting...
                 </>
               ) : (
-                "Delete"
+                "Delete Setting"
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -769,18 +395,27 @@ export default function AdminAISettingsPage() {
       <AlertDialog open={isBulkDeleteOpen} onOpenChange={setIsBulkDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Bulk Deletion</AlertDialogTitle>
-            <AlertDialogDescription>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-red-100 text-red-600">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <AlertDialogTitle className="text-xl">
+                Confirm Bulk Deletion
+              </AlertDialogTitle>
+            </div>
+            <AlertDialogDescription className="text-base">
               Are you sure you want to delete{" "}
-              <strong>{selectedIds.size} settings</strong>? This action cannot
-              be undone.
+              <strong className="text-gray-900">
+                {selectedIds.size} setting{selectedIds.size > 1 ? "s" : ""}
+              </strong>
+              ? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel className="border-2">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleBulkDelete}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-red-600 hover:bg-red-700 text-white shadow-md hover:shadow-lg transition-all"
               disabled={bulkDeleteMutation.isPending}
             >
               {bulkDeleteMutation.isPending ? (
@@ -789,7 +424,7 @@ export default function AdminAISettingsPage() {
                   Deleting...
                 </>
               ) : (
-                `Delete ${selectedIds.size} settings`
+                `Delete ${selectedIds.size} Settings`
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -798,4 +433,3 @@ export default function AdminAISettingsPage() {
     </div>
   );
 }
-
