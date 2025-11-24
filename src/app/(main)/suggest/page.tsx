@@ -79,8 +79,11 @@ export default function SuggestPage() {
 
     try {
       const userId = parseInt(user?.id || "0");
+
+      const weatherString = `${activeWeather.description}, Temperature: ${activeWeather.temperature}°C, Feels like: ${activeWeather.feelsLike}°C`;
+
       const response = await outfitAPI.getSuggestion(
-        activeWeather.description,
+        weatherString,
         userId
       );
 

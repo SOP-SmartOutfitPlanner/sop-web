@@ -319,12 +319,6 @@ export const ItemCard = memo(function ItemCard({
                   </>
                 )}
               </GlassButton>
-            ) : item.aiConfidence && item.aiConfidence < 60 ? (
-              <div className="px-3 py-1 rounded-full bg-red-500/50 border border-red-400/60 backdrop-blur-md">
-                <span className="text-red-200 text-xs font-semibold">
-                  AI cannot analyze this item
-                </span>
-              </div>
             ) : null}
           </div>
         </div>

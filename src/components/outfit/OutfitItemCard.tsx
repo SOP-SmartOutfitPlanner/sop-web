@@ -4,6 +4,7 @@ import { memo } from "react";
 import GlassCard from "@/components/ui/glass-card";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+import { Star } from "lucide-react";
 
 interface OutfitItem {
   itemId: number;
@@ -19,6 +20,7 @@ interface OutfitItem {
   condition: string;
   pattern: string;
   aiDescription?: string;
+  itemType?: string;
 }
 
 interface OutfitItemCardProps {
@@ -69,6 +71,15 @@ export const OutfitItemCard = memo(function OutfitItemCard({
         </div>
       )}
 
+      {item.itemType === "SYSTEM" && (
+        <div className="absolute -top-2 -right-2 z-20">
+          <span className="flex items-center gap-1 px-2 py-1 text-[10px] font-semibold rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg border-2 border-white">
+            <Star className="w-3 h-3" />
+            AI Suggest
+          </span>
+        </div>
+      )}
+
       <GlassCard
         padding="16px"
         borderRadius="24px"
@@ -81,7 +92,7 @@ export const OutfitItemCard = memo(function OutfitItemCard({
           "relative h-full flex flex-col item-card-transition",
           "bg-linear-to-br from-cyan-300/20 via-blue-200/10 to-indigo-300/20",
           onClick &&
-            "cursor-pointer hover:border-cyan-400/50 hover:shadow-lg hover:shadow-cyan-500/20 transition-all duration-200"
+          "cursor-pointer hover:border-cyan-400/50 hover:shadow-lg hover:shadow-cyan-500/20 transition-all duration-200"
         )}
         onClick={onClick}
       >

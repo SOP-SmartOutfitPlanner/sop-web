@@ -39,8 +39,8 @@ export const useWeather = (options: UseWeatherOptions = {}) => {
     console.log("User location from profile:", location);
 
     // Parse location formats:
-    // - "ward, district, city, province" (e.g., "Phường 1, Quận 1, Hồ Chí Minh")
-    // - "district, city, province" (e.g., "Quận 1, Hồ Chí Minh")
+    // - "province, city, ward" (e.g., "Hồ Chí Minh, Quận 1, Phường 1")
+    // - "province, city" (e.g., "Hồ Chí Minh, Quận 1")
     // - "city, province" (e.g., "Hồ Chí Minh, Việt Nam")
     // - "city" (e.g., "Hồ Chí Minh" or "Hanoi")
 
@@ -50,15 +50,16 @@ export const useWeather = (options: UseWeatherOptions = {}) => {
     const searchTerms: string[] = [];
 
     if (parts.length >= 3) {
-      // "ward, district, city" or "district, city, province"
-      // Try last 2 parts (city, province or city)
-      searchTerms.push(parts.slice(-2).join(', '));
-      searchTerms.push(parts.slice(-1)[0]); // Just the last part (city/province)
+      // "province, city, ward" format
+      // Try first 2 parts (province, city)
+      searchTerms.push(parts.slice(0, 2).join(', '));
+      searchTerms.push(parts[0]); // Just the first part (province/city)
+      searchTerms.push(parts[1]); // Just the second part (city/district)
     } else if (parts.length === 2) {
-      // "city, province" - try both combinations
-      searchTerms.push(parts.join(', ')); // Full "city, province"
-      searchTerms.push(parts[0]); // Just city name
-      searchTerms.push(parts[1]); // Just province name
+      // "province, city" or "city, province" - try both combinations
+      searchTerms.push(parts.join(', ')); // Full "province, city"
+      searchTerms.push(parts[0]); // Just first part
+      searchTerms.push(parts[1]); // Just second part
     } else if (parts.length === 1) {
       // Just "city"
       searchTerms.push(parts[0]);

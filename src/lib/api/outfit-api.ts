@@ -156,7 +156,7 @@ class OutfitAPI {
 
   /**
    * Get AI outfit suggestion based on weather
-   * @param weather - Weather description string
+   * @param weather - Combined weather string (description, temperature, feels like)
    * @param userId - User ID
    * @returns Promise with suggested items and reason
    */
