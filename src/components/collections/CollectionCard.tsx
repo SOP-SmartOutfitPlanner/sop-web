@@ -202,7 +202,7 @@ export function CollectionCard({
               <h3 className="text-2xl h-15 font-bold text-white transition-colors group-hover:text-cyan-100 md:text-[26px]">
                 {collection.title}
               </h3>
-              <p className="text-sm leading-relaxed text-slate-300 line-clamp-2">
+              <p className="text-sm h-12 leading-relaxed text-slate-300 line-clamp-2">
                 {collection.shortDescription}
               </p>
             </div>
