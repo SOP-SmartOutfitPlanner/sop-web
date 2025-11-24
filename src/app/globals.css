@@ -939,9 +939,13 @@
 }
 
 /* Glassmorphism Toast Notifications */
-.glass-toast {
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
+.glass-toast,
+[data-sonner-toast].glass-toast,
+[data-sonner-toast][data-styled="true"].glass-toast {
+  background: rgba(30, 41, 59, 0.85) !important;
+  backdrop-filter: blur(12px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
   border-radius: 12px !important;
   padding: 16px !important;
   min-width: 320px !important;
@@ -949,6 +953,15 @@
   color: white !important;
   font-family: var(--font-bricolage-grotesque) !important;
   animation: slideInRight 0.3s ease-out !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset !important;
+}
+
+/* Override Sonner's theme-based default backgrounds */
+[data-sonner-toast][data-theme="light"].glass-toast,
+[data-sonner-toast][data-theme="dark"].glass-toast,
+[data-sonner-toast][data-theme="system"].glass-toast {
+  background: rgba(30, 41, 59, 0.85) !important;
 }
 
 @keyframes slideInRight {

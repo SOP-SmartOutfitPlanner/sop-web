@@ -8,7 +8,6 @@ import { motion } from "framer-motion";
 import {
   Shirt,
   Sparkles,
-  Calendar,
   CalendarDays,
   CreditCard,
   Heart,
@@ -34,7 +33,6 @@ const mainNavigationItems = [
   { path: "/wardrobe", label: "Wardrobe", icon: Shirt, enabled: true },
   { path: "/outfit", label: "Outfit", icon: Sparkles, enabled: true },
   { path: "/suggest", label: "Suggest", icon: Sparkles, enabled: true },
-  { path: "/daily", label: "Daily", icon: Calendar, enabled: false },
   { path: "/calendar", label: "Calendar", icon: CalendarDays, enabled: true },
   { path: "/community", label: "Community", icon: Users, enabled: true },
   { path: "/collections", label: "Collections", icon: ImgIcon, enabled: true },
