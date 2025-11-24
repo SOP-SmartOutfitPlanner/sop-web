@@ -595,7 +595,6 @@ export default function LocationMapModal({
                   borderColor="rgba(34, 211, 238, 1)"
                   className="min-w-[120px] text-base"
                 >
-                  <MapPin className="w-4 h-4 mr-2" />
                   Confirm Location
                 </GlassButton>
               </div>

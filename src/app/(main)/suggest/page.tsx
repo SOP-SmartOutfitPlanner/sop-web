@@ -2,17 +2,19 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { MapPin, AlertCircle, Navigation2 } from "lucide-react";
+import { MapPin, AlertCircle, Sparkles, Loader2 } from "lucide-react";
 import { Radio } from "antd";
 import { useAuthStore } from "@/store/auth-store";
 import GlassCard from "@/components/ui/glass-card";
 import GlassButton from "@/components/ui/glass-button";
 import { useWeather } from "@/hooks/useWeather";
 import { WeatherCard } from "@/components/suggest/WeatherCard";
-import { OutfitSuggestionModal } from "@/components/suggest/OutfitSuggestionModal";
+import { SuggestionResultView } from "@/components/suggest/SuggestionResultView";
 import LocationMapModal from "@/components/suggest/LocationMapModal";
 import { weatherAPI } from "@/lib/api/weather-api";
+import { outfitAPI } from "@/lib/api/outfit-api";
 import { DailyForecast } from "@/types/weather";
+import { SuggestedItem } from "@/types/outfit";
 import { toast } from "sonner";
 
 type WeatherTab = "my-location" | "selected-location";
@@ -20,7 +22,6 @@ type WeatherTab = "my-location" | "selected-location";
 export default function SuggestPage() {
   const router = useRouter();
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-  const [isSuggestionModalOpen, setIsSuggestionModalOpen] = useState(false);
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<WeatherTab>("my-location");
   const [customWeather, setCustomWeather] = useState<{
@@ -30,6 +31,11 @@ export default function SuggestPage() {
     lng: number;
   } | null>(null);
   const [isLoadingCustomWeather, setIsLoadingCustomWeather] = useState(false);
+  const [isSuggestingOutfit, setIsSuggestingOutfit] = useState(false);
+  const [suggestionResult, setSuggestionResult] = useState<{
+    items: SuggestedItem[];
+    reason: string;
+  } | null>(null);
   const { isAuthenticated, user } = useAuthStore();
 
   // Weather hook
@@ -55,6 +61,58 @@ export default function SuggestPage() {
 
     return () => clearTimeout(timer);
   }, [isAuthenticated, user, router]);
+
+  // Handler to suggest outfit based on current weather
+  const handleSuggestOutfit = async () => {
+    // Determine which weather to use
+    const activeWeather = activeTab === "selected-location" && customWeather
+      ? customWeather.forecast
+      : todayForecast;
+
+    if (!activeWeather) {
+      toast.error("Weather data not available. Please ensure location is enabled.");
+      return;
+    }
+
+    setIsSuggestingOutfit(true);
+    const loadingToast = toast.loading("AI is analyzing weather and creating outfit suggestions...");
+
+    try {
+      const userId = parseInt(user?.id || "0");
+      const response = await outfitAPI.getSuggestion(
+        activeWeather.description,
+        userId
+      );
+
+      setSuggestionResult({
+        items: response.data.suggestedItems,
+        reason: response.data.reason,
+      });
+
+      toast.success("Outfit suggestion generated!", { id: loadingToast });
+
+      // Scroll to results
+      setTimeout(() => {
+        document.getElementById("suggestion-results")?.scrollIntoView({
+          behavior: "smooth",
+          block: "start"
+        });
+      }, 100);
+    } catch (error) {
+      console.error("Failed to get outfit suggestion:", error);
+      toast.error("Failed to generate outfit suggestion", { id: loadingToast });
+    } finally {
+      setIsSuggestingOutfit(false);
+    }
+  };
+
+  const handleRechooseLocation = () => {
+    setSuggestionResult(null);
+  };
+
+  const handleCloseResults = () => {
+    setSuggestionResult(null);
+  };
 
   // Show loading while checking auth
   if (isCheckingAuth) {
@@ -233,20 +291,46 @@ export default function SuggestPage() {
         </div>
 
         {/* Suggest Outfit Button*/}
-        <div className="flex justify-center mt-12 pb-8">
+        <div className="flex justify-center mt-12">
           <GlassButton
-            onClick={() => setIsSuggestionModalOpen(true)}
-            className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white px-8 py-6 text-lg font-semibold shadow-lg"
+            onClick={handleSuggestOutfit}
+            disabled={isSuggestingOutfit || (!todayForecast && !customWeather)}
+            className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white px-8 py-6 text-lg font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Suggest Today
+            {isSuggestingOutfit ? (
+              <>
+                <Loader2 className="w-5 h-5 mr-2 animate-spin inline" />
+                Generating Suggestions...
+              </>
+            ) : (
+              <>
+                Suggest Today Outfit
+              </>
+            )}
           </GlassButton>
         </div>
 
-        {/* Outfit Suggestion Modal */}
-        <OutfitSuggestionModal
-          open={isSuggestionModalOpen}
-          onOpenChange={setIsSuggestionModalOpen}
-        />
+        {/* Suggestion Results */}
+        {suggestionResult && (
+          <div id="suggestion-results" className="mt-12 pb-8">
+            <div className="mb-6">
+              <h4 className="font-bricolage font-bold text-xl md:text-2xl lg:text-3xl leading-tight">
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-cyan-200">
+                  Your Suggested Outfit
+                </span>
+              </h4>
+              <p className="text-white/70 mt-2">
+                AI-generated outfit suggestions based on today&apos;s weather
+              </p>
+            </div>
+            <SuggestionResultView
+              items={suggestionResult.items}
+              reason={suggestionResult.reason}
+              onRechooseLocation={handleRechooseLocation}
+              onClose={handleCloseResults}
+            />
+          </div>
+        )}
 
         {/* Location Map Modal */}
         <LocationMapModal
