@@ -28,16 +28,15 @@ export interface CurrentSubscription {
     id:number;
     userId:number;
     subscriptionPlanId:number;
+    subscriptionPlanName:string;
     dateExp:string;
     isActive:boolean;
     benefitUsage:BenefitUsage[];
-    subscriptionPlan:UserSubscription;
-    transactions:Transaction[];
-    createdDate:string;
 }
 export interface BenefitUsage {
     featureCode:string;
     usage:number;
+    limit:number;
     benefitType:string;
 }
 export interface Transaction {
@@ -47,6 +46,9 @@ export interface Transaction {
     price:number;
     status:string;
     createdDate:string;
+    transactionCode?: number;
+    description?: string;
+    updatedDate?: string;
 }
 //================Purchase===========================
 export interface PurchaseRequest{

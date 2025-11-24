@@ -6,9 +6,11 @@ interface FeatureUsageCardProps {
 }
 
 export function FeatureUsageCard({ feature }: FeatureUsageCardProps) {
-  const usagePercentage = feature.isUnlimited
-    ? 0
-    : Math.min(100, (feature.used / feature.limit) * 100);
+  const remainingPercentage = feature.isUnlimited
+    ? 100
+    : feature.limit > 0
+    ? Math.min(100, (feature.remaining / feature.limit) * 100)
+    : 0;
 
   const getProgressColor = () => {
     if (feature.isUnlimited) return "bg-emerald-400";
@@ -46,24 +48,18 @@ export function FeatureUsageCard({ feature }: FeatureUsageCardProps) {
       ) : (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-gray-400 font-medium">Used</span>
-            <span className="text-white font-semibold text-sm">
-              {feature.used} / {feature.limit}
+            <span className="text-xs text-gray-400 font-medium">Remaining</span>
+            <span className={`text-sm font-semibold ${getTextColor()}`}>
+              {feature.remaining} / {feature.limit}
             </span>
           </div>
           <div className="w-full bg-gray-700/50 rounded-full h-2.5 overflow-hidden">
             <motion.div
               initial={{ width: 0 }}
-              animate={{ width: `${usagePercentage}%` }}
+              animate={{ width: `${remainingPercentage}%` }}
               transition={{ duration: 0.8, ease: "easeOut" }}
               className={`h-full rounded-full transition-all ${getProgressColor()}`}
             />
-          </div>
-          <div className="flex items-center justify-between pt-1">
-            <p className="text-xs text-gray-400">Remaining</p>
-            <p className={`text-sm font-bold ${getTextColor()}`}>
-              {feature.remaining}
-            </p>
           </div>
         </div>
       )}

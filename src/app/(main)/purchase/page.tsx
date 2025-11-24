@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import QRCode from "react-qrcode-logo";
 import { useMutation } from "@tanstack/react-query";
@@ -11,6 +11,7 @@ import type { PurchaseResponse } from "@/types/subscription";
 import { Button } from "@/components/ui/button";
 import { SubscriptionStateCard } from "@/components/subscription";
 import { useAuthStore } from "@/store/auth-store";
+import type { ApiError } from "@/lib/api/client";
 import logoImage from "../../../../public/SOP-logo-bg.png";
 type PurchaseData = PurchaseResponse["data"];
 
@@ -93,6 +94,8 @@ function PurchaseContent() {
     message: string;
   } | null>(null);
 
+  const lastRequestedPlanId = useRef<number | null>(null);
+
   const normalizeExpiry = useCallback((expiry: number) => {
     if (!expiry) return null;
     
@@ -110,7 +113,7 @@ function PurchaseContent() {
     mutate: createPurchase,
     isError,
     error,
-  } = useMutation({
+  } = useMutation<PurchaseResponse, ApiError, number>({
     mutationFn: async (subscriptionPlanId: number) =>
       subscriptionAPI.purchaseSubscription({ subscriptionPlanId }),
     onSuccess: (response) => {
@@ -185,6 +188,8 @@ function PurchaseContent() {
 
   useEffect(() => {
     if (!Number.isFinite(planId)) return;
+    if (lastRequestedPlanId.current === planId) return;
+    lastRequestedPlanId.current = planId;
     createPurchase(planId);
   }, [planId, createPurchase]);
 
@@ -231,6 +236,10 @@ function PurchaseContent() {
       const amountValue = statusUpdate.amount ?? purchase?.amount;
       if (amountValue) {
         params.set("amount", amountValue.toString());
+      }
+
+      if (finalStatus === "COMPLETED" && typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("subscription:refresh"));
       }
 
       // Xóa pending payment từ localStorage khi complete/failed/cancel
@@ -298,7 +307,7 @@ function PurchaseContent() {
       <div className="min-h-screen flex items-center justify-center px-4">
         <SubscriptionStateCard
           message={
-            error instanceof Error ? error.message : "Unable to create payment request."
+            error?.message ?? "Unable to create payment request."
           }
           actionLabel="Retry"
           onAction={handleRetry}
@@ -411,9 +420,9 @@ function PurchaseContent() {
                 </div>
               </div>
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400 font-medium">Bank BIN</p>
+                <p className="text-sm text-gray-400 font-medium">Bank</p>
                 <p className="font-mono font-semibold text-white">
-                  {purchase.bankInfo.bin}
+                  MB Bank
                 </p>
               </div>
             </div>

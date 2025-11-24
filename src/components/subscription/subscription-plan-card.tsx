@@ -107,7 +107,7 @@ const SubscriptionPlanCardComponent = ({
                 : "text-gray-300"
             }`}
           >
-            Billed monthly • Cancel anytime
+            Billed monthly
           </p>
         ) : (
           <p className="font-poppins text-xs text-gray-300">

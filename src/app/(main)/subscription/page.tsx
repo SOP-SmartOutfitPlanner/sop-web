@@ -4,7 +4,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Package, CheckCircle2, History } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { SubscriptionHero, PendingPaymentDialog } from "@/components/subscription";
+import {
+  SubscriptionHero,
+  PendingPaymentDialog,
+} from "@/components/subscription";
 import {
   SubscriptionPlansTab,
   CurrentSubscriptionTab,
@@ -17,6 +20,7 @@ import {
   useCancelPurchaseSubscriptionMutation,
 } from "@/hooks/subscription/useSubscription";
 import type { Purchase } from "@/types/subscription";
+import { ConfirmModal } from "@/components/common/ConfirmModal";
 
 interface PendingPaymentData {
   transactionId: number;
@@ -45,11 +49,13 @@ export default function SubscriptionContentPage() {
   const [pendingPaymentData, setPendingPaymentData] = useState<PendingPaymentData | null>(null);
   const [expiresAt, setExpiresAt] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  const [showPlanBlockedModal, setShowPlanBlockedModal] = useState(false);
 
   const { data, isLoading, isError, error, refetch } = useSubscription();
   const {
     data: currentData,
     isLoading: isLoadingCurrent,
+    refetch: refetchCurrent,
   } = useCurrentSubscription();
   const {
     data: historyData,
@@ -121,9 +127,21 @@ export default function SubscriptionContentPage() {
 
   const handleGetStarted = useCallback(
     (planId: number) => {
+      const hasPaidPlan =
+        currentSubscription &&
+        currentSubscription.subscriptionPlanName &&
+        currentSubscription.subscriptionPlanName.toLowerCase() !== "free";
+
+      const isDifferentPlan = planId !== currentPlanId;
+
+      if (hasPaidPlan && isDifferentPlan) {
+        setShowPlanBlockedModal(true);
+        return;
+      }
+
       router.push(`/purchase/checkout?planId=${planId}`);
     },
-    [router]
+    [router, currentPlanId, currentSubscription]
   );
 
   const handleContinuePayment = useCallback(() => {
@@ -155,6 +173,23 @@ export default function SubscriptionContentPage() {
       },
     });
   }, [pendingPaymentData, cancelSubscription]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const handleRefresh = () => {
+      refetch();
+      refetchCurrent();
+      refetchHistory();
+    };
+
+    window.addEventListener("subscription:refresh", handleRefresh);
+    return () => {
+      window.removeEventListener("subscription:refresh", handleRefresh);
+    };
+  }, [refetch, refetchCurrent, refetchHistory]);
 
   // Tạo Purchase object từ pendingPaymentData để hiển thị trong dialog
   const purchaseForDialog = useMemo<Purchase | null>(() => {
@@ -223,7 +258,6 @@ export default function SubscriptionContentPage() {
           <TabsContent value="current" className="mt-8">
             <CurrentSubscriptionTab
               currentSubscription={currentSubscription}
-              plansData={data}
               isLoading={isLoadingCurrent}
             />
           </TabsContent>
@@ -254,6 +288,19 @@ export default function SubscriptionContentPage() {
           onCancelPayment={handleCancelPayment}
         />
       )}
+      <ConfirmModal
+        open={showPlanBlockedModal}
+        onOpenChange={setShowPlanBlockedModal}
+        title="Action not allowed"
+        subtitle="You already have an active paid subscription."
+        confirmButtonText="Got it"
+        showCancelButton={false}
+        onConfirm={() => setShowPlanBlockedModal(false)}
+      >
+        <p className="text-sm text-gray-200">
+          Please wait until your current plan expires before purchasing another subscription.
+        </p>
+      </ConfirmModal>
     </div>
   );
 }
