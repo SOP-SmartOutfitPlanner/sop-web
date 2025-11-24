@@ -59,3 +59,16 @@ export type { FollowerUser } from "./community-api";
 export { outfitAPI } from "./outfit-api";
 export type { Outfit, GetOutfitsRequest, GetOutfitsResponse } from "../../types/outfit";
 
+// Export Stylist API
+export { stylistAPI } from "./stylist-api";
+export type {
+  StylistCollectionsStats,
+  StylistCollectionsStatsParams,
+  StylistCollectionHighlight,
+  StylistCollectionsMonthlyStat,
+  StylistPostsStats,
+  StylistPostsStatsParams,
+  StylistPostHighlight,
+  StylistPostsMonthlyStat,
+} from "./stylist-api";
+

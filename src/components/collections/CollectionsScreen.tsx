@@ -177,6 +177,19 @@ export function CollectionsScreen() {
                   mood, and silhouette into immersive, wearable stories.
                 </p>
               </div>
+              {isStylist && (
+                <div className="relative z-10">
+                  <Button
+                    asChild
+                    className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-cyan-500/30 transition-all duration-300 hover:from-cyan-400 hover:to-blue-500"
+                  >
+                    <Link href="/dashboard/stylist">
+                      <Sparkles className="h-4 w-4 transition-all duration-300 group-hover:scale-110" />
+                      Enter Stylist Studio
+                    </Link>
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </GlassCard>

@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { User, LogOut } from "lucide-react";
+import { User, LogOut, Sparkles } from "lucide-react";
 import { useAuthStore } from "@/store/auth-store";
 import { useIsClient } from "@/hooks/useIsClient";
 
@@ -18,6 +18,7 @@ export function NavbarAuthSection() {
   const router = useRouter();
   const { user, logout, isInitialized } = useAuthStore();
   const isClient = useIsClient();
+  const isStylist = user?.role?.toUpperCase() === "STYLIST";
 
   const handleLogout = () => {
     logout();
@@ -65,6 +66,19 @@ export function NavbarAuthSection() {
             <User className="mr-2 h-4 w-4" />
             Profile
           </DropdownMenuItem>
+          {isStylist && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => {
+                  router.push("/dashboard/stylist");
+                }}
+              >
+                <Sparkles className="mr-2 h-4 w-4" />
+                Stylist Studio
+              </DropdownMenuItem>
+            </>
+          )}
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleLogout}>
             <LogOut className="mr-2 h-4 w-4" />
