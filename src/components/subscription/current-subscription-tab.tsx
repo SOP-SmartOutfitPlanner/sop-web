@@ -11,62 +11,57 @@ import {
 } from "lucide-react";
 import { SubscriptionStateCard } from "./index";
 import { FeatureUsageCard } from "./feature-usage-card";
-import { calculateRemainingUsage, formatCurrency } from "./subscription-utils";
-import type { UserSubscription, BenefitUsage } from "@/types/subscription";
+import type { CurrentSubscription } from "@/types/subscription";
+import type { RemainingUsage } from "./subscription-utils";
 
 interface CurrentSubscriptionTabProps {
-  currentSubscription?: {
-    subscriptionPlanId: number;
-    dateExp: string;
-    isActive: boolean;
-    benefitUsage: BenefitUsage[];
-  };
-  plansData?: { data: UserSubscription[] };
+  currentSubscription?: CurrentSubscription;
   isLoading: boolean;
 }
 
 export function CurrentSubscriptionTab({
   currentSubscription,
-  plansData,
   isLoading,
 }: CurrentSubscriptionTabProps) {
-  const currentSubscriptionUsage = useMemo(() => {
-    if (!currentSubscription || !plansData?.data) return null;
-
-    const currentPlan = plansData.data.find(
-      (plan) => plan.id === currentSubscription.subscriptionPlanId
-    );
-
-    if (!currentPlan) return null;
-
-    const remainingUsage = calculateRemainingUsage(
-      currentPlan,
-      currentSubscription.benefitUsage
-    );
-
-    return {
-      plan: currentPlan,
-      dateExp: currentSubscription.dateExp,
-      isActive: currentSubscription.isActive,
-      remainingUsage,
-    };
-  }, [currentSubscription, plansData]);
+  const isFreePlan =
+    currentSubscription?.subscriptionPlanName?.toLowerCase() === "free";
 
   const formattedExpiry = useMemo(() => {
-    if (!currentSubscriptionUsage?.dateExp) return null;
+    if (!currentSubscription?.dateExp) return null;
     try {
-      const date = new Date(currentSubscriptionUsage.dateExp);
-      return date.toLocaleDateString("vi-VN", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
+      const date = new Date(currentSubscription.dateExp);
+      return new Intl.DateTimeFormat("en-US", {
+        dateStyle: "long",
+        timeStyle: "short",
+      }).format(date);
     } catch {
-      return currentSubscriptionUsage.dateExp;
+      return currentSubscription.dateExp;
     }
-  }, [currentSubscriptionUsage?.dateExp]);
+  }, [currentSubscription?.dateExp]);
+
+  const featureUsage = useMemo<RemainingUsage[]>(() => {
+    if (!currentSubscription?.benefitUsage?.length) return [];
+    return currentSubscription.benefitUsage.map((feature) => {
+      const rawLimit =
+        typeof feature.limit === "number" && Number.isFinite(feature.limit)
+          ? feature.limit
+          : feature.limit ?? 0;
+      const isUnlimited = rawLimit === -1 || rawLimit === Infinity;
+      const limit = isUnlimited ? -1 : Math.max(rawLimit, 0);
+      const remaining = Math.max(feature.usage ?? 0, 0);
+      const used = isUnlimited
+        ? 0
+        : Math.max(limit - remaining, 0);
+      return {
+        featureCode: feature.featureCode,
+        benefitType: feature.benefitType,
+        limit,
+        used,
+        remaining: isUnlimited ? remaining : Math.min(remaining, limit),
+        isUnlimited,
+      };
+    });
+  }, [currentSubscription?.benefitUsage]);
 
   if (isLoading) {
     return (
@@ -81,7 +76,7 @@ export function CurrentSubscriptionTab({
     );
   }
 
-  if (!currentSubscriptionUsage) {
+  if (!currentSubscription) {
     return (
       <div className="flex items-center justify-center py-12">
         <SubscriptionStateCard message="You don't have an active subscription yet. Choose a plan to get started!" />
@@ -103,24 +98,23 @@ export function CurrentSubscriptionTab({
             <Package className="w-6 h-6 text-blue-300" />
           </div>
           <div>
-            <h2 className="font-dela-gothic text-2xl md:text-3xl text-white mb-2">
-              Current Subscription
-            </h2>
+            <div className="flex items-center gap-2 mb-2">
+              <h2 className="font-dela-gothic text-2xl md:text-3xl text-white">
+                Current Subscription
+              </h2>
+              <span className="px-3 py-1 rounded-full bg-white/10 text-white text-xs border border-white/20">
+                #{currentSubscription.id}
+              </span>
+            </div>
             <div className="flex flex-wrap items-center gap-3">
               <p className="font-poppins text-base text-gray-300 font-medium">
-                {currentSubscriptionUsage.plan.name}
+                {currentSubscription.subscriptionPlanName}
               </p>
-              {currentSubscriptionUsage.plan.price !== undefined && (
-                <span className="px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 text-sm font-semibold border border-blue-400/40">
-                  {formatCurrency(currentSubscriptionUsage.plan.price)}
-                  {currentSubscriptionUsage.plan.price > 0 && "/month"}
-                </span>
-              )}
             </div>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {currentSubscriptionUsage.isActive ? (
+          {currentSubscription.isActive ? (
             <span className="px-4 py-2 rounded-full bg-emerald-500/20 text-emerald-300 text-sm font-semibold border border-emerald-400/40 flex items-center gap-2 shadow-lg shadow-emerald-500/10">
               <CheckCircle2 className="w-4 h-4" />
               Active
@@ -148,14 +142,14 @@ export function CurrentSubscriptionTab({
                 <Calendar className="w-5 h-5 text-blue-300" />
               </div>
               <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">
-                Expires On
+                {isFreePlan ? "Renews On" : "Expires On"}
               </p>
             </div>
             <p className="font-semibold text-white text-lg">{formattedExpiry}</p>
           </motion.div>
         )}
 
-        {currentSubscriptionUsage.plan.description && (
+        {currentSubscription.subscriptionPlanName && (
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -167,18 +161,18 @@ export function CurrentSubscriptionTab({
                 <Sparkles className="w-5 h-5 text-purple-300" />
               </div>
               <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">
-                Description
+                Plan Name
               </p>
             </div>
             <p className="font-poppins text-sm text-gray-200 leading-relaxed">
-              {currentSubscriptionUsage.plan.description}
+              {currentSubscription.subscriptionPlanName}
             </p>
           </motion.div>
         )}
       </div>
 
       {/* Feature Usage Section */}
-      {currentSubscriptionUsage.remainingUsage.length > 0 && (
+      {featureUsage.length > 0 && (
         <div>
           <div className="flex items-center gap-3 mb-6">
             <div className="p-2 rounded-lg bg-cyan-500/20">
@@ -188,13 +182,13 @@ export function CurrentSubscriptionTab({
               Feature Usage
             </h3>
             <span className="px-3 py-1 rounded-full bg-white/5 text-gray-300 text-xs font-semibold border border-white/10">
-              {currentSubscriptionUsage.remainingUsage.length} features
+              {featureUsage.length} features
             </span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {currentSubscriptionUsage.remainingUsage.map((feature, index) => (
+            {featureUsage.map((feature, index) => (
               <motion.div
-                key={feature.featureCode}
+                key={`${feature.featureCode}-${index}`}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: index * 0.05 }}

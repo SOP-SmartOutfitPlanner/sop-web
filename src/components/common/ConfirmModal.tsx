@@ -67,27 +67,30 @@ export function ConfirmModal({
       <div className="fixed h-full inset-0 bg-black/60 backdrop-blur-sm z-50" />
 
       {/* Modal Container */}
-      <div className="fixed inset-0 z-[51] flex items-center justify-center p-4 pointer-events-none">
+      <div className="fixed inset-0 z-51 flex items-center justify-center p-4 pointer-events-none">
         <div
           className="max-w-[95vw] rounded-3xl overflow-hidden shadow-2xl pointer-events-auto relative flex flex-col"
           style={{
             width: maxWidth,
             ...(maxHeight ? { height: maxHeight, maxHeight: "95vh" } : {})
           }}
-          onClick={(e) => e.stopPropagation()}
+          onClick={(event) => {
+            event.stopPropagation();
+          }}
+          data-modal-root="true"
         >
           {/* Background */}
-          <div className="absolute inset-0 bg-gradient-to-br from-slate-900/85 via-blue-900/80 to-slate-900/85">
+          <div className="absolute inset-0 bg-linear-to-br from-slate-900/85 via-blue-900/80 to-slate-900/85">
             <div className="absolute top-0 -right-32 w-[400px] h-[400px] bg-blue-200/15 rounded-full blur-3xl"></div>
             <div className="absolute bottom-0 -left-32 w-[400px] h-[400px] bg-cyan-200/15 rounded-full blur-3xl"></div>
           </div>
 
           <div className="relative z-10 flex flex-col h-full">
             {/* Header */}
-            <div className="px-6 pt-5 pb-3 flex-shrink-0">
+            <div className="px-6 pt-5 pb-3 shrink-0">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="font-dela-gothic text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-cyan-200">
+                  <h2 className="font-dela-gothic text-2xl font-bold bg-clip-text text-transparent bg-linear-to-r from-white via-blue-100 to-cyan-200">
                     {title}
                   </h2>
                   {subtitle && (
@@ -113,7 +116,7 @@ export function ConfirmModal({
 
             {/* Footer */}
             {showFooter && (
-              <div className="px-6 pb-5 pt-3 flex-shrink-0 border-t border-white/10">
+              <div className="px-6 pb-5 pt-3 shrink-0 border-t border-white/10">
                 {customFooter || (
                   <div className="flex items-center justify-end gap-3">
                     {showCancelButton && (
