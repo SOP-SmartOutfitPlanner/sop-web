@@ -69,7 +69,7 @@ export const WeatherCard = ({ forecast, cityName }: WeatherCardProps) => {
           <div className="h-full flex flex-col justify-between relative z-10">
             {/* Location & Date */}
             <div className="space-y-1">
-              <h3 className="text-3xl font-bold text-white mb-1 tracking-tight">
+              <h3 className="text-2xl font-bold text-white mb-1 tracking-tight">
                 {cityName || "Your Location"}
               </h3>
               <p className="text-white/60 text-sm font-medium">

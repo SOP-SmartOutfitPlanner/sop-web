@@ -173,25 +173,7 @@ export const ItemCard = memo(function ItemCard({
       >
 
         <div className="w-full flex flex-col flex-1 relative z-10">
-          {/* Image Container */}
-          {/* Checkbox - Top Left */}
 
-          {showCheckbox && (
-            <div
-              className={cn(
-                "absolute top-4 left-4 z-10",
-                "rounded-lg bg-black/70 p-1.5",
-                "transition-opacity duration-200",
-                isHovered || isSelected ? "opacity-100" : "opacity-0"
-              )}
-            >
-              <Checkbox
-                checked={isSelected}
-                onCheckedChange={handleCheckboxChange}
-                className="bg-white border-0 data-[state=checked]:bg-blue-500"
-              />
-            </div>
-          )}
           {/* Image with aspect ratio */}
           <div className="bg-white/5 rounded-xl aspect-square flex items-center justify-center overflow-hidden relative">
             <Image
@@ -206,7 +188,7 @@ export const ItemCard = memo(function ItemCard({
           </div>
 
           {/* Item Details */}
-          <div className="flex flex-col h-[200px] my-3">
+          <div className="flex flex-col h-[200px] mt-3">
             {/* Name and Category */}
             <div className="mb-2">
               <div className="flex items-start gap-2 mb-1">
@@ -225,7 +207,7 @@ export const ItemCard = memo(function ItemCard({
                 <span className="text-white/40 text-lg">No data</span>
               </div>
             ) : (
-              <div className="space-y-1 text-xs flex-1 overflow-hidden">
+              <div className="space-y-1 text-xs overflow-hidden">
                 {item.colors && item.colors.length > 0 && (
                   <div className="flex items-center gap-2 overflow-hidden">
                     <div className="flex items-center gap-1 flex-shrink-0">

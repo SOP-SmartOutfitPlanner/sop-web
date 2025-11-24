@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Sparkles, RotateCcw, Plus, CalendarCheck, Loader2, Star } from "lucide-react";
+import { Sparkles, Star, Flower2, Sun, Leaf, Snowflake } from "lucide-react";
 import GlassButton from "@/components/ui/glass-button";
 import GlassCard from "@/components/ui/glass-card";
 import { SuggestedItem } from "@/types/outfit";
 import { outfitAPI } from "@/lib/api/outfit-api";
 import { CalenderAPI } from "@/lib/api/calender-api";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface SuggestionResultViewProps {
   items: SuggestedItem[];
@@ -31,12 +32,22 @@ export function SuggestionResultView({
     try {
       const colors = JSON.parse(colorStr);
       if (Array.isArray(colors) && colors.length > 0) {
-        return colors[0].hex;
+        return colors;
       }
     } catch {
-      return "#94a3b8";
+      return [];
     }
-    return "#94a3b8";
+    return [];
+  };
+
+  // Get season data for badges
+  const getSeasonData = (seasonName: string) => {
+    const name = seasonName.toLowerCase();
+    if (name === 'spring') return { icon: Flower2, color: 'text-pink-200', bg: 'bg-pink-500/50', border: 'border-pink-300/70', circleBg: 'bg-pink-500' };
+    if (name === 'summer') return { icon: Sun, color: 'text-yellow-200', bg: 'bg-yellow-500/50', border: 'border-yellow-300/70', circleBg: 'bg-yellow-500' };
+    if (name === 'fall' || name === 'autumn') return { icon: Leaf, color: 'text-orange-200', bg: 'bg-orange-500/50', border: 'border-orange-300/70', circleBg: 'bg-orange-500' };
+    if (name === 'winter') return { icon: Snowflake, color: 'text-cyan-200', bg: 'bg-cyan-500/50', border: 'border-cyan-300/70', circleBg: 'bg-cyan-500' };
+    return { icon: null, color: 'text-gray-200', bg: 'bg-gray-500/50', border: 'border-gray-300/70', circleBg: 'bg-gray-500' };
   };
 
   // Handle Add to Wardrobe - Create outfit only
@@ -139,147 +150,240 @@ export function SuggestionResultView({
       </GlassCard>
 
       {/* Items Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {items.map((item) => {
-          const primaryColor = parseColor(item.color);
+          const colors = parseColor(item.color);
+          const seasonItems = item.seasons?.map(s => typeof s === 'string' ? s : s.name) || [];
 
           return (
-            <GlassCard
-              key={item.id}
-              padding="16px"
-              borderRadius="16px"
-              blur="8px"
-              brightness={1.05}
-              glowColor="rgba(59, 130, 246, 0.2)"
-              borderColor="rgba(255, 255, 255, 0.2)"
-              className="hover:scale-[1.02] transition-transform"
-            >
-              <div className="flex gap-4">
-                {/* Item Image */}
-                <div className="relative w-24 h-24 rounded-lg overflow-hidden bg-white/5 flex-shrink-0">
-                  <Image
-                    src={item.imgUrl}
-                    alt={item.name}
-                    fill
-                    className="object-cover"
-                  />
-                  {/* AI Badge */}
-                  {item.isAnalyzed && item.aiConfidence && (
-                    <div className="absolute top-1 left-1">
-                      <div className="relative">
-                        <div className="absolute inset-0 w-6 h-6 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 blur-sm opacity-75" />
-                        <div className="relative w-6 h-6 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center border border-white/50">
-                          <span className="text-[10px] font-black text-white">AI</span>
-                        </div>
+            <div key={item.id} className="group relative w-full h-full flex flex-col">
+              {/* AI Badge */}
+              {item.isAnalyzed && item.aiConfidence && (
+                <div className="absolute -top-2 -left-2 z-20">
+                  <div className="relative">
+                    {/* Glow effect */}
+                    <div className="absolute inset-0 w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 blur-md opacity-75 animate-pulse" />
+                    {/* Main badge */}
+                    <div className="relative w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 via-cyan-500 to-blue-500 flex items-center justify-center shadow-xl border-2 border-white">
+                      <span className="text-xs font-black text-white drop-shadow-lg">AI</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* System Item Badge */}
+              {item.itemType === "SYSTEM" && (
+                <div className="absolute -top-2 -right-2 z-20">
+                  <span className="flex items-center gap-1 px-2 py-1 text-[10px] font-semibold rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg border-2 border-white">
+                    <Star className="w-3 h-3" />
+                    AI Suggest
+                  </span>
+                </div>
+              )}
+
+              <GlassCard
+                padding="16px"
+                borderRadius="24px"
+                blur="4px"
+                brightness={1.02}
+                glowColor="rgba(34, 211, 238, 0.2)"
+                borderColor="rgba(255, 255, 255, 0.2)"
+                borderWidth="2px"
+                className={cn(
+                  "relative h-full flex flex-col cursor-pointer transition-all duration-200",
+                  "bg-gradient-to-br from-cyan-300/20 via-blue-200/10 to-indigo-300/20",
+                  "hover:shadow-lg"
+                )}
+              >
+                <div className="w-full flex flex-col flex-1 relative z-10">
+                  {/* Image Container */}
+                  <div className="bg-white/5 rounded-xl aspect-square flex items-center justify-center overflow-hidden relative">
+                    <Image
+                      src={item.imgUrl}
+                      alt={item.name}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+                    />
+                  </div>
+
+                  {/* Item Details */}
+                  <div className="flex flex-col h-[200px] my-3">
+                    {/* Name and Category */}
+                    <div className="mb-2">
+                      <div className="flex items-start gap-2 mb-1">
+                        <h3 className="text-white font-semibold text-base line-clamp-2 flex-1 overflow-hidden h-12">
+                          {item.name}
+                        </h3>
+                        <span className="px-2 py-0.5 rounded-full bg-white/10 border border-white/20 text-white/70 text-[10px] font-medium whitespace-nowrap flex-shrink-0">
+                          {item.categoryName || "Uncategorized"}
+                        </span>
                       </div>
                     </div>
-                  )}
-                </div>
 
-                {/* Item Details */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2 mb-1">
-                    <h4 className="font-semibold text-white text-sm truncate">
-                      {item.name}
-                    </h4>
-                    {/* System Item Badge */}
-                    {item.itemType === "SYSTEM" && (
-                      <span className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold rounded-full bg-gradient-to-r from-purple-500/80 to-pink-500/80 text-white whitespace-nowrap flex-shrink-0 border border-purple-300/30">
-                        <Star className="w-3 h-3" />
-                        AI Suggest Item
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-white/60 mb-2">{item.categoryName}</p>
+                    {/* Item Details */}
+                    <div className="space-y-1 text-xs flex-1 overflow-hidden">
+                      {/* Colors */}
+                      {colors && colors.length > 0 && (
+                        <div className="flex items-center gap-2 overflow-hidden">
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            {colors.slice(0, 6).map((color: { hex: string; name: string }, index: number) => (
+                              <div
+                                key={index}
+                                className="w-4 h-4 rounded-full border border-white/30 shadow-sm flex-shrink-0"
+                                style={{ backgroundColor: color.hex }}
+                                title={color.name}
+                              />
+                            ))}
+                            {colors.length > 6 && (
+                              <span className="text-white/50 text-[10px] ml-0.5">
+                                +{colors.length - 6}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
 
-                  {/* Color Badge */}
-                  <div className="flex items-center gap-2 mb-2">
-                    <div
-                      className="w-4 h-4 rounded-full border border-white/30"
-                      style={{ backgroundColor: primaryColor }}
-                    />
-                    <span className="text-xs text-white/70">
-                      {item.weatherSuitable} • {item.condition}
-                    </span>
-                  </div>
+                      {/* Fabric */}
+                      {item.fabric && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-white/70 truncate">{item.fabric}</span>
+                        </div>
+                      )}
 
-                  {/* Occasions */}
-                  {item.occasions && item.occasions.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      {item.occasions.slice(0, 2).map((occasion) => (
-                        <span
-                          key={occasion.id}
-                          className="px-2 py-0.5 text-[10px] rounded-full bg-white/10 text-white/70"
-                        >
-                          {occasion.name}
-                        </span>
-                      ))}
+                      {/* Weather */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-white/70 truncate">{item.weatherSuitable || "N/A"}</span>
+                      </div>
+
+                      {/* Seasons */}
+                      <div className="h-12 grid grid-cols-2 grid-rows-2 gap-x-2 gap-y-1 grid-flow-col">
+                        {seasonItems.length > 0 ? (
+                          seasonItems.slice(0, 4).map((season, index) => {
+                            const seasonData = getSeasonData(season);
+                            const Icon = seasonData.icon;
+                            return (
+                              <div
+                                key={index}
+                                className="relative flex items-center"
+                              >
+                                {/* Pill background */}
+                                <div
+                                  className={cn(
+                                    "px-5 py-2 rounded-full border flex items-center justify-center ml-3 h-4",
+                                    seasonData.bg,
+                                    seasonData.border
+                                  )}
+                                >
+                                  <span className={cn("font-xs truncate", seasonData.color)}>
+                                    {season}
+                                  </span>
+                                </div>
+                                {/* Circle icon on top of pill */}
+                                {Icon && (
+                                  <div
+                                    className={cn(
+                                      "absolute left-0 w-6 h-6 rounded-full border-2 border-white flex items-center justify-center shadow-md",
+                                      seasonData.circleBg
+                                    )}
+                                  >
+                                    <Icon className={cn("w-3.5 h-3.5", seasonData.color)} />
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <span className="text-white/50 text-xs col-span-2">N/A</span>
+                        )}
+                      </div>
+
+                      {/* Styles */}
+                      {item.styles && item.styles.length > 0 && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-white/70 truncate">
+                            {item.styles.map(s => typeof s === 'string' ? s : s.name).join(", ")}
+                          </span>
+                        </div>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
-              </div>
-            </GlassCard>
+              </GlassCard>
+            </div>
           );
         })}
       </div>
 
       {/* Action Buttons */}
-      <div className="space-y-3 pt-4 border-t border-white/10">
-        {/* Top Row: Try Another Location */}
-        <GlassButton
-          variant="outline"
-          size="md"
-          onClick={onRechooseLocation}
-          className="w-full"
-        >
-          <RotateCcw className="w-4 h-4" />
-          Try Another Location
-        </GlassButton>
-
+      <div className="space-y-3 pt-6 mt-6 border-t border-white/10">
         {/* Bottom Row: Add to Wardrobe & Use Outfit Today */}
-        <div className="flex gap-3">
-          <GlassButton
-            variant="custom"
-            size="md"
-            onClick={handleAddToWardrobe}
-            disabled={isAddingToWardrobe || isUsingToday}
-            backgroundColor="rgba(59, 130, 246, 0.8)"
-            borderColor="rgba(59, 130, 246, 1)"
-            className="flex-1"
-          >
-            {isAddingToWardrobe ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Adding...
-              </>
-            ) : (
-              <>
-                <Plus className="w-4 h-4" />
-                Add to Wardrobe
-              </>
-            )}
-          </GlassButton>
-          <GlassButton
-            variant="custom"
-            size="md"
-            onClick={handleUseOutfitToday}
-            disabled={isAddingToWardrobe || isUsingToday}
-            backgroundColor="rgba(34, 197, 94, 0.8)"
-            borderColor="rgba(34, 197, 94, 1)"
-            className="flex-1"
-          >
-            {isUsingToday ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Setting up...
-              </>
-            ) : (
-              <>
-                <CalendarCheck className="w-4 h-4" />
-                Use Outfit Today
-              </>
-            )}
-          </GlassButton>
+        <div className="flex justify-center gap-4">
+            {/* Add to Wardrobe Button */}
+            <div className=" group/btn">
+              <div className="relative">
+                <GlassButton
+                  variant="custom"
+                  borderRadius="18px"
+                  blur="20px"
+                  brightness={1.2}
+                  glowColor="rgba(200, 214, 238, 0.5)"
+                  glowIntensity={8}
+                  borderColor="rgba(255, 255, 255, 0.35)"
+                  borderWidth="2px"
+                  textColor="#ffffff"
+                  backgroundColor="rgba(0, 98, 255, 0.9)"
+                  onClick={handleAddToWardrobe}
+                  disabled={isAddingToWardrobe || isUsingToday}
+                  className={cn(
+                    "relative w-full h-16 font-bold text-base tracking-wide",
+                    "transition-all duration-300",
+                    "disabled:opacity-50 disabled:cursor-not-allowed",
+                    !isAddingToWardrobe && !isUsingToday && "hover:scale-[1.02] active:scale-[0.98]"
+                  )}
+                >
+                  <span className="relative z-10 flex items-center justify-center gap-2">
+                    {isAddingToWardrobe && (
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    )}
+                    {isAddingToWardrobe ? "Adding to Wardrobe..." : "Add to Wardrobe"}
+                  </span>
+                </GlassButton>
+              </div>
+            </div>
+
+            {/* Use Outfit Today Button */}
+            <div className=" group/btn">
+              <div className="relative">
+                <GlassButton
+                  variant="custom"
+                  borderRadius="18px"
+                  blur="16px"
+                  brightness={1.2}
+                  glowColor="rgba(200, 238, 200, 0.5)"
+                  glowIntensity={8}
+                  borderColor="rgba(255, 255, 255, 0.35)"
+                  borderWidth="2px"
+                  textColor="#ffffff"
+                  backgroundColor="rgba(9, 133, 28, 0.91)"
+                  onClick={handleUseOutfitToday}
+                  disabled={isAddingToWardrobe || isUsingToday}
+                  className={cn(
+                    "relative w-full h-16 font-bold text-base tracking-wide",
+                    "transition-all duration-300",
+                    "disabled:opacity-50 disabled:cursor-not-allowed",
+                    !isAddingToWardrobe && !isUsingToday && "hover:scale-[1.02] active:scale-[0.98]"
+                  )}
+                >
+                  <span className="relative z-10 flex items-center justify-center gap-2">
+                    {isUsingToday && (
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    )}
+                    {isUsingToday ? "Setting up..." : "Use Outfit Today"}
+                  </span>
+                </GlassButton>
+              </div>
+            </div>
         </div>
       </div>
 

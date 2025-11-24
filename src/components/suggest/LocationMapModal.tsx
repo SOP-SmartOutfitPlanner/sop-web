@@ -1,16 +1,23 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { MapPin, Navigation, Search, X, AlertCircle } from "lucide-react";
+import { MapPin, Navigation, X, AlertCircle } from "lucide-react";
+import { Input } from "antd";
 import GlassButton from "@/components/ui/glass-button";
-import { Input } from "@/components/ui/input";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import goongjs from "@goongmaps/goong-js";
+
+const { Search } = Input;
 
 interface LocationMapModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onLocationSelect: (lat: number, lng: number, address: string) => void;
+  initialLocation?: {
+    lat: number;
+    lng: number;
+    address: string;
+  };
 }
 
 interface SearchResult {
@@ -27,6 +34,7 @@ export default function LocationMapModal({
   open,
   onOpenChange,
   onLocationSelect,
+  initialLocation,
 }: LocationMapModalProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -104,6 +112,46 @@ export default function LocationMapModal({
         const token = apiKey;
         if (token) {
           goongjs.accessToken = token;
+        }
+
+        // Use initial location if provided, otherwise get user's current location
+        if (initialLocation) {
+          // Initialize map with provided location
+          const map = new goongjs.Map({
+            container: mapContainerRef.current!,
+            style: "https://tiles.goong.io/assets/goong_map_web.json",
+            center: [initialLocation.lng, initialLocation.lat],
+            zoom: 15,
+            attributionControl: false,
+          });
+
+          // Wait for map to load
+          map.on("load", () => {
+            console.log("✅ Goong map loaded successfully with initial location");
+          });
+
+          map.on("error", (e: { error: Error }) => {
+            console.error("❌ Map error:", e);
+            setMapError("Failed to load map. Please check your internet connection.");
+          });
+
+          // Add navigation controls
+          map.addControl(new goongjs.NavigationControl(), "top-right");
+
+          // Add click handler to map
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          map.on("click", async (e: any) => {
+            const { lng, lat } = e.lngLat;
+            await handleMapClick(lat, lng);
+          });
+
+          mapRef.current = map;
+
+          // Add marker at initial location
+          handleMapClick(initialLocation.lat, initialLocation.lng);
+
+          console.log("Map instance created with initial location");
+          return;
         }
 
         // Try to get user's current location
@@ -250,56 +298,83 @@ export default function LocationMapModal({
     }
   };
 
-  // Search locations
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) {
-      setSearchResults([]);
-      return;
-    }
-
-    setIsSearching(true);
-    try {
-      const apiKey = process.env.NEXT_PUBLIC_GOONG_API_KEY;
-      const response = await fetch(
-        `https://rsapi.goong.io/Place/AutoComplete?api_key=${apiKey}&input=${encodeURIComponent(
-          searchQuery
-        )}`
-      );
-      const data = await response.json();
-
-      if (data.predictions) {
-        // Get place details for each prediction
-        const results = await Promise.all(
-          data.predictions.slice(0, 5).map(async (prediction: { place_id: string; description: string }) => {
-            const detailResponse = await fetch(
-              `https://rsapi.goong.io/Place/Detail?place_id=${prediction.place_id}&api_key=${apiKey}`
-            );
-            const detailData = await detailResponse.json();
-
-            if (detailData.result?.geometry?.location) {
-              return {
-                place_id: prediction.place_id,
-                display: prediction.description,
-                address: prediction.description,
-                location: {
-                  lat: detailData.result.geometry.location.lat,
-                  lng: detailData.result.geometry.location.lng,
-                },
-              };
-            }
-            return null;
-          })
-        );
-
-        setSearchResults(results.filter((r): r is SearchResult => r !== null));
+  // Search locations with debounce
+  useEffect(() => {
+    const handleSearch = async () => {
+      if (!searchQuery.trim()) {
+        setSearchResults([]);
+        return;
       }
-    } catch (error) {
-      console.error("Search error:", error);
-      setSearchResults([]);
-    } finally {
-      setIsSearching(false);
-    }
-  };
+
+      setIsSearching(true);
+      try {
+        const apiKey = process.env.NEXT_PUBLIC_GOONG_API_KEY;
+        
+        // Get current map center for location-based search
+        let location = "";
+        if (mapRef.current) {
+          const center = mapRef.current.getCenter();
+          location = `${center.lat},${center.lng}`;
+        }
+
+        // Use autocomplete API with location, limit, and radius parameters
+        const params = new URLSearchParams({
+          api_key: apiKey || "",
+          input: searchQuery,
+          limit: "10",
+          radius: "10000", // 10km radius
+        });
+
+        if (location) {
+          params.append("location", location);
+        }
+
+        const response = await fetch(
+          `https://rsapi.goong.io/place/autocomplete?${params.toString()}`
+        );
+        const data = await response.json();
+
+        if (data.predictions) {
+          // Get place details for each prediction
+          const results = await Promise.all(
+            data.predictions.slice(0, 5).map(async (prediction: { place_id: string; description: string }) => {
+              const detailResponse = await fetch(
+                `https://rsapi.goong.io/Place/Detail?place_id=${prediction.place_id}&api_key=${apiKey}`
+              );
+              const detailData = await detailResponse.json();
+
+              if (detailData.result?.geometry?.location) {
+                return {
+                  place_id: prediction.place_id,
+                  display: prediction.description,
+                  address: prediction.description,
+                  location: {
+                    lat: detailData.result.geometry.location.lat,
+                    lng: detailData.result.geometry.location.lng,
+                  },
+                };
+              }
+              return null;
+            })
+          );
+
+          setSearchResults(results.filter((r): r is SearchResult => r !== null));
+        }
+      } catch (error) {
+        console.error("Search error:", error);
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    };
+
+    // Debounce search
+    const timeoutId = setTimeout(() => {
+      handleSearch();
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery]);
 
   // Handle search result click
   const handleResultClick = (result: SearchResult) => {
@@ -408,19 +483,20 @@ export default function LocationMapModal({
                 <div className="relative">
                   <div className="flex gap-2">
                     <div className="relative flex-1">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        type="text"
+                      <Search
                         placeholder="Search for a location..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                        className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-gray-400"
+                        loading={isSearching}
+                        allowClear
+                        size="large"
+                        className="custom-search-input"
+                        style={{
+                          backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                          borderColor: 'rgba(255, 255, 255, 0.2)',
+                        }}
                       />
                     </div>
-                    <GlassButton onClick={handleSearch} disabled={isSearching}>
-                      {isSearching ? "Searching..." : "Search"}
-                    </GlassButton>
                     <GlassButton
                       onClick={handleCurrentLocation}
                       disabled={isGettingLocation}
@@ -431,7 +507,15 @@ export default function LocationMapModal({
                   </div>
 
                   {/* Search Results Dropdown */}
-                  {searchResults.length > 0 && (
+                  {isSearching && searchQuery.trim() && (
+                    <div className="absolute z-10 w-full mt-2 bg-slate-800/95 border border-white/20 rounded-lg shadow-lg p-4">
+                      <div className="flex items-center gap-2 text-white/70">
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <span className="text-sm">Searching...</span>
+                      </div>
+                    </div>
+                  )}
+                  {!isSearching && searchResults.length > 0 && (
                     <div className="absolute z-10 w-full mt-2 bg-slate-800/95 border border-white/20 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                       {searchResults.map((result) => (
                         <button
@@ -511,7 +595,6 @@ export default function LocationMapModal({
                   borderColor="rgba(34, 211, 238, 1)"
                   className="min-w-[120px] text-base"
                 >
-                  <MapPin className="w-4 h-4 mr-2" />
                   Confirm Location
                 </GlassButton>
               </div>
