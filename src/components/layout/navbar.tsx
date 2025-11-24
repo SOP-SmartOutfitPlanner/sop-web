@@ -8,7 +8,6 @@ import { motion } from "framer-motion";
 import {
   Shirt,
   Sparkles,
-  Calendar,
   CalendarDays,
   CreditCard,
   Heart,
@@ -33,8 +32,7 @@ import { useUnreadCount } from "@/hooks/notifications/useUnreadCount";
 const mainNavigationItems = [
   { path: "/wardrobe", label: "Wardrobe", icon: Shirt, enabled: true },
   { path: "/outfit", label: "Outfit", icon: Sparkles, enabled: true },
-  { path: "/suggest", label: "Suggest", icon: Sparkles, enabled: false },
-  { path: "/daily", label: "Daily", icon: Calendar, enabled: false },
+  { path: "/suggest", label: "Suggest", icon: Sparkles, enabled: true },
   { path: "/calendar", label: "Calendar", icon: CalendarDays, enabled: true },
   { path: "/community", label: "Community", icon: Users, enabled: true },
   { path: "/collections", label: "Collections", icon: ImgIcon, enabled: true },
@@ -50,6 +48,102 @@ const personalNavigationItems = [
   { path: "/notifications", label: "Notifications", icon: Bell, enabled: true },
   { path: "/collections", label: "Collections", icon: ImgIcon, enabled: false },
 ];
+
+const CUSTOM_NAV_ICONS: Record<string, { active: string; inactive: string; alt: string }> = {
+  "/wardrobe": {
+    active: "/icon/blue-cloakroom-icon.png",
+    inactive: "/icon/cloakroom-icon.png",
+    alt: "cloakroom",
+  },
+  "/outfit": {
+    active: "/icon/blue-shirt-icon.png",
+    inactive: "/icon/blue-shirt-icon.png",
+    alt: "outfit",
+  },
+  "/suggest": {
+    active: "/icon/blue-ai-icon.png",
+    inactive: "/icon/blue-ai-icon.png",
+    alt: "suggest",
+  },
+  "/calendar": {
+    active: "/icon/blue-calendar-icon.png",
+    inactive: "/icon/blue-calendar-icon.png",
+    alt: "calendar",
+  },
+  "/community": {
+    active: "/icon/blue-community-icon.png",
+    inactive: "/icon/blue-community-icon.png",
+    alt: "community",
+  },
+  "/collections": {
+    active: "/icon/blue-collection-icon.png",
+    inactive: "/icon/blue-collection-icon.png",
+    alt: "collections",
+  },
+};
+
+const renderCustomNavButton = (
+  path: string,
+  label: string,
+  isActive: boolean,
+  enabled: boolean,
+  index: number
+) => {
+  const iconConfig = CUSTOM_NAV_ICONS[path];
+  if (!iconConfig) return null;
+
+  return (
+    <motion.button
+      key={path}
+      id={`nav-tab-${path}`}
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{
+        duration: 0.5,
+        delay: 0.3 + index * 0.05,
+      }}
+      onClick={() => (enabled ? null : null)}
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+      className={`relative z-20 px-6 py-2.5 rounded-full font-bricolage font-bold text-sm transition-all duration-300 ease-out whitespace-nowrap flex items-center gap-2 ${
+        isActive
+          ? "text-white"
+          : enabled
+          ? "text-gray-700 hover:text-blue-600 hover:bg-white/40"
+          : "text-gray-400 cursor-not-allowed"
+      }`}
+      disabled={!enabled}
+    >
+      <div className="relative w-6 h-6 flex-shrink-0">
+        {isActive ? (
+          <Image
+            src={iconConfig.active}
+            alt={iconConfig.alt}
+            fill
+            className="object-contain"
+          />
+        ) : (
+          <div className="relative w-6 h-6">
+            <div
+              className="absolute inset-0 bg-gray-700"
+              style={{
+                maskImage: `url(${iconConfig.inactive})`,
+                maskSize: 'contain',
+                maskRepeat: 'no-repeat',
+                maskPosition: 'center',
+                WebkitMaskImage: `url(${iconConfig.inactive})`,
+                WebkitMaskSize: 'contain',
+                WebkitMaskRepeat: 'no-repeat',
+                WebkitMaskPosition: 'center'
+              }}
+            />
+          </div>
+        )}
+      </div>
+      {label}
+    </motion.button>
+  );
+};
 
 // -------------------- component --------------------
 export function Navbar() {
@@ -67,7 +161,6 @@ export function Navbar() {
   });
 
   useEffect(() => {
-    // Calculate tab positions for the indicator
     const calculateTabPositions = () => {
       const positions: { [key: string]: { left: number; width: number } } = {};
       const filteredItems = mainNavigationItems.filter((item) => {
@@ -94,7 +187,6 @@ export function Navbar() {
       setTabPositions(positions);
     };
 
-    // Use requestAnimationFrame for better timing
     const timer = requestAnimationFrame(calculateTabPositions);
     window.addEventListener("resize", calculateTabPositions);
 
@@ -105,15 +197,12 @@ export function Navbar() {
   }, [isFirstTime, pathname]);
 
   useEffect(() => {
-    // Handle scroll to show/hide navbar
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
 
-      // Show navbar when scrolling up or at the top
       if (currentScrollY < lastScrollY || currentScrollY < 10) {
         setIsVisible(true);
       }
-      // Hide navbar when scrolling down (and not at the top)
       else if (currentScrollY > lastScrollY && currentScrollY > 100) {
         setIsVisible(false);
       }
@@ -144,7 +233,7 @@ export function Navbar() {
         }}
       >
         <div className="max-w-[1600px] mx-auto  flex items-center justify-between gap-20">
-          {/* PART 1: Logo - Left Corner */}
+          {/* Logo */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -170,7 +259,7 @@ export function Navbar() {
             </Link>
           </motion.div>
 
-          {/* PART 2: Desktop Navigation - Center */}
+          {/*Desktop Navigation */}
           <nav className="hidden lg:flex absolute left-1/2 transform -translate-x-1/2">
             <motion.div
               initial={{ opacity: 0, y: -20 }}
@@ -241,7 +330,11 @@ export function Navbar() {
                     const Icon = item.icon;
                     const isActive = pathname === item.path;
 
-                    const tabButton = (
+                    const customButton = CUSTOM_NAV_ICONS[item.path]
+                      ? renderCustomNavButton(item.path, item.label, isActive, item.enabled, index)
+                      : null;
+
+                    const tabButton = customButton || (
                       <motion.button
                         key={item.path}
                         id={`nav-tab-${item.path}`}
@@ -286,9 +379,8 @@ export function Navbar() {
             </motion.div>
           </nav>
 
-          {/* PART 3: User Information - Right Corner */}
+          {/* User Information */}
           <div className="hidden lg:flex items-center gap-4">
-            {/* Personal Navigation Icons */}
             {!isFirstTime && (
               <div className="flex items-center gap-2">
                 {personalNavigationItems.map((item) => {
@@ -333,7 +425,6 @@ export function Navbar() {
               </div>
             )}
 
-            {/* Auth Section */}
             <div suppressHydrationWarning>
               <NavbarAuthSection />
             </div>
