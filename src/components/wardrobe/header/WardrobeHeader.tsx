@@ -1,7 +1,7 @@
 "use client";
 
 import { Loader2, Plus, Filter, SortAsc, SortDesc } from "lucide-react";
-import { Input as AntInput, ConfigProvider, Badge } from "antd";
+import { Input as AntInput, ConfigProvider, Badge, Tooltip } from "antd";
 import GlassButton from "@/components/ui/glass-button";
 import { WardrobeFilters } from "@/types/wardrobe";
 import { WardrobeItem } from "@/types";
@@ -63,8 +63,7 @@ export const WardrobeHeader = memo(function WardrobeHeader({
       setSearchQuery(debouncedSearchValue || "");
       onFiltersChange({ ...filters, q: debouncedSearchValue || undefined });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearchValue]); // Intentionally limited dependencies to avoid infinite loop
+  }, [debouncedSearchValue]); 
 
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchValue(e.target.value);
@@ -115,51 +114,55 @@ export const WardrobeHeader = memo(function WardrobeHeader({
         </ConfigProvider>
 
         {/* Sort by Date Buttons */}
-        <div className="glass-button-hover">
-          <GlassButton
-            onClick={() => onFiltersChange({
-              ...filters,
-              sortByDate: filters.sortByDate === "desc" ? undefined : "desc"
-            })}
-            variant="custom"
-            borderRadius="14px"
-            blur="8px"
-            brightness={filters.sortByDate === "desc" ? 1.3 : 1.12}
-            glowColor={filters.sortByDate === "desc" ? "rgba(59,130,246,0.7)" : "rgba(255,255,255,0.3)"}
-            glowIntensity={filters.sortByDate === "desc" ? 10 : 6}
-            borderColor={filters.sortByDate === "desc" ? "rgba(59,130,246,0.9)" : "rgba(255,255,255,0.28)"}
-            borderWidth={filters.sortByDate === "desc" ? "2px" : "1px"}
-            backgroundColor={filters.sortByDate === "desc" ? "rgba(20, 105, 241, 0.86)" : undefined}
-            textColor="#ffffffff"
-            className="px-3 h-12 font-semibold"
-            displacementScale={5}
-          >
-            <SortDesc className={`h-4 w-4 ${filters.sortByDate === "desc" ? "drop-shadow-[0_0_8px_rgba(59,130,246,0.8)]" : ""}`} />
-          </GlassButton>
-        </div>
+        <Tooltip title="Sort by date (Descending)">
+          <div className="glass-button-hover">
+            <GlassButton
+              onClick={() => onFiltersChange({
+                ...filters,
+                sortByDate: filters.sortByDate === "desc" ? undefined : "desc"
+              })}
+              variant="custom"
+              borderRadius="14px"
+              blur="8px"
+              brightness={filters.sortByDate === "desc" ? 1.3 : 1.12}
+              glowColor={filters.sortByDate === "desc" ? "rgba(59,130,246,0.7)" : "rgba(255,255,255,0.3)"}
+              glowIntensity={filters.sortByDate === "desc" ? 10 : 6}
+              borderColor={filters.sortByDate === "desc" ? "rgba(59,130,246,0.9)" : "rgba(255,255,255,0.28)"}
+              borderWidth={filters.sortByDate === "desc" ? "2px" : "1px"}
+              backgroundColor={filters.sortByDate === "desc" ? "rgba(20, 105, 241, 0.86)" : undefined}
+              textColor="#ffffffff"
+              className="px-3 h-12 font-semibold"
+              displacementScale={5}
+            >
+              <SortDesc className={`h-4 w-4 ${filters.sortByDate === "desc" ? "drop-shadow-[0_0_8px_rgba(59,130,246,0.8)]" : ""}`} />
+            </GlassButton>
+          </div>
+        </Tooltip>
 
-        <div className="glass-button-hover">
-          <GlassButton
-            onClick={() => onFiltersChange({
-              ...filters,
-              sortByDate: filters.sortByDate === "asc" ? undefined : "asc"
-            })}
-            variant="custom"
-            borderRadius="14px"
-            blur="8px"
-            brightness={filters.sortByDate === "asc" ? 1.3 : 1.12}
-            glowColor={filters.sortByDate === "asc" ? "rgba(59,130,246,0.7)" : "rgba(255,255,255,0.3)"}
-            glowIntensity={filters.sortByDate === "asc" ? 10 : 6}
-            borderColor={filters.sortByDate === "asc" ? "rgba(59,130,246,0.9)" : "rgba(255,255,255,0.28)"}
-            borderWidth={filters.sortByDate === "asc" ? "2px" : "1px"}
-            backgroundColor={filters.sortByDate === "asc" ? "rgba(20, 105, 241, 0.86)" : undefined}
-            textColor="#ffffffff"
-            className="px-3 h-12 font-semibold"
-            displacementScale={5}
-          >
-            <SortAsc className={`h-4 w-4 ${filters.sortByDate === "asc" ? "drop-shadow-[0_0_8px_rgba(59,130,246,0.8)]" : ""}`} />
-          </GlassButton>
-        </div>
+        <Tooltip title="Sort by date (Ascending)">
+          <div className="glass-button-hover">
+            <GlassButton
+              onClick={() => onFiltersChange({
+                ...filters,
+                sortByDate: filters.sortByDate === "asc" ? undefined : "asc"
+              })}
+              variant="custom"
+              borderRadius="14px"
+              blur="8px"
+              brightness={filters.sortByDate === "asc" ? 1.3 : 1.12}
+              glowColor={filters.sortByDate === "asc" ? "rgba(59,130,246,0.7)" : "rgba(255,255,255,0.3)"}
+              glowIntensity={filters.sortByDate === "asc" ? 10 : 6}
+              borderColor={filters.sortByDate === "asc" ? "rgba(59,130,246,0.9)" : "rgba(255,255,255,0.28)"}
+              borderWidth={filters.sortByDate === "asc" ? "2px" : "1px"}
+              backgroundColor={filters.sortByDate === "asc" ? "rgba(20, 105, 241, 0.86)" : undefined}
+              textColor="#ffffffff"
+              className="px-3 h-12 font-semibold"
+              displacementScale={5}
+            >
+              <SortAsc className={`h-4 w-4 ${filters.sortByDate === "asc" ? "drop-shadow-[0_0_8px_rgba(59,130,246,0.8)]" : ""}`} />
+            </GlassButton>
+          </div>
+        </Tooltip>
 
         {/* Filter Button */}
         <div className="glass-button-hover">

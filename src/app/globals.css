@@ -3,6 +3,9 @@
 
 @import "tailwindcss";
 
+/* Goong Maps CSS */
+@import "@goongmaps/goong-js/dist/goong-js.css";
+
 /* DayPicker overrides */
 
 .rdp-chevron {

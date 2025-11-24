@@ -153,6 +153,84 @@ class OutfitAPI {
 
     return response.data;
   }
+
+  /**
+   * Get AI outfit suggestion based on weather
+   * @param weather - Weather description string
+   * @param userId - User ID
+   * @returns Promise with suggested items and reason
+   */
+  async getSuggestion(weather: string, userId: number): Promise<{
+    statusCode: number;
+    message: string;
+    data: {
+      suggestedItems: Array<{
+        id: number;
+        userId: number;
+        userDisplayName: string;
+        name: string;
+        categoryId: number;
+        categoryName: string;
+        color: string;
+        aiDescription: string;
+        brand: string | null;
+        frequencyWorn: number | null;
+        lastWornAt: string | null;
+        imgUrl: string;
+        weatherSuitable: string;
+        condition: string;
+        pattern: string;
+        fabric: string;
+        isAnalyzed: boolean;
+        aiConfidence: number;
+        itemType: string;
+        occasions: Array<{ id: number; name: string }>;
+        seasons: Array<{ id: number; name: string }>;
+        styles: Array<{ id: number; name: string }>;
+      }>;
+      reason: string;
+    };
+  }> {
+    const response = await apiClient.get<{
+      statusCode: number;
+      message: string;
+      data: {
+        suggestedItems: Array<{
+          id: number;
+          userId: number;
+          userDisplayName: string;
+          name: string;
+          categoryId: number;
+          categoryName: string;
+          color: string;
+          aiDescription: string;
+          brand: string | null;
+          frequencyWorn: number | null;
+          lastWornAt: string | null;
+          imgUrl: string;
+          weatherSuitable: string;
+          condition: string;
+          pattern: string;
+          fabric: string;
+          isAnalyzed: boolean;
+          aiConfidence: number;
+          itemType: string;
+          occasions: Array<{ id: number; name: string }>;
+          seasons: Array<{ id: number; name: string }>;
+          styles: Array<{ id: number; name: string }>;
+        }>;
+        reason: string;
+      };
+    }>("/outfits/suggestion", {
+      params: { weather, userId }
+    });
+
+    if (response.statusCode !== 200) {
+      throw new Error(response.message || "Failed to get outfit suggestion");
+    }
+
+    return response;
+  }
 }
 
 // Create singleton instance

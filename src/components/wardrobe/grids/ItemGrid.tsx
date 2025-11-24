@@ -2,8 +2,8 @@
 
 import { useEffect } from "react";
 import { motion } from "framer-motion";
-import { Package } from "lucide-react";
 import { Pagination } from "antd";
+import Image from "next/image";
 import { ItemCard } from "./ItemCard";
 import { useWardrobeStore } from "@/store/wardrobe-store";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -151,13 +151,19 @@ export function ItemGrid({
   if (!loading && items.length === 0) {
     return (
       <div className="text-center py-12">
-        <div className="space-y-4">
-          <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
-            <Package className="w-8 h-8 text-muted-foreground" />
+        <div className="space-y-6 flex flex-col items-center">
+          <div className="relative w-60 h-60">
+            <Image
+              src="/empty-state.png"
+              alt="Empty wardrobe"
+              fill
+              className="object-contain"
+              priority
+            />
           </div>
           <div>
-            <h3 className="text-lg font-semibold">{emptyMessage}</h3>
-            <p className="text-muted-foreground mt-1">
+            <h3 className="text-lg font-semibold text-white">{emptyMessage}</h3>
+            <p className="text-white/60 mt-2">
               Try adjusting your filters or add some items to your wardrobe
             </p>
           </div>
@@ -196,7 +202,6 @@ export function ItemGrid({
               onSelect={handleSelectItem}
               onEdit={handleEdit}
               onDelete={handleDelete}
-              onUseInOutfit={handleUseInOutfit}
               onAnalyze={handleAnalyze}
               onView={handleView}
               showCheckbox={showCheckboxes || isSelectionMode}
