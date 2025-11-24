@@ -8,6 +8,7 @@ import {
   ResponsiveContainer,
   Tooltip,
   XAxis,
+  type TooltipProps,
 } from "recharts";
 import {
   StylistCollectionsMonthlyStat,
@@ -23,10 +24,12 @@ interface PulseChartPoint {
   extra: number;
 }
 
+type RechartsTooltipPayload = ReadonlyArray<{ payload: PulseChartPoint }>;
+
 interface ChartTooltipProps {
   active?: boolean;
   label?: string | number;
-  payload?: Array<{ payload: PulseChartPoint }>;
+  payload?: RechartsTooltipPayload;
   extraLabel: string;
 }
 
@@ -74,15 +77,19 @@ export interface MonthlyPulseChartProps {
   ) => number;
 }
 
-interface RechartsTooltipProps {
-  active?: boolean;
+type TooltipPropsWithData = TooltipProps<number, string> & {
+  payload?: RechartsTooltipPayload;
   label?: string | number;
-  payload?: Array<{ payload: PulseChartPoint }>;
-}
+};
 
 const renderChartTooltip = (extraLabel: string) => {
-  const TooltipContent = (props: RechartsTooltipProps) => (
-    <ChartTooltip {...props} extraLabel={extraLabel} />
+  const TooltipContent = (props: TooltipProps<number, string>) => (
+    <ChartTooltip
+      active={props.active}
+      payload={(props as TooltipPropsWithData).payload}
+      label={(props as TooltipPropsWithData).label}
+      extraLabel={extraLabel}
+    />
   );
   TooltipContent.displayName = "MonthlyPulseChartTooltip";
   return TooltipContent;
