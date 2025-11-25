@@ -129,7 +129,7 @@ export function ViewItemDialog({
                 {itemData?.isAnalyzed && itemData?.aiConfidence && itemData.aiConfidence < 60 && (
                   <div className="px-5 py-1 rounded-full bg-red-500/50 border border-red-400/60 backdrop-blur-md">
                     <span className="text-red-200 text-lg font-semibold">
-                      We cannot detect item in this image
+                      Unable to analyze the item in this image.
                     </span>
                   </div>
                 )}

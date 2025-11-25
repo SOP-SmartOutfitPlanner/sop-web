@@ -10,6 +10,8 @@ import { outfitAPI } from "@/lib/api/outfit-api";
 import { CalenderAPI } from "@/lib/api/calender-api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { ViewItemDialog } from "@/components/wardrobe/ViewItemDialog";
+import { useScrollLock } from "@/hooks/useScrollLock";
 
 interface SuggestionResultViewProps {
   items: SuggestedItem[];
@@ -26,6 +28,16 @@ export function SuggestionResultView({
 }: SuggestionResultViewProps) {
   const [isAddingToWardrobe, setIsAddingToWardrobe] = useState(false);
   const [isUsingToday, setIsUsingToday] = useState(false);
+  const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+
+  // Lock scroll when dialog is open
+  useScrollLock(isViewDialogOpen);
+
+  const handleItemClick = (itemId: number) => {
+    setSelectedItemId(itemId);
+    setIsViewDialogOpen(true);
+  };
 
   // Parse color from JSON string
   const parseColor = (colorStr: string) => {
@@ -58,7 +70,7 @@ export function SuggestionResultView({
     }
 
     setIsAddingToWardrobe(true);
-    const loadingToast = toast.loading("Adding outfit to wardrobe...");
+    const loadingToast = toast.loading("Adding to your outfit...");
 
     try {
       const itemIds = items.map((item) => item.id);
@@ -68,7 +80,7 @@ export function SuggestionResultView({
         itemIds: itemIds,
       });
 
-      toast.success("Outfit added to wardrobe!", { id: loadingToast });
+      toast.success("Added successfully to your outfit!", { id: loadingToast });
       onClose();
     } catch (error) {
       console.error("Error adding outfit to wardrobe:", error);
@@ -189,6 +201,7 @@ export function SuggestionResultView({
                 glowColor="rgba(34, 211, 238, 0.2)"
                 borderColor="rgba(255, 255, 255, 0.2)"
                 borderWidth="2px"
+                onClick={() => handleItemClick(item.id)}
                 className={cn(
                   "relative h-full flex flex-col cursor-pointer transition-all duration-200",
                   "bg-gradient-to-br from-cyan-300/20 via-blue-200/10 to-indigo-300/20",
@@ -346,7 +359,7 @@ export function SuggestionResultView({
                     {isAddingToWardrobe && (
                       <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     )}
-                    {isAddingToWardrobe ? "Adding to Wardrobe..." : "Add to Wardrobe"}
+                    {isAddingToWardrobe ? "Adding to My Outfit..." : "Add to My Outfit"}
                   </span>
                 </GlassButton>
               </div>
@@ -398,6 +411,15 @@ export function SuggestionResultView({
             Try adding more items to your wardrobe
           </p>
         </div>
+      )}
+
+      {/* View Item Dialog */}
+      {selectedItemId && (
+        <ViewItemDialog
+          open={isViewDialogOpen}
+          onOpenChange={setIsViewDialogOpen}
+          itemId={selectedItemId}
+        />
       )}
     </div>
   );
