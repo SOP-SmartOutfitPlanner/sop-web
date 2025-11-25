@@ -10,9 +10,10 @@ export function useOutfits(params: GetOutfitsRequest) {
   return useQuery({
     queryKey: ["outfits", params],
     queryFn: () => outfitAPI.getOutfits(params),
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 0, // Always consider data stale, refetch on mount
     gcTime: 1000 * 60 * 10, // 10 minutes cache
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true, // Refetch when window regains focus
+    refetchOnMount: true, // Always refetch when component mounts
   });
 }
 

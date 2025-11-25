@@ -10,6 +10,8 @@ import { outfitAPI } from "@/lib/api/outfit-api";
 import { CalenderAPI } from "@/lib/api/calender-api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { ViewItemDialog } from "@/components/wardrobe/ViewItemDialog";
+import { useScrollLock } from "@/hooks/useScrollLock";
 
 interface SuggestionResultViewProps {
   items: SuggestedItem[];
@@ -26,6 +28,16 @@ export function SuggestionResultView({
 }: SuggestionResultViewProps) {
   const [isAddingToWardrobe, setIsAddingToWardrobe] = useState(false);
   const [isUsingToday, setIsUsingToday] = useState(false);
+  const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+
+  // Lock scroll when dialog is open
+  useScrollLock(isViewDialogOpen);
+
+  const handleItemClick = (itemId: number) => {
+    setSelectedItemId(itemId);
+    setIsViewDialogOpen(true);
+  };
 
   // Parse color from JSON string
   const parseColor = (colorStr: string) => {
@@ -189,6 +201,7 @@ export function SuggestionResultView({
                 glowColor="rgba(34, 211, 238, 0.2)"
                 borderColor="rgba(255, 255, 255, 0.2)"
                 borderWidth="2px"
+                onClick={() => handleItemClick(item.id)}
                 className={cn(
                   "relative h-full flex flex-col cursor-pointer transition-all duration-200",
                   "bg-gradient-to-br from-cyan-300/20 via-blue-200/10 to-indigo-300/20",
@@ -398,6 +411,15 @@ export function SuggestionResultView({
             Try adding more items to your wardrobe
           </p>
         </div>
+      )}
+
+      {/* View Item Dialog */}
+      {selectedItemId && (
+        <ViewItemDialog
+          open={isViewDialogOpen}
+          onOpenChange={setIsViewDialogOpen}
+          itemId={selectedItemId}
+        />
       )}
     </div>
   );
