@@ -70,7 +70,7 @@ export function SuggestionResultView({
     }
 
     setIsAddingToWardrobe(true);
-    const loadingToast = toast.loading("Adding outfit to wardrobe...");
+    const loadingToast = toast.loading("Adding to your outfit...");
 
     try {
       const itemIds = items.map((item) => item.id);
@@ -80,7 +80,7 @@ export function SuggestionResultView({
         itemIds: itemIds,
       });
 
-      toast.success("Outfit added to wardrobe!", { id: loadingToast });
+      toast.success("Added successfully to your outfit!", { id: loadingToast });
       onClose();
     } catch (error) {
       console.error("Error adding outfit to wardrobe:", error);
@@ -359,7 +359,7 @@ export function SuggestionResultView({
                     {isAddingToWardrobe && (
                       <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     )}
-                    {isAddingToWardrobe ? "Adding to Wardrobe..." : "Add to Wardrobe"}
+                    {isAddingToWardrobe ? "Adding to My Outfit..." : "Add to My Outfit"}
                   </span>
                 </GlassButton>
               </div>

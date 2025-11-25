@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { MapPin, AlertCircle, Sparkles, Loader2 } from "lucide-react";
-import { Radio } from "antd";
+import { Radio, Select } from "antd";
 import { useAuthStore } from "@/store/auth-store";
 import GlassCard from "@/components/ui/glass-card";
 import GlassButton from "@/components/ui/glass-button";
@@ -13,8 +13,10 @@ import { SuggestionResultView } from "@/components/suggest/SuggestionResultView"
 import LocationMapModal from "@/components/suggest/LocationMapModal";
 import { weatherAPI } from "@/lib/api/weather-api";
 import { outfitAPI } from "@/lib/api/outfit-api";
+import { adminAPI } from "@/lib/api/admin-api";
 import { DailyForecast } from "@/types/weather";
 import { SuggestedItem } from "@/types/outfit";
+import { Occasion } from "@/types/occasion";
 import { toast } from "sonner";
 
 type WeatherTab = "my-location" | "selected-location";
@@ -36,6 +38,9 @@ export default function SuggestPage() {
     items: SuggestedItem[];
     reason: string;
   } | null>(null);
+  const [occasions, setOccasions] = useState<Occasion[]>([]);
+  const [selectedOccasionId, setSelectedOccasionId] = useState<number | undefined>(undefined);
+  const [isLoadingOccasions, setIsLoadingOccasions] = useState(false);
   const { isAuthenticated, user } = useAuthStore();
 
   // Weather hook
@@ -62,6 +67,29 @@ export default function SuggestPage() {
     return () => clearTimeout(timer);
   }, [isAuthenticated, user, router]);
 
+  // Fetch occasions on component mount
+  useEffect(() => {
+    const fetchOccasions = async () => {
+      setIsLoadingOccasions(true);
+      try {
+        const response = await adminAPI.getOccasions({
+          PageIndex: 1,
+          PageSize: 100,
+          takeAll: true,
+        });
+        if (response.statusCode === 200) {
+          setOccasions(response.data.data);
+        }
+      } catch {
+        // Error fetching occasions
+      } finally {
+        setIsLoadingOccasions(false);
+      }
+    };
+
+    fetchOccasions();
+  }, []);
+
   // Handler to suggest outfit based on current weather
   const handleSuggestOutfit = async () => {
     // Determine which weather to use
@@ -75,7 +103,22 @@ export default function SuggestPage() {
     }
 
     setIsSuggestingOutfit(true);
-    const loadingToast = toast.loading("AI is analyzing weather and creating outfit suggestions...");
+
+    // Sequential loading toasts with timeout IDs for cleanup
+    const toast1 = toast.loading("Looking through your wardrobe…");
+    let isRequestCompleted = false;
+
+    const timeout1 = setTimeout(() => {
+      if (!isRequestCompleted) {
+        toast.loading("Finding what suits today best…", { id: toast1 });
+      }
+    }, 4000);
+
+    const timeout2 = setTimeout(() => {
+      if (!isRequestCompleted) {
+        toast.loading("Your outfit is almost ready…", { id: toast1 });
+      }
+    }, 8000);
 
     try {
       const userId = parseInt(user?.id || "0");
@@ -84,15 +127,20 @@ export default function SuggestPage() {
 
       const response = await outfitAPI.getSuggestion(
         weatherString,
-        userId
+        userId,
+        selectedOccasionId
       );
+
+      isRequestCompleted = true;
+      clearTimeout(timeout1);
+      clearTimeout(timeout2);
 
       setSuggestionResult({
         items: response.data.suggestedItems,
         reason: response.data.reason,
       });
 
-      toast.success("Outfit suggestion generated!", { id: loadingToast });
+      toast.success("Outfit suggestion generated!", { id: toast1 });
 
       // Scroll to results
       setTimeout(() => {
@@ -102,8 +150,22 @@ export default function SuggestPage() {
         });
       }, 100);
     } catch (error) {
-      console.error("Failed to get outfit suggestion:", error);
-      toast.error("Failed to generate outfit suggestion", { id: loadingToast });
+      isRequestCompleted = true;
+      clearTimeout(timeout1);
+      clearTimeout(timeout2);
+
+      // Extract error message from API response
+      let errorMessage = "Failed to generate outfit suggestion";
+      if (error && typeof error === 'object' && 'response' in error) {
+        const apiError = error as { response?: { data?: { message?: string } } };
+        if (apiError.response?.data?.message) {
+          errorMessage = apiError.response.data.message;
+        }
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+
+      toast.error(errorMessage, { id: toast1, duration: 6000 });
     } finally {
       setIsSuggestingOutfit(false);
     }
@@ -293,8 +355,25 @@ export default function SuggestPage() {
           )}
         </div>
 
-        {/* Suggest Outfit Button*/}
-        <div className="flex justify-center mt-12">
+        {/* Suggest Outfit Button with Occasion Selector */}
+        <div className="flex justify-center items-center gap-4 mt-12">
+          <Select
+            value={selectedOccasionId}
+            onChange={setSelectedOccasionId}
+            placeholder="Select occasion"
+            allowClear
+            loading={isLoadingOccasions}
+            size="large"
+            className="w-64"
+            listHeight={256}
+          >
+            {occasions.map((occasion) => (
+              <Select.Option key={occasion.id} value={occasion.id}>
+                {occasion.name}
+              </Select.Option>
+            ))}
+          </Select>
+
           <GlassButton
             onClick={handleSuggestOutfit}
             disabled={isSuggestingOutfit || (!todayForecast && !customWeather)}
@@ -345,7 +424,6 @@ export default function SuggestPage() {
             address: customWeather.cityName,
           } : undefined}
           onLocationSelect={async (lat, lng, address) => {
-            console.log("Selected location:", { lat, lng, address });
             setIsLocationModalOpen(false);
             
             // Fetch weather for selected location
@@ -368,7 +446,6 @@ export default function SuggestPage() {
                 throw new Error("Failed to fetch weather data");
               }
             } catch (error) {
-              console.error("Error fetching weather:", error);
               toast.error(
                 error instanceof Error ? error.message : "Failed to load weather for selected location",
                 { id: loadingToast }
