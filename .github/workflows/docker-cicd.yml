@@ -52,6 +52,9 @@ jobs:
         run: |
           docker pull lion3993vn/sop-web:latest
           docker run -d --name sop-web -p 6969:6969 lion3993vn/sop-web:latest
-
+          
+      - name: Remove dangling images of sop-web
+        run: docker images lion3993vn/sop-web --format '{{.Repository}} {{.Tag}} {{.ID}}' | grep "<none>" | awk '{print $3}' | xargs -r docker rmi -f
+        
       - name: Verify running containers
         run: docker ps -a
