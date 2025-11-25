@@ -942,26 +942,29 @@
 .glass-toast,
 [data-sonner-toast].glass-toast,
 [data-sonner-toast][data-styled="true"].glass-toast {
-  background: rgba(30, 41, 59, 0.85) !important;
-  backdrop-filter: blur(12px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(12px) saturate(180%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  border-radius: 12px !important;
+  background: rgba(15, 23, 42, 0.4) !important;
+  backdrop-filter: blur(16px) saturate(180%) brightness(1.1) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(180%) brightness(1.1) !important;
+  border: 1px solid rgba(148, 163, 184, 0.25) !important;
+  border-radius: 16px !important;
   padding: 16px !important;
   min-width: 320px !important;
   max-width: 420px !important;
   color: white !important;
   font-family: var(--font-bricolage-grotesque) !important;
   animation: slideInRight 0.3s ease-out !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
-    0 0 0 1px rgba(255, 255, 255, 0.05) inset !important;
+  box-shadow:
+    inset 4px 4px 0px -4px rgba(255, 255, 255, 0.5),
+    inset 0 0 8px 1px rgba(255, 255, 255, 0.3),
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(148, 163, 184, 0.1) !important;
 }
 
 /* Override Sonner's theme-based default backgrounds */
 [data-sonner-toast][data-theme="light"].glass-toast,
 [data-sonner-toast][data-theme="dark"].glass-toast,
 [data-sonner-toast][data-theme="system"].glass-toast {
-  background: rgba(30, 41, 59, 0.85) !important;
+  background: rgba(15, 23, 42, 0.4) !important;
 }
 
 @keyframes slideInRight {
@@ -1024,89 +1027,122 @@
 /* Toast close button */
 .glass-toast [data-close-button],
 .glass-toast button[data-close-button] {
-  background: rgba(255, 255, 255, 0.1) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  border-radius: 6px !important;
-  width: 24px !important;
-  height: 24px !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 8px !important;
+  width: 26px !important;
+  height: 26px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  color: rgba(255, 255, 255, 0.6) !important;
+  color: rgba(255, 255, 255, 0.7) !important;
   transition: all 0.2s ease !important;
   margin-left: 12px !important;
+  box-shadow: inset 1px 1px 0px rgba(255, 255, 255, 0.2),
+    0 2px 4px rgba(0, 0, 0, 0.2) !important;
 }
 
 .glass-toast [data-close-button]:hover,
 .glass-toast button[data-close-button]:hover {
-  background: rgba(255, 255, 255, 0.2) !important;
-  border-color: rgba(255, 255, 255, 0.2) !important;
-  color: white !important;
+  background: rgba(239, 68, 68, 0.15) !important;
+  border-color: rgba(239, 68, 68, 0.3) !important;
+  color: rgb(248, 113, 113) !important;
+  transform: scale(1.05) !important;
+  box-shadow: inset 1px 1px 0px rgba(255, 255, 255, 0.3),
+    0 4px 8px rgba(239, 68, 68, 0.3) !important;
 }
 
 /* Toast action button */
 .glass-toast [data-button],
 .glass-toast button[data-button] {
-  background: rgba(34, 211, 238, 0.2) !important;
-  border: 1px solid rgba(34, 211, 238, 0.3) !important;
-  border-radius: 8px !important;
-  padding: 6px 12px !important;
+  background: rgba(34, 211, 238, 0.15) !important;
+  backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(34, 211, 238, 0.35) !important;
+  border-radius: 10px !important;
+  padding: 8px 16px !important;
   font-size: 13px !important;
-  font-weight: 500 !important;
+  font-weight: 600 !important;
   color: rgb(165, 243, 252) !important;
   transition: all 0.2s ease !important;
   margin-top: 8px !important;
+  box-shadow: inset 2px 2px 0px -2px rgba(255, 255, 255, 0.3),
+    0 2px 8px rgba(34, 211, 238, 0.2) !important;
 }
 
 .glass-toast [data-button]:hover,
 .glass-toast button[data-button]:hover {
-  background: rgba(34, 211, 238, 0.3) !important;
-  border-color: rgba(34, 211, 238, 0.4) !important;
-  transform: translateY(-1px) !important;
+  background: rgba(34, 211, 238, 0.25) !important;
+  border-color: rgba(34, 211, 238, 0.5) !important;
+  color: white !important;
+  transform: translateY(-2px) !important;
+  box-shadow: inset 2px 2px 0px -2px rgba(255, 255, 255, 0.4),
+    0 4px 12px rgba(34, 211, 238, 0.3),
+    0 0 20px rgba(34, 211, 238, 0.2) !important;
 }
 
 /* Success toast variant */
 .glass-toast[data-type="success"] {
-  border-color: rgba(34, 197, 94, 0.3) !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
-    0 0 0 1px rgba(255, 255, 255, 0.05) inset, 0 0 20px rgba(34, 197, 94, 0.15) !important;
+  background: rgba(15, 23, 42, 0.35) !important;
+  border-color: rgba(34, 197, 94, 0.35) !important;
+  box-shadow:
+    inset 4px 4px 0px -4px rgba(255, 255, 255, 0.5),
+    inset 0 0 8px 1px rgba(255, 255, 255, 0.3),
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(34, 197, 94, 0.2) !important;
 }
 
 .glass-toast[data-type="success"] [data-icon] {
   color: rgb(74, 222, 128) !important;
+  filter: drop-shadow(0 0 8px rgba(34, 197, 94, 0.5));
 }
 
 /* Error toast variant */
 .glass-toast[data-type="error"] {
-  border-color: rgba(239, 68, 68, 0.3) !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
-    0 0 0 1px rgba(255, 255, 255, 0.05) inset, 0 0 20px rgba(239, 68, 68, 0.15) !important;
+  background: rgba(15, 23, 42, 0.35) !important;
+  border-color: rgba(239, 68, 68, 0.35) !important;
+  box-shadow:
+    inset 4px 4px 0px -4px rgba(255, 255, 255, 0.5),
+    inset 0 0 8px 1px rgba(255, 255, 255, 0.3),
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(239, 68, 68, 0.2) !important;
 }
 
 .glass-toast[data-type="error"] [data-icon] {
   color: rgb(248, 113, 113) !important;
+  filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.5));
 }
 
 /* Warning toast variant */
 .glass-toast[data-type="warning"] {
-  border-color: rgba(251, 146, 60, 0.3) !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
-    0 0 0 1px rgba(255, 255, 255, 0.05) inset, 0 0 20px rgba(251, 146, 60, 0.15) !important;
+  background: rgba(15, 23, 42, 0.35) !important;
+  border-color: rgba(251, 146, 60, 0.35) !important;
+  box-shadow:
+    inset 4px 4px 0px -4px rgba(255, 255, 255, 0.5),
+    inset 0 0 8px 1px rgba(255, 255, 255, 0.3),
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(251, 146, 60, 0.2) !important;
 }
 
 .glass-toast[data-type="warning"] [data-icon] {
   color: rgb(251, 146, 60) !important;
+  filter: drop-shadow(0 0 8px rgba(251, 146, 60, 0.5));
 }
 
 /* Info toast variant */
 .glass-toast[data-type="info"] {
-  border-color: rgba(59, 130, 246, 0.3) !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
-    0 0 0 1px rgba(255, 255, 255, 0.05) inset, 0 0 20px rgba(59, 130, 246, 0.15) !important;
+  background: rgba(15, 23, 42, 0.35) !important;
+  border-color: rgba(59, 130, 246, 0.35) !important;
+  box-shadow:
+    inset 4px 4px 0px -4px rgba(255, 255, 255, 0.5),
+    inset 0 0 8px 1px rgba(255, 255, 255, 0.3),
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(59, 130, 246, 0.2) !important;
 }
 
 .glass-toast[data-type="info"] [data-icon] {
   color: rgb(96, 165, 250) !important;
+  filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.5));
 }
 
 /* Glass Radio Group - Custom Styling */
@@ -1193,4 +1229,86 @@
 
 .glass-radio-group .ant-radio-button-wrapper:last-child {
   border-radius: 10px !important;
+}
+
+/* Custom Select Styling */
+.ant-select-single .ant-select-selector {
+  background: #143065 !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: white !important;
+}
+
+.ant-select-single .ant-select-selector:hover {
+  border-color: rgba(59, 130, 246, 0.5) !important;
+}
+
+.ant-select-single.ant-select-focused .ant-select-selector {
+  border-color: rgba(59, 130, 246, 0.7) !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2) !important;
+}
+
+.ant-select-single .ant-select-selection-placeholder {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.ant-select-single .ant-select-selection-item {
+  color: white !important;
+}
+
+.ant-select-single .ant-select-arrow {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.ant-select-single .ant-select-clear {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.ant-select-single .ant-select-clear:hover {
+  background: rgba(239, 68, 68, 0.2) !important;
+  color: rgb(248, 113, 113) !important;
+}
+
+/* Select Dropdown */
+.ant-select-dropdown {
+  background: #143065 !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.ant-select-dropdown .rc-virtual-list {
+  max-height: 256px !important;
+  overflow-y: auto !important;
+}
+
+.ant-select-dropdown .rc-virtual-list-holder {
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.ant-select-dropdown .rc-virtual-list-holder-inner {
+  max-height: none !important;
+}
+
+.ant-select-dropdown .ant-select-item {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.ant-select-dropdown .ant-select-item-option-selected {
+  background: rgba(59, 130, 246, 0.3) !important;
+  color: white !important;
+  font-weight: 600 !important;
+}
+
+.ant-select-dropdown .ant-select-item-option-active {
+  background: rgba(59, 130, 246, 0.2) !important;
+  color: white !important;
+}
+
+.ant-select-dropdown .ant-select-item-option:hover {
+  background: rgba(59, 130, 246, 0.25) !important;
+  color: white !important;
+}
+
+.ant-select-dropdown .ant-select-item-empty {
+  color: rgba(255, 255, 255, 0.5) !important;
 }

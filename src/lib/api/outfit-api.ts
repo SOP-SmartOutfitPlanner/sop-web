@@ -158,9 +158,10 @@ class OutfitAPI {
    * Get AI outfit suggestion based on weather
    * @param weather - Combined weather string (description, temperature, feels like)
    * @param userId - User ID
+   * @param occasionId - Optional occasion ID for filtering suggestions
    * @returns Promise with suggested items and reason
    */
-  async getSuggestion(weather: string, userId: number): Promise<{
+  async getSuggestion(weather: string, userId: number, occasionId?: number): Promise<{
     statusCode: number;
     message: string;
     data: {
@@ -222,7 +223,12 @@ class OutfitAPI {
         reason: string;
       };
     }>("/outfits/suggestion", {
-      params: { weather, userId }
+      params: {
+        weather,
+        userId,
+        ...(occasionId && { occasionId })
+      },
+      timeout: 60000
     });
 
     if (response.statusCode !== 200) {

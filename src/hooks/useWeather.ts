@@ -17,26 +17,16 @@ export const useWeather = (options: UseWeatherOptions = {}) => {
   const [locationError, setLocationError] = useState<string | null>(null);
   const [isRequestingLocation, setIsRequestingLocation] = useState(false);
 
-  console.log("🌤️ useWeather hook initialized", { enabled, user: user?.email || "no user" });
-
   // Parse user location to get coordinates
   const getUserCoordinatesFromProfile = async (): Promise<Coordinates | null> => {
-    console.log("getUserCoordinatesFromProfile called");
-    console.log("User from auth store:", user);
-    console.log("user.location value:", user?.location);
-
     if (!user?.location) {
-      console.log("❌ No user or location in profile - user exists:", !!user, "location:", user?.location);
       return null;
     }
 
     const location = user.location.trim();
     if (!location) {
-      console.log("Location is empty after trim");
       return null;
     }
-
-    console.log("User location from profile:", location);
 
     // Parse location formats:
     // - "province, city, ward" (e.g., "Hồ Chí Minh, Quận 1, Phường 1")
@@ -73,12 +63,10 @@ export const useWeather = (options: UseWeatherOptions = {}) => {
     // Try each search term until we find a match
     for (const searchTerm of searchTerms) {
       try {
-        console.log(`Searching for city: "${searchTerm}"`);
         const response = await weatherAPI.searchCities(searchTerm, 5);
 
         if (response.data?.cities && response.data.cities.length > 0) {
           const city = response.data.cities[0];
-          console.log(`Found city: ${city.name} (${city.localName})`);
 
           return {
             latitude: city.latitude,
@@ -124,15 +112,8 @@ export const useWeather = (options: UseWeatherOptions = {}) => {
 
   // Initialize coordinates
   useEffect(() => {
-    console.log("🔄 useEffect triggered!");
-
     const initializeLocation = async () => {
-      console.log("=== Initializing location ===");
-      console.log("Current coordinates:", coordinates);
-      console.log("User from auth store:", user);
-
       if (coordinates) {
-        console.log("Already have coordinates, skipping initialization");
         return; // Already have coordinates
       }
 
@@ -140,43 +121,33 @@ export const useWeather = (options: UseWeatherOptions = {}) => {
       setLocationError(null);
 
       // First, try profile location as a fallback in case browser location fails
-      console.log("Step 1: Fetching profile location as fallback...");
       let fallbackCoords: Coordinates | null = null;
       try {
         fallbackCoords = await getUserCoordinatesFromProfile();
-        console.log("Fallback coords from profile:", fallbackCoords);
-      } catch (error) {
-        console.log("Profile location error:", error);
+      } catch {
+        // Profile location error - continue to browser geolocation
       }
 
       // Priority: Try to get user's browser location
-      console.log("Step 2: Trying browser geolocation...");
       if (navigator.geolocation) {
         try {
           const coords = await weatherAPI.getCurrentLocation();
-          console.log("✅ Browser location success:", coords);
           setCoordinates(coords);
           setLocationError(null);
           setIsRequestingLocation(false);
           return;
-        } catch (geoError) {
-          console.log("❌ Browser geolocation denied or unavailable:", geoError);
+        } catch {
           // Browser location failed, use profile location if available
           if (fallbackCoords) {
-            console.log("✅ Using fallback coords from profile:", fallbackCoords);
             setCoordinates(fallbackCoords);
             setLocationError(null);
             setIsRequestingLocation(false);
             return;
-          } else {
-            console.log("❌ No fallback coords available");
           }
         }
       } else {
-        console.log("⚠️ Browser does not support geolocation");
         // No geolocation support, use profile location
         if (fallbackCoords) {
-          console.log("✅ Using fallback coords from profile:", fallbackCoords);
           setCoordinates(fallbackCoords);
           setLocationError(null);
           setIsRequestingLocation(false);
@@ -191,24 +162,10 @@ export const useWeather = (options: UseWeatherOptions = {}) => {
       setIsRequestingLocation(false);
     };
 
-    console.log("useEffect check:", {
-      enabled,
-      hasCoordinates: !!coordinates,
-      hasUser: !!user,
-      userLocation: user?.location
-    });
-
     // Only run if we don't have coordinates AND user is loaded
     // (user can be loaded without location, that's ok - we'll try browser location)
     if (enabled && !coordinates && user !== null) {
-      console.log("✅ Conditions met, calling initializeLocation");
       initializeLocation();
-    } else {
-      console.log("❌ Skipping initializeLocation", {
-        enabled,
-        hasCoordinates: !!coordinates,
-        userLoaded: user !== null
-      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, user?.location, user]);
