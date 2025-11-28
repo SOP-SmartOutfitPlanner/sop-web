@@ -24,6 +24,12 @@ import {
   Sparkles,
   TrendingUp,
   Users,
+  Calendar,
+  Activity,
+  Eye,
+  Heart,
+  MessageSquare,
+  BookmarkCheck,
 } from "lucide-react";
 import Link from "next/link";
 import { CreateCollectionDialog } from "@/components/collections/CreateCollectionDialog";
@@ -36,7 +42,6 @@ import { CommunityTab } from "@/components/stylist/sections/CommunityTab";
 import { StatCardConfig } from "@/components/stylist/types";
 
 const CURRENT_YEAR = new Date().getFullYear();
-const CURRENT_MONTH = new Date().getMonth() + 1;
 const YEAR_RANGE = 4;
 
 const yearOptions = Array.from({ length: YEAR_RANGE }, (_, index) => ({
@@ -44,20 +49,8 @@ const yearOptions = Array.from({ length: YEAR_RANGE }, (_, index) => ({
   value: CURRENT_YEAR - index,
 }));
 
-const monthOptions = [
-  { label: "All year", value: "all" },
-  ...Array.from({ length: 12 }, (_, index) => {
-    const date = new Date(2000, index, 1);
-    return {
-      label: date.toLocaleString("en", { month: "long" }),
-      value: `${index + 1}`,
-    };
-  }),
-];
-
 interface DashboardFilters {
   year: number;
-  month?: number;
   topCollectionsCount: number;
   topPostsCount: number;
 }
@@ -71,9 +64,8 @@ export function StylistDashboardScreen() {
   );
   const [filters, setFilters] = useState<DashboardFilters>({
     year: CURRENT_YEAR,
-    month: CURRENT_MONTH,
-    topCollectionsCount: 5,
-    topPostsCount: 5,
+    topCollectionsCount: 6,
+    topPostsCount: 6,
   });
   const [activeTab, setActiveTab] = useState<
     "overview" | "collections" | "community"
@@ -90,13 +82,11 @@ export function StylistDashboardScreen() {
       "stylist-dashboard",
       "collections",
       filters.year,
-      filters.month ?? "all",
       filters.topCollectionsCount,
     ],
     queryFn: () =>
       stylistAPI.getCollectionsStats({
         year: filters.year,
-        month: filters.month,
         topCollectionsCount: filters.topCollectionsCount,
       }),
     enabled: isStylist,
@@ -108,13 +98,11 @@ export function StylistDashboardScreen() {
       "stylist-dashboard",
       "posts",
       filters.year,
-      filters.month ?? "all",
       filters.topPostsCount,
     ],
     queryFn: () =>
       stylistAPI.getPostsStats({
         year: filters.year,
-        month: filters.month,
         topPostsCount: filters.topPostsCount,
       }),
     enabled: isStylist,
@@ -131,32 +119,20 @@ export function StylistDashboardScreen() {
 
   const latestCollectionsPulse = useMemo(() => {
     if (!collectionsStats?.monthlyStats?.length) return null;
-    if (filters.month) {
-      return (
-        collectionsStats.monthlyStats.find(
-          (stat: StylistCollectionsMonthlyStat) => stat.month === filters.month
-        ) ?? null
-      );
-    }
     return collectionsStats.monthlyStats.at(-1) ?? null;
-  }, [collectionsStats?.monthlyStats, filters.month]);
+  }, [collectionsStats?.monthlyStats]);
 
   const latestPostsPulse = useMemo(() => {
     if (!postsStats?.monthlyStats?.length) return null;
-    if (filters.month) {
-      return (
-        postsStats.monthlyStats.find(
-          (stat: StylistPostsMonthlyStat) => stat.month === filters.month
-        ) ?? null
-      );
-    }
     return postsStats.monthlyStats.at(-1) ?? null;
-  }, [postsStats?.monthlyStats, filters.month]);
+  }, [postsStats?.monthlyStats]);
 
   const totalCollectionEngagement =
     (collectionsStats?.totalLikes ?? 0) +
     (collectionsStats?.totalComments ?? 0) +
-    (collectionsStats?.totalSaves ?? 0);
+    (collectionsStats?.totalSaves ?? 0) +
+    (postsStats?.totalLikes ?? 0) +
+    (postsStats?.totalComments ?? 0);
   const totalPostEngagement =
     (postsStats?.totalLikes ?? 0) + (postsStats?.totalComments ?? 0);
   const maxEngagement = Math.max(
@@ -189,25 +165,17 @@ export function StylistDashboardScreen() {
 
   const collectionsActivityLabel = useMemo(() => {
     if (!latestCollectionsPulse) {
-      return "No collection activity logged for this selection.";
+      return "No collection activity logged for this year.";
     }
-
-    const base = `${latestCollectionsPulse.collectionsCreated} collections published`;
-    return filters.month
-      ? `${base} in ${latestCollectionsPulse.monthName}`
-      : `Most recent activity (${latestCollectionsPulse.monthName}): ${base}`;
-  }, [filters.month, latestCollectionsPulse]);
+    return `Most recent activity (${latestCollectionsPulse.monthName}): ${latestCollectionsPulse.collectionsCreated} collections published`;
+  }, [latestCollectionsPulse]);
 
   const postsActivityLabel = useMemo(() => {
     if (!latestPostsPulse) {
-      return "No post activity logged for this selection.";
+      return "No post activity logged for this year.";
     }
-
-    const base = `${latestPostsPulse.postsCreated} posts shared`;
-    return filters.month
-      ? `${base} in ${latestPostsPulse.monthName}`
-      : `Most recent activity (${latestPostsPulse.monthName}): ${base}`;
-  }, [filters.month, latestPostsPulse]);
+    return `Most recent activity (${latestPostsPulse.monthName}): ${latestPostsPulse.postsCreated} posts shared`;
+  }, [latestPostsPulse]);
 
   useEffect(() => {
     if (collectionsStatsQuery.isSuccess) {
@@ -332,18 +300,6 @@ export function StylistDashboardScreen() {
     postsStats?.totalPosts,
   ]);
 
-  const handleMonthChange = (value: string) => {
-    const monthValue = value === "all" ? undefined : Number(value);
-    console.log("[StylistDashboard] Month changed", {
-      previous: filters.month,
-      next: monthValue,
-    });
-    setFilters((prev) => ({
-      ...prev,
-      month: monthValue,
-    }));
-  };
-
   const handleYearChange = (value: string) => {
     const yearValue = Number(value);
     console.log("[StylistDashboard] Year changed", {
@@ -408,247 +364,317 @@ export function StylistDashboardScreen() {
   }
 
   return (
-    <div className="relative mx-auto w-full max-w-6xl px-6 pb-24 pt-35 space-y-8">
-      <div className="absolute inset-0 -z-10 " />
-      <GlassCard
-        padding="2.5rem"
-        blur="18px"
-        glowColor="rgba(59, 130, 246, 0.35)"
-        className="border border-white/10 bg-slate-950/60 text-white"
-      >
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="space-y-3">
-            <p className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-3 py-1 text-xs uppercase tracking-[0.4em] text-white/80">
-              Stylist Studio
-            </p>
-            <h1 className="text-4xl font-black leading-tight md:text-5xl">
-              Performance Dashboard
-            </h1>
-            <p className="max-w-2xl text-white/80">
-              Monitor how your collections and community posts resonate over
-              time. Adjust your creative cadence with live engagement signals.
+    <div className="relative min-h-screen w-full bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 px-4 pb-16 pt-28 sm:px-6 lg:px-8">
+      {/* Animated background effects */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -left-40 -top-40 h-80 w-80 animate-pulse rounded-full bg-cyan-500/10 blur-3xl" />
+        <div className="absolute -right-40 top-60 h-96 w-96 animate-pulse rounded-full bg-indigo-500/10 blur-3xl" />
+        <div className="absolute bottom-40 left-1/2 h-80 w-80 animate-pulse rounded-full bg-fuchsia-500/10 blur-3xl" />
+      </div>
+      
+      {/* Main Content */}
+      <div className="relative mx-auto max-w-7xl space-y-8 mt-10">
+        {/* Header Section */}
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+          <div className="space-y-4">
+            <div className="flex items-center gap-4">
+              <div className="relative flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-cyan-500 via-indigo-500 to-fuchsia-500 shadow-lg shadow-cyan-500/25">
+                <div className="absolute inset-[2px] flex items-center justify-center rounded-[14px] bg-slate-900">
+                  <Activity className="h-6 w-6 text-cyan-400" />
+                </div>
+              </div>
+              <div>
+                <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-cyan-400">
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-400" />
+                  Stylist Studio
+                </p>
+                <h1 className="bg-gradient-to-r from-white via-white to-white/80 bg-clip-text text-3xl font-black text-transparent md:text-4xl">
+                  Dashboard
+                </h1>
+              </div>
+            </div>
+            <p className="max-w-xl text-base text-white/60">
+              Track your yearly performance and audience growth
             </p>
           </div>
-          {isStylist && (
-            <Button
-              onClick={() => setIsCreateDialogOpen(true)}
-              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-cyan-500 to-indigo-500 px-6 py-2.5 text-sm font-semibold text-white shadow-cyan-500/30 transition-all duration-300 hover:scale-[1.1]"
-            >
-              <Sparkles className="h-5 w-5" />
-              Create collection
-            </Button>
-          )}
+          <div className="flex flex-wrap items-center gap-3">
+            {isStylist && (
+              <Button
+                onClick={() => setIsCreateDialogOpen(true)}
+                className="group relative inline-flex items-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-cyan-500 via-indigo-500 to-fuchsia-500 px-6 py-3 text-sm font-bold text-white shadow-xl shadow-cyan-500/30 transition-all duration-300 hover:shadow-2xl hover:shadow-cyan-500/40 hover:scale-[1.02]"
+              >
+                <Sparkles className="h-4 w-4 transition-transform group-hover:rotate-12" />
+                New Collection
+              </Button>
+            )}
+          </div>
         </div>
-      </GlassCard>
 
-      <GlassCard
-        padding="1.5rem"
-        blur="16px"
-        className="border border-white/5 bg-white/5 text-white"
-      >
-        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div className="grid flex-1 gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <p className="text-sm text-white/60">Year</p>
-              <Select
-                value={String(filters.year)}
-                onValueChange={handleYearChange}
-              >
-                <SelectTrigger className="bg-white/10 text-white">
-                  <SelectValue placeholder="Select year" />
-                </SelectTrigger>
-                <SelectContent>
-                  {yearOptions.map((option) => (
-                    <SelectItem value={String(option.value)} key={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <p className="text-sm text-white/60">Month</p>
-              <Select
-                value={filters.month?.toString() ?? "all"}
-                onValueChange={handleMonthChange}
-              >
-                <SelectTrigger className="bg-white/10 text-white">
-                  <SelectValue placeholder="Select month" />
-                </SelectTrigger>
-                <SelectContent>
-                  {monthOptions.map((option) => (
-                    <SelectItem value={option.value} key={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+        {/* Key Metrics Overview */}
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Total Collections Card */}
+          <div className="group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-cyan-500/10 via-slate-900/80 to-slate-900/50 p-6 backdrop-blur-xl transition-all duration-300 hover:border-cyan-500/40 hover:shadow-2xl hover:shadow-cyan-500/20 hover:-translate-y-1">
+            <div className="absolute right-0 top-0 h-24 w-24 translate-x-10 -translate-y-10 rounded-full bg-cyan-500/20 blur-3xl transition-all group-hover:scale-150" />
+            <div className="relative space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-cyan-600 shadow-lg shadow-cyan-500/30">
+                  <Layers className="h-6 w-6 text-white" />
+                </div>
+                <div className="rounded-lg bg-cyan-500/10 px-2.5 py-1">
+                  <TrendingUp className="h-4 w-4 text-cyan-400" />
+                </div>
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-cyan-400/80">Total Collections</p>
+                <p className="mt-2 text-4xl font-black text-white">
+                  {formatNumber(collectionsStats?.totalCollections ?? 0)}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 border-t border-white/5 pt-3">
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-cyan-500/10">
+                  <Eye className="h-3.5 w-3.5 text-cyan-400" />
+                </div>
+                <p className="text-xs font-medium text-white/60">
+                  {formatNumber(collectionsStats?.publishedCollections ?? 0)} published
+                </p>
+              </div>
             </div>
           </div>
-          <div className="flex flex-col gap-2 md:w-48">
-            <p className="text-sm text-white/60">Quick actions</p>
+
+          {/* Collections Engagement Card */}
+          <div className="group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-fuchsia-500/10 via-slate-900/80 to-slate-900/50 p-6 backdrop-blur-xl transition-all duration-300 hover:border-fuchsia-500/40 hover:shadow-2xl hover:shadow-fuchsia-500/20 hover:-translate-y-1">
+            <div className="absolute right-0 top-0 h-24 w-24 translate-x-10 -translate-y-10 rounded-full bg-fuchsia-500/20 blur-3xl transition-all group-hover:scale-150" />
+            <div className="relative space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-fuchsia-500 to-pink-600 shadow-lg shadow-fuchsia-500/30">
+                  <Heart className="h-6 w-6 text-white" />
+                </div>
+                <div className="rounded-lg bg-fuchsia-500/10 px-2.5 py-1">
+                  <span className="text-xs font-bold text-fuchsia-400">
+                    <TrendingUp className="h-4 w-4" />
+                  </span>
+                </div>
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-fuchsia-400/80">Engagement</p>
+                <p className="mt-2 text-4xl font-black text-white">
+                  {formatNumber(totalCollectionEngagement)}
+                </p>
+              </div>
+              <div className="flex items-center gap-3 border-t border-white/5 pt-3">
+                <div className="flex items-center gap-1.5">
+                  <Heart className="h-3.5 w-3.5 text-fuchsia-400" />
+                  <span className="text-xs font-medium text-white/60">
+                    {formatNumber((collectionsStats?.totalLikes ?? 0) + (postsStats?.totalLikes ?? 0))}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <MessageSquare className="h-3.5 w-3.5 text-fuchsia-400" />
+                  <span className="text-xs font-medium text-white/60">
+                    {formatNumber((collectionsStats?.totalComments ?? 0) + (postsStats?.totalComments ?? 0))}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <BookmarkCheck className="h-3.5 w-3.5 text-fuchsia-400" />
+                  <span className="text-xs font-medium text-white/60">
+                    {formatNumber(collectionsStats?.totalSaves ?? 0)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Total Posts Card */}
+          <div className="group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-indigo-500/10 via-slate-900/80 to-slate-900/50 p-6 backdrop-blur-xl transition-all duration-300 hover:border-indigo-500/40 hover:shadow-2xl hover:shadow-indigo-500/20 hover:-translate-y-1">
+            <div className="absolute right-0 top-0 h-24 w-24 translate-x-10 -translate-y-10 rounded-full bg-indigo-500/20 blur-3xl transition-all group-hover:scale-150" />
+            <div className="relative space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/30">
+                  <FileText className="h-6 w-6 text-white" />
+                </div>
+                <div className="rounded-lg bg-indigo-500/10 px-2.5 py-1">
+                  <TrendingUp className="h-4 w-4 text-indigo-400" />
+                </div>
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-indigo-400/80">Community Posts</p>
+                <p className="mt-2 text-4xl font-black text-white">
+                  {formatNumber(postsStats?.totalPosts ?? 0)}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 border-t border-white/5 pt-3">
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-500/10">
+                  <Heart className="h-3.5 w-3.5 text-indigo-400" />
+                </div>
+                <p className="text-xs font-medium text-white/60">
+                  {formatNumber(postsStats?.totalLikes ?? 0)} total likes
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Total Followers Card */}
+          <div className="group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-emerald-500/10 via-slate-900/80 to-slate-900/50 p-6 backdrop-blur-xl transition-all duration-300 hover:border-emerald-500/40 hover:shadow-2xl hover:shadow-emerald-500/20 hover:-translate-y-1">
+            <div className="absolute right-0 top-0 h-24 w-24 translate-x-10 -translate-y-10 rounded-full bg-emerald-500/20 blur-3xl transition-all group-hover:scale-150" />
+            <div className="relative space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 shadow-lg shadow-emerald-500/30">
+                  <Users className="h-6 w-6 text-white" />
+                </div>
+                <div className="rounded-lg bg-emerald-500/10 px-2.5 py-1">
+                  <span className="text-xs font-bold text-emerald-400">
+                    +{formatNumber((collectionsStats?.followersThisMonth ?? 0))}
+                  </span>
+                </div>
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-emerald-400/80">Total Followers</p>
+                <p className="mt-2 text-4xl font-black text-white">
+                  {formatNumber(Math.max(collectionsStats?.totalFollowers ?? 0, postsStats?.totalFollowers ?? 0))}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 border-t border-white/5 pt-3">
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/10">
+                  <TrendingUp className="h-3.5 w-3.5 text-emerald-400" />
+                </div>
+                <p className="text-xs font-medium text-white/60">
+                  New this month
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {hasError && (
+          <div className="rounded-2xl border border-red-500/30 bg-gradient-to-br from-red-500/10 to-slate-900/50 p-6 backdrop-blur-xl">
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-red-500/20">
+                <Activity className="h-6 w-6 text-red-400" />
+              </div>
+              <div className="flex-1 space-y-3">
+                <div>
+                  <p className="text-lg font-bold text-white">Unable to load studio insights</p>
+                  <p className="mt-1 text-sm text-white/60">
+                    Please try refreshing the dashboard. If the problem persists, reach out to support.
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  className="rounded-lg bg-white/10 text-sm font-medium text-white transition-colors hover:bg-white/20"
+                  onClick={() => {
+                    collectionsStatsQuery.refetch();
+                    postsStatsQuery.refetch();
+                  }}
+                >
+                  <Activity className="mr-2 h-4 w-4" />
+                  Retry now
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+        <div className="rounded-2xl border border-white/10 bg-slate-900/50 p-5 backdrop-blur-xl">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 transition-colors hover:border-cyan-500/30 hover:bg-white/10">
+                <Calendar className="h-4 w-4 text-cyan-400" />
+                <Select
+                  value={String(filters.year)}
+                  onValueChange={handleYearChange}
+                >
+                  <SelectTrigger className="h-auto border-0 bg-transparent p-0 text-sm font-medium text-white focus:ring-0">
+                    <SelectValue placeholder="Year" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {yearOptions.map((option) => (
+                      <SelectItem value={String(option.value)} key={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <span className="text-sm text-white/50">Full year analytics</span>
+            </div>
             <Button
-              variant="outline"
-              className="bg-transparent text-white-400 hover:bg-slate-500/10"
+              variant="ghost"
+              size="sm"
+              className="rounded-xl border border-white/10 bg-white/5 text-sm font-medium text-white/80 transition-all hover:border-emerald-500/30 hover:bg-white/10 hover:text-white"
               onClick={() => {
                 collectionsStatsQuery.refetch();
                 postsStatsQuery.refetch();
               }}
             >
-              Refresh data
+              <Activity className="mr-2 h-4 w-4" />
+              Refresh Data
             </Button>
           </div>
         </div>
-      </GlassCard>
-
-      <GlassCard
-        padding="1.75rem"
-        blur="18px"
-        glowColor="rgba(59, 130, 246, 0.25)"
-        className="border border-white/10 bg-slate-950/70 text-white"
-      >
-        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-          <div className="space-y-2">
-            <p className="text-xs uppercase tracking-[0.4em] text-white/60">
-              Insights snapshot
-            </p>
-            <h2 className="text-3xl font-semibold">
-              {filters.month
-                ? `Focus on ${
-                    monthOptions[Number(filters.month)]?.label ??
-                    `Month ${filters.month}`
-                  }`
-                : "Rolling performance"}
-            </h2>
-            <p className="text-sm text-white/70">
-              Collections drive {collectionEngagementPercent}% of total
-              engagement this period, while community posts contribute{" "}
-              {postEngagementPercent}%.
-            </p>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2 md:min-w-[320px]">
-            <div className="space-y-2 rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/20 to-slate-900/50 p-4">
-              <div className="flex items-center justify-between text-sm">
-                <span className="font-medium text-white">Collections</span>
-                <span className="text-white/70">
-                  +{collectionsStats?.followersThisMonth ?? 0} followers
-                </span>
-              </div>
-              <p className="text-2xl font-semibold">
-                {formatNumber(totalCollectionEngagement)} interactions
-              </p>
-              <div className="h-2 rounded-full bg-white/10">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-500"
-                  style={{ width: `${collectionEngagementPercent}%` }}
-                />
-              </div>
-              <p className="text-xs text-white/70">
-                {collectionsActivityLabel}
-              </p>
-            </div>
-            <div className="space-y-2 rounded-2xl border border-fuchsia-400/20 bg-gradient-to-br from-fuchsia-500/20 to-slate-900/50 p-4">
-              <div className="flex items-center justify-between text-sm">
-                <span className="font-medium text-white">Posts</span>
-                <span className="text-white/70">
-                  +{postsStats?.followersThisMonth ?? 0} followers
-                </span>
-              </div>
-              <p className="text-2xl font-semibold">
-                {formatNumber(totalPostEngagement)} interactions
-              </p>
-              <div className="h-2 rounded-full bg-white/10">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-pink-500 to-violet-500"
-                  style={{ width: `${postEngagementPercent}%` }}
-                />
-              </div>
-              <p className="text-xs text-white/70">{postsActivityLabel}</p>
-            </div>
-          </div>
-        </div>
-      </GlassCard>
-
-      {hasError && (
-        <GlassCard
-          padding="1.5rem"
-          blur="16px"
-          className="border border-red-500/20 bg-red-500/10 text-white"
+        {/* Content Tabs */}
+        <Tabs
+          value={activeTab}
+          onValueChange={(value) =>
+            setActiveTab(value as "overview" | "collections" | "community")
+          }
+          className="space-y-8"
         >
-          <p className="font-semibold">Unable to load studio insights.</p>
-          <p className="text-sm text-white/80">
-            Please try refreshing the dashboard. If the problem persists, reach
-            out to support.
-          </p>
-          <Button
-            size="sm"
-            className="mt-4 bg-white/20 text-white hover:bg-white/30"
-            onClick={() => {
-              collectionsStatsQuery.refetch();
-              postsStatsQuery.refetch();
-            }}
-          >
-            Retry now
-          </Button>
-        </GlassCard>
-      )}
+          <div className="rounded-2xl border border-white/10 bg-slate-900/50 p-1.5 backdrop-blur-xl shadow-xl">
+            <TabsList className="flex w-full gap-2 bg-transparent">
+              <TabsTrigger
+                value="overview"
+                className="group flex-1 rounded-xl px-5 py-3 text-sm font-semibold text-white/60 transition-all hover:text-white/80 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:via-indigo-500 data-[state=active]:to-fuchsia-500 data-[state=active]:text-white data-[state=active]:shadow-xl data-[state=active]:shadow-cyan-500/30"
+              >
+                <BarChart3 className="mr-2 h-4 w-4 transition-transform group-data-[state=active]:scale-110" />
+                Overview
+              </TabsTrigger>
+              <TabsTrigger
+                value="collections"
+                className="group flex-1 rounded-xl px-5 py-3 text-sm font-semibold text-white/60 transition-all hover:text-white/80 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:via-indigo-500 data-[state=active]:to-fuchsia-500 data-[state=active]:text-white data-[state=active]:shadow-xl data-[state=active]:shadow-indigo-500/30"
+              >
+                <Layers className="mr-2 h-4 w-4 transition-transform group-data-[state=active]:scale-110" />
+                Collections
+              </TabsTrigger>
+              <TabsTrigger
+                value="community"
+                className="group flex-1 rounded-xl px-5 py-3 text-sm font-semibold text-white/60 transition-all hover:text-white/80 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:via-indigo-500 data-[state=active]:to-fuchsia-500 data-[state=active]:text-white data-[state=active]:shadow-xl data-[state=active]:shadow-fuchsia-500/30"
+              >
+                <FileText className="mr-2 h-4 w-4 transition-transform group-data-[state=active]:scale-110" />
+                Community
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
-      <Tabs
-        value={activeTab}
-        onValueChange={(value) =>
-          setActiveTab(value as "overview" | "collections" | "community")
-        }
-        className="space-y-6"
-      >
-        <TabsList className="flex w-full flex-wrap gap-2 rounded-2xl border border-white/10 bg-white/5 p-1 text-white/70">
-          <TabsTrigger
-            value="overview"
-            className="flex-1 rounded-xl px-4 py-2 text-sm font-semibold data-[state=active]:bg-white/90 data-[state=active]:text-slate-900"
-          >
-            Overview
-          </TabsTrigger>
-          <TabsTrigger
-            value="collections"
-            className="flex-1 rounded-xl px-4 py-2 text-sm font-semibold data-[state=active]:bg-white/90 data-[state=active]:text-slate-900"
-          >
-            Collections
-          </TabsTrigger>
-          <TabsTrigger
-            value="community"
-            className="flex-1 rounded-xl px-4 py-2 text-sm font-semibold data-[state=active]:bg-white/90 data-[state=active]:text-slate-900"
-          >
-            Community posts
-          </TabsTrigger>
-        </TabsList>
+          <TabsContent value="overview" className="space-y-6">
+            <OverviewTab
+              isLoading={isLoading}
+              collectionCards={collectionCards}
+              postsCards={postsCards}
+              collectionsStats={collectionsStats}
+              postsStats={postsStats}
+            />
+          </TabsContent>
 
-        <TabsContent value="overview" className="space-y-6">
-          <OverviewTab
-            isLoading={isLoading}
-            collectionCards={collectionCards}
-            postsCards={postsCards}
-            collectionsStats={collectionsStats}
-            postsStats={postsStats}
-          />
-        </TabsContent>
+          <TabsContent value="collections" className="space-y-6">
+            <CollectionsTab
+              isLoading={isLoading}
+              collectionsStats={collectionsStats}
+              collectionsActivityLabel={collectionsActivityLabel}
+              userId={userId}
+            />
+          </TabsContent>
 
-        <TabsContent value="collections" className="space-y-6">
-          <CollectionsTab
-            isLoading={isLoading}
-            collectionsStats={collectionsStats}
-            collectionsActivityLabel={collectionsActivityLabel}
-            userId={userId}
-          />
-        </TabsContent>
+          <TabsContent value="community" className="space-y-6">
+            <CommunityTab
+              isLoading={isLoading}
+              postsStats={postsStats}
+              postsActivityLabel={postsActivityLabel}
+              onPostsChanged={() => postsStatsQuery.refetch()}
+            />
+          </TabsContent>
+        </Tabs>
+      </div>
 
-        <TabsContent value="community" className="space-y-6">
-          <CommunityTab
-            isLoading={isLoading}
-            postsStats={postsStats}
-            postsActivityLabel={postsActivityLabel}
-          />
-        </TabsContent>
-      </Tabs>
-
+      {/* Create Collection Dialog */}
       {isStylist && (
         <CreateCollectionDialog
           open={isCreateDialogOpen}

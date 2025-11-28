@@ -419,10 +419,16 @@ function PurchaseContent() {
                   </button>
                 </div>
               </div>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between pb-3 border-b border-white/10">
                 <p className="text-sm text-gray-400 font-medium">Bank</p>
                 <p className="font-mono font-semibold text-white">
                   MB Bank
+                </p>
+              </div>
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-400 font-medium">Transfer Content</p>
+                <p className="font-semibold text-white text-right max-w-[60%] wrap-break-word">
+                  SUBSCRIPTION PLAN {planName}
                 </p>
               </div>
             </div>
