@@ -64,7 +64,7 @@ interface PostModalProps {
 /**
  * ✅ OPTIMIZED: Instagram-style post detail modal
  * - Uses usePostModal hook for image navigation and avatar fetching
- * - Reduced from ~330 lines to ~200 lines
+ * - Fixed scrolling issue
  * - Clean separation of concerns
  */
 export function PostModal({
@@ -198,13 +198,11 @@ export function PostModal({
   const handleEditPostSuccess = async () => {
     setIsEditDialogOpen(false);
     onPostUpdated?.();
-    // Optionally refresh the post data or close modal
   };
 
   // Ensure EditPostDialog has higher z-index than PostModal
   useEffect(() => {
     if (isEditDialogOpen) {
-      // Add style to ensure EditPostDialog overlay and content have higher z-index
       const style = document.createElement("style");
       style.id = "edit-post-dialog-z-index";
       style.textContent = `
@@ -232,10 +230,10 @@ export function PostModal({
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent
-          className={`!p-0 !gap-0 backdrop-blur-2xl bg-slate-950/60 border border-cyan-400/15 shadow-[0_8px_32px_rgba(0,0,0,0.4)] rounded-3xl overflow-hidden flex flex-col ${
+          className={`!p-0 !gap-0 backdrop-blur-2xl bg-slate-950/60 border border-cyan-400/15 shadow-[0_8px_32px_rgba(0,0,0,0.4)] rounded-3xl overflow-hidden ${
             hasMultipleImages || currentImage
               ? "!max-w-[1200px] !w-[90vw] !h-[85vh]"
-              : "!max-w-[700px] !w-[90vw] !h-auto"
+              : "!max-w-[700px] !w-[90vw] !max-h-[85vh]"
           }`}
           aria-describedby={undefined}
           showCloseButton={false}
@@ -246,13 +244,13 @@ export function PostModal({
           </DialogTitle>
 
           <div
-            className={`flex flex-1 min-h-0 overflow-hidden rounded-3xl ${
-              hasMultipleImages || currentImage ? "h-full w-full" : "flex-col"
+            className={`flex min-h-0 rounded-3xl ${
+              hasMultipleImages || currentImage ? "h-full w-full" : "flex-col max-h-[85vh]"
             }`}
           >
             {/* Left: Image - Only show if has images */}
             {(hasMultipleImages || currentImage) && (
-              <div className="flex-1 relative flex items-center justify-center overflow-hidden bg-slate-950/30 rounded-l-3xl">
+              <div className="flex-1 relative flex items-center justify-center overflow-hidden bg-slate-950/30 rounded-l-3xl min-w-0">
                 {currentImage ? (
                   <>
                     <div className="relative w-full h-full flex items-center justify-center">
@@ -334,14 +332,14 @@ export function PostModal({
 
             {/* Right: Post info and comments */}
             <div
-              className={`flex flex-col border-l border-slate-700/30 flex-shrink-0 bg-slate-900/40 ${
+              className={`flex flex-col border-l border-slate-700/30 bg-slate-900/40 ${
                 hasMultipleImages || currentImage
-                  ? "w-[450px] min-w-[450px] rounded-r-3xl"
+                  ? "w-[450px] rounded-r-3xl"
                   : "w-full rounded-3xl"
               }`}
             >
-              {/* HEADER: Avatar + Name + Time */}
-              <div className="flex items-center justify-between py-4 px-4 border-b border-slate-700/20 group flex-shrink-0">
+              {/* HEADER: Avatar + Name + Time - FIXED */}
+              <div className="flex-shrink-0 flex items-center justify-between py-4 px-4 border-b border-slate-700/20 bg-slate-900/80 backdrop-blur-md z-20">
                 <div className="flex items-center gap-3">
                   <Avatar className="w-10 h-10 ring-2 ring-cyan-400/30 hover:ring-cyan-400/50 transition-all">
                     {userAvatarUrl && (
@@ -431,19 +429,20 @@ export function PostModal({
                 </DropdownMenu>
               </div>
 
-              {/* BODY: Caption + Interactions + Comments */}
-              <div className="flex-1 overflow-y-auto px-4 flex flex-col min-h-0">
+              {/* SCROLLABLE MIDDLE SECTION */}
+              <div className="flex-1 overflow-y-auto custom-scrollbar min-h-0">
                 {/* Caption Content */}
-                <div className="py-4 border-b border-slate-700/20">
+                <div className="py-4 px-4">
                   <PostContent
                     caption={post.caption}
                     tags={post.tags}
                     onTagClick={(tag) => router.push(`/community?hashtag=${tag.id}`)}
+                    isModal={true}
                   />
                 </div>
 
                 {/* Interactions Bar */}
-                <div className="py-3 border-b border-slate-700/20">
+                <div className="py-3 px-4 border-y border-slate-700/20 bg-slate-900/80 backdrop-blur-md">
                   {/* Action buttons */}
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex gap-4">
@@ -476,7 +475,7 @@ export function PostModal({
                 </div>
 
                 {/* Comments Section */}
-                <div className="py-4 flex-1 min-h-0">
+                <div className="py-4 px-4 pb-24">
                   <CommentSection
                     postId={post.id}
                     commentCount={commentCount}
@@ -485,9 +484,9 @@ export function PostModal({
                 </div>
               </div>
 
-              {/* FOOTER (Sticky): Comment Input */}
+              {/* FOOTER: Comment Input - FIXED */}
               {user && (
-                <div className="border-t border-slate-700/20 bg-slate-900/30 flex-shrink-0 px-4 py-3">
+                <div className="flex-shrink-0 border-t border-slate-700/20 bg-slate-900/90 backdrop-blur-md px-4 py-3 z-20">
                   <CommentInput
                     ref={commentInputRef}
                     userName={user.displayName || user.email || "User"}
