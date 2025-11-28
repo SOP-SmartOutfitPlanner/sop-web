@@ -88,16 +88,15 @@ export type ResolveReportAction = Exclude<ReportAction, "NONE">;
 
 export interface AdminReport {
   id: number;
-  userId: number;
+  originalReporter: AdminReportUser;
+  author: AdminReportUser;
   postId: number | null;
   commentId: number | null;
   type: ReportType;
   action: ReportAction;
   status: ReportStatus;
-  description: string;
+  reporterCount: number;
   createdDate: string;
-  reporter?: AdminReportUser;
-  author?: AdminReportUser;
 }
 
 export interface AdminReportUser {
@@ -117,8 +116,14 @@ export interface ReportedContent {
   createdDate: string;
 }
 
-export interface AdminReportDetail extends AdminReport {
-  reporter: AdminReportUser;
+export interface AdminReportDetail {
+  id: number;
+  type: ReportType;
+  status: ReportStatus;
+  action: ReportAction;
+  createdDate: string;
+  originalReporter: AdminReportUser;
+  reporterCount: number;
   content: ReportedContent;
   author: AdminReportUser;
   resolvedByAdminId: number | null;
@@ -129,6 +134,24 @@ export interface AdminReportDetail extends AdminReport {
   authorSuspensionCount: number;
 }
 
+export interface Reporter {
+  id: number;
+  userId: number;
+  reporter: AdminReportUser;
+  description: string;
+  createdDate: string;
+}
+
+export interface ReportersListResponse {
+  data: Reporter[];
+  metaData: PaginationMetaData;
+}
+
+export interface ReportsListResponse {
+  data: AdminReport[];
+  metaData: PaginationMetaData;
+}
+
 export interface GetReportsParams {
   pageIndex?: number;
   pageSize?: number;
@@ -136,6 +159,11 @@ export interface GetReportsParams {
   status?: ReportStatus;
   fromDate?: string;
   toDate?: string;
+}
+
+export interface GetReportersParams {
+  pageIndex?: number;
+  pageSize?: number;
 }
 
 export interface ResolveNoViolationPayload {
@@ -371,17 +399,17 @@ export const adminAPI = {
   },
   getReports: async (
     params?: GetReportsParams
-  ): Promise<ApiResponse<AdminReport[]>> => {
+  ): Promise<ApiResponse<ReportsListResponse>> => {
     const queryString = buildReportQueryString(params);
     const url = `/reports${queryString ? `?${queryString}` : ""}`;
-    return apiClient.get<ApiResponse<AdminReport[]>>(url);
+    return apiClient.get<ApiResponse<ReportsListResponse>>(url);
   },
   getPendingReports: async (
     params?: Omit<GetReportsParams, "status">
-  ): Promise<ApiResponse<AdminReport[]>> => {
+  ): Promise<ApiResponse<ReportsListResponse>> => {
     const queryString = buildReportQueryString(params);
     const url = `/reports/pending${queryString ? `?${queryString}` : ""}`;
-    return apiClient.get<ApiResponse<AdminReport[]>>(url);
+    return apiClient.get<ApiResponse<ReportsListResponse>>(url);
   },
   getReportDetails: async (
     reportId: number
@@ -389,6 +417,21 @@ export const adminAPI = {
     return apiClient.get<ApiResponse<AdminReportDetail>>(
       `/reports/${reportId}/details`
     );
+  },
+  getReportReporters: async (
+    reportId: number,
+    params?: GetReportersParams
+  ): Promise<ApiResponse<ReportersListResponse>> => {
+    const queryParams = new URLSearchParams();
+    if (params?.pageIndex) {
+      queryParams.append("page-index", params.pageIndex.toString());
+    }
+    if (params?.pageSize) {
+      queryParams.append("page-size", params.pageSize.toString());
+    }
+    const queryString = queryParams.toString();
+    const url = `/reports/${reportId}/reporters${queryString ? `?${queryString}` : ""}`;
+    return apiClient.get<ApiResponse<ReportersListResponse>>(url);
   },
   resolveReportNoViolation: async (
     reportId: number,

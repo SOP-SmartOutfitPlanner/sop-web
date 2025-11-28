@@ -122,9 +122,8 @@ export function ReportTable({
                 <tr className="bg-slate-50 text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <th className="px-6 py-3">ID</th>
                   <th className="px-6 py-3">Type</th>
-                  <th className="px-6 py-3">Reporter</th>
+                  <th className="px-6 py-3">Reporter(s)</th>
                   <th className="px-6 py-3">Author</th>
-                  <th className="px-6 py-3">Description</th>
                   <th className="px-6 py-3">Status</th>
                   <th className="px-6 py-3">Action</th>
                   <th className="px-6 py-3">Timestamp</th>
@@ -144,17 +143,27 @@ export function ReportTable({
                       <Badge variant="outline">{report.type}</Badge>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
-                      {report.reporter ? (
-                        <div>
-                          <p className="font-medium text-slate-900">
-                            {report.reporter.displayName}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {report.reporter.email}
-                          </p>
+                      {report.originalReporter ? (
+                        <div className="flex items-center gap-2">
+                          <div>
+                            <p className="font-medium text-slate-900">
+                              {report.originalReporter.displayName}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {report.originalReporter.email}
+                            </p>
+                          </div>
+                          {report.reporterCount > 1 && (
+                            <Badge
+                              variant="secondary"
+                              className="text-xs bg-blue-100 text-blue-700 border-blue-300 font-semibold"
+                            >
+                              +{report.reporterCount - 1}
+                            </Badge>
+                          )}
                         </div>
                       ) : (
-                        `User #${report.userId}`
+                        "—"
                       )}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
@@ -170,9 +179,6 @@ export function ReportTable({
                       ) : (
                         "—"
                       )}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600 max-w-xs">
-                      <p className="line-clamp-2">{report.description}</p>
                     </td>
                     <td className="px-6 py-4">
                       <StatusBadge status={report.status} size="sm" />

@@ -44,10 +44,8 @@ export function ReportHeader({
             </div>
             <h2 className="text-xl font-bold text-slate-900 mb-1.5 line-clamp-2">
               {reportTypeLabels[reportDetail.type]} •{" "}
-              {reportDetail.postId
-                ? `Content #${reportDetail.postId}`
-                : reportDetail.commentId
-                ? `Content #${reportDetail.commentId}`
+              {reportDetail.content?.contentId
+                ? `Content #${reportDetail.content.contentId}`
                 : `Report #${reportDetail.id}`}
             </h2>
             <div className="flex items-center gap-3 text-xs text-slate-500">
@@ -116,4 +114,3 @@ export function ReportHeader({
     </div>
   );
 }
-
