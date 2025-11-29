@@ -113,7 +113,7 @@ function CheckoutContent() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-24">
-      <div className="max-w-2xl w-full space-y-6">
+      <div className="max-w-2xl w-full space-y-6 pt-8">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
           <Button
