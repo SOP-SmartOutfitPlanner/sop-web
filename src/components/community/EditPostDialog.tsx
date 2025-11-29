@@ -25,6 +25,8 @@ export function EditPostDialog({
     tags: string[];
     files?: File[];
     existingImageUrls?: string[];
+    itemIds?: number[];
+    outfitId?: number;
   }) => {
     try {
       setIsSubmitting(true);
@@ -39,7 +41,8 @@ export function EditPostDialog({
 
       // API only accepts File objects in "Images" field, not URLs
       // Convert existing image URLs to File objects and send them along with new files
-      const hasExistingUrls = data.existingImageUrls && data.existingImageUrls.length > 0;
+      const hasExistingUrls =
+        data.existingImageUrls && data.existingImageUrls.length > 0;
       const hasNewFiles = data.files && data.files.length > 0;
 
       // Convert existing image URLs to File objects
@@ -49,12 +52,17 @@ export function EditPostDialog({
             data.existingImageUrls.map(async (url) => {
               const response = await fetch(url);
               if (!response.ok) {
-                throw new Error(`Failed to fetch image: ${response.statusText}`);
+                throw new Error(
+                  `Failed to fetch image: ${response.statusText}`
+                );
               }
               const blob = await response.blob();
               const urlParts = url.split("/");
-              const filename = urlParts[urlParts.length - 1] || `existing-image.jpg`;
-              return new File([blob], filename, { type: blob.type || "image/jpeg" });
+              const filename =
+                urlParts[urlParts.length - 1] || `existing-image.jpg`;
+              return new File([blob], filename, {
+                type: blob.type || "image/jpeg",
+              });
             })
           );
 
@@ -75,6 +83,18 @@ export function EditPostDialog({
         });
       }
 
+      // Add optional itemIds (0-4 items)
+      if (data.itemIds && data.itemIds.length > 0) {
+        data.itemIds.forEach((id) => {
+          formData.append("ItemIds", String(id));
+        });
+      }
+
+      // Add optional outfitId (mutually exclusive with itemIds)
+      if (data.outfitId) {
+        formData.append("OutfitId", String(data.outfitId));
+      }
+
       // Call API to update post
       const postId = parseInt(post.id, 10);
       const updatedPost = await communityAPI.updatePost(postId, formData);
@@ -84,7 +104,12 @@ export function EditPostDialog({
       onClose?.();
     } catch (error) {
       console.error("Error updating post:", error);
-      toast.error("Không thể cập nhật bài viết");
+
+      // Use error message from API (already mapped in community-api.ts)
+      const errorMessage =
+        error instanceof Error ? error.message : "Không thể cập nhật bài viết";
+
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }

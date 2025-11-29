@@ -6,6 +6,8 @@ import { PostHeader } from "./PostHeader";
 import { PostImage } from "./PostImage";
 import { PostContent } from "./PostContent";
 import { PostActions } from "./PostActions";
+import { PostItemsGallery } from "../PostItemsGallery";
+import { PostOutfitDisplay } from "../PostOutfitDisplay";
 import GlassCard from "@/components/ui/glass-card";
 import { useState } from "react";
 
@@ -61,8 +63,10 @@ export function PostCardContainer({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       style={{
-        boxShadow: `0 8px 32px ${isHovered ? 'rgba(0, 0, 0, 0.4)' : 'rgba(0, 0, 0, 0.2)'}`,
-        transition: 'box-shadow 0.3s ease-out'
+        boxShadow: `0 8px 32px ${
+          isHovered ? "rgba(0, 0, 0, 0.4)" : "rgba(0, 0, 0, 0.2)"
+        }`,
+        transition: "box-shadow 0.3s ease-out",
       }}
     >
       <GlassCard
@@ -81,10 +85,7 @@ export function PostCardContainer({
         shadowIntensity={32}
         className={`relative h-full flex flex-col 
           bg-slate-950/30 
-          transition-all duration-300 group ${
-            isHovered &&
-            "bg-slate-950/40"
-          }`}
+          transition-all duration-300 group ${isHovered && "bg-slate-950/40"}`}
       >
         {/* Inner gradient overlay for extra depth with cyan accent */}
         <div className="absolute inset-0 rounded-3xl bg-gradient-to-t from-cyan-900/5 via-transparent to-white/5 pointer-events-none" />
@@ -109,12 +110,32 @@ export function PostCardContainer({
           </div>
 
           {/* Content */}
-          <PostContent caption={post.caption} tags={post.tags} onTagClick={onTagClick} />
+          <div className="px-4">
+            <PostContent
+              caption={post.caption}
+              tags={post.tags}
+              onTagClick={onTagClick}
+            />
+          </div>
 
           {/* Image */}
           {images.length > 0 && (
-            <div className="mx-2 mb-4 cursor-pointer" onClick={onImageClick}>
+            <div className="mt-3 cursor-pointer" onClick={onImageClick}>
               <PostImage images={images} onDoubleClick={onDoubleClick} />
+            </div>
+          )}
+
+          {/* Items Display */}
+          {post.items && post.items.length > 0 && (
+            <div className="mx-4 mt-3 p-4 rounded-xl bg-white/5 border border-white/10">
+              <PostItemsGallery items={post.items} />
+            </div>
+          )}
+
+          {/* Outfit Display */}
+          {post.outfit && (
+            <div className="mx-4 mt-3 p-4 rounded-xl bg-white/5 border border-white/10">
+              <PostOutfitDisplay outfit={post.outfit} />
             </div>
           )}
 

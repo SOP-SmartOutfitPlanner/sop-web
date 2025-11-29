@@ -16,6 +16,26 @@ export interface FollowerUser {
   createdDate: string;
 }
 
+export interface PostItemDetailModel {
+  id: number;
+  name: string;
+  categoryId: number;
+  categoryName: string;
+  color: string;
+  brand: string | null;
+  imgUrl: string;
+  aiDescription: string | null;
+  isDeleted: boolean;
+}
+
+export interface PostOutfitDetailModel {
+  id: number;
+  name: string;
+  description: string | null;
+  isDeleted: boolean;
+  items: PostItemDetailModel[];
+}
+
 export interface CommunityPost {
   id: number;
   userId: number;
@@ -34,6 +54,9 @@ export interface CommunityPost {
   isFollowing: boolean; // Follow status - if logged in, shows if current user follows this post author
   // Note: Caption is sometimes used instead of body in responses
   caption?: string;
+  // New fields for items/outfits (mutually exclusive)
+  items: PostItemDetailModel[] | null;
+  outfit: PostOutfitDetailModel | null;
 }
 
 export interface CreatePostRequest {
@@ -41,6 +64,8 @@ export interface CreatePostRequest {
   body: string;
   hashtags: string | string[]; // Can be single string or array
   images: File[]; // Raw files, not URLs (will be uploaded)
+  itemIds?: number[]; // Optional: Array of wardrobe item IDs (max 4, mutually exclusive with outfitId)
+  outfitId?: number; // Optional: Single outfit ID (mutually exclusive with itemIds)
 }
 
 export interface FeedMetaData {
@@ -250,7 +275,7 @@ class CommunityAPI {
 
   /**
    * Create a new post with multipart/form-data
-   * API expects: multipart/form-data with UserId, Body, Hashtags, Images
+   * API expects: multipart/form-data with UserId, Body, Hashtags, Images, ItemIds (optional), OutfitId (optional)
    *
    * Example:
    * const formData = new FormData();
@@ -258,6 +283,8 @@ class CommunityAPI {
    * formData.append('Body', 'My outfit today!');
    * formData.append('Hashtags', 'casual');
    * files.forEach(file => formData.append('Images', file));
+   * itemIds.forEach(id => formData.append('ItemIds', String(id)));
+   * formData.append('OutfitId', '123');
    */
   async createPost(postData: CreatePostRequest): Promise<CommunityPost> {
     const formData = new FormData();
@@ -280,19 +307,52 @@ class CommunityAPI {
       formData.append("Images", file);
     });
 
-    const apiResponse = await apiClient.post<ApiResponse<CommunityPost>>(
-      this.BASE_PATH,
-      formData,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+    // Add optional itemIds (0-4 items)
+    if (postData.itemIds && postData.itemIds.length > 0) {
+      postData.itemIds.forEach((id) => {
+        formData.append("ItemIds", String(id));
+      });
+    }
+
+    // Add optional outfitId (mutually exclusive with itemIds)
+    if (postData.outfitId) {
+      formData.append("OutfitId", String(postData.outfitId));
+    }
+
+    try {
+      const apiResponse = await apiClient.post<ApiResponse<CommunityPost>>(
+        this.BASE_PATH,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+      // API returns { statusCode, message, data: CommunityPost }
+      // Axios unwraps to apiResponse.data which is the whole response
+      // We need to return just the data part
+      return apiResponse.data;
+    } catch (error: unknown) {
+      // Map API error messages to user-friendly messages
+      const apiMessage = (error as { response?: { data?: { message?: string } } }).response?.data?.message || (error as Error).message;
+      
+      if (apiMessage?.includes("both items and outfit")) {
+        throw new Error("You can only attach either items or an outfit, not both");
+      } else if (apiMessage?.includes("maximum of 4 items")) {
+        throw new Error("You can attach a maximum of 4 items per post");
+      } else if (apiMessage?.includes("Item") && apiMessage?.includes("not found")) {
+        throw new Error("One or more selected items no longer exist");
+      } else if (apiMessage?.includes("Outfit") && apiMessage?.includes("not found")) {
+        throw new Error("The selected outfit no longer exists");
+      } else if (apiMessage?.includes("Item") && apiMessage?.includes("does not belong")) {
+        throw new Error("You can only attach items from your own wardrobe");
+      } else if (apiMessage?.includes("Outfit") && apiMessage?.includes("does not belong")) {
+        throw new Error("You can only attach outfits you created");
       }
-    );
-    // API returns { statusCode, message, data: CommunityPost }
-    // Axios unwraps to apiResponse.data which is the whole response
-    // We need to return just the data part
-    return apiResponse.data;
+      
+      throw error;
+    }
   }
 
   /**
@@ -332,25 +392,54 @@ class CommunityAPI {
     const apiResponse = await apiClient.get<ApiResponse<CommunityPost>>(
       `${this.BASE_PATH}/${postId}`
     );
-    return apiResponse.data;
+    const apiData = apiResponse.data;
+
+    // Ensure items and outfit fields exist
+    return {
+      ...apiData,
+      items: apiData.items || null,
+      outfit: apiData.outfit || null,
+    };
   }
 
   /**
    * Update a post
+   * FormData should include: UserId, Body, Hashtags, Images (optional), ItemIds (optional), OutfitId (optional)
    */
   async updatePost(postId: number, formData: FormData): Promise<CommunityPost> {
-    const apiResponse = await apiClient.put<ApiResponse<CommunityPost>>(
-      `${this.BASE_PATH}/${postId}`,
-      formData,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      }
-    );
+    try {
+      const apiResponse = await apiClient.put<ApiResponse<CommunityPost>>(
+        `${this.BASE_PATH}/${postId}`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
 
-    // API returns { statusCode, message, data: CommunityPost }
-    return apiResponse.data;
+      // API returns { statusCode, message, data: CommunityPost }
+      return apiResponse.data;
+    } catch (error: unknown) {
+      // Map API error messages to user-friendly messages
+      const apiMessage = (error as { response?: { data?: { message?: string } } }).response?.data?.message || (error as Error).message;
+      
+      if (apiMessage?.includes("both items and outfit")) {
+        throw new Error("You can only attach either items or an outfit, not both");
+      } else if (apiMessage?.includes("maximum of 4 items")) {
+        throw new Error("You can attach a maximum of 4 items per post");
+      } else if (apiMessage?.includes("Item") && apiMessage?.includes("not found")) {
+        throw new Error("One or more selected items no longer exist");
+      } else if (apiMessage?.includes("Outfit") && apiMessage?.includes("not found")) {
+        throw new Error("The selected outfit no longer exists");
+      } else if (apiMessage?.includes("Item") && apiMessage?.includes("does not belong")) {
+        throw new Error("You can only attach items from your own wardrobe");
+      } else if (apiMessage?.includes("Outfit") && apiMessage?.includes("does not belong")) {
+        throw new Error("You can only attach outfits you created");
+      }
+      
+      throw error;
+    }
   }
 
   /**
