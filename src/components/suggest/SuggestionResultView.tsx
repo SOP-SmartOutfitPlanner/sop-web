@@ -114,8 +114,13 @@ export function SuggestionResultView({
 
       // Step 2: Add to calendar for today
       const today = new Date();
-      const todayString = today.toISOString().split('T')[0] + 'T' + 
-        today.toTimeString().split(' ')[0]; // Format: yyyy-MM-ddTHH:mm:ss
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      const hours = String(today.getHours()).padStart(2, '0');
+      const minutes = String(today.getMinutes()).padStart(2, '0');
+      const seconds = String(today.getSeconds()).padStart(2, '0');
+      const todayString = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
 
       await CalenderAPI.createCalendarEntry({
         outfitIds: [outfitId],

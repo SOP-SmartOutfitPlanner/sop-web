@@ -220,12 +220,21 @@ export default function SuggestPage() {
         toast.success(`Successfully added ${response.data.totalCreated} outfit(s)!`, { id: loadingToast });
         setSelectedOutfitIndexes([]);
       } else if (response.data.totalCreated > 0) {
+        // Partial success - show warning with error details
+        const errorMessages = response.data.failedOutfits
+          .map((f) => `${f.name}: ${f.error}`)
+          .join("\n");
         toast.warning(
-          `Added ${response.data.totalCreated} outfit(s), ${response.data.totalFailed} failed`,
-          { id: loadingToast }
+          `Added ${response.data.totalCreated} outfit(s), ${response.data.totalFailed} failed:\n${errorMessages}`,
+          { id: loadingToast, duration: 8000 }
         );
+        setSelectedOutfitIndexes([]);
       } else {
-        toast.error("Failed to add outfits", { id: loadingToast });
+        // All failed - show error with details
+        const errorMessages = response.data.failedOutfits
+          .map((f) => `${f.name}: ${f.error}`)
+          .join("\n");
+        toast.error(`Failed to add outfits:\n${errorMessages}`, { id: loadingToast, duration: 8000 });
       }
     } catch (error) {
       console.error("Error adding multiple outfits:", error);
@@ -237,6 +246,7 @@ export default function SuggestPage() {
       setIsAddingMultiple(false);
     }
   };
+
 
   // Show loading while checking auth
   if (isCheckingAuth) {
@@ -482,7 +492,7 @@ export default function SuggestPage() {
 
               {/* Mass Add Controls */}
               {suggestionResults.length > 1 && (
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                   <Checkbox
                     checked={selectedOutfitIndexes.length === suggestionResults.length}
                     indeterminate={selectedOutfitIndexes.length > 0 && selectedOutfitIndexes.length < suggestionResults.length}
