@@ -1,11 +1,12 @@
-import { 
-  CreateOutfitRequest, 
-  CreateOutfitResponse, 
-  GetOutfitByIdResponse, 
-  GetOutfitsFavoriteResponse, 
-  GetOutfitsRequest, 
+import {
+  CreateOutfitRequest,
+  CreateOutfitResponse,
+  GetOutfitByIdResponse,
+  GetOutfitsFavoriteResponse,
+  GetOutfitsRequest,
   GetOutfitsResponse,
   Outfit,
+  SuggestedItem,
 } from "../../types/outfit";
 import { apiClient } from "./client";
 
@@ -233,6 +234,59 @@ class OutfitAPI {
 
     if (response.statusCode !== 200) {
       throw new Error(response.message || "Failed to get outfit suggestion");
+    }
+
+    return response;
+  }
+
+  /**
+   * Get AI outfit suggestion V2 based on weather with multiple outfit options
+   * @param userId - User ID
+   * @param totalOutfit - Number of outfit suggestions to generate (2 or 3)
+   * @param occasionId - Optional occasion ID for filtering suggestions
+   * @param weather - Optional weather string
+   * @returns Promise with array of suggested outfits
+   */
+  async getSuggestionV2(
+    userId: number,
+    totalOutfit: number,
+    occasionId?: number,
+    weather?: string
+  ): Promise<{
+    statusCode: number;
+    message: string;
+    data: Array<{
+      suggestedItems: SuggestedItem[];
+      reason: string;
+    }>;
+  }> {
+    const params: Record<string, string | number> = {
+      userId,
+      totalOutfit,
+    };
+
+    if (occasionId) {
+      params.occasionId = occasionId;
+    }
+
+    if (weather) {
+      params.weather = weather;
+    }
+
+    const response = await apiClient.get<{
+      statusCode: number;
+      message: string;
+      data: Array<{
+        suggestedItems: SuggestedItem[];
+        reason: string;
+      }>;
+    }>("/outfits/suggestionV2", {
+      params,
+      timeout: 120000
+    });
+
+    if (response.statusCode !== 200) {
+      throw new Error(response.message || "Failed to get outfit suggestions");
     }
 
     return response;

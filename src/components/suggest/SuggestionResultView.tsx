@@ -16,14 +16,12 @@ import { useScrollLock } from "@/hooks/useScrollLock";
 interface SuggestionResultViewProps {
   items: SuggestedItem[];
   reason: string;
-  onRechooseLocation: () => void;
-  onClose: () => void;
+  onClose?: () => void;
 }
 
 export function SuggestionResultView({
   items,
   reason,
-  onRechooseLocation,
   onClose,
 }: SuggestionResultViewProps) {
   const [isAddingToWardrobe, setIsAddingToWardrobe] = useState(false);
@@ -81,7 +79,7 @@ export function SuggestionResultView({
       });
 
       toast.success("Added successfully to your outfit!", { id: loadingToast });
-      onClose();
+      onClose?.();
     } catch (error) {
       console.error("Error adding outfit to wardrobe:", error);
       toast.error(
@@ -126,7 +124,7 @@ export function SuggestionResultView({
       });
 
       toast.success("Outfit added and scheduled for today!", { id: loadingToast });
-      onClose();
+      onClose?.();
     } catch (error) {
       console.error("Error using outfit today:", error);
       toast.error(

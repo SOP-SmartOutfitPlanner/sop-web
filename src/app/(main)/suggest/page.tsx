@@ -21,6 +21,11 @@ import { toast } from "sonner";
 
 type WeatherTab = "my-location" | "selected-location";
 
+interface OutfitSuggestion {
+  suggestedItems: SuggestedItem[];
+  reason: string;
+}
+
 export default function SuggestPage() {
   const router = useRouter();
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
@@ -34,13 +39,11 @@ export default function SuggestPage() {
   } | null>(null);
   const [isLoadingCustomWeather, setIsLoadingCustomWeather] = useState(false);
   const [isSuggestingOutfit, setIsSuggestingOutfit] = useState(false);
-  const [suggestionResult, setSuggestionResult] = useState<{
-    items: SuggestedItem[];
-    reason: string;
-  } | null>(null);
+  const [suggestionResults, setSuggestionResults] = useState<OutfitSuggestion[]>([]);
   const [occasions, setOccasions] = useState<Occasion[]>([]);
   const [selectedOccasionId, setSelectedOccasionId] = useState<number | undefined>(undefined);
   const [isLoadingOccasions, setIsLoadingOccasions] = useState(false);
+  const [totalOutfit, setTotalOutfit] = useState<number>(2);
   const { isAuthenticated, user } = useAuthStore();
 
   // Weather hook
@@ -97,11 +100,6 @@ export default function SuggestPage() {
       ? customWeather.forecast
       : todayForecast;
 
-    if (!activeWeather) {
-      toast.error("Weather data not available. Please ensure location is enabled.");
-      return;
-    }
-
     setIsSuggestingOutfit(true);
 
     // Sequential loading toasts with timeout IDs for cleanup
@@ -123,24 +121,24 @@ export default function SuggestPage() {
     try {
       const userId = parseInt(user?.id || "0");
 
-      const weatherString = `${activeWeather.description}, Temperature: ${activeWeather.temperature}°C, Feels like: ${activeWeather.feelsLike}°C`;
+      const weatherString = activeWeather
+        ? `${activeWeather.description}, Temperature: ${activeWeather.temperature}°C, Feels like: ${activeWeather.feelsLike}°C`
+        : undefined;
 
-      const response = await outfitAPI.getSuggestion(
-        weatherString,
+      const response = await outfitAPI.getSuggestionV2(
         userId,
-        selectedOccasionId
+        totalOutfit,
+        selectedOccasionId,
+        weatherString
       );
 
       isRequestCompleted = true;
       clearTimeout(timeout1);
       clearTimeout(timeout2);
 
-      setSuggestionResult({
-        items: response.data.suggestedItems,
-        reason: response.data.reason,
-      });
+      setSuggestionResults(response.data);
 
-      toast.success("Outfit suggestion generated!", { id: toast1 });
+      toast.success("Outfit suggestions generated!", { id: toast1 });
 
       // Scroll to results
       setTimeout(() => {
@@ -155,7 +153,7 @@ export default function SuggestPage() {
       clearTimeout(timeout2);
 
       // Extract error message from API response
-      let errorMessage = "Failed to generate outfit suggestion";
+      let errorMessage = "Failed to generate outfit suggestions";
       if (error && typeof error === 'object' && 'response' in error) {
         const apiError = error as { response?: { data?: { message?: string } } };
         if (apiError.response?.data?.message) {
@@ -171,12 +169,8 @@ export default function SuggestPage() {
     }
   };
 
-  const handleRechooseLocation = () => {
-    setSuggestionResult(null);
-  };
-
   const handleCloseResults = () => {
-    setSuggestionResult(null);
+    setSuggestionResults([]);
   };
 
   // Show loading while checking auth
@@ -216,7 +210,7 @@ export default function SuggestPage() {
                 Today&apos;s weather
               </span>
             </h4>
-              
+
             {/* Weather Tabs */}
             <Radio.Group
               value={activeTab}
@@ -230,7 +224,7 @@ export default function SuggestPage() {
                   <span>My Location</span>
                 </div>
               </Radio.Button>
-              <Radio.Button 
+              <Radio.Button
                 value="selected-location"
                 disabled={!customWeather}
                 className="glass-radio-button"
@@ -321,7 +315,7 @@ export default function SuggestPage() {
                     {typeof weatherError === "string"
                       ? weatherError
                       : locationError ||
-                        "We couldn't get your weather information. Please try sharing your location."}
+                      "We couldn't get your weather information. Please try sharing your location."}
                   </p>
                   <GlassButton
                     onClick={requestLocation}
@@ -340,15 +334,15 @@ export default function SuggestPage() {
           {!isLoadingWeather && !isLoadingCustomWeather && (
             <>
               {activeTab === "my-location" && todayForecast && (
-                <WeatherCard 
-                  forecast={todayForecast} 
-                  cityName={cityName} 
+                <WeatherCard
+                  forecast={todayForecast}
+                  cityName={cityName}
                 />
               )}
               {activeTab === "selected-location" && customWeather && (
-                <WeatherCard 
-                  forecast={customWeather.forecast} 
-                  cityName={customWeather.cityName} 
+                <WeatherCard
+                  forecast={customWeather.forecast}
+                  cityName={customWeather.cityName}
                 />
               )}
             </>
@@ -356,7 +350,7 @@ export default function SuggestPage() {
         </div>
 
         {/* Suggest Outfit Button with Occasion Selector */}
-        <div className="flex justify-center items-center gap-4 mt-12">
+        <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mt-12">
           <Select
             value={selectedOccasionId}
             onChange={setSelectedOccasionId}
@@ -374,9 +368,21 @@ export default function SuggestPage() {
             ))}
           </Select>
 
+          <Select
+            value={totalOutfit}
+            onChange={setTotalOutfit}
+            size="large"
+            className="w-48"
+          >
+            <Select.Option value={1}>1 Outfit</Select.Option>
+            <Select.Option value={3}>3 Outfits</Select.Option>
+            <Select.Option value={5}>5 Outfits</Select.Option>
+            <Select.Option value={8}>8 Outfits</Select.Option>
+          </Select>
+
           <GlassButton
             onClick={handleSuggestOutfit}
-            disabled={isSuggestingOutfit || (!todayForecast && !customWeather)}
+            disabled={isSuggestingOutfit}
             className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white px-8 py-6 text-lg font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSuggestingOutfit ? (
@@ -386,6 +392,7 @@ export default function SuggestPage() {
               </>
             ) : (
               <>
+                <Sparkles className="w-5 h-5 mr-2 inline" />
                 Suggest Today Outfit
               </>
             )}
@@ -393,24 +400,34 @@ export default function SuggestPage() {
         </div>
 
         {/* Suggestion Results */}
-        {suggestionResult && (
+        {suggestionResults.length > 0 && (
           <div id="suggestion-results" className="mt-12 pb-8">
             <div className="mb-6">
               <h4 className="font-bricolage font-bold text-xl md:text-2xl lg:text-3xl leading-tight">
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-cyan-200">
-                  Your Suggested Outfit
+                  Your Suggested Outfits
                 </span>
               </h4>
               <p className="text-white/70 mt-2">
                 AI-generated outfit suggestions based on today&apos;s weather
               </p>
             </div>
-            <SuggestionResultView
-              items={suggestionResult.items}
-              reason={suggestionResult.reason}
-              onRechooseLocation={handleRechooseLocation}
-              onClose={handleCloseResults}
-            />
+            <div className="space-y-8">
+              {suggestionResults.map((suggestion, index) => (
+                <div key={index} className="space-y-4">
+                  <h5 className="font-bricolage font-semibold text-lg md:text-xl leading-tight">
+                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-purple-100 to-pink-200">
+                      Outfit Option {index + 1}
+                    </span>
+                  </h5>
+                  <SuggestionResultView
+                    items={suggestion.suggestedItems}
+                    reason={suggestion.reason}
+                    onClose={handleCloseResults}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -425,14 +442,14 @@ export default function SuggestPage() {
           } : undefined}
           onLocationSelect={async (lat, lng, address) => {
             setIsLocationModalOpen(false);
-            
+
             // Fetch weather for selected location
             setIsLoadingCustomWeather(true);
             const loadingToast = toast.loading("Loading weather for selected location...");
-            
+
             try {
               const response = await weatherAPI.getWeatherByCoordinates(lat, lng, 1);
-              
+
               if (response.statusCode === 200 && response.data.dailyForecasts.length > 0) {
                 setCustomWeather({
                   forecast: response.data.dailyForecasts[0],
