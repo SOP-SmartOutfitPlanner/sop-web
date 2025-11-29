@@ -127,10 +127,13 @@ export function ViewItemDialog({
                   </p>
                 </div>
                 {itemData?.isAnalyzed && itemData?.aiConfidence && itemData.aiConfidence < 60 && (
-                  <div className="px-5 py-1 rounded-full bg-red-500/50 border border-red-400/60 backdrop-blur-md">
-                    <span className="text-red-200 text-lg font-semibold">
-                      Unable to analyze the item in this image.
-                    </span>
+                  <div className="px-5 py-2 rounded-full bg-red-500/40 border border-red-400/50 backdrop-blur-md flex items-center gap-2 shadow-inner" aria-live="polite">
+                    <span className="inline-block w-2.5 h-2.5 rounded-full bg-red-300 animate-pulse" />
+                    <div className="flex flex-col leading-tight">
+                      <span className="text-red-100 text-sm font-semibold">
+                        Unclear item – AI analysis may be inaccurate.
+                      </span>
+                    </div>
                   </div>
                 )}
                 <div className="flex items-center gap-2">
