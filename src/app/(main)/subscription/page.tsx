@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Package, CheckCircle2, History } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -44,7 +44,16 @@ const formatTimeLeft = (msRemaining: number) => {
 
 export default function SubscriptionContentPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get('tab');
   const [activeTab, setActiveTab] = useState("plans");
+
+  // Update active tab when URL parameter changes
+  useEffect(() => {
+    if (tabParam) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
   const [showPendingDialog, setShowPendingDialog] = useState(false);
   const [pendingPaymentData, setPendingPaymentData] = useState<PendingPaymentData | null>(null);
   const [expiresAt, setExpiresAt] = useState<number | null>(null);
