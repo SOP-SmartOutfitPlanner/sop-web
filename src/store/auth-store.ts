@@ -66,8 +66,15 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
           try {
             const profileResponse = await userAPI.getUserProfile();
+            console.log("🔄 Init - Profile API Response:", profileResponse.data);
+            console.log("🔄 Init - DisplayName from API:", profileResponse.data.displayName);
+            
             const updatedUser = { ...user };
 
+            if (profileResponse.data.displayName) {
+              updatedUser.displayName = profileResponse.data.displayName;
+              console.log("✅ Init - DisplayName updated to:", updatedUser.displayName);
+            }
             if (profileResponse.data.avtUrl) {
               updatedUser.avatar = profileResponse.data.avtUrl;
             }
@@ -75,6 +82,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
               updatedUser.location = profileResponse.data.location;
             }
 
+            console.log("🔄 Init - Updated user:", updatedUser);
             set({ user: updatedUser });
             localStorage.setItem('user', JSON.stringify(updatedUser));
           } catch (profileError) {
@@ -139,11 +147,20 @@ export const useAuthStore = create<AuthStore>((set) => ({
         updatedAt: undefined,
       };
 
-      // Fetch user profile to check isFirstTime, get avatar, and location
+      // Fetch user profile to check isFirstTime, get avatar, location, and displayName
       let isFirstTime = false;
       try {
         const profileResponse = await userAPI.getUserProfile();
+        console.log("📝 Profile API Response:", profileResponse.data);
+        console.log("📝 DisplayName from API:", profileResponse.data.displayName);
+        console.log("📝 User before update:", user);
+        
         isFirstTime = profileResponse.data.isFirstTime;
+        // Update displayName from profile (real name, not email prefix)
+        if (profileResponse.data.displayName) {
+          user.displayName = profileResponse.data.displayName;
+          console.log("✅ DisplayName updated to:", user.displayName);
+        }
         // Update avatar from profile
         if (profileResponse.data.avtUrl) {
           user.avatar = profileResponse.data.avtUrl;
@@ -152,6 +169,8 @@ export const useAuthStore = create<AuthStore>((set) => ({
         if (profileResponse.data.location) {
           user.location = profileResponse.data.location;
         }
+        
+        console.log("📝 User after update:", user);
       } catch (profileError) {
         console.error("Failed to fetch user profile:", profileError);
         // Continue with login success even if profile fetch fails
@@ -338,11 +357,17 @@ export const useAuthStore = create<AuthStore>((set) => ({
         updatedAt: undefined,
       };
 
-      // Fetch user profile to check isFirstTime, get avatar, and location
+      // Fetch user profile to check isFirstTime, get avatar, location, and displayName
       let isFirstTime = false;
       try {
         const profileResponse = await userAPI.getUserProfile();
+        
         isFirstTime = profileResponse.data.isFirstTime;
+        // Update displayName from profile (real name, not email prefix)
+        if (profileResponse.data.displayName) {
+          user.displayName = profileResponse.data.displayName;
+          console.log("✅ Google Login - DisplayName updated to:", user.displayName);
+        }
         // Update avatar from profile
         if (profileResponse.data.avtUrl) {
           user.avatar = profileResponse.data.avtUrl;
@@ -351,6 +376,8 @@ export const useAuthStore = create<AuthStore>((set) => ({
         if (profileResponse.data.location) {
           user.location = profileResponse.data.location;
         }
+        
+        console.log("📝 Google Login - User after update:", user);
       } catch (profileError) {
         console.error("Failed to fetch user profile:", profileError);
       }
