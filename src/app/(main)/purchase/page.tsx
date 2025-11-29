@@ -330,7 +330,7 @@ function PurchaseContent() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-24">
+    <div className="min-h-screen flex items-center justify-center px-4 py-24 pt-35">
       <div className="max-w-xl w-full rounded-3xl bg-white/10 border border-white/20 backdrop-blur-xl p-8 space-y-6 text-center">
         <h1 className="font-dela-gothic text-2xl md:text-3xl text-white mb-2">
           Complete your subscription purchase

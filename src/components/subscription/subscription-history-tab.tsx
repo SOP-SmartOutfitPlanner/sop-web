@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   CheckCircle2,
@@ -42,6 +42,25 @@ export function SubscriptionHistoryTab({
   });
     return initial;
   });
+
+  // Auto-refetch data when component mounts or becomes visible
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
+
+  // Listen for subscription refresh event
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleRefresh = () => {
+      refetch();
+    };
+
+    window.addEventListener("subscription:refresh", handleRefresh);
+    return () => {
+      window.removeEventListener("subscription:refresh", handleRefresh);
+    };
+  }, [refetch]);
 
   const errorMessage =
     error?.message ?? "Unable to load subscription history.";
@@ -94,7 +113,7 @@ export function SubscriptionHistoryTab({
 
         const formattedDate = (() => {
           try {
-            return new Date(history.createdDate).toLocaleDateString("vi-VN", {
+            return new Date(history.createdDate).toLocaleDateString("en-US", {
               year: "numeric",
               month: "long",
               day: "numeric",
@@ -106,7 +125,7 @@ export function SubscriptionHistoryTab({
 
         const formattedExpiry = (() => {
           try {
-            return new Date(history.dateExp).toLocaleDateString("vi-VN", {
+            return new Date(history.dateExp).toLocaleDateString("en-US", {
               year: "numeric",
               month: "long",
               day: "numeric",
@@ -233,7 +252,7 @@ export function SubscriptionHistoryTab({
                       try {
                         return new Date(
                           transaction.createdDate
-                        ).toLocaleDateString("vi-VN", {
+                        ).toLocaleDateString("en-US", {
                           year: "numeric",
                           month: "short",
                           day: "numeric",
