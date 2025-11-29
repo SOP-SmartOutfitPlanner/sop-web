@@ -12,10 +12,18 @@ interface PostContentProps {
 
 const MAX_LENGTH = 200; // Số ký tự tối đa trước khi cắt
 
-export function PostContent({ caption, tags, onTagClick, isModal = false }: PostContentProps) {
+export function PostContent({
+  caption,
+  tags,
+  onTagClick,
+  isModal = false,
+}: PostContentProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const handleTagKeyDown = (event: KeyboardEvent<HTMLDivElement>, tag: Hashtag) => {
+  const handleTagKeyDown = (
+    event: KeyboardEvent<HTMLDivElement>,
+    tag: Hashtag
+  ) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
       onTagClick?.(tag);
@@ -56,7 +64,7 @@ export function PostContent({ caption, tags, onTagClick, isModal = false }: Post
             onClick={() => setIsExpanded(!isExpanded)}
             className="text-gray-300 hover:text-gray-200 text-sm font-medium transition-colors duration-200 mb-1"
           >
-            {isExpanded ? "Thu gọn" : "Xem thêm"}
+            {isExpanded ? "Show less" : "Show more"}
           </button>
         )}
       </div>
