@@ -6,8 +6,6 @@ import { useRouter } from "next/navigation";
 import {
   Heart,
   MessageCircle,
-  Share2,
-  Bookmark,
   MoreHorizontal,
   Edit,
   Trash2,
@@ -45,6 +43,8 @@ import { ReportDialog } from "@/components/community/report/ReportDialog";
 import { EditPostDialog } from "@/components/community/EditPostDialog";
 import { Badge } from "@/components/ui/badge";
 import { PostContent } from "@/components/community/post/PostContent";
+import { PostItemsGallery } from "@/components/community/PostItemsGallery";
+import { PostOutfitDisplay } from "@/components/community/PostOutfitDisplay";
 import {
   Tooltip,
   TooltipContent,
@@ -245,7 +245,9 @@ export function PostModal({
 
           <div
             className={`flex min-h-0 rounded-3xl ${
-              hasMultipleImages || currentImage ? "h-full w-full" : "flex-col max-h-[85vh]"
+              hasMultipleImages || currentImage
+                ? "h-full w-full"
+                : "flex-col max-h-[85vh]"
             }`}
           >
             {/* Left: Image - Only show if has images */}
@@ -436,10 +438,26 @@ export function PostModal({
                   <PostContent
                     caption={post.caption}
                     tags={post.tags}
-                    onTagClick={(tag) => router.push(`/community?hashtag=${tag.id}`)}
+                    onTagClick={(tag) =>
+                      router.push(`/community?hashtag=${tag.id}`)
+                    }
                     isModal={true}
                   />
                 </div>
+
+                {/* Items Display */}
+                {post.items && post.items.length > 0 && (
+                  <div className="px-4 pb-4">
+                    <PostItemsGallery items={post.items} />
+                  </div>
+                )}
+
+                {/* Outfit Display */}
+                {post.outfit && (
+                  <div className="px-4 pb-4">
+                    <PostOutfitDisplay outfit={post.outfit} />
+                  </div>
+                )}
 
                 {/* Interactions Bar */}
                 <div className="py-3 px-4 border-y border-slate-700/20 bg-slate-900/80 backdrop-blur-md">
