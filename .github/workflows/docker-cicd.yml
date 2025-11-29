@@ -1,5 +1,9 @@
 name: NextJS Docker CI/CD
 
+concurrency:
+  group: nextjs-docker-main
+  cancel-in-progress: true
+
 on:
   push:
     branches:
@@ -24,7 +28,7 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build Docker image
+      - name: Build and push Docker image
         uses: docker/build-push-action@v4
         with:
           context: .
@@ -32,17 +36,14 @@ jobs:
           push: true
           tags: |
             lion3993vn/sop-web:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   deploy:
     runs-on: self-hosted
     needs: docker-build
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          clean: false
-
       - name: Clean up old Docker resources
         run: |
           docker stop sop-web || true
@@ -52,9 +53,9 @@ jobs:
         run: |
           docker pull lion3993vn/sop-web:latest
           docker run -d --name sop-web -p 6969:6969 lion3993vn/sop-web:latest
-          
+
       - name: Remove dangling images of sop-web
         run: docker images lion3993vn/sop-web --format '{{.Repository}} {{.Tag}} {{.ID}}' | grep "<none>" | awk '{print $3}' | xargs -r docker rmi -f
-        
+
       - name: Verify running containers
         run: docker ps -a
