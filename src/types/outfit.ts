@@ -15,6 +15,30 @@ export interface CreateOutfitRequest {
     description: string;
     itemIds: number[];
 }
+
+export interface MassCreateOutfitRequest {
+    outfits: CreateOutfitRequest[];
+}
+
+export interface MassCreateOutfitResponse {
+    statusCode: number;
+    message: string;
+    data: {
+        totalRequested: number;
+        totalCreated: number;
+        totalFailed: number;
+        createdOutfits: Array<{
+            index: number;
+            outfitId: number;
+            name: string;
+        }>;
+        failedOutfits: Array<{
+            index: number;
+            name: string;
+            error: string;
+        }>;
+    };
+}
 //=====================Response=========================//
 export interface MetaData {
     totalCount: number;
