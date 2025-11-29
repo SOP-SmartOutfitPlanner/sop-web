@@ -126,7 +126,7 @@ export function WeeklyCalendar({
         <div className="flex items-center gap-2">
           <GlassButton variant="ghost" size="md" onClick={onShowMonthView}>
             <CalendarIcon className="w-5 h-5" />
-            My Plans
+            Month View
           </GlassButton>
           <GlassButton variant="ghost" size="sm" onClick={handleToday}>
             Today

@@ -26,6 +26,7 @@ import {
 import { useAuthStore } from "@/store/auth-store";
 import GlassCard from "@/components/ui/glass-card";
 import { NavbarAuthSection } from "@/components/layout/navbar-auth-section";
+import { UserSubscriptionInfo } from "@/components/layout/UserSubscriptionInfo";
 import { useUnreadCount } from "@/hooks/notifications/useUnreadCount";
 
 // -------------------- nav data --------------------
@@ -46,7 +47,6 @@ const personalNavigationItems = [
     enabled: true,
   },
   { path: "/notifications", label: "Notifications", icon: Bell, enabled: true },
-  { path: "/collections", label: "Collections", icon: ImgIcon, enabled: false },
 ];
 
 const CUSTOM_NAV_ICONS: Record<string, { active: string; inactive: string; alt: string }> = {
@@ -425,9 +425,15 @@ export function Navbar() {
               </div>
             )}
 
-            <div suppressHydrationWarning>
-              <NavbarAuthSection />
-            </div>
+            {user && !isFirstTime ? (
+              <div suppressHydrationWarning>
+                <UserSubscriptionInfo />
+              </div>
+            ) : (
+              <div suppressHydrationWarning>
+                <NavbarAuthSection />
+              </div>
+            )}
           </div>
         </div>
       </header>
