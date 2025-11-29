@@ -1,5 +1,26 @@
 import { CommunityPost, Hashtag } from "@/lib/api/community-api";
 
+// API types for post items and outfits
+export interface PostItemDetailModel {
+  id: number;
+  name: string;
+  categoryId: number;
+  categoryName: string;
+  color: string;
+  brand: string | null;
+  imgUrl: string;
+  aiDescription: string | null;
+  isDeleted: boolean;
+}
+
+export interface PostOutfitDetailModel {
+  id: number;
+  name: string;
+  description: string | null;
+  isDeleted: boolean;
+  items: PostItemDetailModel[];
+}
+
 // Legacy types for mock data
 export interface Post {
   id: string;
@@ -20,6 +41,8 @@ export interface Post {
   userAvatar?: string;
   userAvatarUrl?: string;
   userRole?: string;
+  items?: PostItemDetailModel[] | null; // Optional: attached wardrobe items (0-4)
+  outfit?: PostOutfitDetailModel | null; // Optional: attached outfit (mutually exclusive with items)
 }
 
 export interface Comment {
@@ -106,5 +129,7 @@ export function apiPostToPost(apiPost: CommunityPost): Post {
     timestamp: apiPost.createdAt,
     status: "visible",
     reports: [],
+    items: apiPost.items || null, // Attached wardrobe items
+    outfit: apiPost.outfit || null, // Attached outfit
   };
 }

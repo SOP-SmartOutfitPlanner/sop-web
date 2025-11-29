@@ -9,6 +9,8 @@ interface CreatePostData {
   captionHtml: string;
   tags: string[];
   files?: File[]; // Changed to File[] for actual file upload
+  itemIds?: number[]; // Optional: Array of wardrobe item IDs (max 4)
+  outfitId?: number; // Optional: Single outfit ID (mutually exclusive with itemIds)
 }
 
 /**
@@ -37,11 +39,13 @@ export function useCreatePost() {
         // - Accepts raw File objects
         // - Uploads images internally
         // - Returns post with image URLs from API
-        const response = await communityAPI.createPost({
+        await communityAPI.createPost({
           userId: parseInt(user.id),
           body: postData.captionHtml || postData.caption,
           hashtags: postData.tags,
           images: postData.files || [], // Pass raw files directly
+          itemIds: postData.itemIds, // Optional: wardrobe item IDs (max 4)
+          outfitId: postData.outfitId, // Optional: outfit ID (mutually exclusive with itemIds)
         });
 
         // Invalidate queries to refetch posts
@@ -56,9 +60,14 @@ export function useCreatePost() {
         return true;
       } catch (error) {
         console.error("Error creating post:", error);
+        
+        // Use error message from API (already mapped in community-api.ts)
+        const errorMessage = error instanceof Error 
+          ? error.message 
+          : "Please try again";
+        
         toast.error("Failed to create post", {
-          description:
-            error instanceof Error ? error.message : "Please try again",
+          description: errorMessage,
         });
         return false;
       } finally {
