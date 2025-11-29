@@ -397,7 +397,7 @@ export function StylistDashboardScreen() {
               Track your yearly performance and audience growth
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
+          {/* <div className="flex flex-wrap items-center gap-3">
             {isStylist && (
               <Button
                 onClick={() => setIsCreateDialogOpen(true)}
@@ -407,7 +407,7 @@ export function StylistDashboardScreen() {
                 New Collection
               </Button>
             )}
-          </div>
+          </div> */}
         </div>
 
         {/* Key Metrics Overview */}

@@ -13,6 +13,7 @@ import { Bookmark, Globe2, FileText, Layers, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { CreateCollectionDialog } from "@/components/collections/CreateCollectionDialog";
 
 interface CollectionListData {
   collections: CollectionRecord[];
@@ -27,6 +28,7 @@ const SKELETON_COUNT = 4;
 export function CollectionsScreen() {
   const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState<TabType>("all");
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
   const userId = useMemo(
     () => (user?.id ? parseInt(user.id, 10) : null),
@@ -166,8 +168,8 @@ export function CollectionsScreen() {
             <p className="inline-flex items-center gap-2 rounded-full border border-cyan-500/40 bg-cyan-500/20 px-3 py-1 text-xs uppercase tracking-[0.4em] text-white backdrop-blur-md font-semibold">
               Curated for You
             </p>
-            <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-              <div className="max-w-3xl space-y-3 relative z-10">
+            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+              <div className="flex-1 space-y-3 relative z-10">
                 <h1 className="text-4xl font-black leading-tight text-white drop-shadow-lg md:text-5xl">
                   Stylist Collections Gallery
                 </h1>
@@ -178,16 +180,27 @@ export function CollectionsScreen() {
                 </p>
               </div>
               {isStylist && (
-                <div className="relative z-10">
+                <div className="relative z-10 flex flex-col gap-3 md:flex-shrink-0">
                   <Button
                     asChild
-                    className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-cyan-500/30 transition-all duration-300 hover:from-cyan-400 hover:to-blue-500"
+                    className="group inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-cyan-500/30 transition-all duration-300 hover:from-cyan-400 hover:to-blue-500 hover:scale-[1.02] whitespace-nowrap"
                   >
                     <Link href="/dashboard/stylist">
                       <Sparkles className="h-4 w-4 transition-all duration-300 group-hover:scale-110" />
                       Enter Stylist Studio
                     </Link>
                   </Button>
+                  <Button
+                    onClick={() => setIsCreateDialogOpen(true)}
+                    className="group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full bg-gradient-to-r from-fuchsia-500 to-pink-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-fuchsia-500/30 transition-all duration-300 hover:from-fuchsia-400 hover:to-pink-400 hover:shadow-xl hover:shadow-fuchsia-500/40 hover:scale-[1.02] whitespace-nowrap"
+                  >
+                    <Sparkles className="h-4 w-4 transition-transform group-hover:rotate-12" />
+                    New Collection
+                  </Button>
+                  <CreateCollectionDialog
+                    open={isCreateDialogOpen}
+                    onOpenChange={setIsCreateDialogOpen}
+                  />
                 </div>
               )}
             </div>
