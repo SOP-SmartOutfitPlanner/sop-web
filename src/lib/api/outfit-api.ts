@@ -5,6 +5,8 @@ import {
   GetOutfitsFavoriteResponse,
   GetOutfitsRequest,
   GetOutfitsResponse,
+  MassCreateOutfitRequest,
+  MassCreateOutfitResponse,
   Outfit,
   SuggestedItem,
 } from "../../types/outfit";
@@ -287,6 +289,26 @@ class OutfitAPI {
 
     if (response.statusCode !== 200) {
       throw new Error(response.message || "Failed to get outfit suggestions");
+    }
+
+    return response;
+  }
+
+  /**
+   * Mass create multiple outfits at once
+   * @param outfits - Array of outfit creation data
+   * @returns Promise with mass creation results
+   */
+  async massCreateOutfits(
+    outfits: CreateOutfitRequest[]
+  ): Promise<MassCreateOutfitResponse> {
+    const response = await apiClient.post<MassCreateOutfitResponse>("/outfits/mass", {
+      outfits,
+    });
+
+    // Accept 201 (all created), 207 (partial success), or 200
+    if (response.statusCode !== 201 && response.statusCode !== 207 && response.statusCode !== 200) {
+      throw new Error(response.message || "Failed to create outfits");
     }
 
     return response;

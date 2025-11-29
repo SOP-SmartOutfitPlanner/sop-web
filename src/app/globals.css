@@ -1310,3 +1310,27 @@
   color: rgba(255, 255, 255, 0.5) !important;
 }
 
+/* Custom Checkbox Styling */
+.ant-checkbox-wrapper {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.ant-checkbox .ant-checkbox-inner {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  border-radius: 4px !important;
+}
+
+.ant-checkbox:hover .ant-checkbox-inner {
+  border-color: rgba(59, 130, 246, 0.6) !important;
+}
+
+.ant-checkbox-checked .ant-checkbox-inner {
+  background: rgba(59, 130, 246, 0.8) !important;
+  border-color: rgba(59, 130, 246, 0.8) !important;
+}
+
+.ant-checkbox-indeterminate .ant-checkbox-inner::after {
+  background: rgba(59, 130, 246, 0.8) !important;
+}
+
