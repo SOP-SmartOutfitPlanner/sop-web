@@ -43,7 +43,7 @@ export default function SuggestPage() {
   const [occasions, setOccasions] = useState<Occasion[]>([]);
   const [selectedOccasionId, setSelectedOccasionId] = useState<number | undefined>(undefined);
   const [isLoadingOccasions, setIsLoadingOccasions] = useState(false);
-  const [totalOutfit, setTotalOutfit] = useState<number>(2);
+  const [totalOutfit, setTotalOutfit] = useState<number>(1);
   const { isAuthenticated, user } = useAuthStore();
 
   // Weather hook
@@ -358,7 +358,7 @@ export default function SuggestPage() {
             allowClear
             loading={isLoadingOccasions}
             size="large"
-            className="w-64"
+            style={{ width: 256 }}
             listHeight={256}
           >
             {occasions.map((occasion) => (
@@ -372,12 +372,13 @@ export default function SuggestPage() {
             value={totalOutfit}
             onChange={setTotalOutfit}
             size="large"
-            className="w-48"
+            style={{ width: 192 }}
           >
             <Select.Option value={1}>1 Outfit</Select.Option>
             <Select.Option value={3}>3 Outfits</Select.Option>
             <Select.Option value={5}>5 Outfits</Select.Option>
             <Select.Option value={8}>8 Outfits</Select.Option>
+            <Select.Option value={10}>10 Outfits</Select.Option>
           </Select>
 
           <GlassButton
