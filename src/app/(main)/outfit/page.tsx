@@ -46,13 +46,6 @@ const VirtualTryOnDialog = dynamic(
     })),
   { ssr: false }
 );
-const VirtualTryOnResultDialog = dynamic(
-  () =>
-    import("@/components/outfit/VirtualTryOnResultDialog").then((mod) => ({
-      default: mod.VirtualTryOnResultDialog,
-    })),
-  { ssr: false }
-);
 
 export default function OutfitPage() {
   const router = useRouter();
@@ -63,14 +56,13 @@ export default function OutfitPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isVirtualTryOnDialogOpen, setIsVirtualTryOnDialogOpen] = useState(false);
-  const [virtualTryOnResultUrl, setVirtualTryOnResultUrl] = useState<string>("");
-  const [isResultDialogOpen, setIsResultDialogOpen] = useState(false);
   const pageSize = 12;
 
   const { isAuthenticated, user } = useAuthStore();
   const {
     searchQuery,
     showFavorites,
+    showSaved,
     isCreateDialogOpen,
     setCreateDialogOpen,
   } = useOutfitStore();
@@ -94,6 +86,7 @@ export default function OutfitPage() {
     takeAll: false,
     search: searchQuery,
     isFavorite: showFavorites ? true : undefined,
+    isSaved: showSaved ? true : undefined,
   });
 
   // Fetch wardrobe items for outfit creation
@@ -226,7 +219,7 @@ export default function OutfitPage() {
       document.body.style.width = "";
       document.body.style.top = "";
     };
-  }, [isCreateDialogOpen, isEditDialogOpen, isViewDialogOpen, isVirtualTryOnDialogOpen, isResultDialogOpen]);
+  }, [isCreateDialogOpen, isEditDialogOpen, isViewDialogOpen, isVirtualTryOnDialogOpen]);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -270,23 +263,23 @@ export default function OutfitPage() {
             </p>
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex gap-2">
             <GlassButton
               variant="secondary"
-              size="lg"
+              size="md"
               onClick={() => setIsVirtualTryOnDialogOpen(true)}
-              className="gap-2"
+              className="gap-1.5"
             >
-              <Sparkles className="w-5 h-5" />
+              <Sparkles className="w-4 h-4" />
               Virtual Try-On
             </GlassButton>
             <GlassButton
               variant="primary"
-              size="lg"
+              size="md"
               onClick={() => setCreateDialogOpen(true)}
-              className="gap-2"
+              className="gap-1.5"
             >
-              <Plus className="w-5 h-5" />
+              <Plus className="w-4 h-4" />
               Create Outfit
             </GlassButton>
           </div>
@@ -396,18 +389,6 @@ export default function OutfitPage() {
         <VirtualTryOnDialog
           open={isVirtualTryOnDialogOpen}
           onOpenChange={setIsVirtualTryOnDialogOpen}
-          currentOutfit={viewingOutfit}
-          onSuccess={(resultUrl) => {
-            setVirtualTryOnResultUrl(resultUrl);
-            setIsResultDialogOpen(true);
-          }}
-        />
-
-        {/* Virtual Try-On Result Dialog */}
-        <VirtualTryOnResultDialog
-          open={isResultDialogOpen}
-          onOpenChange={setIsResultDialogOpen}
-          resultUrl={virtualTryOnResultUrl}
         />
       </div>
     </div>
