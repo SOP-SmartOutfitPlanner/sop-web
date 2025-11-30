@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { MapPin, AlertCircle, Sparkles, Loader2, Check, Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
@@ -111,28 +111,88 @@ export default function SuggestPage() {
     fetchOccasions();
   }, []);
 
+  // Helper function to get coordinates from user profile location
+  const getUserCoordinatesFromProfile = useCallback(async (): Promise<{ latitude: number; longitude: number } | null> => {
+    if (!user?.location) {
+      return null;
+    }
+
+    const location = user.location.trim();
+    if (!location) {
+      return null;
+    }
+
+    const parts = location.split(',').map(part => part.trim()).filter(Boolean);
+    const searchTerms: string[] = [];
+
+    if (parts.length >= 3) {
+      searchTerms.push(parts.slice(0, 2).join(', '));
+      searchTerms.push(parts[0]);
+      searchTerms.push(parts[1]);
+    } else if (parts.length === 2) {
+      searchTerms.push(parts.join(', '));
+      searchTerms.push(parts[0]);
+      searchTerms.push(parts[1]);
+    } else if (parts.length === 1) {
+      searchTerms.push(parts[0]);
+    }
+
+    if (!searchTerms.includes(location)) {
+      searchTerms.push(location);
+    }
+
+    for (const searchTerm of searchTerms) {
+      try {
+        const response = await weatherAPI.searchCities(searchTerm, 5);
+        if (response.data?.cities && response.data.cities.length > 0) {
+          const city = response.data.cities[0];
+          return {
+            latitude: city.latitude,
+            longitude: city.longitude,
+          };
+        }
+      } catch {
+        // Continue to next search term
+      }
+    }
+
+    return null;
+  }, [user?.location]);
+
   // Fetch 16-day extended forecast based on occasionLocationTab and occasionLocation
-  // Uses userCoordinates from useWeather hook which handles browser geolocation with user profile fallback
   useEffect(() => {
     const fetchExtendedForecast = async () => {
-      let lat: number;
-      let lng: number;
-
-      if (occasionLocationTab === "selected-location" && occasionLocation) {
-        // Use selected occasion location
-        lat = occasionLocation.lat;
-        lng = occasionLocation.lng;
-      } else if (userCoordinates) {
-        // Use coordinates from useWeather hook (browser location or user profile fallback)
-        lat = userCoordinates.latitude;
-        lng = userCoordinates.longitude;
-      } else {
-        // No coordinates available yet, wait for useWeather to resolve
-        return;
-      }
-
       setIsLoadingExtendedForecast(true);
       try {
+        let lat: number | undefined;
+        let lng: number | undefined;
+
+        if (occasionLocationTab === "selected-location" && occasionLocation) {
+          // Use selected occasion location
+          lat = occasionLocation.lat;
+          lng = occasionLocation.lng;
+        } else {
+          // Try to get user's browser location first
+          try {
+            const coords = await weatherAPI.getCurrentLocation();
+            lat = coords.latitude;
+            lng = coords.longitude;
+          } catch {
+            // Browser location failed, fallback to user profile location
+            const profileCoords = await getUserCoordinatesFromProfile();
+            if (profileCoords) {
+              lat = profileCoords.latitude;
+              lng = profileCoords.longitude;
+            }
+          }
+        }
+
+        if (lat === undefined || lng === undefined) {
+          // No location available
+          setExtendedForecast([]);
+          return;
+        }
+
         const response = await weatherAPI.getWeatherByCoordinates(lat, lng, 16);
         if (response.statusCode === 200 && response.data.dailyForecasts.length > 0) {
           const forecasts = response.data.dailyForecasts;
@@ -155,13 +215,14 @@ export default function SuggestPage() {
         }
       } catch {
         // If location fails, we'll show a message to select location
+        setExtendedForecast([]);
       } finally {
         setIsLoadingExtendedForecast(false);
       }
     };
 
     fetchExtendedForecast();
-  }, [occasionLocation, occasionLocationTab, userCoordinates]);
+  }, [occasionLocation, occasionLocationTab, getUserCoordinatesFromProfile]);
 
   // Handler to suggest outfit based on current weather
   const handleSuggestOutfit = async () => {
