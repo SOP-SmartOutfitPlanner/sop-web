@@ -16,10 +16,13 @@ import LocationMapModal from "@/components/suggest/LocationMapModal";
 import { weatherAPI } from "@/lib/api/weather-api";
 import { outfitAPI } from "@/lib/api/outfit-api";
 import { adminAPI } from "@/lib/api/admin-api";
+import { CalenderAPI } from "@/lib/api/calender-api";
 import { DailyForecast } from "@/types/weather";
 import { SuggestedItem } from "@/types/outfit";
 import { Occasion } from "@/types/occasion";
+import { CalendarEntry } from "@/types/calendar";
 import { toast } from "sonner";
+import { Calendar } from "lucide-react";
 
 type WeatherTab = "my-location" | "selected-location";
 
@@ -45,6 +48,10 @@ export default function SuggestPage() {
   const [occasions, setOccasions] = useState<Occasion[]>([]);
   const [selectedOccasionId, setSelectedOccasionId] = useState<number | undefined>(undefined);
   const [isLoadingOccasions, setIsLoadingOccasions] = useState(false);
+  // User occasions for future tab (from calendar entries, excluding daily)
+  const [calendarEntries, setCalendarEntries] = useState<CalendarEntry[]>([]);
+  const [selectedCalendarEntry, setSelectedCalendarEntry] = useState<CalendarEntry | null>(null);
+  const [isLoadingUserOccasions, setIsLoadingUserOccasions] = useState(false);
   const [totalOutfit, setTotalOutfit] = useState<number>(1);
   const [selectedOutfitIndexes, setSelectedOutfitIndexes] = useState<number[]>([]);
   const [isAddingMultiple, setIsAddingMultiple] = useState(false);
@@ -109,6 +116,41 @@ export default function SuggestPage() {
     };
 
     fetchOccasions();
+  }, []);
+
+  // Fetch calendar entries for the next 16 days (excluding daily occasions)
+  useEffect(() => {
+    const fetchCalendarEntries = async () => {
+      setIsLoadingUserOccasions(true);
+      try {
+        const today = new Date();
+        const endDate = new Date(today);
+        endDate.setDate(endDate.getDate() + 16);
+
+        const response = await CalenderAPI.getCalendarEntries({
+          PageIndex: 1,
+          PageSize: 100,
+          takeAll: true,
+          StartDate: today.toISOString().split('T')[0],
+          EndDate: endDate.toISOString().split('T')[0],
+        });
+        if (response.statusCode === 200) {
+          // Filter out daily entries and sort by date
+          const nonDailyEntries = response.data.data
+            .filter((entry) => !entry.isDaily)
+            .sort((a, b) =>
+              new Date(a.userOccasion.dateOccasion).getTime() - new Date(b.userOccasion.dateOccasion).getTime()
+            );
+          setCalendarEntries(nonDailyEntries);
+        }
+      } catch {
+        // Error fetching calendar entries
+      } finally {
+        setIsLoadingUserOccasions(false);
+      }
+    };
+
+    fetchCalendarEntries();
   }, []);
 
   // Helper function to get coordinates from user profile location
@@ -225,11 +267,24 @@ export default function SuggestPage() {
   }, [occasionLocation, occasionLocationTab, getUserCoordinatesFromProfile]);
 
   // Handler to suggest outfit based on current weather
-  const handleSuggestOutfit = async () => {
+  const handleSuggestOutfit = async (isFutureTab: boolean = false) => {
     // Determine which weather to use
-    const activeWeather = activeTab === "selected-location" && customWeather
-      ? customWeather.forecast
-      : todayForecast;
+    let activeWeather: DailyForecast | null = null;
+
+    if (isFutureTab) {
+      // For future tab, use the selected forecast day
+      activeWeather = selectedForecastDay;
+    } else {
+      // For today tab, use custom weather or today's forecast
+      activeWeather = activeTab === "selected-location" && customWeather
+        ? customWeather.forecast
+        : todayForecast;
+    }
+
+    // Determine which occasion ID to use
+    const occasionId = isFutureTab && selectedCalendarEntry
+      ? selectedCalendarEntry.userOccasion.occasionId
+      : selectedOccasionId;
 
     setIsSuggestingOutfit(true);
 
@@ -259,7 +314,7 @@ export default function SuggestPage() {
       const response = await outfitAPI.getSuggestionV2(
         userId,
         totalOutfit,
-        selectedOccasionId,
+        occasionId,
         weatherString
       );
 
@@ -424,6 +479,37 @@ export default function SuggestPage() {
       date: date.getDate().toString(),
       month,
     };
+  };
+
+  // Format user occasion date for cards (HH:mm dd-MM-yyyy format)
+  const formatUserOccasionDate = (dateString: string) => {
+    const date = new Date(dateString);
+
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+
+    return `${hours}:${minutes} ${day}-${month}-${year}`;
+  };
+
+  // Handle calendar entry selection - auto-select weather for that day
+  const handleCalendarEntrySelect = (entry: CalendarEntry | null) => {
+    setSelectedCalendarEntry(entry);
+
+    if (entry && extendedForecast.length > 0) {
+      // Find the forecast for the occasion date
+      const occasionDate = new Date(entry.userOccasion.dateOccasion);
+      const matchingForecast = extendedForecast.find((forecast) => {
+        const forecastDate = new Date(forecast.date);
+        return forecastDate.toDateString() === occasionDate.toDateString();
+      });
+
+      if (matchingForecast) {
+        setSelectedForecastDay(matchingForecast);
+      }
+    }
   };
 
   // Carousel navigation handlers
@@ -631,7 +717,7 @@ export default function SuggestPage() {
         </Select>
 
         <GlassButton
-          onClick={handleSuggestOutfit}
+          onClick={() => handleSuggestOutfit(false)}
           disabled={isSuggestingOutfit}
           className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white px-8 py-6 text-lg font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
         >
@@ -997,25 +1083,109 @@ export default function SuggestPage() {
         </div>
       )}
 
-      {/* Occasion Selector for Future */}
-      <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
-        <Select
-          value={selectedOccasionId}
-          onChange={setSelectedOccasionId}
-          placeholder="Select your occasion"
-          allowClear
-          loading={isLoadingOccasions}
-          size="large"
-          style={{ width: 300 }}
-          listHeight={256}
-        >
-          {occasions.map((occasion) => (
-            <Select.Option key={occasion.id} value={occasion.id}>
-              {occasion.name}
-            </Select.Option>
-          ))}
-        </Select>
+      {/* User Occasions Section */}
+      <div className="space-y-4">
+        <h4 className="font-bricolage font-bold text-xl md:text-2xl lg:text-3xl leading-tight">
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-cyan-200">
+            Your Upcoming Occasions
+          </span>
+        </h4>
 
+        {/* Loading State */}
+        {isLoadingUserOccasions && (
+          <div className="flex items-center justify-center py-8">
+            <div className="text-center">
+              <div className="w-10 h-10 border-4 border-white/30 border-t-white rounded-full animate-spin mx-auto mb-3" />
+              <p className="text-white/70 text-sm">Loading your occasions...</p>
+            </div>
+          </div>
+        )}
+
+        {/* No User Occasions */}
+        {!isLoadingUserOccasions && calendarEntries.length === 0 && (
+          <GlassCard
+            padding="24px"
+            borderRadius="24px"
+            blur="10px"
+            brightness={1.02}
+            glowColor="rgba(59, 130, 246, 0.2)"
+            borderColor="rgba(147, 197, 253, 0.3)"
+            borderWidth="2px"
+            className="bg-gradient-to-br from-blue-300/20 via-indigo-200/10 to-blue-300/20"
+          >
+            <div className="flex items-start gap-4">
+              <Calendar className="w-6 h-6 text-blue-300 flex-shrink-0 mt-1" />
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-white mb-2">
+                  No Upcoming Occasions
+                </h3>
+                <p className="text-white/70 text-sm">
+                  You don&apos;t have any occasions scheduled in the next 16 days. Add occasions from your calendar to get personalized outfit suggestions.
+                </p>
+              </div>
+            </div>
+          </GlassCard>
+        )}
+
+        {/* User Occasion Cards */}
+        {!isLoadingUserOccasions && calendarEntries.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {calendarEntries.map((entry) => {
+              const occasion = entry.userOccasion;
+              const formattedDate = formatUserOccasionDate(occasion.dateOccasion);
+              const isSelected = selectedCalendarEntry?.userOccasion.id === occasion.id;
+
+              return (
+                <button
+                  key={occasion.id}
+                  onClick={() => handleCalendarEntrySelect(isSelected ? null : entry)}
+                  className={`w-full p-4 rounded-2xl transition-all duration-300 border-2 text-left ${
+                    isSelected
+                      ? "bg-gradient-to-br from-purple-500/40 via-pink-500/30 to-indigo-500/40 border-purple-400/60 shadow-lg shadow-purple-500/20 ring-2 ring-purple-400/40"
+                      : "bg-white/5 backdrop-blur-md border-white/10 hover:bg-white/10 hover:border-white/20"
+                  }`}
+                >
+                  {/* Header with Name and Check */}
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <h5 className={`font-semibold text-base line-clamp-1 ${isSelected ? "text-white" : "text-white/90"}`}>
+                      {occasion.name || occasion.occasionName}
+                    </h5>
+                    {isSelected && (
+                      <div className="w-6 h-6 rounded-full bg-purple-500 flex items-center justify-center flex-shrink-0">
+                        <Check className="w-4 h-4 text-white" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Occasion Type Badge */}
+                  {occasion.occasionName && occasion.name && (
+                    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium mb-2 ${
+                      isSelected ? "bg-pink-500/30 text-pink-200" : "bg-white/10 text-white/60"
+                    }`}>
+                      {occasion.occasionName}
+                    </span>
+                  )}
+
+                  {/* Date and Time */}
+                  <div className={`text-sm mb-2 ${isSelected ? "text-purple-200" : "text-white/70"}`}>
+                    {formattedDate}
+                  </div>
+
+                  {/* Description */}
+                  {occasion.description && (
+                    <p className={`text-xs line-clamp-2 ${isSelected ? "text-white/70" : "text-white/40"}`}>
+                      {occasion.description}
+                    </p>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Outfit Count and Suggest Button */}
+      <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
         <Select
           value={totalOutfit}
           onChange={setTotalOutfit}
@@ -1029,8 +1199,8 @@ export default function SuggestPage() {
         </Select>
 
         <GlassButton
-          onClick={handleSuggestOutfit}
-          disabled={isSuggestingOutfit}
+          onClick={() => handleSuggestOutfit(true)}
+          disabled={isSuggestingOutfit || !selectedCalendarEntry}
           className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white px-8 py-6 text-lg font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSuggestingOutfit ? (
@@ -1058,7 +1228,7 @@ export default function SuggestPage() {
                 </span>
               </h4>
               <p className="text-white/70 mt-2">
-                AI-generated outfit suggestions for your upcoming occasion
+                AI-generated outfit suggestions for {selectedCalendarEntry?.userOccasion.name || "your upcoming occasion"}
               </p>
             </div>
 
