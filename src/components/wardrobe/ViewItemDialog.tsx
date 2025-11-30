@@ -99,11 +99,15 @@ export function ViewItemDialog({
     <>
       {/* Backdrop */}
       <div
-        className="fixed h-full inset-0 bg-black/50 backdrop-blur-sm z-50"
+        className="fixed h-full inset-0 bg-black/50 backdrop-blur-sm z-[60]"
+        onClick={(e) => {
+          e.stopPropagation();
+          onOpenChange(false);
+        }}
       />
 
       {/* Modal Container */}
-      <div className="fixed inset-0 z-[51] flex items-center justify-center p-4 pointer-events-none">
+      <div className="fixed inset-0 z-[61] flex items-center justify-center p-4 pointer-events-none">
         <div
           className="w-[1400px] max-w-[95vw] h-[95vh] rounded-3xl overflow-hidden shadow-2xl pointer-events-auto relative flex flex-col"
           onClick={(e) => e.stopPropagation()}
@@ -126,16 +130,21 @@ export function ViewItemDialog({
                     View your wardrobe item information
                   </p>
                 </div>
-                {itemData?.isAnalyzed && itemData?.aiConfidence && itemData.aiConfidence < 60 && (
-                  <div className="px-5 py-2 rounded-full bg-red-500/40 border border-red-400/50 backdrop-blur-md flex items-center gap-2 shadow-inner" aria-live="polite">
-                    <span className="inline-block w-2.5 h-2.5 rounded-full bg-red-300 animate-pulse" />
-                    <div className="flex flex-col leading-tight">
-                      <span className="text-red-100 text-sm font-semibold">
-                        Unclear item – AI analysis may be inaccurate.
-                      </span>
+                {itemData?.isAnalyzed &&
+                  itemData?.aiConfidence &&
+                  itemData.aiConfidence < 60 && (
+                    <div
+                      className="px-5 py-2 rounded-full bg-red-500/40 border border-red-400/50 backdrop-blur-md flex items-center gap-2 shadow-inner"
+                      aria-live="polite"
+                    >
+                      <span className="inline-block w-2.5 h-2.5 rounded-full bg-red-300 animate-pulse" />
+                      <div className="flex flex-col leading-tight">
+                        <span className="text-red-100 text-sm font-semibold">
+                          Unclear item – AI analysis may be inaccurate.
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
                 <div className="flex items-center gap-2">
                   {onEdit && (
                     <GlassButton
@@ -182,35 +191,49 @@ export function ViewItemDialog({
                   <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-3 flex flex-col gap-2 overflow-y-auto custom-scrollbar">
                     {/* Image */}
                     <div className="flex-shrink-0">
-                      <p className="text-lg font-medium text-white mb-1.5">Image</p>
+                      <p className="text-lg font-medium text-white mb-1.5">
+                        Image
+                      </p>
                       <div className="aspect-square rounded-xl overflow-hidden bg-white/5 relative">
                         <Image
                           src={itemData.imgUrl}
                           alt={itemData.name}
                           className="w-full h-full object-cover"
                           preview={{
-                            mask: <div className="text-white">Click to preview</div>,
+                            mask: (
+                              <div className="text-white">Click to preview</div>
+                            ),
                           }}
                         />
-                        {itemData.isAnalyzed && itemData.aiConfidence && itemData.aiConfidence > 50 && (
-                          <div className="absolute top-2 right-2">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center shadow-lg border border-white/50">
-                              <span className="text-[10px] font-bold text-white">AI</span>
+                        {itemData.isAnalyzed &&
+                          itemData.aiConfidence &&
+                          itemData.aiConfidence > 50 && (
+                            <div className="absolute top-2 right-2">
+                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center shadow-lg border border-white/50">
+                                <span className="text-[10px] font-bold text-white">
+                                  AI
+                                </span>
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          )}
                       </div>
                     </div>
 
                     {/* Name */}
                     <div className="flex-shrink-0">
-                      <p className="text-lg font-medium text-white mb-1.5">Name</p>
-                      <p className="text-white/90 bg-white/10 rounded-lg px-3 py-2 text-sm">{itemData.name}</p>
+                      <p className="text-lg font-medium text-white mb-1.5">
+                        Name
+                      </p>
+                      <p className="text-white/90 bg-white/10 rounded-lg px-3 py-2 text-sm">
+                        {itemData.name}
+                      </p>
                     </div>
 
                     {/* Colors */}
                     <div className="flex-1 min-h-0 flex flex-col">
-                      <p className="text-lg font-medium text-white mb-1.5 flex-shrink-0">Colors</p>
+                      <p className="text-lg font-medium text-white mb-1.5 flex-shrink-0">
+                        Colors
+                      </p>
                       <div className="flex gap-2 flex-wrap overflow-y-auto custom-scrollbar">
                         {itemData.colors.length > 0 ? (
                           itemData.colors.map((color, index) => (
@@ -232,38 +255,66 @@ export function ViewItemDialog({
                   <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-3 overflow-y-auto custom-scrollbar space-y-3">
                     {/* Category & Brand */}
                     <div>
-                      <p className="text-lg font-medium text-white mb-1.5">Category</p>
-                      <p className="text-white/90 bg-white/10 rounded-lg px-3 py-2 text-sm">{itemData.category}</p>
+                      <p className="text-lg font-medium text-white mb-1.5">
+                        Category
+                      </p>
+                      <p className="text-white/90 bg-white/10 rounded-lg px-3 py-2 text-sm">
+                        {itemData.category}
+                      </p>
                     </div>
 
                     <div>
-                      <p className="text-lg font-medium text-white mb-1.5">Brand</p>
-                      <p className="text-white/90 bg-white/10 rounded-lg px-3 py-2 text-sm">{itemData.brand}</p>
+                      <p className="text-lg font-medium text-white mb-1.5">
+                        Brand
+                      </p>
+                      <p className="text-white/90 bg-white/10 rounded-lg px-3 py-2 text-sm">
+                        {itemData.brand}
+                      </p>
                     </div>
 
                     <div>
-                      <p className="text-lg font-medium text-white mb-1.5">Frequency Worn</p>
-                      <p className="text-white/90 bg-white/10 rounded-lg px-3 py-2 text-sm">{itemData.frequencyWorn}</p>
+                      <p className="text-lg font-medium text-white mb-1.5">
+                        Frequency Worn
+                      </p>
+                      <p className="text-white/90 bg-white/10 rounded-lg px-3 py-2 text-sm">
+                        {itemData.frequencyWorn}
+                      </p>
                     </div>
 
                     <div>
-                      <p className="text-lg font-medium text-white mb-1.5">Fabric</p>
-                      <p className="text-white/90 bg-white/10 rounded-lg px-3 py-2 text-sm">{itemData.fabric}</p>
+                      <p className="text-lg font-medium text-white mb-1.5">
+                        Fabric
+                      </p>
+                      <p className="text-white/90 bg-white/10 rounded-lg px-3 py-2 text-sm">
+                        {itemData.fabric}
+                      </p>
                     </div>
 
                     <div>
-                      <p className="text-lg font-medium text-white mb-1.5">Pattern</p>
-                      <p className="text-white/90 bg-white/10 rounded-lg px-3 py-2 text-sm">{itemData.pattern}</p>
+                      <p className="text-lg font-medium text-white mb-1.5">
+                        Pattern
+                      </p>
+                      <p className="text-white/90 bg-white/10 rounded-lg px-3 py-2 text-sm">
+                        {itemData.pattern}
+                      </p>
                     </div>
 
                     <div>
-                      <p className="text-lg font-medium text-white mb-1.5">Condition</p>
-                      <p className="text-white/90 bg-white/10 rounded-lg px-3 py-2 text-sm">{itemData.condition}</p>
+                      <p className="text-lg font-medium text-white mb-1.5">
+                        Condition
+                      </p>
+                      <p className="text-white/90 bg-white/10 rounded-lg px-3 py-2 text-sm">
+                        {itemData.condition}
+                      </p>
                     </div>
 
                     <div>
-                      <p className="text-lg font-medium text-white mb-1.5">Weather Suitable</p>
-                      <p className="text-white/90 bg-white/10 rounded-lg px-3 py-2 text-sm">{itemData.weatherSuitable}</p>
+                      <p className="text-lg font-medium text-white mb-1.5">
+                        Weather Suitable
+                      </p>
+                      <p className="text-white/90 bg-white/10 rounded-lg px-3 py-2 text-sm">
+                        {itemData.weatherSuitable}
+                      </p>
                     </div>
                   </div>
 
@@ -271,7 +322,9 @@ export function ViewItemDialog({
                   <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-3 overflow-y-auto custom-scrollbar space-y-3">
                     {/* Styles */}
                     <div>
-                      <p className="text-lg font-medium text-white mb-1.5">Styles</p>
+                      <p className="text-lg font-medium text-white mb-1.5">
+                        Styles
+                      </p>
                       <div className="flex flex-wrap gap-1.5">
                         {itemData.styles.length > 0 ? (
                           itemData.styles.map((style, index) => (
@@ -290,7 +343,9 @@ export function ViewItemDialog({
 
                     {/* Occasions */}
                     <div>
-                      <p className="text-lg font-medium text-white mb-1.5">Occasions</p>
+                      <p className="text-lg font-medium text-white mb-1.5">
+                        Occasions
+                      </p>
                       <div className="flex flex-wrap gap-1.5">
                         {itemData.occasions.length > 0 ? (
                           itemData.occasions.map((occasion, index) => (
@@ -309,7 +364,9 @@ export function ViewItemDialog({
 
                     {/* Seasons */}
                     <div>
-                      <p className="text-lg font-medium text-white mb-1.5">Seasons</p>
+                      <p className="text-lg font-medium text-white mb-1.5">
+                        Seasons
+                      </p>
                       <div className="flex flex-wrap gap-1.5">
                         {itemData.seasons.length > 0 ? (
                           itemData.seasons.map((season, index) => (

@@ -40,6 +40,17 @@ export function AttachmentModal({
   // Lock body scroll when modal is open
   useScrollLock(isOpen);
 
+  // Prevent closing AttachmentModal when ViewItemDialog is open
+  const handleOpenChange = (open: boolean) => {
+    // Only allow closing if ViewItemDialog is not open
+    if (!open && !selectedItemId) {
+      onClose();
+    } else if (!open && selectedItemId) {
+      // If trying to close while ViewItemDialog is open, do nothing
+      return;
+    }
+  };
+
   const handleImageLoad = useCallback((itemId: number) => {
     setImageLoaded((prev) => ({ ...prev, [itemId]: true }));
   }, []);
@@ -49,7 +60,7 @@ export function AttachmentModal({
 
   return (
     <>
-      <Dialog open={isOpen} onOpenChange={onClose}>
+      <Dialog open={isOpen} onOpenChange={handleOpenChange}>
         <DialogContent
           showCloseButton={false}
           className="max-w-4xl max-h-[85vh] overflow-y-auto backdrop-blur-xl bg-gradient-to-br from-cyan-950/80 via-blue-950/70 to-indigo-950/70 border border-cyan-400/30 shadow-2xl"
