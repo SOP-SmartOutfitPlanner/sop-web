@@ -52,12 +52,22 @@ export default function SuggestPage() {
   const [isLoadingExtendedForecast, setIsLoadingExtendedForecast] = useState(false);
   const [selectedForecastDay, setSelectedForecastDay] = useState<DailyForecast | null>(null);
   const carouselRef = useRef<CarouselRef>(null);
+  const hasAutoSelectedTomorrow = useRef(false);
+  // Occasion section location state
+  const [isOccasionLocationModalOpen, setIsOccasionLocationModalOpen] = useState(false);
+  const [occasionLocationTab, setOccasionLocationTab] = useState<WeatherTab>("my-location");
+  const [occasionLocation, setOccasionLocation] = useState<{
+    lat: number;
+    lng: number;
+    cityName: string;
+  } | null>(null);
   const { isAuthenticated, user } = useAuthStore();
 
-  // Weather hook
+  // Weather hook (handles browser geolocation with user profile fallback)
   const {
     todayForecast,
     cityName,
+    coordinates: userCoordinates,
     isLoading: isLoadingWeather,
     error: weatherError,
     requestLocation,
@@ -101,20 +111,47 @@ export default function SuggestPage() {
     fetchOccasions();
   }, []);
 
-  // Fetch 16-day extended forecast
+  // Fetch 16-day extended forecast based on occasionLocationTab and occasionLocation
+  // Uses userCoordinates from useWeather hook which handles browser geolocation with user profile fallback
   useEffect(() => {
     const fetchExtendedForecast = async () => {
+      let lat: number;
+      let lng: number;
+
+      if (occasionLocationTab === "selected-location" && occasionLocation) {
+        // Use selected occasion location
+        lat = occasionLocation.lat;
+        lng = occasionLocation.lng;
+      } else if (userCoordinates) {
+        // Use coordinates from useWeather hook (browser location or user profile fallback)
+        lat = userCoordinates.latitude;
+        lng = userCoordinates.longitude;
+      } else {
+        // No coordinates available yet, wait for useWeather to resolve
+        return;
+      }
+
       setIsLoadingExtendedForecast(true);
       try {
-        // Try to get user's location first
-        const coords = await weatherAPI.getCurrentLocation();
-        const response = await weatherAPI.getWeatherByCoordinates(
-          coords.latitude,
-          coords.longitude,
-          16
-        );
+        const response = await weatherAPI.getWeatherByCoordinates(lat, lng, 16);
         if (response.statusCode === 200 && response.data.dailyForecasts.length > 0) {
-          setExtendedForecast(response.data.dailyForecasts);
+          const forecasts = response.data.dailyForecasts;
+          setExtendedForecast(forecasts);
+
+          // Auto-select tomorrow's forecast as default
+          const today = new Date();
+          const tomorrow = new Date(today);
+          tomorrow.setDate(tomorrow.getDate() + 1);
+
+          const tomorrowForecast = forecasts.find((forecast) => {
+            const forecastDate = new Date(forecast.date);
+            return forecastDate.toDateString() === tomorrow.toDateString();
+          });
+
+          if (tomorrowForecast && !hasAutoSelectedTomorrow.current) {
+            setSelectedForecastDay(tomorrowForecast);
+            hasAutoSelectedTomorrow.current = true;
+          }
         }
       } catch {
         // If location fails, we'll show a message to select location
@@ -124,7 +161,7 @@ export default function SuggestPage() {
     };
 
     fetchExtendedForecast();
-  }, []);
+  }, [occasionLocation, occasionLocationTab, userCoordinates]);
 
   // Handler to suggest outfit based on current weather
   const handleSuggestOutfit = async () => {
@@ -648,12 +685,59 @@ export default function SuggestPage() {
 
       {/* 16-Day Weather Forecast Carousel */}
       <div className="space-y-4">
-        <div className="flex items-center gap-3">
-          <h4 className="font-bricolage font-bold text-xl md:text-2xl leading-tight">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <h4 className="font-bricolage font-bold text-xl md:text-2xl lg:text-3xl leading-tight">
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-cyan-200">
               Choose Your Day
             </span>
           </h4>
+
+          {/* Location Tabs */}
+          <Radio.Group
+            value={occasionLocationTab}
+            onChange={(e) => {
+              setOccasionLocationTab(e.target.value);
+              setSelectedForecastDay(null);
+            }}
+            buttonStyle="solid"
+            size="large"
+            className="glass-radio-group"
+          >
+            <Radio.Button value="my-location" className="glass-radio-button">
+              <div className="flex items-center gap-2">
+                <span>My Location</span>
+              </div>
+            </Radio.Button>
+            <Radio.Button
+              value="selected-location"
+              disabled={!occasionLocation}
+              className="glass-radio-button"
+            >
+              <div className="flex items-center gap-2">
+                <span>Selected Location</span>
+              </div>
+            </Radio.Button>
+          </Radio.Group>
+
+          <div className="glass-button-hover">
+            <GlassButton
+              variant="custom"
+              borderRadius="14px"
+              blur="8px"
+              brightness={1.12}
+              glowColor="rgba(59,130,246,0.45)"
+              glowIntensity={6}
+              borderColor="rgba(255,255,255,0.28)"
+              borderWidth="1px"
+              textColor="#ffffffff"
+              className="px-4 h-12 font-semibold"
+              displacementScale={5}
+              onClick={() => setIsOccasionLocationModalOpen(true)}
+            >
+              <span className="hidden sm:inline">Choose Another Location</span>
+              <span className="sm:hidden">Change</span>
+            </GlassButton>
+          </div>
         </div>
 
         {/* Loading State */}
@@ -847,7 +931,7 @@ export default function SuggestPage() {
         <div className="mt-2">
           <WeatherCard
             forecast={selectedForecastDay}
-            cityName={cityName || "Your Location"}
+            cityName={occasionLocationTab === "selected-location" && occasionLocation ? occasionLocation.cityName : (cityName || "Your Location")}
           />
         </div>
       )}
@@ -1212,7 +1296,7 @@ export default function SuggestPage() {
           ]}
         />
 
-        {/* Location Map Modal */}
+        {/* Location Map Modal for Today's Outfit */}
         <LocationMapModal
           open={isLocationModalOpen}
           onOpenChange={setIsLocationModalOpen}
@@ -1251,6 +1335,29 @@ export default function SuggestPage() {
             } finally {
               setIsLoadingCustomWeather(false);
             }
+          }}
+        />
+
+        {/* Location Map Modal for Occasion Section */}
+        <LocationMapModal
+          open={isOccasionLocationModalOpen}
+          onOpenChange={setIsOccasionLocationModalOpen}
+          initialLocation={occasionLocation ? {
+            lat: occasionLocation.lat,
+            lng: occasionLocation.lng,
+            address: occasionLocation.cityName,
+          } : undefined}
+          onLocationSelect={(lat, lng, address) => {
+            setIsOccasionLocationModalOpen(false);
+            setOccasionLocation({
+              lat,
+              lng,
+              cityName: address,
+            });
+            // Switch to selected location tab and clear selected forecast day
+            setOccasionLocationTab("selected-location");
+            setSelectedForecastDay(null);
+            toast.success(`Location updated to ${address}`);
           }}
         />
       </div>
