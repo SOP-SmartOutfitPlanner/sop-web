@@ -313,6 +313,52 @@ class OutfitAPI {
 
     return response;
   }
+
+  /**
+   * Virtual Try-On: Generate try-on image with human photo and clothing items
+   * @param humanImage - Human photo file
+   * @param itemUrls - Array of item image URLs (max 5)
+   * @returns Promise with generated try-on image URL
+   */
+  async virtualTryOn(
+    humanImage: File,
+    itemUrls: string[]
+  ): Promise<{
+    statusCode: number;
+    message: string;
+    data: {
+      time: string;
+      url: string;
+    };
+  }> {
+    const formData = new FormData();
+    formData.append("Human", humanImage);
+    
+    // Add each item URL as separate ItemURLs field
+    itemUrls.forEach((url) => {
+      formData.append("ItemURLs", url);
+    });
+
+    const response = await apiClient.post<{
+      statusCode: number;
+      message: string;
+      data: {
+        time: string;
+        url: string;
+      };
+    }>("/outfits/virtual-try-on", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+      timeout: 120000, // 2 minutes timeout for AI processing
+    });
+
+    if (response.statusCode !== 200) {
+      throw new Error(response.message || "Failed to generate virtual try-on");
+    }
+
+    return response;
+  }
 }
 
 // Create singleton instance
