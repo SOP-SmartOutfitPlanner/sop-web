@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { MapPin, AlertCircle, Sparkles, Loader2, Check, Plus } from "lucide-react";
+import { MapPin, AlertCircle, Sparkles, Loader2, Check, Plus, ChevronLeft, ChevronRight, Calendar } from "lucide-react";
+import Image from "next/image";
 import { Radio, Select, Checkbox, Tabs } from "antd";
 import { useAuthStore } from "@/store/auth-store";
 import GlassCard from "@/components/ui/glass-card";
@@ -46,6 +47,10 @@ export default function SuggestPage() {
   const [totalOutfit, setTotalOutfit] = useState<number>(1);
   const [selectedOutfitIndexes, setSelectedOutfitIndexes] = useState<number[]>([]);
   const [isAddingMultiple, setIsAddingMultiple] = useState(false);
+  const [extendedForecast, setExtendedForecast] = useState<DailyForecast[]>([]);
+  const [isLoadingExtendedForecast, setIsLoadingExtendedForecast] = useState(false);
+  const [selectedForecastDay, setSelectedForecastDay] = useState<DailyForecast | null>(null);
+  const carouselRef = useRef<HTMLDivElement>(null);
   const { isAuthenticated, user } = useAuthStore();
 
   // Weather hook
@@ -93,6 +98,31 @@ export default function SuggestPage() {
     };
 
     fetchOccasions();
+  }, []);
+
+  // Fetch 16-day extended forecast
+  useEffect(() => {
+    const fetchExtendedForecast = async () => {
+      setIsLoadingExtendedForecast(true);
+      try {
+        // Try to get user's location first
+        const coords = await weatherAPI.getCurrentLocation();
+        const response = await weatherAPI.getWeatherByCoordinates(
+          coords.latitude,
+          coords.longitude,
+          16
+        );
+        if (response.statusCode === 200 && response.data.dailyForecasts.length > 0) {
+          setExtendedForecast(response.data.dailyForecasts);
+        }
+      } catch {
+        // If location fails, we'll show a message to select location
+      } finally {
+        setIsLoadingExtendedForecast(false);
+      }
+    };
+
+    fetchExtendedForecast();
   }, []);
 
   // Handler to suggest outfit based on current weather
@@ -247,6 +277,66 @@ export default function SuggestPage() {
     }
   };
 
+
+  // Get weather icon for carousel cards
+  const getWeatherIcon = (description: string, size: number = 32) => {
+    const desc = description.toLowerCase();
+
+    if (desc.includes("thunder") || desc.includes("lightning") || desc.includes("storm")) {
+      return <Image src="/icon/stormy-weather-50.png" alt="Stormy" width={size} height={size} className="drop-shadow-lg" />;
+    }
+    if (desc.includes("heavy") || desc.includes("downpour") || desc.includes("pour") || desc.includes("fall")) {
+      return <Image src="/icon/rainfall-50.png" alt="Rain Fall" width={size} height={size} className="drop-shadow-lg" />;
+    }
+    if (desc.includes("rain") || desc.includes("rainy") || desc.includes("drizzle") || desc.includes("shower") || desc.includes("moderate")) {
+      return <Image src="/icon/moderate-rain-50.png" alt="Moderate Rain" width={size} height={size} className="drop-shadow-lg" />;
+    }
+    if (desc.includes("wind") || desc.includes("breezy") || desc.includes("gusty")) {
+      return <Image src="/icon/windy-weather-50.png" alt="Windy" width={size} height={size} className="drop-shadow-lg" />;
+    }
+    if (desc.includes("clear") || desc.includes("sunny") || desc.includes("bright")) {
+      return <Image src="/icon/sun-50.png" alt="Sunny" width={size} height={size} className="drop-shadow-lg" />;
+    }
+    if (desc.includes("partly") || desc.includes("scattered") || desc.includes("few clouds")) {
+      return <Image src="/icon/partly-cloudy-day-50.png" alt="Partly Cloudy" width={size} height={size} className="drop-shadow-lg" />;
+    }
+
+    return <Image src="/icon/clouds-50.png" alt="Cloudy" width={size} height={size} className="drop-shadow-lg" />;
+  };
+
+  // Format date for carousel cards
+  const formatCarouselDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const month = date.toLocaleDateString("en-US", { month: "short" });
+
+    if (date.toDateString() === today.toDateString()) {
+      return { day: "Today", date: date.getDate().toString(), month };
+    }
+    if (date.toDateString() === tomorrow.toDateString()) {
+      return { day: "Tomorrow", date: date.getDate().toString(), month };
+    }
+
+    return {
+      day: date.toLocaleDateString("en-US", { weekday: "short" }),
+      date: date.getDate().toString(),
+      month,
+    };
+  };
+
+  // Carousel scroll handlers
+  const scrollCarousel = (direction: "left" | "right") => {
+    if (carouselRef.current) {
+      const scrollAmount = 300;
+      carouselRef.current.scrollBy({
+        left: direction === "left" ? -scrollAmount : scrollAmount,
+        behavior: "smooth",
+      });
+    }
+  };
 
   // Show loading while checking auth
   if (isCheckingAuth) {
@@ -555,6 +645,150 @@ export default function SuggestPage() {
         </p>
       </div>
 
+      {/* 16-Day Weather Forecast Carousel */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <h4 className="font-bricolage font-bold text-xl md:text-2xl leading-tight">
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-cyan-200">
+                Choose Your Day
+              </span>
+            </h4>
+          </div>
+          {/* Carousel Navigation Buttons */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => scrollCarousel("left")}
+              className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-all duration-300 border border-white/20"
+            >
+              <ChevronLeft className="w-5 h-5 text-white" />
+            </button>
+            <button
+              onClick={() => scrollCarousel("right")}
+              className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-all duration-300 border border-white/20"
+            >
+              <ChevronRight className="w-5 h-5 text-white" />
+            </button>
+          </div>
+        </div>
+
+        {/* Loading State */}
+        {isLoadingExtendedForecast && (
+          <GlassCard
+            padding="24px"
+            borderRadius="24px"
+            blur="10px"
+            brightness={1.02}
+            glowColor="rgba(34, 211, 238, 0.2)"
+            borderColor="rgba(255, 255, 255, 0.2)"
+            borderWidth="2px"
+            className="bg-gradient-to-br from-cyan-300/20 via-blue-200/10 to-indigo-300/20"
+          >
+            <div className="flex items-center justify-center py-8">
+              <div className="text-center">
+                <div className="w-10 h-10 border-4 border-white/30 border-t-white rounded-full animate-spin mx-auto mb-3" />
+                <p className="text-white/70 text-sm">Loading 16-day forecast...</p>
+              </div>
+            </div>
+          </GlassCard>
+        )}
+
+        {/* Weather Carousel */}
+        {!isLoadingExtendedForecast && extendedForecast.length > 0 && (
+          <div className="relative overflow-visible">
+            <div
+              ref={carouselRef}
+              className="flex gap-3 overflow-x-auto overflow-y-visible scrollbar-hide py-2 scroll-smooth"
+              style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+            >
+              {extendedForecast.map((forecast, index) => {
+                const dateInfo = formatCarouselDate(forecast.date);
+                const isSelected = selectedForecastDay?.date === forecast.date;
+
+                return (
+                  <button
+                    key={index}
+                    onClick={() => setSelectedForecastDay(isSelected ? null : forecast)}
+                    className={`flex-shrink-0 w-[120px] p-4 rounded-2xl transition-all duration-300 border-2 ${
+                      isSelected
+                        ? "bg-gradient-to-br from-cyan-500/40 via-blue-500/30 to-indigo-500/40 border-cyan-400/60 shadow-lg shadow-cyan-500/20 ring-2 ring-cyan-400/40"
+                        : "bg-white/5 backdrop-blur-md border-white/10 hover:bg-white/10 hover:border-white/20"
+                    }`}
+                  >
+                    {/* Day of Week */}
+                    <p className={`text-xs font-semibold mb-1 ${isSelected ? "text-cyan-200" : "text-white/60"}`}>
+                      {dateInfo.day}
+                    </p>
+
+                    {/* Date Number */}
+                    <p className={`text-2xl font-bold ${isSelected ? "text-white" : "text-white/90"}`}>
+                      {dateInfo.date}
+                    </p>
+
+                    {/* Month */}
+                    <p className={`text-xs font-medium mb-2 ${isSelected ? "text-cyan-200" : "text-white/50"}`}>
+                      {dateInfo.month}
+                    </p>
+
+                    {/* Weather Icon */}
+                    <div className="flex justify-center mb-2">
+                      {getWeatherIcon(forecast.description, 36)}
+                    </div>
+
+                    {/* Temperature */}
+                    <p className={`text-lg font-bold ${isSelected ? "text-white" : "text-white/90"}`}>
+                      {Math.round(forecast.temperature)}°C
+                    </p>
+
+                    {/* High/Low */}
+                    <p className={`text-xs ${isSelected ? "text-cyan-200" : "text-white/50"}`}>
+                      {Math.round(forecast.maxTemperature)}° / {Math.round(forecast.minTemperature)}°
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* No Forecast Available */}
+        {!isLoadingExtendedForecast && extendedForecast.length === 0 && (
+          <GlassCard
+            padding="24px"
+            borderRadius="24px"
+            blur="10px"
+            brightness={1.02}
+            glowColor="rgba(239, 68, 68, 0.2)"
+            borderColor="rgba(248, 113, 113, 0.3)"
+            borderWidth="2px"
+            className="bg-gradient-to-br from-orange-300/20 via-amber-200/10 to-orange-300/20"
+          >
+            <div className="flex items-start gap-4">
+              <AlertCircle className="w-6 h-6 text-orange-300 flex-shrink-0 mt-1" />
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-white mb-2">
+                  Unable to Load Forecast
+                </h3>
+                <p className="text-white/70 text-sm">
+                  Please allow location access to see the 16-day weather forecast for planning your outfits.
+                </p>
+              </div>
+            </div>
+          </GlassCard>
+        )}
+
+      </div>
+
+      {/* Selected Day Weather Card - Outside the carousel container */}
+      {selectedForecastDay && (
+        <div className="mt-2">
+          <WeatherCard
+            forecast={selectedForecastDay}
+            cityName={cityName || "Your Location"}
+          />
+        </div>
+      )}
+
       {/* Occasion Selector for Future */}
       <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
         <Select
@@ -588,8 +822,8 @@ export default function SuggestPage() {
 
         <GlassButton
           onClick={handleSuggestOutfit}
-          disabled={isSuggestingOutfit || !selectedOccasionId}
-          className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-8 py-6 text-lg font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={isSuggestingOutfit}
+          className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white px-8 py-6 text-lg font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSuggestingOutfit ? (
             <>
@@ -599,17 +833,11 @@ export default function SuggestPage() {
           ) : (
             <>
               <Sparkles className="w-5 h-5 mr-2 inline" />
-              Suggest Outfit for Occasion
+              Suggest Outfit
             </>
           )}
         </GlassButton>
       </div>
-
-      {!selectedOccasionId && (
-        <p className="text-center text-white/50 text-sm">
-          Please select an occasion to get personalized outfit suggestions
-        </p>
-      )}
 
       {/* Suggestion Results */}
       {suggestionResults.length > 0 && (
@@ -762,6 +990,22 @@ export default function SuggestPage() {
           }
           .suggest-tabs .ant-tabs-content-holder {
             padding-top: 8px !important;
+            overflow: visible !important;
+          }
+          .suggest-tabs .ant-tabs-content {
+            overflow: visible !important;
+          }
+          .suggest-tabs .ant-tabs-tabpane {
+            overflow: visible !important;
+          }
+
+          /* Hide scrollbar for carousel */
+          .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+          }
+          .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
           }
         `}</style>
 
