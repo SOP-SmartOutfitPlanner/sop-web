@@ -63,42 +63,62 @@ export function AttachmentModal({
       <Dialog open={isOpen} onOpenChange={handleOpenChange}>
         <DialogContent
           showCloseButton={false}
-          className="max-w-4xl max-h-[85vh] overflow-y-auto backdrop-blur-xl bg-gradient-to-br from-cyan-950/80 via-blue-950/70 to-indigo-950/70 border border-cyan-400/30 shadow-2xl"
+          className={`w-[65vw] p-0 backdrop-blur-2xl bg-gradient-to-br from-slate-950/95 via-cyan-950/90 to-blue-950/95 border-2 border-cyan-400/20 shadow-[0_0_80px_rgba(34,211,238,0.15)] rounded-3xl overflow-hidden flex flex-col ${
+            type === "items"
+              ? "!max-w-[90vw] h-auto max-h-[70vh]"
+              : "!max-w-[65vw] h-[92vh] max-h-[92vh]"
+          }`}
         >
-          <DialogHeader>
-            <div className="flex items-center gap-3">
+          {/* Header */}
+          <div className="relative px-10 py-8 border-b border-cyan-400/10 bg-gradient-to-r from-cyan-950/30 to-blue-950/30 flex-shrink-0">
+            <div className="flex items-center gap-5">
               {type === "outfit" && (
-                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20">
-                  <Package className="w-5 h-5 text-cyan-300" />
+                <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500/30 to-blue-500/30 border border-cyan-400/30 shadow-lg shadow-cyan-500/20">
+                  <Package className="w-8 h-8 text-cyan-300" />
                 </div>
               )}
-              <div>
-                <DialogTitle className="text-2xl font-bricolage font-bold text-white">
+              <div className="flex-1">
+                <DialogTitle className="text-4xl font-bricolage font-black text-white tracking-tight">
                   {type === "outfit"
                     ? outfit?.name || "Outfit Details"
-                    : `Items in this post (${totalCount})`}
+                    : "Wardrobe Items"}
                 </DialogTitle>
-                {type === "outfit" && outfit?.description && (
-                  <p className="text-sm text-white/70 mt-1">
+                {type === "outfit" && outfit?.description ? (
+                  <p className="text-lg text-white/70 mt-2 font-poppins">
                     {outfit.description}
+                  </p>
+                ) : (
+                  <p className="text-lg text-white/60 mt-2 font-poppins">
+                    {totalCount} {totalCount === 1 ? "item" : "items"} in this
+                    post
                   </p>
                 )}
               </div>
+              <DialogClose asChild>
+                <button
+                  className="flex items-center justify-center w-14 h-14 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-all duration-200 hover:scale-105 active:scale-95"
+                  aria-label="Close modal"
+                >
+                  <X className="w-7 h-7" />
+                </button>
+              </DialogClose>
             </div>
-          </DialogHeader>
-          <DialogClose asChild>
-            <button
-              className="absolute right-4 top-4 text-white/70 hover:text-white transition-colors"
-              aria-label="Close modal"
-            >
-              <X className="h-6 w-6" />
-            </button>
-          </DialogClose>
+          </div>
 
+          {/* Items Grid */}
           <Tooltip.Provider delayDuration={200}>
-            <div className="mt-6">
-              {/* Items Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            <div
+              className={`px-10 py-8 flex-1 ${
+                type === "items" ? "flex items-center" : "overflow-y-auto"
+              }`}
+            >
+              <div
+                className={`${
+                  type === "items"
+                    ? "flex gap-6 overflow-x-auto w-full pb-4"
+                    : "grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-4 gap-6"
+                }`}
+              >
                 <AnimatePresence mode="popLayout">
                   {displayItems.map((item, index) => {
                     const CategoryIcon = getCategoryIcon(item.categoryId);
@@ -108,10 +128,16 @@ export function AttachmentModal({
                     return (
                       <motion.div
                         key={item.id}
-                        initial={{ opacity: 0, scale: 0.9 }}
+                        initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
-                        transition={{ duration: 0.2, delay: index * 0.05 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{
+                          duration: 0.2,
+                          delay: index * 0.02,
+                        }}
+                        className={`flex flex-col ${
+                          type === "items" ? "flex-shrink-0 w-64" : ""
+                        }`}
                       >
                         <Tooltip.Root>
                           <Tooltip.Trigger asChild>
@@ -119,20 +145,18 @@ export function AttachmentModal({
                               onClick={() =>
                                 !isDeleted && setSelectedItemId(item.id)
                               }
-                              className={`relative group rounded-xl overflow-hidden bg-white/5 border border-white/10 hover:border-cyan-400/40 transition-all w-full ${
+                              className={`relative group rounded-2xl overflow-hidden w-full bg-white/5 border-2 border-white/10 transition-all duration-300 ${
                                 isDeleted
                                   ? "opacity-50 grayscale cursor-not-allowed"
-                                  : "cursor-pointer"
+                                  : "cursor-pointer hover:border-cyan-400/50 hover:shadow-xl hover:shadow-cyan-500/20"
                               }`}
-                              whileHover={
-                                !isDeleted ? { scale: 1.03 } : undefined
-                              }
+                              whileHover={!isDeleted ? { y: -6 } : undefined}
                               whileTap={
                                 !isDeleted ? { scale: 0.97 } : undefined
                               }
                             >
-                              {/* Image */}
-                              <div className="aspect-square relative bg-white/5">
+                              {/* Image Container */}
+                              <div className="aspect-square relative bg-gradient-to-br from-slate-900/30 to-cyan-950/20 overflow-hidden">
                                 <Image
                                   src={item.imgUrl}
                                   alt={item.name}
@@ -141,57 +165,91 @@ export function AttachmentModal({
                                     imageLoaded[item.id]
                                       ? "opacity-100"
                                       : "opacity-0"
-                                  } ${!isDeleted && "group-hover:scale-105"}`}
+                                  } ${!isDeleted && "group-hover:scale-110"}`}
                                   onLoad={() => handleImageLoad(item.id)}
-                                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                                  sizes="(max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw"
+                                  priority={index < 12}
                                 />
                                 {!imageLoaded[item.id] && (
                                   <div className="absolute inset-0 flex items-center justify-center">
-                                    <div className="animate-spin rounded-full h-8 w-8 border-2 border-cyan-400/30 border-t-cyan-400"></div>
+                                    <div className="animate-spin rounded-full h-14 w-14 border-4 border-cyan-400/30 border-t-cyan-400"></div>
+                                  </div>
+                                )}
+
+                                {/* Category Badge - Top Left */}
+                                <div
+                                  className={`absolute top-3 left-3 flex items-center gap-2 ${categoryColor} text-white rounded-xl px-3 py-2 text-sm font-semibold shadow-lg transition-opacity duration-200 ${
+                                    imageLoaded[item.id]
+                                      ? "opacity-100"
+                                      : "opacity-0"
+                                  }`}
+                                >
+                                  <CategoryIcon className="w-4 h-4" />
+                                  <span className="hidden lg:inline">
+                                    {item.categoryName}
+                                  </span>
+                                </div>
+
+                                {/* Hover Overlay */}
+                                {!isDeleted && (
+                                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pb-4">
+                                    <div className="flex items-center gap-2 text-sm text-cyan-300 font-semibold">
+                                      <span>View Details</span>
+                                      <svg
+                                        className="w-3 h-3"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                      >
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          strokeWidth={2}
+                                          d="M9 5l7 7-7 7"
+                                        />
+                                      </svg>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Deleted Overlay */}
+                                {isDeleted && (
+                                  <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
+                                    <div className="bg-red-500/90 text-white text-sm font-bold px-4 py-2 rounded-full backdrop-blur-sm border border-red-400/50">
+                                      Deleted
+                                    </div>
                                   </div>
                                 )}
                               </div>
 
-                              {/* Category Badge */}
-                              <div
-                                className={`absolute top-2 left-2 flex items-center gap-1.5 ${categoryColor} text-white rounded-lg px-2 py-1 text-xs font-medium transition-opacity duration-200 ${
-                                  imageLoaded[item.id]
-                                    ? "opacity-100"
-                                    : "opacity-0"
-                                }`}
-                              >
-                                <CategoryIcon className="w-3.5 h-3.5" />
-                                <span className="hidden sm:inline">
-                                  {item.categoryName}
-                                </span>
-                              </div>
-
-                              {/* Deleted Badge */}
-                              {isDeleted && (
-                                <div className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
-                                  Deleted
-                                </div>
-                              )}
-
-                              {/* Item Name */}
-                              <div className="p-3 bg-gradient-to-t from-black/40 to-transparent">
-                                <p
-                                  className={`text-sm text-white font-semibold truncate ${
+                              {/* Item Info - Below Image */}
+                              <div className="p-4 bg-gradient-to-br from-slate-900/40 to-cyan-950/30">
+                                <h3
+                                  className={`text-base font-bricolage font-bold text-white leading-tight truncate ${
                                     isDeleted ? "line-through" : ""
                                   }`}
+                                  title={item.name}
                                 >
                                   {item.name}
-                                </p>
+                                </h3>
+                                {item.brand && (
+                                  <p
+                                    className="text-sm text-white/50 mt-1 truncate font-poppins"
+                                    title={item.brand}
+                                  >
+                                    {item.brand}
+                                  </p>
+                                )}
                               </div>
                             </motion.button>
                           </Tooltip.Trigger>
                           {isDeleted && (
                             <Tooltip.Portal>
                               <Tooltip.Content
-                                className="bg-gray-900 text-white text-sm px-3 py-2 rounded-lg shadow-xl border border-white/10 z-[100]"
+                                className="bg-gray-900/95 backdrop-blur-sm text-white text-sm px-4 py-2.5 rounded-xl shadow-xl border border-white/10 z-[100] font-poppins"
                                 sideOffset={5}
                               >
-                                This item was deleted
+                                This item has been deleted from the wardrobe
                                 <Tooltip.Arrow className="fill-gray-900" />
                               </Tooltip.Content>
                             </Tooltip.Portal>
@@ -202,6 +260,21 @@ export function AttachmentModal({
                   })}
                 </AnimatePresence>
               </div>
+
+              {/* Empty State */}
+              {displayItems.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-32">
+                  <div className="w-28 h-28 rounded-full bg-white/5 flex items-center justify-center mb-6">
+                    <Package className="w-14 h-14 text-white/30" />
+                  </div>
+                  <h3 className="text-2xl font-bricolage font-bold text-white mb-3">
+                    No items found
+                  </h3>
+                  <p className="text-lg text-white/60 font-poppins">
+                    This post doesn&apos;t have any items attached.
+                  </p>
+                </div>
+              )}
             </div>
           </Tooltip.Provider>
         </DialogContent>
