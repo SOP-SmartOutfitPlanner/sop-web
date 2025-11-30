@@ -17,6 +17,7 @@ import { PostItemDetailModel, PostOutfitDetailModel } from "@/types/community";
 import { getCategoryIcon } from "@/lib/utils/category-icons";
 import { getCategoryColor } from "@/lib/constants/category-colors";
 import { ViewItemDialog } from "@/components/wardrobe/ViewItemDialog";
+import { useScrollLock } from "@/hooks/useScrollLock";
 
 interface AttachmentModalProps {
   isOpen: boolean;
@@ -35,6 +36,9 @@ export function AttachmentModal({
 }: AttachmentModalProps) {
   const [imageLoaded, setImageLoaded] = useState<Record<number, boolean>>({});
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
+
+  // Lock body scroll when modal is open
+  useScrollLock(isOpen);
 
   const handleImageLoad = useCallback((itemId: number) => {
     setImageLoaded((prev) => ({ ...prev, [itemId]: true }));
@@ -72,7 +76,10 @@ export function AttachmentModal({
             </div>
           </DialogHeader>
           <DialogClose asChild>
-            <button className="absolute right-4 top-4 text-white/70 hover:text-white transition-colors">
+            <button
+              className="absolute right-4 top-4 text-white/70 hover:text-white transition-colors"
+              aria-label="Close modal"
+            >
               <X className="h-6 w-6" />
             </button>
           </DialogClose>
