@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { MapPin, AlertCircle, Sparkles, Loader2, Check, Plus } from "lucide-react";
-import { Radio, Select, Checkbox } from "antd";
+import { Radio, Select, Checkbox, Tabs } from "antd";
 import { useAuthStore } from "@/store/auth-store";
 import GlassCard from "@/components/ui/glass-card";
 import GlassButton from "@/components/ui/glass-button";
@@ -260,297 +260,542 @@ export default function SuggestPage() {
     );
   }
 
+  // Render Today's Outfit tab content
+  const renderTodayOutfitContent = () => (
+    <div className="space-y-8">
+      {/* Header */}
+      <div>
+        <h4 className="font-dela-gothic text-2xl md:text-3xl lg:text-4xl leading-tight">
+          <span className="bg-clip-text text-transparent bg-linear-to-r from-white via-blue-100 to-cyan-200">
+            What to wear today?
+          </span>
+        </h4>
+        <p className="bg-clip-text text-transparent bg-linear-to-r from-white via-blue-100 to-cyan-200">
+          Get personalized outfit suggestions based on today&apos;s weather
+        </p>
+      </div>
+
+      {/* Weather Section */}
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <h4 className="font-bricolage font-bold text-xl md:text-2xl lg:text-3xl leading-tight">
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-cyan-200">
+              Today&apos;s weather
+            </span>
+          </h4>
+
+          {/* Weather Tabs */}
+          <Radio.Group
+            value={activeTab}
+            onChange={(e) => setActiveTab(e.target.value)}
+            buttonStyle="solid"
+            size="large"
+            className="glass-radio-group"
+          >
+            <Radio.Button value="my-location" className="glass-radio-button">
+              <div className="flex items-center gap-2">
+                <span>My Location</span>
+              </div>
+            </Radio.Button>
+            <Radio.Button
+              value="selected-location"
+              disabled={!customWeather}
+              className="glass-radio-button"
+            >
+              <div className="flex items-center gap-2">
+                <span>Selected Location</span>
+              </div>
+            </Radio.Button>
+          </Radio.Group>
+
+          <div className="glass-button-hover">
+            <GlassButton
+              variant="custom"
+              borderRadius="14px"
+              blur="8px"
+              brightness={1.12}
+              glowColor="rgba(59,130,246,0.45)"
+              glowIntensity={6}
+              borderColor="rgba(255,255,255,0.28)"
+              borderWidth="1px"
+              textColor="#ffffffff"
+              className="px-4 h-12 font-semibold"
+              displacementScale={5}
+              onClick={() => setIsLocationModalOpen(true)}
+            >
+              <span className="hidden sm:inline">Choose Another Location</span>
+              <span className="sm:hidden">Change</span>
+            </GlassButton>
+          </div>
+        </div>
+
+        {/* Loading State */}
+        {(isLoadingWeather || isLoadingCustomWeather) && (
+          <GlassCard
+            padding="24px"
+            borderRadius="24px"
+            blur="10px"
+            brightness={1.02}
+            glowColor="rgba(34, 211, 238, 0.2)"
+            borderColor="rgba(255, 255, 255, 0.2)"
+            borderWidth="2px"
+            className="bg-gradient-to-br from-cyan-300/20 via-blue-200/10 to-indigo-300/20"
+          >
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin mx-auto mb-4" />
+                <p className="text-white/70">
+                  {isRequestingLocation
+                    ? "Getting your location..."
+                    : "Loading weather..."}
+                </p>
+              </div>
+            </div>
+          </GlassCard>
+        )}
+
+        {/* Error State */}
+        {weatherError && !isLoadingWeather && !isLoadingCustomWeather && !customWeather && (
+          <GlassCard
+            padding="24px"
+            borderRadius="24px"
+            blur="10px"
+            brightness={1.02}
+            glowColor="rgba(239, 68, 68, 0.2)"
+            borderColor="rgba(248, 113, 113, 0.3)"
+            borderWidth="2px"
+            className="bg-gradient-to-br from-red-300/20 via-orange-200/10 to-red-300/20"
+          >
+            <div className="flex items-start gap-4">
+              <AlertCircle className="w-6 h-6 text-red-300 flex-shrink-0 mt-1" />
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-white mb-2">
+                  Unable to Get Weather
+                </h3>
+                <p className="text-white/70 text-sm mb-4">
+                  {typeof weatherError === "string"
+                    ? weatherError
+                    : locationError ||
+                    "We couldn't get your weather information. Please try sharing your location."}
+                </p>
+                <GlassButton
+                  onClick={requestLocation}
+                  disabled={isRequestingLocation}
+                  className="bg-white/10 hover:bg-white/20 text-white border-white/20"
+                >
+                  <MapPin className="w-4 h-4 mr-2" />
+                  {isRequestingLocation ? "Getting location..." : "Share Location"}
+                </GlassButton>
+              </div>
+            </div>
+          </GlassCard>
+        )}
+
+        {/* Weather Card */}
+        {!isLoadingWeather && !isLoadingCustomWeather && (
+          <>
+            {activeTab === "my-location" && todayForecast && (
+              <WeatherCard
+                forecast={todayForecast}
+                cityName={cityName}
+              />
+            )}
+            {activeTab === "selected-location" && customWeather && (
+              <WeatherCard
+                forecast={customWeather.forecast}
+                cityName={customWeather.cityName}
+              />
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Suggest Outfit Button with Occasion Selector */}
+      <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mt-8">
+        <Select
+          value={selectedOccasionId}
+          onChange={setSelectedOccasionId}
+          placeholder="Select occasion"
+          allowClear
+          loading={isLoadingOccasions}
+          size="large"
+          style={{ width: 256 }}
+          listHeight={256}
+        >
+          {occasions.map((occasion) => (
+            <Select.Option key={occasion.id} value={occasion.id}>
+              {occasion.name}
+            </Select.Option>
+          ))}
+        </Select>
+
+        <Select
+          value={totalOutfit}
+          onChange={setTotalOutfit}
+          size="large"
+          style={{ width: 192 }}
+        >
+          <Select.Option value={1}>1 Outfit</Select.Option>
+          <Select.Option value={2}>2 Outfits</Select.Option>
+          <Select.Option value={3}>3 Outfits</Select.Option>
+          <Select.Option value={4}>4 Outfits</Select.Option>
+        </Select>
+
+        <GlassButton
+          onClick={handleSuggestOutfit}
+          disabled={isSuggestingOutfit}
+          className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white px-8 py-6 text-lg font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isSuggestingOutfit ? (
+            <>
+              <Loader2 className="w-5 h-5 mr-2 animate-spin inline" />
+              Generating Suggestions...
+            </>
+          ) : (
+            <>
+              <Sparkles className="w-5 h-5 mr-2 inline" />
+              Suggest Today Outfit
+            </>
+          )}
+        </GlassButton>
+      </div>
+
+      {/* Suggestion Results */}
+      {suggestionResults.length > 0 && (
+        <div id="suggestion-results" className="mt-8 pb-8">
+          <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h4 className="font-bricolage font-bold text-xl md:text-2xl lg:text-3xl leading-tight">
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-cyan-200">
+                  Your Suggested Outfits
+                </span>
+              </h4>
+              <p className="text-white/70 mt-2">
+                AI-generated outfit suggestions based on today&apos;s weather
+              </p>
+            </div>
+
+            {/* Mass Add Controls */}
+            {suggestionResults.length > 1 && (
+              <div className="flex flex-wrap items-center gap-3">
+                <Checkbox
+                  checked={selectedOutfitIndexes.length === suggestionResults.length}
+                  indeterminate={selectedOutfitIndexes.length > 0 && selectedOutfitIndexes.length < suggestionResults.length}
+                  onChange={handleSelectAll}
+                  className="text-white"
+                >
+                  <span className="text-white/80">Select All</span>
+                </Checkbox>
+
+                <GlassButton
+                  onClick={handleAddSelectedOutfits}
+                  disabled={selectedOutfitIndexes.length === 0 || isAddingMultiple}
+                  className="bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white px-4 py-2 font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isAddingMultiple ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin inline" />
+                      Adding...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-4 h-4 mr-2 inline" />
+                      Add Selected ({selectedOutfitIndexes.length})
+                    </>
+                  )}
+                </GlassButton>
+              </div>
+            )}
+          </div>
+          <div className="space-y-8">
+            {suggestionResults.map((suggestion, index) => (
+              <div key={index} className="space-y-4">
+                <div className="flex items-center gap-3">
+                  {suggestionResults.length > 1 && (
+                    <Checkbox
+                      checked={selectedOutfitIndexes.includes(index)}
+                      onChange={() => handleToggleOutfitSelection(index)}
+                      className="scale-125"
+                    />
+                  )}
+                  <h5 className="font-bricolage font-semibold text-lg md:text-xl leading-tight">
+                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-purple-100 to-pink-200">
+                      Outfit Option {index + 1}
+                    </span>
+                  </h5>
+                  {selectedOutfitIndexes.includes(index) && (
+                    <Check className="w-5 h-5 text-green-400" />
+                  )}
+                </div>
+                <SuggestionResultView
+                  items={suggestion.suggestedItems}
+                  reason={suggestion.reason}
+                  onClose={handleCloseResults}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  // Render Future Occasion tab content
+  const renderFutureOccasionContent = () => (
+    <div className="space-y-8">
+      <div className="text-center py-8">
+        <h4 className="font-bricolage font-bold text-xl md:text-2xl leading-tight mb-4">
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-purple-100 to-pink-200">
+            Plan Your Perfect Look
+          </span>
+        </h4>
+        <p className="text-white/70 max-w-2xl mx-auto">
+          Get outfit suggestions for upcoming events and special occasions. Select an occasion and let AI help you prepare the perfect outfit in advance.
+        </p>
+      </div>
+
+      {/* Occasion Selector for Future */}
+      <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
+        <Select
+          value={selectedOccasionId}
+          onChange={setSelectedOccasionId}
+          placeholder="Select your occasion"
+          allowClear
+          loading={isLoadingOccasions}
+          size="large"
+          style={{ width: 300 }}
+          listHeight={256}
+        >
+          {occasions.map((occasion) => (
+            <Select.Option key={occasion.id} value={occasion.id}>
+              {occasion.name}
+            </Select.Option>
+          ))}
+        </Select>
+
+        <Select
+          value={totalOutfit}
+          onChange={setTotalOutfit}
+          size="large"
+          style={{ width: 192 }}
+        >
+          <Select.Option value={1}>1 Outfit</Select.Option>
+          <Select.Option value={2}>2 Outfits</Select.Option>
+          <Select.Option value={3}>3 Outfits</Select.Option>
+          <Select.Option value={4}>4 Outfits</Select.Option>
+        </Select>
+
+        <GlassButton
+          onClick={handleSuggestOutfit}
+          disabled={isSuggestingOutfit || !selectedOccasionId}
+          className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-8 py-6 text-lg font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isSuggestingOutfit ? (
+            <>
+              <Loader2 className="w-5 h-5 mr-2 animate-spin inline" />
+              Generating Suggestions...
+            </>
+          ) : (
+            <>
+              <Sparkles className="w-5 h-5 mr-2 inline" />
+              Suggest Outfit for Occasion
+            </>
+          )}
+        </GlassButton>
+      </div>
+
+      {!selectedOccasionId && (
+        <p className="text-center text-white/50 text-sm">
+          Please select an occasion to get personalized outfit suggestions
+        </p>
+      )}
+
+      {/* Suggestion Results */}
+      {suggestionResults.length > 0 && (
+        <div id="suggestion-results" className="mt-8 pb-8">
+          <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h4 className="font-bricolage font-bold text-xl md:text-2xl lg:text-3xl leading-tight">
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-purple-100 to-pink-200">
+                  Your Suggested Outfits
+                </span>
+              </h4>
+              <p className="text-white/70 mt-2">
+                AI-generated outfit suggestions for your upcoming occasion
+              </p>
+            </div>
+
+            {/* Mass Add Controls */}
+            {suggestionResults.length > 1 && (
+              <div className="flex flex-wrap items-center gap-3">
+                <Checkbox
+                  checked={selectedOutfitIndexes.length === suggestionResults.length}
+                  indeterminate={selectedOutfitIndexes.length > 0 && selectedOutfitIndexes.length < suggestionResults.length}
+                  onChange={handleSelectAll}
+                  className="text-white"
+                >
+                  <span className="text-white/80">Select All</span>
+                </Checkbox>
+
+                <GlassButton
+                  onClick={handleAddSelectedOutfits}
+                  disabled={selectedOutfitIndexes.length === 0 || isAddingMultiple}
+                  className="bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white px-4 py-2 font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isAddingMultiple ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin inline" />
+                      Adding...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-4 h-4 mr-2 inline" />
+                      Add Selected ({selectedOutfitIndexes.length})
+                    </>
+                  )}
+                </GlassButton>
+              </div>
+            )}
+          </div>
+          <div className="space-y-8">
+            {suggestionResults.map((suggestion, index) => (
+              <div key={index} className="space-y-4">
+                <div className="flex items-center gap-3">
+                  {suggestionResults.length > 1 && (
+                    <Checkbox
+                      checked={selectedOutfitIndexes.includes(index)}
+                      onChange={() => handleToggleOutfitSelection(index)}
+                      className="scale-125"
+                    />
+                  )}
+                  <h5 className="font-bricolage font-semibold text-lg md:text-xl leading-tight">
+                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-purple-100 to-pink-200">
+                      Outfit Option {index + 1}
+                    </span>
+                  </h5>
+                  {selectedOutfitIndexes.includes(index) && (
+                    <Check className="w-5 h-5 text-green-400" />
+                  )}
+                </div>
+                <SuggestionResultView
+                  items={suggestion.suggestedItems}
+                  reason={suggestion.reason}
+                  onClose={handleCloseResults}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div className="min-h-screen pt-32">
       <div className="container max-w-7xl mx-auto px-4 py-6 space-y-8">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-          <div>
-            <h4 className="font-dela-gothic text-2xl md:text-3xl lg:text-4xl leading-tight">
-              <span className="bg-clip-text text-transparent bg-linear-to-r from-white via-blue-100 to-cyan-200">
-                What to wear today?
-              </span>
-            </h4>
-            <p className="bg-clip-text text-transparent bg-linear-to-r from-white via-blue-100 to-cyan-200">
-              Get personalized outfit suggestions powered by AI
-            </p>
-          </div>
-        </div>
+        <style jsx global>{`
+          .glass-button-hover {
+            transition: transform 0.2s ease;
+          }
+          .glass-button-hover:hover {
+            transform: scale(1.04);
+          }
+          .glass-button-hover:active {
+            transform: scale(0.98);
+          }
 
-        {/* Weather Section */}
-        <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <h4 className="font-bricolage font-bold text-xl md:text-2xl lg:text-3xl leading-tight">
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-cyan-200">
-                Today&apos;s weather
-              </span>
-            </h4>
+          /* Glassmorphism Tab Card Styling */
+          .suggest-tabs.ant-tabs-card > .ant-tabs-nav::before {
+            border-bottom: none !important;
+          }
+          .suggest-tabs.ant-tabs-card > .ant-tabs-nav .ant-tabs-nav-wrap {
+            border-bottom: none !important;
+          }
+          .suggest-tabs.ant-tabs-card > .ant-tabs-nav {
+            margin-bottom: 24px !important;
+          }
+          .suggest-tabs.ant-tabs-card > .ant-tabs-nav .ant-tabs-nav-list {
+            background: rgba(15, 23, 42, 0.4) !important;
+            backdrop-filter: blur(12px) saturate(180%) !important;
+            -webkit-backdrop-filter: blur(12px) saturate(180%) !important;
+            padding: 6px !important;
+            border-radius: 16px !important;
+            border: 1px solid rgba(148, 163, 184, 0.2) !important;
+            box-shadow:
+              inset 2px 2px 0px -2px rgba(255, 255, 255, 0.3),
+              0 4px 16px rgba(0, 0, 0, 0.2),
+              0 0 24px rgba(6, 182, 212, 0.1) !important;
+          }
+          .suggest-tabs.ant-tabs-card .ant-tabs-tab {
+            background: transparent !important;
+            border: none !important;
+            border-radius: 12px !important;
+            margin: 0 !important;
+            padding: 12px 28px !important;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+          }
+          .suggest-tabs.ant-tabs-card .ant-tabs-tab:hover:not(.ant-tabs-tab-active) {
+            background: rgba(255, 255, 255, 0.08) !important;
+          }
+          .suggest-tabs.ant-tabs-card .ant-tabs-tab .ant-tabs-tab-btn {
+            color: rgba(255, 255, 255, 0.65) !important;
+            transition: color 0.3s ease !important;
+          }
+          .suggest-tabs.ant-tabs-card .ant-tabs-tab:hover .ant-tabs-tab-btn {
+            color: rgba(255, 255, 255, 0.9) !important;
+          }
+          .suggest-tabs.ant-tabs-card .ant-tabs-tab-active {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.35), rgba(6, 182, 212, 0.35)) !important;
+            border: 1px solid rgba(34, 211, 238, 0.4) !important;
+            box-shadow:
+              inset 2px 2px 0px -2px rgba(255, 255, 255, 0.4),
+              0 4px 12px rgba(6, 182, 212, 0.3),
+              0 0 20px rgba(6, 182, 212, 0.2) !important;
+          }
+          .suggest-tabs.ant-tabs-card .ant-tabs-tab-active .ant-tabs-tab-btn {
+            color: #ffffff !important;
+            text-shadow: 0 0 12px rgba(34, 211, 238, 0.5) !important;
+          }
+          .suggest-tabs .ant-tabs-ink-bar {
+            display: none !important;
+          }
+          .suggest-tabs .ant-tabs-content-holder {
+            padding-top: 8px !important;
+          }
+        `}</style>
 
-            {/* Weather Tabs */}
-            <Radio.Group
-              value={activeTab}
-              onChange={(e) => setActiveTab(e.target.value)}
-              buttonStyle="solid"
-              size="large"
-              className="glass-radio-group"
-            >
-              <Radio.Button value="my-location" className="glass-radio-button">
-                <div className="flex items-center gap-2">
-                  <span>My Location</span>
-                </div>
-              </Radio.Button>
-              <Radio.Button
-                value="selected-location"
-                disabled={!customWeather}
-                className="glass-radio-button"
-              >
-                <div className="flex items-center gap-2">
-                  <span>Selected Location</span>
-                </div>
-              </Radio.Button>
-            </Radio.Group>
-
-            <div className="glass-button-hover">
-              <GlassButton
-                variant="custom"
-                borderRadius="14px"
-                blur="8px"
-                brightness={1.12}
-                glowColor="rgba(59,130,246,0.45)"
-                glowIntensity={6}
-                borderColor="rgba(255,255,255,0.28)"
-                borderWidth="1px"
-                textColor="#ffffffff"
-                className="px-4 h-12 font-semibold"
-                displacementScale={5}
-                onClick={() => setIsLocationModalOpen(true)}
-              >
-                <span className="hidden sm:inline">Choose Another Location</span>
-                <span className="sm:hidden">Change</span>
-              </GlassButton>
-            </div>
-          </div>
-
-          <style jsx>{`
-            .glass-button-hover {
-              transition: transform 0.2s ease;
-            }
-            .glass-button-hover:hover {
-              transform: scale(1.04);
-            }
-            .glass-button-hover:active {
-              transform: scale(0.98);
-            }
-          `}</style>
-
-          {/* Loading State */}
-          {(isLoadingWeather || isLoadingCustomWeather) && (
-            <GlassCard
-              padding="24px"
-              borderRadius="24px"
-              blur="10px"
-              brightness={1.02}
-              glowColor="rgba(34, 211, 238, 0.2)"
-              borderColor="rgba(255, 255, 255, 0.2)"
-              borderWidth="2px"
-              className="bg-gradient-to-br from-cyan-300/20 via-blue-200/10 to-indigo-300/20"
-            >
-              <div className="flex items-center justify-center py-12">
-                <div className="text-center">
-                  <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin mx-auto mb-4" />
-                  <p className="text-white/70">
-                    {isRequestingLocation
-                      ? "Getting your location..."
-                      : "Loading weather..."}
-                  </p>
-                </div>
-              </div>
-            </GlassCard>
-          )}
-
-          {/* Error State */}
-          {weatherError && !isLoadingWeather && !isLoadingCustomWeather && !customWeather && (
-            <GlassCard
-              padding="24px"
-              borderRadius="24px"
-              blur="10px"
-              brightness={1.02}
-              glowColor="rgba(239, 68, 68, 0.2)"
-              borderColor="rgba(248, 113, 113, 0.3)"
-              borderWidth="2px"
-              className="bg-gradient-to-br from-red-300/20 via-orange-200/10 to-red-300/20"
-            >
-              <div className="flex items-start gap-4">
-                <AlertCircle className="w-6 h-6 text-red-300 flex-shrink-0 mt-1" />
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-white mb-2">
-                    Unable to Get Weather
-                  </h3>
-                  <p className="text-white/70 text-sm mb-4">
-                    {typeof weatherError === "string"
-                      ? weatherError
-                      : locationError ||
-                      "We couldn't get your weather information. Please try sharing your location."}
-                  </p>
-                  <GlassButton
-                    onClick={requestLocation}
-                    disabled={isRequestingLocation}
-                    className="bg-white/10 hover:bg-white/20 text-white border-white/20"
-                  >
-                    <MapPin className="w-4 h-4 mr-2" />
-                    {isRequestingLocation ? "Getting location..." : "Share Location"}
-                  </GlassButton>
-                </div>
-              </div>
-            </GlassCard>
-          )}
-
-          {/* Weather Card */}
-          {!isLoadingWeather && !isLoadingCustomWeather && (
-            <>
-              {activeTab === "my-location" && todayForecast && (
-                <WeatherCard
-                  forecast={todayForecast}
-                  cityName={cityName}
-                />
-              )}
-              {activeTab === "selected-location" && customWeather && (
-                <WeatherCard
-                  forecast={customWeather.forecast}
-                  cityName={customWeather.cityName}
-                />
-              )}
-            </>
-          )}
-        </div>
-
-        {/* Suggest Outfit Button with Occasion Selector */}
-        <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mt-12">
-          <Select
-            value={selectedOccasionId}
-            onChange={setSelectedOccasionId}
-            placeholder="Select occasion"
-            allowClear
-            loading={isLoadingOccasions}
-            size="large"
-            style={{ width: 256 }}
-            listHeight={256}
-          >
-            {occasions.map((occasion) => (
-              <Select.Option key={occasion.id} value={occasion.id}>
-                {occasion.name}
-              </Select.Option>
-            ))}
-          </Select>
-
-          <Select
-            value={totalOutfit}
-            onChange={setTotalOutfit}
-            size="large"
-            style={{ width: 192 }}
-          >
-            <Select.Option value={1}>1 Outfit</Select.Option>
-            <Select.Option value={2}>2 Outfits</Select.Option>
-            <Select.Option value={3}>3 Outfits</Select.Option>
-            <Select.Option value={4}>4 Outfits</Select.Option>
-          </Select>
-
-          <GlassButton
-            onClick={handleSuggestOutfit}
-            disabled={isSuggestingOutfit}
-            className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white px-8 py-6 text-lg font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isSuggestingOutfit ? (
-              <>
-                <Loader2 className="w-5 h-5 mr-2 animate-spin inline" />
-                Generating Suggestions...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-5 h-5 mr-2 inline" />
-                Suggest Today Outfit
-              </>
-            )}
-          </GlassButton>
-        </div>
-
-        {/* Suggestion Results */}
-        {suggestionResults.length > 0 && (
-          <div id="suggestion-results" className="mt-12 pb-8">
-            <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h4 className="font-bricolage font-bold text-xl md:text-2xl lg:text-3xl leading-tight">
-                  <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-cyan-200">
-                    Your Suggested Outfits
-                  </span>
-                </h4>
-                <p className="text-white/70 mt-2">
-                  AI-generated outfit suggestions based on today&apos;s weather
-                </p>
-              </div>
-
-              {/* Mass Add Controls */}
-              {suggestionResults.length > 1 && (
-                <div className="flex flex-wrap items-center gap-3">
-                  <Checkbox
-                    checked={selectedOutfitIndexes.length === suggestionResults.length}
-                    indeterminate={selectedOutfitIndexes.length > 0 && selectedOutfitIndexes.length < suggestionResults.length}
-                    onChange={handleSelectAll}
-                    className="text-white"
-                  >
-                    <span className="text-white/80">Select All</span>
-                  </Checkbox>
-
-                  <GlassButton
-                    onClick={handleAddSelectedOutfits}
-                    disabled={selectedOutfitIndexes.length === 0 || isAddingMultiple}
-                    className="bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white px-4 py-2 font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isAddingMultiple ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin inline" />
-                        Adding...
-                      </>
-                    ) : (
-                      <>
-                        <Plus className="w-4 h-4 mr-2 inline" />
-                        Add Selected ({selectedOutfitIndexes.length})
-                      </>
-                    )}
-                  </GlassButton>
-                </div>
-              )}
-            </div>
-            <div className="space-y-8">
-              {suggestionResults.map((suggestion, index) => (
-                <div key={index} className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    {suggestionResults.length > 1 && (
-                      <Checkbox
-                        checked={selectedOutfitIndexes.includes(index)}
-                        onChange={() => handleToggleOutfitSelection(index)}
-                        className="scale-125"
-                      />
-                    )}
-                    <h5 className="font-bricolage font-semibold text-lg md:text-xl leading-tight">
-                      <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-purple-100 to-pink-200">
-                        Outfit Option {index + 1}
-                      </span>
-                    </h5>
-                    {selectedOutfitIndexes.includes(index) && (
-                      <Check className="w-5 h-5 text-green-400" />
-                    )}
-                  </div>
-                  <SuggestionResultView
-                    items={suggestion.suggestedItems}
-                    reason={suggestion.reason}
-                    onClose={handleCloseResults}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Tabs Section - Centered Card Style */}
+        <Tabs
+          defaultActiveKey="today"
+          type="card"
+          size="large"
+          className="suggest-tabs w-full"
+          centered
+          onChange={() => {
+            setSuggestionResults([]);
+            setSelectedOutfitIndexes([]);
+          }}
+          items={[
+            {
+              key: "today",
+              label: (
+                <span className="font-semibold text-base px-4">
+                  Today&apos;s Outfit
+                </span>
+              ),
+              children: renderTodayOutfitContent(),
+            },
+            {
+              key: "future",
+              label: (
+                <span className="font-semibold text-base px-4">
+                  Outfit for Your Occasion
+                </span>
+              ),
+              children: renderFutureOccasionContent(),
+            },
+          ]}
+        />
 
         {/* Location Map Modal */}
         <LocationMapModal
