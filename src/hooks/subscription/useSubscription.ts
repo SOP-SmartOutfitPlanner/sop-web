@@ -15,6 +15,8 @@ export function useSubscription() {
   return useQuery<UserSubscriptionResponse>({
     queryKey: SUBSCRIPTION_QUERY_KEY,
     queryFn: () => subscriptionAPI.getUserSubscriptions(),
+    staleTime: 0, // Always consider data stale
+    refetchOnMount: 'always', // Always refetch when component mounts
   });
 }
 
@@ -22,6 +24,8 @@ export function useCurrentSubscription() {
   return useQuery<CurrentSubscriptionResponse>({
     queryKey: CURRENT_SUBSCRIPTION_QUERY_KEY,
     queryFn: () => subscriptionAPI.getCurrentSubscription(),
+    staleTime: 0, // Always consider data stale
+    refetchOnMount: 'always', // Always refetch when component mounts
   });
 }
 
@@ -29,6 +33,8 @@ export function useSubscriptionHistory() {
   return useQuery<SubscriptionHistoryResponse>({
     queryKey: SUBSCRIPTION_HISTORY_QUERY_KEY,
     queryFn: () => subscriptionAPI.getSubscriptionHistory(),
+    staleTime: 0, // Always consider data stale
+    refetchOnMount: 'always', // Always refetch when component mounts
   });
 }
 

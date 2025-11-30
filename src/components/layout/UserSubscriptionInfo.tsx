@@ -153,7 +153,7 @@ export function UserSubscriptionInfo() {
             </p>
             {subscription.dateExp && (
               <p className="text-xs text-muted-foreground mt-1">
-                Expires: {new Date(subscription.dateExp).toLocaleDateString("en-US")}
+                {isPremium ? "Expires" : "Renew"}: {new Date(subscription.dateExp).toLocaleDateString("en-US")}
               </p>
             )}
           </div>
