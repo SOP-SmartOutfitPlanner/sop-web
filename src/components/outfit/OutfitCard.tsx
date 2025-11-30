@@ -134,59 +134,83 @@ const OutfitCardComponent = ({
               )}
             </div>
 
-            {/* Favorite Button */}
-            <button
-              onClick={handleFavoriteClick}
-              disabled={isPending}
-              aria-label={
-                outfit.isFavorite ? "Remove from favorites" : "Add to favorites"
-              }
-              className={cn(
-                "absolute top-2 right-2 p-2 rounded-full backdrop-blur-md transition-all duration-200 shadow-xl",
-                "bg-white/80 border-2 border-white/90",
-                "hover:bg-white hover:border-white hover:scale-110",
-                isHovered ? "opacity-100" : "opacity-0"
-              )}
-            >
-              <Heart
-                className={`w-5 h-5 ${
+            {/* Action Buttons Container */}
+            <div className="absolute top-3 right-3 flex flex-col gap-2 z-10">
+              {/* Favorite Button - Always visible when favorited */}
+              <motion.button
+                onClick={handleFavoriteClick}
+                disabled={isPending}
+                aria-label={
+                  outfit.isFavorite ? "Remove from favorites" : "Add to favorites"
+                }
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ 
+                  scale: 1, 
+                  opacity: outfit.isFavorite || isHovered ? 1 : 0 
+                }}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                transition={{ duration: 0.2 }}
+                className={cn(
+                  "p-2.5 rounded-full backdrop-blur-xl transition-all duration-200",
+                  "border shadow-lg",
                   outfit.isFavorite
-                    ? "fill-red-500 text-red-500"
-                    : "text-gray-700"
-                }`}
-              />
-            </button>
+                    ? "bg-gradient-to-br from-red-500/90 to-pink-500/90 border-red-400/50 shadow-red-500/30"
+                    : "bg-white/90 border-white/50 hover:bg-white shadow-black/10"
+                )}
+              >
+                <Heart
+                  className={cn(
+                    "w-4.5 h-4.5 transition-all duration-200",
+                    outfit.isFavorite
+                      ? "fill-white text-white"
+                      : "text-gray-700"
+                  )}
+                />
+              </motion.button>
 
-            {/* Delete Button */}
+              {/* Edit Button */}
+              {onEdit && (
+                <motion.button
+                  onClick={handleEditClick}
+                  aria-label="Edit outfit"
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: isHovered ? 1 : 0 }}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
+                  className={cn(
+                    "p-2.5 rounded-full backdrop-blur-xl transition-all duration-200",
+                    "bg-gradient-to-br from-blue-500/90 to-indigo-500/90",
+                    "border border-blue-400/50 shadow-lg shadow-blue-500/30",
+                    "hover:from-blue-600/95 hover:to-indigo-600/95"
+                  )}
+                >
+                  <Edit className="w-4.5 h-4.5 text-white" />
+                </motion.button>
+              )}
+            </div>
+
+            {/* Delete Button - Top Left */}
             {onDelete && (
-              <button
+              <motion.button
                 onClick={handleDeleteClick}
                 aria-label="Delete outfit"
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: isHovered ? 1 : 0 }}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                transition={{ duration: 0.2 }}
                 className={cn(
-                  "absolute top-2 left-2 p-2 rounded-full backdrop-blur-md transition-all duration-200 shadow-xl",
-                  "bg-red-500/90 border-2 border-red-600/90",
-                  "hover:bg-red-600 hover:border-red-700 hover:scale-110",
-                  isHovered ? "opacity-100" : "opacity-0"
+                  "absolute top-3 left-3 z-10",
+                  "p-2.5 rounded-full backdrop-blur-xl transition-all duration-200",
+                  "bg-gradient-to-br from-red-500/90 to-red-600/90",
+                  "border border-red-400/50 shadow-lg shadow-red-500/30",
+                  "hover:from-red-600/95 hover:to-red-700/95"
                 )}
               >
-                <Trash2 className="w-5 h-5 text-white" />
-              </button>
-            )}
-
-            {/* Edit Button */}
-            {onEdit && (
-              <button
-                onClick={handleEditClick}
-                aria-label="Edit outfit"
-                className={cn(
-                  "absolute top-14 left-2 p-2 rounded-full backdrop-blur-md transition-all duration-200 shadow-xl",
-                  "bg-blue-500/90 border-2 border-blue-600/90",
-                  "hover:bg-blue-600 hover:border-blue-700 hover:scale-110",
-                  isHovered ? "opacity-100" : "opacity-0"
-                )}
-              >
-                <Edit className="w-5 h-5 text-white" />
-              </button>
+                <Trash2 className="w-4.5 h-4.5 text-white" />
+              </motion.button>
             )}
           </div>
 

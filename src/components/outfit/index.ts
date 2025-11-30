@@ -5,3 +5,5 @@ export { OutfitItemCard } from "./OutfitItemCard";
 export { CreateOutfitDialog } from "./CreateOutfitDialog";
 export { EditOutfitDialog } from "./EditOutfitDialog";
 export { ViewOutfitDialog } from "./ViewOutfitDialog";
+export { VirtualTryOnDialog } from "./VirtualTryOnDialog";
+export { VirtualTryOnResultDialog } from "./VirtualTryOnResultDialog";
