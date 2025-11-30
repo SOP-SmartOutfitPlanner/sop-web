@@ -11,6 +11,7 @@ import {
   Layers,
   Lock,
   MessageCircle,
+  Send,
   SquareStack,
 } from "lucide-react";
 
@@ -19,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { CollectionRecord, CollectionItemDetail } from "@/lib/api";
+import { usePublishCollection } from "@/hooks/useCollectionMutations";
 
 interface CollectionCardProps {
   collection: CollectionRecord;
@@ -107,6 +109,14 @@ export function CollectionCard({
   const outfitsCount = collection.outfits?.length ?? 0;
   const fallbackImages = getFallbackImages(collection);
 
+  const publishMutation = usePublishCollection(
+    collection.id,
+    collection.isPublished
+  );
+
+  // Show publish button only for draft collections that user can manage
+  const showPublishButton = _canManage && !collection.isPublished;
+
   const publishedBadge = collection.isPublished
     ? {
         icon: <Globe2 className="h-3 w-3" />,
@@ -177,7 +187,7 @@ export function CollectionCard({
               <div className="absolute inset-0 bg-gradient-to-br from-slate-950/60 via-transparent to-transparent" />
             </div>
 
-            <div className="absolute left-4 top-4">
+            <div className="absolute left-4 top-4 flex items-center gap-2">
               <Badge
                 className={cn(
                   "gap-1 rounded-full px-3 py-1 text-[11px] font-medium backdrop-blur-md",
@@ -187,6 +197,25 @@ export function CollectionCard({
                 {publishedBadge.icon}
                 {publishedBadge.label}
               </Badge>
+              {showPublishButton && (
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    publishMutation.mutate();
+                  }}
+                  disabled={publishMutation.isPending}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-medium backdrop-blur-md transition-all duration-200",
+                    "bg-emerald-500/30 text-emerald-50 border border-emerald-300/60 shadow-emerald-500/40",
+                    "hover:bg-emerald-500/50 hover:border-emerald-200/80 hover:scale-105",
+                    "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                  )}
+                >
+                  <Send className="h-3 w-3" />
+                  {publishMutation.isPending ? "Publishing..." : "Publish"}
+                </button>
+              )}
             </div>
 
             {outfitsCount > 0 && (

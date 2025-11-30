@@ -125,3 +125,37 @@ export function useFollowStylist(
   });
 }
 
+/**
+ * Hook for publishing/unpublishing a collection
+ */
+export function usePublishCollection(
+  collectionId: number,
+  currentIsPublished: boolean | undefined
+) {
+  const invalidateQueries = useInvalidateCollectionQueries(collectionId);
+
+  return useMutation({
+    mutationFn: async () => {
+      return collectionAPI.togglePublishCollection(collectionId);
+    },
+    onSuccess: () => {
+      invalidateQueries();
+      toast.success(
+        currentIsPublished
+          ? "Collection unpublished successfully"
+          : "Collection published successfully"
+      );
+    },
+    onError: (error: unknown) => {
+      console.error("Error toggling publish:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to update publish status";
+      if (errorMessage.includes("permission")) {
+        toast.error("You don't have permission to publish this collection");
+      } else {
+        toast.error("Failed to update publish status");
+      }
+    },
+  });
+}
+
