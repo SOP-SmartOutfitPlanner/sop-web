@@ -16,9 +16,11 @@ import { OutfitSelectorModal } from "./OutfitSelectorModal";
 import { Outfit } from "@/types/outfit";
 import { ApiWardrobeItem, wardrobeAPI } from "@/lib/api/wardrobe-api";
 import GlassButton from "@/components/ui/glass-button";
-import { Package, Shirt, X } from "lucide-react";
+import { Package, Shirt, X, ChevronDown, ChevronUp } from "lucide-react";
 import Image from "next/image";
 import { createPortal } from "react-dom";
+import { getCategoryIcon } from "@/lib/utils/category-icons";
+import { getCategoryColor } from "@/lib/constants/category-colors";
 
 interface PostFormDialogProps {
   mode: PostFormMode;
@@ -239,27 +241,17 @@ export function PostFormDialog({
 
       console.log("Valid items fetched:", validItems);
 
+      // For all cases (normal, replacing single item, replacing all), directly set the new selection
+      // The modal now handles pre-selection of existing items, so user can check/uncheck freely
+      setSelectedItemIds(itemIds);
+      setSelectedItems(validItems);
+
+      // Reset replace state
       if (isReplacingAll) {
-        // Replace all deleted items
-        setSelectedItemIds(itemIds);
-        setSelectedItems(validItems);
         setIsReplacingAll(false);
-      } else if (replacingItemId !== null) {
-        // Replace single deleted item
-        setSelectedItemIds((prev) => {
-          const filtered = prev.filter((id) => id !== replacingItemId);
-          return [...filtered, ...itemIds];
-        });
-        setSelectedItems((prev) => {
-          const filtered = prev.filter((item) => item.id !== replacingItemId);
-          return [...filtered, ...validItems];
-        });
+      }
+      if (replacingItemId !== null) {
         setReplacingItemId(null);
-      } else {
-        // Normal selection
-        console.log("Setting selected items:", validItems);
-        setSelectedItemIds(itemIds);
-        setSelectedItems(validItems);
       }
 
       // Close modal AFTER all state updates complete
@@ -268,7 +260,9 @@ export function PostFormDialog({
       console.error("Failed to fetch item data:", error);
       setIsItemModalOpen(false); // Close even on error
     }
-  }; // Handle replacing single deleted item
+  };
+
+  // Handle replacing single deleted item
   const handleReplaceItem = (deletedItemId: number) => {
     setReplacingItemId(deletedItemId);
     setIsItemModalOpen(true);
@@ -528,8 +522,9 @@ export function PostFormDialog({
                           );
                         })}
 
-                        {/* Show deleted items with replace button in edit mode */}
+                        {/* Show deleted items with replace button in edit mode - only if not at max selection */}
                         {isEditMode &&
+                          selectedItemIds.length < 4 &&
                           post?.items
                             ?.filter((i) => i.isDeleted)
                             .map((deletedItem) => (
@@ -567,8 +562,9 @@ export function PostFormDialog({
                             ))}
                       </div>
 
-                      {/* Replace All button if multiple deleted items */}
+                      {/* Replace All button if multiple deleted items and not at max selection */}
                       {isEditMode &&
+                        selectedItemIds.length < 4 &&
                         post?.items &&
                         post.items.filter((i) => i.isDeleted).length > 1 && (
                           <GlassButton
@@ -616,51 +612,11 @@ export function PostFormDialog({
                     </button>
                   ) : (
                     selectedOutfitData && (
-                      <div className="relative rounded-xl overflow-hidden bg-gradient-to-br from-blue-500/10 to-purple-500/10 border-2 border-blue-400/30 p-4">
-                        <button
-                          onClick={handleRemoveOutfit}
-                          className="absolute top-2 right-2 p-1 bg-red-500 rounded-full hover:bg-red-600 transition-colors z-10"
-                          aria-label="Remove outfit"
-                        >
-                          <X className="w-3 h-3 text-white" />
-                        </button>
-
-                        {/* Outfit Info Section with distinct styling */}
-                        <div className="bg-white/10 rounded-lg px-3 py-2 mb-3 border border-white/20">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Shirt className="w-4 h-4 text-blue-400" />
-                            <span className="text-xs text-blue-300 font-medium uppercase tracking-wide">
-                              Outfit
-                            </span>
-                          </div>
-                          <h4 className="font-bricolage font-bold text-white text-sm mb-1">
-                            {selectedOutfitData.name}
-                          </h4>
-                          {selectedOutfitData.description && (
-                            <p className="text-xs text-white/70 line-clamp-2">
-                              {selectedOutfitData.description}
-                            </p>
-                          )}
-                        </div>
-
-                        {/* Items Preview */}
-                        <div className="grid grid-cols-4 gap-2">
-                          {selectedOutfitData.items?.slice(0, 4).map((item) => (
-                            <div
-                              key={item.id}
-                              className="aspect-square rounded-lg overflow-hidden bg-white/5 border border-white/10"
-                            >
-                              <Image
-                                src={item.imgUrl}
-                                alt={item.name}
-                                width={100}
-                                height={100}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
+                      <OutfitPreviewCard
+                        outfit={selectedOutfitData}
+                        onRemove={handleRemoveOutfit}
+                        onChangeOutfit={() => setIsOutfitModalOpen(true)}
+                      />
                     )
                   )}
                 </div>
@@ -693,28 +649,11 @@ export function PostFormDialog({
               }}
               onSelect={handleItemSelect}
               selectedItemIds={selectedItemIds}
-              maxSelection={
-                isReplacingAll && isEditMode && post?.items
-                  ? post.items.filter((i) => i.isDeleted).length
-                  : replacingItemId !== null
-                  ? 1
-                  : 4
-              }
-              excludeItemIds={
-                replacingItemId !== null
-                  ? [replacingItemId]
-                  : isReplacingAll && isEditMode && post?.items
-                  ? post.items.filter((i) => i.isDeleted).map((i) => i.id)
-                  : []
-              }
-              preSelectedCategoryId={
-                replacingItemId !== null && isEditMode && post?.items
-                  ? post.items.find((i) => i.id === replacingItemId)?.categoryId
-                  : undefined
-              }
+              maxSelection={4}
+              excludeItemIds={[]}
               title={
                 replacingItemId !== null
-                  ? "Replace Item"
+                  ? "Replace Deleted Item"
                   : isReplacingAll
                   ? "Replace All Deleted Items"
                   : mode === "create"
@@ -723,14 +662,14 @@ export function PostFormDialog({
               }
               description={
                 replacingItemId !== null
-                  ? "Choose a replacement item"
+                  ? "Update your item selection. Currently selected items are shown checked."
                   : isReplacingAll
-                  ? `Select ${
+                  ? `Select up to ${
                       post?.items?.filter((i) => i.isDeleted).length
                     } replacement items`
                   : mode === "create"
                   ? "Choose items to attach to your post (0-4 items)"
-                  : undefined
+                  : "Select up to 4 items from your wardrobe"
               }
             />
 
@@ -752,5 +691,122 @@ export function PostFormDialog({
           document.body
         )}
     </>
+  );
+}
+
+// Outfit Preview Card Component
+interface OutfitPreviewCardProps {
+  outfit: Outfit;
+  onRemove: () => void;
+  onChangeOutfit: () => void;
+}
+
+function OutfitPreviewCard({
+  outfit,
+  onRemove,
+  onChangeOutfit,
+}: OutfitPreviewCardProps) {
+  const [showAllItems, setShowAllItems] = useState(false);
+  const itemCount = outfit.items?.length || 0;
+  const hasMoreItems = itemCount > 4;
+  const displayedItems = showAllItems
+    ? outfit.items
+    : outfit.items?.slice(0, 4);
+
+  return (
+    <div className="relative rounded-xl overflow-hidden bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border-2 border-cyan-400/30 p-4">
+      <button
+        onClick={onRemove}
+        className="absolute top-2 right-2 p-1.5 bg-red-500 rounded-full hover:bg-red-600 transition-colors z-10"
+        aria-label="Remove outfit"
+      >
+        <X className="w-3.5 h-3.5 text-white" />
+      </button>
+
+      {/* Outfit Info Section */}
+      <div className="bg-white/10 rounded-lg px-3 py-2 mb-3 border border-white/20">
+        <div className="flex items-center gap-2 mb-1">
+          <Shirt className="w-4 h-4 text-cyan-400" />
+          <span className="text-xs text-cyan-300 font-medium uppercase tracking-wide">
+            Attached Outfit
+          </span>
+        </div>
+        <h4 className="font-bricolage font-bold text-white text-base mb-1">
+          {outfit.name}
+        </h4>
+        {outfit.description && (
+          <p className="text-xs text-white/70 line-clamp-2 mb-1">
+            {outfit.description}
+          </p>
+        )}
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-white/50">
+            {itemCount} {itemCount === 1 ? "item" : "items"}
+          </p>
+          {hasMoreItems && (
+            <button
+              onClick={() => setShowAllItems(!showAllItems)}
+              className="text-xs text-cyan-400 hover:text-cyan-300 font-medium flex items-center gap-1 transition-colors"
+            >
+              {showAllItems ? (
+                <>
+                  Show Less <ChevronUp className="w-3.5 h-3.5" />
+                </>
+              ) : (
+                <>
+                  Show All ({itemCount - 4} more){" "}
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </>
+              )}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Items Grid with Category Badges */}
+      <div className="grid grid-cols-4 gap-2 mb-3">
+        {displayedItems?.map((item) => {
+          const CategoryIcon = getCategoryIcon(item.categoryId);
+          const categoryColor = getCategoryColor(item.categoryId);
+
+          return (
+            <div
+              key={item.id}
+              className="relative aspect-square rounded-lg overflow-hidden bg-white/5 border border-white/10 group"
+            >
+              <Image
+                src={item.imgUrl}
+                alt={item.name}
+                width={100}
+                height={100}
+                className="w-full h-full object-cover"
+              />
+              {/* Category Badge */}
+              <div
+                className={`absolute bottom-1 left-1 flex items-center gap-0.5 ${categoryColor} text-white rounded px-1 py-0.5 text-[9px] font-medium`}
+              >
+                <CategoryIcon className="w-2 h-2" />
+              </div>
+              {/* Item Name on Hover */}
+              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-end">
+                <p className="text-[10px] text-white p-1.5 truncate w-full">
+                  {item.name}
+                </p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Change Outfit Button */}
+      <GlassButton
+        variant="secondary"
+        size="sm"
+        onClick={onChangeOutfit}
+        className="w-full"
+      >
+        Change Outfit
+      </GlassButton>
+    </div>
   );
 }

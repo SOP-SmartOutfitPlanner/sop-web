@@ -175,42 +175,40 @@ src/
 
 admin/ → 👑 Admin panel: Sidebar + analytics dashboard
 
-````
-
 ### 🛡️ Protected Routes
 
 The middleware gatekeeps like a bouncer at an exclusive club:
 
-| Route | Who gets in? |
-|-------|--------------|
-| `/wardrobe/*`, `/community/*` | Authenticated users only |
-| `/admin/*` | Admins and SuperAdmins |
-| First-time users | Auto-redirected to `/wardrobe` for onboarding |
+| Route                         | Who gets in?                                  |
+| ----------------------------- | --------------------------------------------- |
+| `/wardrobe/*`, `/community/*` | Authenticated users only                      |
+| `/admin/*`                    | Admins and SuperAdmins                        |
+| First-time users              | Auto-redirected to `/wardrobe` for onboarding |
 
 ### 🗺️ Route Map
 
-| Destination | What you'll find |
-|------------|------------------|
-| `/` | Landing page — make a great first impression |
-| `/wardrobe` | Your digital closet |
-| `/outfit` | Mix & match creator |
-| `/suggest` | AI stylist recommendations |
-| `/calendar` | Plan your week's looks |
-| `/community` | See what others are wearing |
-| `/admin/dashboard` | The control room |
+| Destination        | What you'll find                             |
+| ------------------ | -------------------------------------------- |
+| `/`                | Landing page — make a great first impression |
+| `/wardrobe`        | Your digital closet                          |
+| `/outfit`          | Mix & match creator                          |
+| `/suggest`         | AI stylist recommendations                   |
+| `/calendar`        | Plan your week's looks                       |
+| `/community`       | See what others are wearing                  |
+| `/admin/dashboard` | The control room                             |
 
 ---
 
 ## 🧠 State Management
 
-> *"Where does the data live?"* — Every developer, every project
+> _"Where does the data live?"_ — Every developer, every project
 
 ### The Split Strategy
 
-| Layer | Tool | Purpose |
-|-------|------|---------|
-| 🏠 **Client State** | Zustand 5 | UI state, auth, local filters |
-| 🌐 **Server State** | TanStack Query v5 | API data, caching, sync |
+| Layer               | Tool              | Purpose                       |
+| ------------------- | ----------------- | ----------------------------- |
+| 🏠 **Client State** | Zustand 5         | UI state, auth, local filters |
+| 🌐 **Server State** | TanStack Query v5 | API data, caching, sync       |
 
 ### Zustand Stores
 
@@ -219,7 +217,7 @@ auth-store     → 🔐 Who's logged in? Tokens, user info, permissions
 wardrobe-store → 👔 Filters, search, selected items, cached wardrobe
 outfit-store   → 👗 Current outfit being created
 upload-store   → 📤 File upload progress tracking
-````
+```
 
 ### TanStack Query Magic
 

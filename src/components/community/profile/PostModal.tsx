@@ -230,10 +230,10 @@ export function PostModal({
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent
-          className={`!p-0 !gap-0 backdrop-blur-2xl bg-slate-950/60 border border-cyan-400/15 shadow-[0_8px_32px_rgba(0,0,0,0.4)] rounded-3xl overflow-hidden ${
+          className={`!p-0 !gap-0 backdrop-blur-2xl bg-slate-950/60 border border-cyan-400/15 shadow-[0_8px_32px_rgba(0,0,0,0.4)] rounded-3xl overflow-hidden flex flex-col ${
             hasMultipleImages || currentImage
               ? "!max-w-[1200px] !w-[90vw] !h-[85vh]"
-              : "!max-w-[700px] !w-[90vw] !max-h-[85vh]"
+              : "!max-w-[700px] !w-[90vw] !h-[85vh]"
           }`}
           aria-describedby={undefined}
           showCloseButton={false}
@@ -247,7 +247,7 @@ export function PostModal({
             className={`flex min-h-0 rounded-3xl ${
               hasMultipleImages || currentImage
                 ? "h-full w-full"
-                : "flex-col max-h-[85vh]"
+                : "flex-col h-full"
             }`}
           >
             {/* Left: Image - Only show if has images */}
@@ -334,10 +334,10 @@ export function PostModal({
 
             {/* Right: Post info and comments */}
             <div
-              className={`flex flex-col border-l border-slate-700/30 bg-slate-900/40 ${
+              className={`flex flex-col border-l border-slate-700/30 bg-slate-900/40 min-h-0 ${
                 hasMultipleImages || currentImage
-                  ? "w-[450px] rounded-r-3xl"
-                  : "w-full rounded-3xl"
+                  ? "w-[450px] rounded-r-3xl h-full"
+                  : "w-full rounded-3xl flex-1"
               }`}
             >
               {/* HEADER: Avatar + Name + Time - FIXED */}
@@ -431,7 +431,7 @@ export function PostModal({
                 </DropdownMenu>
               </div>
 
-              {/* SCROLLABLE MIDDLE SECTION */}
+              {/* SCROLLABLE CONTENT - Everything scrolls together */}
               <div className="flex-1 overflow-y-auto custom-scrollbar min-h-0">
                 {/* Caption Content */}
                 <div className="py-4 px-4">
@@ -460,13 +460,14 @@ export function PostModal({
                 )}
 
                 {/* Interactions Bar */}
-                <div className="py-3 px-4 border-y border-slate-700/20 bg-slate-900/80 backdrop-blur-md">
+                <div className="py-3 px-4 border-y border-slate-700/20 bg-slate-900/60">
                   {/* Action buttons */}
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex gap-4">
                       <button
                         onClick={onLike}
                         className="p-2 rounded-lg hover:bg-cyan-500/10 transition-all"
+                        aria-label={post.isLiked ? "Unlike post" : "Like post"}
                       >
                         <Heart
                           className={`w-6 h-6 ${
@@ -479,6 +480,7 @@ export function PostModal({
                       <button
                         onClick={handleCommentButtonClick}
                         className="p-2 rounded-lg hover:bg-cyan-500/10 transition-all text-white hover:text-cyan-300"
+                        aria-label="Comment on post"
                       >
                         <MessageCircle className="w-6 h-6" />
                       </button>
@@ -492,8 +494,19 @@ export function PostModal({
                   </div>
                 </div>
 
+                {/* Comment Input - Now inside scrollable area */}
+                {user && (
+                  <div className="px-4 py-3 border-b border-slate-700/20 bg-slate-900/40">
+                    <CommentInput
+                      ref={commentInputRef}
+                      userName={user.displayName || user.email || "User"}
+                      onSubmit={handlePostComment}
+                    />
+                  </div>
+                )}
+
                 {/* Comments Section */}
-                <div className="py-4 px-4 pb-24">
+                <div className="py-4 px-4">
                   <CommentSection
                     postId={post.id}
                     commentCount={commentCount}
@@ -501,17 +514,6 @@ export function PostModal({
                   />
                 </div>
               </div>
-
-              {/* FOOTER: Comment Input - FIXED */}
-              {user && (
-                <div className="flex-shrink-0 border-t border-slate-700/20 bg-slate-900/90 backdrop-blur-md px-4 py-3 z-20">
-                  <CommentInput
-                    ref={commentInputRef}
-                    userName={user.displayName || user.email || "User"}
-                    onSubmit={handlePostComment}
-                  />
-                </div>
-              )}
             </div>
           </div>
         </DialogContent>

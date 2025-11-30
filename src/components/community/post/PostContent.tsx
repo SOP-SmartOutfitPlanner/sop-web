@@ -7,10 +7,11 @@ interface PostContentProps {
   caption: string;
   tags: Hashtag[];
   onTagClick?: (tag: Hashtag) => void;
-  isModal?: boolean; // Disable expand/collapse in modal view
+  isModal?: boolean; // When true, uses modal-specific styling
 }
 
-const MAX_LENGTH = 200; // Số ký tự tối đa trước khi cắt
+const MAX_LENGTH = 200; // Max characters before truncating
+const MAX_LENGTH_MODAL = 400; // Higher limit for modal view
 
 export function PostContent({
   caption,
@@ -46,8 +47,9 @@ export function PostContent({
     return temp.textContent || temp.innerText || "";
   }, [sanitizedCaption]);
 
-  const isLongContent = plainText.length > MAX_LENGTH;
-  const shouldTruncate = isLongContent && !isExpanded && !isModal; // Don't truncate in modal
+  const maxLength = isModal ? MAX_LENGTH_MODAL : MAX_LENGTH;
+  const isLongContent = plainText.length > maxLength;
+  const shouldTruncate = isLongContent && !isExpanded;
 
   return (
     <div className={`space-y-2`}>
@@ -55,14 +57,14 @@ export function PostContent({
         <div
           className={`text-white font-semibold text-base leading-relaxed prose prose-invert prose-sm max-w-none break-words ${
             shouldTruncate ? "max-h-20 overflow-hidden" : ""
-          }`}
+          } ${isModal && shouldTruncate ? "max-h-24" : ""}`}
           dangerouslySetInnerHTML={{ __html: sanitizedCaption }}
         />
 
-        {isLongContent && !isModal && (
+        {isLongContent && (
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="text-gray-300 hover:text-gray-200 text-sm font-medium transition-colors duration-200 mb-1"
+            className="text-cyan-400 hover:text-cyan-300 text-sm font-medium transition-colors duration-200 mb-1"
           >
             {isExpanded ? "Show less" : "Show more"}
           </button>
