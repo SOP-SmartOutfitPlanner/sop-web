@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { MapPin, AlertCircle, Sparkles, Loader2, Check, Plus, ChevronLeft, ChevronRight, Calendar } from "lucide-react";
+import { MapPin, AlertCircle, Sparkles, Loader2, Check, Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
-import { Radio, Select, Checkbox, Tabs } from "antd";
+import { Radio, Select, Checkbox, Tabs, Carousel } from "antd";
+import type { CarouselRef } from "antd/es/carousel";
 import { useAuthStore } from "@/store/auth-store";
 import GlassCard from "@/components/ui/glass-card";
 import GlassButton from "@/components/ui/glass-button";
@@ -50,7 +51,7 @@ export default function SuggestPage() {
   const [extendedForecast, setExtendedForecast] = useState<DailyForecast[]>([]);
   const [isLoadingExtendedForecast, setIsLoadingExtendedForecast] = useState(false);
   const [selectedForecastDay, setSelectedForecastDay] = useState<DailyForecast | null>(null);
-  const carouselRef = useRef<HTMLDivElement>(null);
+  const carouselRef = useRef<CarouselRef>(null);
   const { isAuthenticated, user } = useAuthStore();
 
   // Weather hook
@@ -327,14 +328,14 @@ export default function SuggestPage() {
     };
   };
 
-  // Carousel scroll handlers
+  // Carousel navigation handlers
   const scrollCarousel = (direction: "left" | "right") => {
     if (carouselRef.current) {
-      const scrollAmount = 300;
-      carouselRef.current.scrollBy({
-        left: direction === "left" ? -scrollAmount : scrollAmount,
-        behavior: "smooth",
-      });
+      if (direction === "left") {
+        carouselRef.current.prev();
+      } else {
+        carouselRef.current.next();
+      }
     }
   };
 
@@ -647,29 +648,12 @@ export default function SuggestPage() {
 
       {/* 16-Day Weather Forecast Carousel */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <h4 className="font-bricolage font-bold text-xl md:text-2xl leading-tight">
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-cyan-200">
-                Choose Your Day
-              </span>
-            </h4>
-          </div>
-          {/* Carousel Navigation Buttons */}
-          <div className="flex gap-2">
-            <button
-              onClick={() => scrollCarousel("left")}
-              className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-all duration-300 border border-white/20"
-            >
-              <ChevronLeft className="w-5 h-5 text-white" />
-            </button>
-            <button
-              onClick={() => scrollCarousel("right")}
-              className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-all duration-300 border border-white/20"
-            >
-              <ChevronRight className="w-5 h-5 text-white" />
-            </button>
-          </div>
+        <div className="flex items-center gap-3">
+          <h4 className="font-bricolage font-bold text-xl md:text-2xl leading-tight">
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-cyan-200">
+              Choose Your Day
+            </span>
+          </h4>
         </div>
 
         {/* Loading State */}
@@ -695,59 +679,138 @@ export default function SuggestPage() {
 
         {/* Weather Carousel */}
         {!isLoadingExtendedForecast && extendedForecast.length > 0 && (
-          <div className="relative overflow-visible">
-            <div
-              ref={carouselRef}
-              className="flex gap-3 overflow-x-auto overflow-y-visible scrollbar-hide py-2 scroll-smooth"
-              style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+          <div
+            className="weather-carousel-container relative overflow-hidden w-full"
+            onMouseEnter={() => {
+              document.body.style.overflow = "hidden";
+            }}
+            onMouseLeave={() => {
+              document.body.style.overflow = "";
+            }}
+            onWheel={(e) => {
+              e.stopPropagation();
+              if (e.deltaY > 0 || e.deltaX > 0) {
+                carouselRef.current?.next();
+              } else {
+                carouselRef.current?.prev();
+              }
+            }}
+          >
+            {/* Left Arrow - Circular Glass Button (Center of Card) */}
+            <button
+              onClick={() => scrollCarousel("left")}
+              className="carousel-nav-btn absolute left-2 w-11 h-11 md:w-14 md:h-14 rounded-full flex items-center justify-center z-20"
             >
-              {extendedForecast.map((forecast, index) => {
+              <ChevronLeft className="w-5 h-5 md:w-6 md:h-6 text-white/90" />
+            </button>
+
+            {/* Right Arrow - Circular Glass Button (Center of Card) */}
+            <button
+              onClick={() => scrollCarousel("right")}
+              className="carousel-nav-btn absolute right-2 w-11 h-11 md:w-14 md:h-14 rounded-full flex items-center justify-center z-20"
+            >
+              <ChevronRight className="w-5 h-5 md:w-6 md:h-6 text-white/90" />
+            </button>
+            <Carousel
+              ref={carouselRef}
+              dots={false}
+              infinite={false}
+              slidesToShow={7}
+              slidesToScroll={3}
+              swipeToSlide
+              draggable
+              speed={400}
+              cssEase="cubic-bezier(0.4, 0, 0.2, 1)"
+              responsive={[
+                {
+                  breakpoint: 1280,
+                  settings: {
+                    slidesToShow: 6,
+                    slidesToScroll: 3,
+                  },
+                },
+                {
+                  breakpoint: 1024,
+                  settings: {
+                    slidesToShow: 5,
+                    slidesToScroll: 3,
+                  },
+                },
+                {
+                  breakpoint: 768,
+                  settings: {
+                    slidesToShow: 4,
+                    slidesToScroll: 2,
+                  },
+                },
+                {
+                  breakpoint: 640,
+                  settings: {
+                    slidesToShow: 3,
+                    slidesToScroll: 2,
+                  },
+                },
+                {
+                  breakpoint: 480,
+                  settings: {
+                    slidesToShow: 2,
+                    slidesToScroll: 1,
+                  },
+                },
+              ]}
+            >
+              {extendedForecast.filter((forecast) => {
+                const today = new Date();
+                const forecastDate = new Date(forecast.date);
+                return forecastDate.toDateString() !== today.toDateString();
+              }).map((forecast, index) => {
                 const dateInfo = formatCarouselDate(forecast.date);
                 const isSelected = selectedForecastDay?.date === forecast.date;
 
                 return (
-                  <button
-                    key={index}
-                    onClick={() => setSelectedForecastDay(isSelected ? null : forecast)}
-                    className={`flex-shrink-0 w-[120px] p-4 rounded-2xl transition-all duration-300 border-2 ${
-                      isSelected
-                        ? "bg-gradient-to-br from-cyan-500/40 via-blue-500/30 to-indigo-500/40 border-cyan-400/60 shadow-lg shadow-cyan-500/20 ring-2 ring-cyan-400/40"
-                        : "bg-white/5 backdrop-blur-md border-white/10 hover:bg-white/10 hover:border-white/20"
-                    }`}
-                  >
-                    {/* Day of Week */}
-                    <p className={`text-xs font-semibold mb-1 ${isSelected ? "text-cyan-200" : "text-white/60"}`}>
-                      {dateInfo.day}
-                    </p>
+                  <div key={index} className="px-3 py-2">
+                    <button
+                      onClick={() => setSelectedForecastDay(isSelected ? null : forecast)}
+                      className={`w-full p-4 rounded-2xl transition-all duration-300 border-2 ${
+                        isSelected
+                          ? "bg-gradient-to-br from-cyan-500/40 via-blue-500/30 to-indigo-500/40 border-cyan-400/60 shadow-lg shadow-cyan-500/20 ring-2 ring-cyan-400/40"
+                          : "bg-white/5 backdrop-blur-md border-white/10 hover:bg-white/10 hover:border-white/20"
+                      }`}
+                    >
+                      {/* Day of Week */}
+                      <p className={`text-xs font-semibold mb-1 ${isSelected ? "text-cyan-200" : "text-white/60"}`}>
+                        {dateInfo.day}
+                      </p>
 
-                    {/* Date Number */}
-                    <p className={`text-2xl font-bold ${isSelected ? "text-white" : "text-white/90"}`}>
-                      {dateInfo.date}
-                    </p>
+                      {/* Date Number */}
+                      <p className={`text-2xl font-bold ${isSelected ? "text-white" : "text-white/90"}`}>
+                        {dateInfo.date}
+                      </p>
 
-                    {/* Month */}
-                    <p className={`text-xs font-medium mb-2 ${isSelected ? "text-cyan-200" : "text-white/50"}`}>
-                      {dateInfo.month}
-                    </p>
+                      {/* Month */}
+                      <p className={`text-xs font-medium mb-2 ${isSelected ? "text-cyan-200" : "text-white/50"}`}>
+                        {dateInfo.month}
+                      </p>
 
-                    {/* Weather Icon */}
-                    <div className="flex justify-center mb-2">
-                      {getWeatherIcon(forecast.description, 36)}
-                    </div>
+                      {/* Weather Icon */}
+                      <div className="flex justify-center mb-2">
+                        {getWeatherIcon(forecast.description, 36)}
+                      </div>
 
-                    {/* Temperature */}
-                    <p className={`text-lg font-bold ${isSelected ? "text-white" : "text-white/90"}`}>
-                      {Math.round(forecast.temperature)}°C
-                    </p>
+                      {/* Temperature */}
+                      <p className={`text-lg font-bold ${isSelected ? "text-white" : "text-white/90"}`}>
+                        {Math.round(forecast.temperature)}°C
+                      </p>
 
-                    {/* High/Low */}
-                    <p className={`text-xs ${isSelected ? "text-cyan-200" : "text-white/50"}`}>
-                      {Math.round(forecast.maxTemperature)}° / {Math.round(forecast.minTemperature)}°
-                    </p>
-                  </button>
+                      {/* High/Low */}
+                      <p className={`text-xs ${isSelected ? "text-cyan-200" : "text-white/50"}`}>
+                        {Math.round(forecast.maxTemperature)}° / {Math.round(forecast.minTemperature)}°
+                      </p>
+                    </button>
+                  </div>
                 );
               })}
-            </div>
+            </Carousel>
           </div>
         )}
 
@@ -1006,6 +1069,113 @@ export default function SuggestPage() {
           .scrollbar-hide {
             -ms-overflow-style: none;
             scrollbar-width: none;
+          }
+
+          /* Weather Carousel Glassmorphism Styling */
+          .weather-carousel-container {
+            width: 100%;
+            max-width: 100%;
+            position: relative;
+          }
+          .weather-carousel-container .slick-slider {
+            width: 100%;
+            position: static !important;
+          }
+          .weather-carousel-container .slick-list {
+            overflow: hidden !important;
+            margin: 0 40px;
+            padding: 4px 0;
+          }
+          .weather-carousel-container .slick-track {
+            display: flex !important;
+            gap: 0;
+          }
+          .weather-carousel-container .slick-slide {
+            height: auto;
+          }
+          .weather-carousel-container .slick-slide > div {
+            height: 100%;
+          }
+          .weather-carousel-container .slick-arrow {
+            display: none !important;
+          }
+          /* Smooth transition for slides */
+          .weather-carousel-container .slick-track {
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+          }
+
+          /* Circular Glass Navigation Button */
+          .carousel-nav-btn {
+            background: linear-gradient(
+              145deg,
+              rgba(255, 255, 255, 0.15) 0%,
+              rgba(255, 255, 255, 0.05) 50%,
+              rgba(255, 255, 255, 0.02) 100%
+            );
+            backdrop-filter: blur(12px) saturate(180%);
+            -webkit-backdrop-filter: blur(12px) saturate(180%);
+            border: 1.5px solid rgba(255, 255, 255, 0.25);
+            box-shadow:
+              inset 0 1px 2px rgba(255, 255, 255, 0.3),
+              inset 0 -1px 2px rgba(0, 0, 0, 0.1),
+              0 4px 16px rgba(0, 0, 0, 0.2),
+              0 0 20px rgba(59, 130, 246, 0.15);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+            top: 50% !important;
+            transform: translateY(-50%) !important;
+          }
+          .carousel-nav-btn::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            right: 2px;
+            bottom: 2px;
+            border-radius: 50%;
+            background: linear-gradient(
+              135deg,
+              rgba(255, 255, 255, 0.1) 0%,
+              transparent 60%
+            );
+            pointer-events: none;
+          }
+          .carousel-nav-btn::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50%;
+            border-radius: 50% 50% 0 0;
+            background: linear-gradient(
+              180deg,
+              rgba(255, 255, 255, 0.15) 0%,
+              transparent 100%
+            );
+            pointer-events: none;
+          }
+          .carousel-nav-btn:hover {
+            background: linear-gradient(
+              145deg,
+              rgba(255, 255, 255, 0.22) 0%,
+              rgba(255, 255, 255, 0.1) 50%,
+              rgba(255, 255, 255, 0.05) 100%
+            );
+            border-color: rgba(255, 255, 255, 0.35);
+            box-shadow:
+              inset 0 1px 3px rgba(255, 255, 255, 0.4),
+              inset 0 -1px 2px rgba(0, 0, 0, 0.1),
+              0 6px 20px rgba(0, 0, 0, 0.25),
+              0 0 30px rgba(59, 130, 246, 0.25);
+            transform: translateY(-50%) scale(1.08) !important;
+          }
+          .carousel-nav-btn:active {
+            transform: translateY(-50%) scale(0.95) !important;
+            box-shadow:
+              inset 0 2px 4px rgba(0, 0, 0, 0.2),
+              inset 0 -1px 2px rgba(255, 255, 255, 0.1),
+              0 2px 8px rgba(0, 0, 0, 0.2);
           }
         `}</style>
 
