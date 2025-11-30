@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { MapPin, AlertCircle, Sparkles, Loader2, Check, Plus } from "lucide-react";
-import { Radio, Select, Checkbox } from "antd";
+import { MapPin, AlertCircle, Sparkles, Loader2, Check, Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import Image from "next/image";
+import { Radio, Select, Checkbox, Tabs, Carousel } from "antd";
+import type { CarouselRef } from "antd/es/carousel";
 import { useAuthStore } from "@/store/auth-store";
 import GlassCard from "@/components/ui/glass-card";
 import GlassButton from "@/components/ui/glass-button";
@@ -14,10 +16,13 @@ import LocationMapModal from "@/components/suggest/LocationMapModal";
 import { weatherAPI } from "@/lib/api/weather-api";
 import { outfitAPI } from "@/lib/api/outfit-api";
 import { adminAPI } from "@/lib/api/admin-api";
+import { CalenderAPI } from "@/lib/api/calender-api";
 import { DailyForecast } from "@/types/weather";
 import { SuggestedItem } from "@/types/outfit";
 import { Occasion } from "@/types/occasion";
+import { CalendarEntry } from "@/types/calendar";
 import { toast } from "sonner";
+import { Calendar } from "lucide-react";
 
 type WeatherTab = "my-location" | "selected-location";
 
@@ -43,15 +48,33 @@ export default function SuggestPage() {
   const [occasions, setOccasions] = useState<Occasion[]>([]);
   const [selectedOccasionId, setSelectedOccasionId] = useState<number | undefined>(undefined);
   const [isLoadingOccasions, setIsLoadingOccasions] = useState(false);
+  // User occasions for future tab (from calendar entries, excluding daily)
+  const [calendarEntries, setCalendarEntries] = useState<CalendarEntry[]>([]);
+  const [selectedCalendarEntry, setSelectedCalendarEntry] = useState<CalendarEntry | null>(null);
+  const [isLoadingUserOccasions, setIsLoadingUserOccasions] = useState(false);
   const [totalOutfit, setTotalOutfit] = useState<number>(1);
   const [selectedOutfitIndexes, setSelectedOutfitIndexes] = useState<number[]>([]);
   const [isAddingMultiple, setIsAddingMultiple] = useState(false);
+  const [extendedForecast, setExtendedForecast] = useState<DailyForecast[]>([]);
+  const [isLoadingExtendedForecast, setIsLoadingExtendedForecast] = useState(false);
+  const [selectedForecastDay, setSelectedForecastDay] = useState<DailyForecast | null>(null);
+  const carouselRef = useRef<CarouselRef>(null);
+  const hasAutoSelectedTomorrow = useRef(false);
+  // Occasion section location state
+  const [isOccasionLocationModalOpen, setIsOccasionLocationModalOpen] = useState(false);
+  const [occasionLocationTab, setOccasionLocationTab] = useState<WeatherTab>("my-location");
+  const [occasionLocation, setOccasionLocation] = useState<{
+    lat: number;
+    lng: number;
+    cityName: string;
+  } | null>(null);
   const { isAuthenticated, user } = useAuthStore();
 
-  // Weather hook
+  // Weather hook (handles browser geolocation with user profile fallback)
   const {
     todayForecast,
     cityName,
+    coordinates: userCoordinates,
     isLoading: isLoadingWeather,
     error: weatherError,
     requestLocation,
@@ -95,12 +118,173 @@ export default function SuggestPage() {
     fetchOccasions();
   }, []);
 
+  // Fetch calendar entries for the next 16 days (excluding daily occasions)
+  useEffect(() => {
+    const fetchCalendarEntries = async () => {
+      setIsLoadingUserOccasions(true);
+      try {
+        const today = new Date();
+        const endDate = new Date(today);
+        endDate.setDate(endDate.getDate() + 16);
+
+        const response = await CalenderAPI.getCalendarEntries({
+          PageIndex: 1,
+          PageSize: 100,
+          takeAll: true,
+          StartDate: today.toISOString().split('T')[0],
+          EndDate: endDate.toISOString().split('T')[0],
+        });
+        if (response.statusCode === 200) {
+          // Filter out daily entries and sort by date
+          const nonDailyEntries = response.data.data
+            .filter((entry) => !entry.isDaily)
+            .sort((a, b) =>
+              new Date(a.userOccasion.dateOccasion).getTime() - new Date(b.userOccasion.dateOccasion).getTime()
+            );
+          setCalendarEntries(nonDailyEntries);
+        }
+      } catch {
+        // Error fetching calendar entries
+      } finally {
+        setIsLoadingUserOccasions(false);
+      }
+    };
+
+    fetchCalendarEntries();
+  }, []);
+
+  // Helper function to get coordinates from user profile location
+  const getUserCoordinatesFromProfile = useCallback(async (): Promise<{ latitude: number; longitude: number } | null> => {
+    if (!user?.location) {
+      return null;
+    }
+
+    const location = user.location.trim();
+    if (!location) {
+      return null;
+    }
+
+    const parts = location.split(',').map(part => part.trim()).filter(Boolean);
+    const searchTerms: string[] = [];
+
+    if (parts.length >= 3) {
+      searchTerms.push(parts.slice(0, 2).join(', '));
+      searchTerms.push(parts[0]);
+      searchTerms.push(parts[1]);
+    } else if (parts.length === 2) {
+      searchTerms.push(parts.join(', '));
+      searchTerms.push(parts[0]);
+      searchTerms.push(parts[1]);
+    } else if (parts.length === 1) {
+      searchTerms.push(parts[0]);
+    }
+
+    if (!searchTerms.includes(location)) {
+      searchTerms.push(location);
+    }
+
+    for (const searchTerm of searchTerms) {
+      try {
+        const response = await weatherAPI.searchCities(searchTerm, 5);
+        if (response.data?.cities && response.data.cities.length > 0) {
+          const city = response.data.cities[0];
+          return {
+            latitude: city.latitude,
+            longitude: city.longitude,
+          };
+        }
+      } catch {
+        // Continue to next search term
+      }
+    }
+
+    return null;
+  }, [user?.location]);
+
+  // Fetch 16-day extended forecast based on occasionLocationTab and occasionLocation
+  useEffect(() => {
+    const fetchExtendedForecast = async () => {
+      setIsLoadingExtendedForecast(true);
+      try {
+        let lat: number | undefined;
+        let lng: number | undefined;
+
+        if (occasionLocationTab === "selected-location" && occasionLocation) {
+          // Use selected occasion location
+          lat = occasionLocation.lat;
+          lng = occasionLocation.lng;
+        } else {
+          // Try to get user's browser location first
+          try {
+            const coords = await weatherAPI.getCurrentLocation();
+            lat = coords.latitude;
+            lng = coords.longitude;
+          } catch {
+            // Browser location failed, fallback to user profile location
+            const profileCoords = await getUserCoordinatesFromProfile();
+            if (profileCoords) {
+              lat = profileCoords.latitude;
+              lng = profileCoords.longitude;
+            }
+          }
+        }
+
+        if (lat === undefined || lng === undefined) {
+          // No location available
+          setExtendedForecast([]);
+          return;
+        }
+
+        const response = await weatherAPI.getWeatherByCoordinates(lat, lng, 16);
+        if (response.statusCode === 200 && response.data.dailyForecasts.length > 0) {
+          const forecasts = response.data.dailyForecasts;
+          setExtendedForecast(forecasts);
+
+          // Auto-select tomorrow's forecast as default
+          const today = new Date();
+          const tomorrow = new Date(today);
+          tomorrow.setDate(tomorrow.getDate() + 1);
+
+          const tomorrowForecast = forecasts.find((forecast) => {
+            const forecastDate = new Date(forecast.date);
+            return forecastDate.toDateString() === tomorrow.toDateString();
+          });
+
+          if (tomorrowForecast && !hasAutoSelectedTomorrow.current) {
+            setSelectedForecastDay(tomorrowForecast);
+            hasAutoSelectedTomorrow.current = true;
+          }
+        }
+      } catch {
+        // If location fails, we'll show a message to select location
+        setExtendedForecast([]);
+      } finally {
+        setIsLoadingExtendedForecast(false);
+      }
+    };
+
+    fetchExtendedForecast();
+  }, [occasionLocation, occasionLocationTab, getUserCoordinatesFromProfile]);
+
   // Handler to suggest outfit based on current weather
-  const handleSuggestOutfit = async () => {
+  const handleSuggestOutfit = async (isFutureTab: boolean = false) => {
     // Determine which weather to use
-    const activeWeather = activeTab === "selected-location" && customWeather
-      ? customWeather.forecast
-      : todayForecast;
+    let activeWeather: DailyForecast | null = null;
+
+    if (isFutureTab) {
+      // For future tab, use the selected forecast day
+      activeWeather = selectedForecastDay;
+    } else {
+      // For today tab, use custom weather or today's forecast
+      activeWeather = activeTab === "selected-location" && customWeather
+        ? customWeather.forecast
+        : todayForecast;
+    }
+
+    // Determine which occasion ID to use
+    const occasionId = isFutureTab && selectedCalendarEntry
+      ? selectedCalendarEntry.userOccasion.occasionId
+      : selectedOccasionId;
 
     setIsSuggestingOutfit(true);
 
@@ -130,7 +314,7 @@ export default function SuggestPage() {
       const response = await outfitAPI.getSuggestionV2(
         userId,
         totalOutfit,
-        selectedOccasionId,
+        occasionId,
         weatherString
       );
 
@@ -248,6 +432,97 @@ export default function SuggestPage() {
   };
 
 
+  // Get weather icon for carousel cards
+  const getWeatherIcon = (description: string, size: number = 32) => {
+    const desc = description.toLowerCase();
+
+    if (desc.includes("thunder") || desc.includes("lightning") || desc.includes("storm")) {
+      return <Image src="/icon/stormy-weather-50.png" alt="Stormy" width={size} height={size} className="drop-shadow-lg" />;
+    }
+    if (desc.includes("heavy") || desc.includes("downpour") || desc.includes("pour") || desc.includes("fall")) {
+      return <Image src="/icon/rainfall-50.png" alt="Rain Fall" width={size} height={size} className="drop-shadow-lg" />;
+    }
+    if (desc.includes("rain") || desc.includes("rainy") || desc.includes("drizzle") || desc.includes("shower") || desc.includes("moderate")) {
+      return <Image src="/icon/moderate-rain-50.png" alt="Moderate Rain" width={size} height={size} className="drop-shadow-lg" />;
+    }
+    if (desc.includes("wind") || desc.includes("breezy") || desc.includes("gusty")) {
+      return <Image src="/icon/windy-weather-50.png" alt="Windy" width={size} height={size} className="drop-shadow-lg" />;
+    }
+    if (desc.includes("clear") || desc.includes("sunny") || desc.includes("bright")) {
+      return <Image src="/icon/sun-50.png" alt="Sunny" width={size} height={size} className="drop-shadow-lg" />;
+    }
+    if (desc.includes("partly") || desc.includes("scattered") || desc.includes("few clouds")) {
+      return <Image src="/icon/partly-cloudy-day-50.png" alt="Partly Cloudy" width={size} height={size} className="drop-shadow-lg" />;
+    }
+
+    return <Image src="/icon/clouds-50.png" alt="Cloudy" width={size} height={size} className="drop-shadow-lg" />;
+  };
+
+  // Format date for carousel cards
+  const formatCarouselDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const month = date.toLocaleDateString("en-US", { month: "short" });
+
+    if (date.toDateString() === today.toDateString()) {
+      return { day: "Today", date: date.getDate().toString(), month };
+    }
+    if (date.toDateString() === tomorrow.toDateString()) {
+      return { day: "Tomorrow", date: date.getDate().toString(), month };
+    }
+
+    return {
+      day: date.toLocaleDateString("en-US", { weekday: "short" }),
+      date: date.getDate().toString(),
+      month,
+    };
+  };
+
+  // Format user occasion date for cards (HH:mm dd-MM-yyyy format)
+  const formatUserOccasionDate = (dateString: string) => {
+    const date = new Date(dateString);
+
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+
+    return `${hours}:${minutes} ${day}-${month}-${year}`;
+  };
+
+  // Handle calendar entry selection - auto-select weather for that day
+  const handleCalendarEntrySelect = (entry: CalendarEntry | null) => {
+    setSelectedCalendarEntry(entry);
+
+    if (entry && extendedForecast.length > 0) {
+      // Find the forecast for the occasion date
+      const occasionDate = new Date(entry.userOccasion.dateOccasion);
+      const matchingForecast = extendedForecast.find((forecast) => {
+        const forecastDate = new Date(forecast.date);
+        return forecastDate.toDateString() === occasionDate.toDateString();
+      });
+
+      if (matchingForecast) {
+        setSelectedForecastDay(matchingForecast);
+      }
+    }
+  };
+
+  // Carousel navigation handlers
+  const scrollCarousel = (direction: "left" | "right") => {
+    if (carouselRef.current) {
+      if (direction === "left") {
+        carouselRef.current.prev();
+      } else {
+        carouselRef.current.next();
+      }
+    }
+  };
+
   // Show loading while checking auth
   if (isCheckingAuth) {
     return (
@@ -260,299 +535,999 @@ export default function SuggestPage() {
     );
   }
 
-  return (
-    <div className="min-h-screen pt-32">
-      <div className="container max-w-7xl mx-auto px-4 py-6 space-y-8">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-          <div>
-            <h4 className="font-dela-gothic text-2xl md:text-3xl lg:text-4xl leading-tight">
-              <span className="bg-clip-text text-transparent bg-linear-to-r from-white via-blue-100 to-cyan-200">
-                What to wear today?
-              </span>
-            </h4>
-            <p className="bg-clip-text text-transparent bg-linear-to-r from-white via-blue-100 to-cyan-200">
-              Get personalized outfit suggestions powered by AI
-            </p>
+  // Render Today's Outfit tab content
+  const renderTodayOutfitContent = () => (
+    <div className="space-y-8">
+      {/* Header */}
+      <div>
+        <h4 className="font-dela-gothic text-2xl md:text-3xl lg:text-4xl leading-tight">
+          <span className="bg-clip-text text-transparent bg-linear-to-r from-white via-blue-100 to-cyan-200">
+            What to wear today?
+          </span>
+        </h4>
+        <p className="bg-clip-text text-transparent bg-linear-to-r from-white via-blue-100 to-cyan-200">
+          Get personalized outfit suggestions based on today&apos;s weather
+        </p>
+      </div>
+
+      {/* Weather Section */}
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <h4 className="font-bricolage font-bold text-xl md:text-2xl lg:text-3xl leading-tight">
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-cyan-200">
+              Today&apos;s weather
+            </span>
+          </h4>
+
+          {/* Weather Tabs */}
+          <Radio.Group
+            value={activeTab}
+            onChange={(e) => setActiveTab(e.target.value)}
+            buttonStyle="solid"
+            size="large"
+            className="glass-radio-group"
+          >
+            <Radio.Button value="my-location" className="glass-radio-button">
+              <div className="flex items-center gap-2">
+                <span>My Location</span>
+              </div>
+            </Radio.Button>
+            <Radio.Button
+              value="selected-location"
+              disabled={!customWeather}
+              className="glass-radio-button"
+            >
+              <div className="flex items-center gap-2">
+                <span>Selected Location</span>
+              </div>
+            </Radio.Button>
+          </Radio.Group>
+
+          <div className="glass-button-hover">
+            <GlassButton
+              variant="custom"
+              borderRadius="14px"
+              blur="8px"
+              brightness={1.12}
+              glowColor="rgba(59,130,246,0.45)"
+              glowIntensity={6}
+              borderColor="rgba(255,255,255,0.28)"
+              borderWidth="1px"
+              textColor="#ffffffff"
+              className="px-4 h-12 font-semibold"
+              displacementScale={5}
+              onClick={() => setIsLocationModalOpen(true)}
+            >
+              <span className="hidden sm:inline">Choose Another Location</span>
+              <span className="sm:hidden">Change</span>
+            </GlassButton>
           </div>
         </div>
 
-        {/* Weather Section */}
-        <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <h4 className="font-bricolage font-bold text-xl md:text-2xl lg:text-3xl leading-tight">
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-cyan-200">
-                Today&apos;s weather
-              </span>
-            </h4>
-
-            {/* Weather Tabs */}
-            <Radio.Group
-              value={activeTab}
-              onChange={(e) => setActiveTab(e.target.value)}
-              buttonStyle="solid"
-              size="large"
-              className="glass-radio-group"
-            >
-              <Radio.Button value="my-location" className="glass-radio-button">
-                <div className="flex items-center gap-2">
-                  <span>My Location</span>
-                </div>
-              </Radio.Button>
-              <Radio.Button
-                value="selected-location"
-                disabled={!customWeather}
-                className="glass-radio-button"
-              >
-                <div className="flex items-center gap-2">
-                  <span>Selected Location</span>
-                </div>
-              </Radio.Button>
-            </Radio.Group>
-
-            <div className="glass-button-hover">
-              <GlassButton
-                variant="custom"
-                borderRadius="14px"
-                blur="8px"
-                brightness={1.12}
-                glowColor="rgba(59,130,246,0.45)"
-                glowIntensity={6}
-                borderColor="rgba(255,255,255,0.28)"
-                borderWidth="1px"
-                textColor="#ffffffff"
-                className="px-4 h-12 font-semibold"
-                displacementScale={5}
-                onClick={() => setIsLocationModalOpen(true)}
-              >
-                <span className="hidden sm:inline">Choose Another Location</span>
-                <span className="sm:hidden">Change</span>
-              </GlassButton>
-            </div>
-          </div>
-
-          <style jsx>{`
-            .glass-button-hover {
-              transition: transform 0.2s ease;
-            }
-            .glass-button-hover:hover {
-              transform: scale(1.04);
-            }
-            .glass-button-hover:active {
-              transform: scale(0.98);
-            }
-          `}</style>
-
-          {/* Loading State */}
-          {(isLoadingWeather || isLoadingCustomWeather) && (
-            <GlassCard
-              padding="24px"
-              borderRadius="24px"
-              blur="10px"
-              brightness={1.02}
-              glowColor="rgba(34, 211, 238, 0.2)"
-              borderColor="rgba(255, 255, 255, 0.2)"
-              borderWidth="2px"
-              className="bg-gradient-to-br from-cyan-300/20 via-blue-200/10 to-indigo-300/20"
-            >
-              <div className="flex items-center justify-center py-12">
-                <div className="text-center">
-                  <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin mx-auto mb-4" />
-                  <p className="text-white/70">
-                    {isRequestingLocation
-                      ? "Getting your location..."
-                      : "Loading weather..."}
-                  </p>
-                </div>
-              </div>
-            </GlassCard>
-          )}
-
-          {/* Error State */}
-          {weatherError && !isLoadingWeather && !isLoadingCustomWeather && !customWeather && (
-            <GlassCard
-              padding="24px"
-              borderRadius="24px"
-              blur="10px"
-              brightness={1.02}
-              glowColor="rgba(239, 68, 68, 0.2)"
-              borderColor="rgba(248, 113, 113, 0.3)"
-              borderWidth="2px"
-              className="bg-gradient-to-br from-red-300/20 via-orange-200/10 to-red-300/20"
-            >
-              <div className="flex items-start gap-4">
-                <AlertCircle className="w-6 h-6 text-red-300 flex-shrink-0 mt-1" />
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-white mb-2">
-                    Unable to Get Weather
-                  </h3>
-                  <p className="text-white/70 text-sm mb-4">
-                    {typeof weatherError === "string"
-                      ? weatherError
-                      : locationError ||
-                      "We couldn't get your weather information. Please try sharing your location."}
-                  </p>
-                  <GlassButton
-                    onClick={requestLocation}
-                    disabled={isRequestingLocation}
-                    className="bg-white/10 hover:bg-white/20 text-white border-white/20"
-                  >
-                    <MapPin className="w-4 h-4 mr-2" />
-                    {isRequestingLocation ? "Getting location..." : "Share Location"}
-                  </GlassButton>
-                </div>
-              </div>
-            </GlassCard>
-          )}
-
-          {/* Weather Card */}
-          {!isLoadingWeather && !isLoadingCustomWeather && (
-            <>
-              {activeTab === "my-location" && todayForecast && (
-                <WeatherCard
-                  forecast={todayForecast}
-                  cityName={cityName}
-                />
-              )}
-              {activeTab === "selected-location" && customWeather && (
-                <WeatherCard
-                  forecast={customWeather.forecast}
-                  cityName={customWeather.cityName}
-                />
-              )}
-            </>
-          )}
-        </div>
-
-        {/* Suggest Outfit Button with Occasion Selector */}
-        <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mt-12">
-          <Select
-            value={selectedOccasionId}
-            onChange={setSelectedOccasionId}
-            placeholder="Select occasion"
-            allowClear
-            loading={isLoadingOccasions}
-            size="large"
-            style={{ width: 256 }}
-            listHeight={256}
+        {/* Loading State */}
+        {(isLoadingWeather || isLoadingCustomWeather) && (
+          <GlassCard
+            padding="24px"
+            borderRadius="24px"
+            blur="10px"
+            brightness={1.02}
+            glowColor="rgba(34, 211, 238, 0.2)"
+            borderColor="rgba(255, 255, 255, 0.2)"
+            borderWidth="2px"
+            className="bg-gradient-to-br from-cyan-300/20 via-blue-200/10 to-indigo-300/20"
           >
-            {occasions.map((occasion) => (
-              <Select.Option key={occasion.id} value={occasion.id}>
-                {occasion.name}
-              </Select.Option>
-            ))}
-          </Select>
-
-          <Select
-            value={totalOutfit}
-            onChange={setTotalOutfit}
-            size="large"
-            style={{ width: 192 }}
-          >
-            <Select.Option value={1}>1 Outfit</Select.Option>
-            <Select.Option value={2}>2 Outfits</Select.Option>
-            <Select.Option value={3}>3 Outfits</Select.Option>
-            <Select.Option value={4}>4 Outfits</Select.Option>
-          </Select>
-
-          <GlassButton
-            onClick={handleSuggestOutfit}
-            disabled={isSuggestingOutfit}
-            className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white px-8 py-6 text-lg font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isSuggestingOutfit ? (
-              <>
-                <Loader2 className="w-5 h-5 mr-2 animate-spin inline" />
-                Generating Suggestions...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-5 h-5 mr-2 inline" />
-                Suggest Today Outfit
-              </>
-            )}
-          </GlassButton>
-        </div>
-
-        {/* Suggestion Results */}
-        {suggestionResults.length > 0 && (
-          <div id="suggestion-results" className="mt-12 pb-8">
-            <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h4 className="font-bricolage font-bold text-xl md:text-2xl lg:text-3xl leading-tight">
-                  <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-cyan-200">
-                    Your Suggested Outfits
-                  </span>
-                </h4>
-                <p className="text-white/70 mt-2">
-                  AI-generated outfit suggestions based on today&apos;s weather
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin mx-auto mb-4" />
+                <p className="text-white/70">
+                  {isRequestingLocation
+                    ? "Getting your location..."
+                    : "Loading weather..."}
                 </p>
               </div>
-
-              {/* Mass Add Controls */}
-              {suggestionResults.length > 1 && (
-                <div className="flex flex-wrap items-center gap-3">
-                  <Checkbox
-                    checked={selectedOutfitIndexes.length === suggestionResults.length}
-                    indeterminate={selectedOutfitIndexes.length > 0 && selectedOutfitIndexes.length < suggestionResults.length}
-                    onChange={handleSelectAll}
-                    className="text-white"
-                  >
-                    <span className="text-white/80">Select All</span>
-                  </Checkbox>
-
-                  <GlassButton
-                    onClick={handleAddSelectedOutfits}
-                    disabled={selectedOutfitIndexes.length === 0 || isAddingMultiple}
-                    className="bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white px-4 py-2 font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isAddingMultiple ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin inline" />
-                        Adding...
-                      </>
-                    ) : (
-                      <>
-                        <Plus className="w-4 h-4 mr-2 inline" />
-                        Add Selected ({selectedOutfitIndexes.length})
-                      </>
-                    )}
-                  </GlassButton>
-                </div>
-              )}
             </div>
-            <div className="space-y-8">
-              {suggestionResults.map((suggestion, index) => (
-                <div key={index} className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    {suggestionResults.length > 1 && (
-                      <Checkbox
-                        checked={selectedOutfitIndexes.includes(index)}
-                        onChange={() => handleToggleOutfitSelection(index)}
-                        className="scale-125"
-                      />
-                    )}
-                    <h5 className="font-bricolage font-semibold text-lg md:text-xl leading-tight">
-                      <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-purple-100 to-pink-200">
-                        Outfit Option {index + 1}
-                      </span>
-                    </h5>
-                    {selectedOutfitIndexes.includes(index) && (
-                      <Check className="w-5 h-5 text-green-400" />
-                    )}
-                  </div>
-                  <SuggestionResultView
-                    items={suggestion.suggestedItems}
-                    reason={suggestion.reason}
-                    onClose={handleCloseResults}
-                  />
+          </GlassCard>
+        )}
+
+        {/* Error State */}
+        {weatherError && !isLoadingWeather && !isLoadingCustomWeather && !customWeather && (
+          <GlassCard
+            padding="24px"
+            borderRadius="24px"
+            blur="10px"
+            brightness={1.02}
+            glowColor="rgba(239, 68, 68, 0.2)"
+            borderColor="rgba(248, 113, 113, 0.3)"
+            borderWidth="2px"
+            className="bg-gradient-to-br from-red-300/20 via-orange-200/10 to-red-300/20"
+          >
+            <div className="flex items-start gap-4">
+              <AlertCircle className="w-6 h-6 text-red-300 flex-shrink-0 mt-1" />
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-white mb-2">
+                  Unable to Get Weather
+                </h3>
+                <p className="text-white/70 text-sm mb-4">
+                  {typeof weatherError === "string"
+                    ? weatherError
+                    : locationError ||
+                    "We couldn't get your weather information. Please try sharing your location."}
+                </p>
+                <GlassButton
+                  onClick={requestLocation}
+                  disabled={isRequestingLocation}
+                  className="bg-white/10 hover:bg-white/20 text-white border-white/20"
+                >
+                  <MapPin className="w-4 h-4 mr-2" />
+                  {isRequestingLocation ? "Getting location..." : "Share Location"}
+                </GlassButton>
+              </div>
+            </div>
+          </GlassCard>
+        )}
+
+        {/* Weather Card */}
+        {!isLoadingWeather && !isLoadingCustomWeather && (
+          <>
+            {activeTab === "my-location" && todayForecast && (
+              <WeatherCard
+                forecast={todayForecast}
+                cityName={cityName}
+              />
+            )}
+            {activeTab === "selected-location" && customWeather && (
+              <WeatherCard
+                forecast={customWeather.forecast}
+                cityName={customWeather.cityName}
+              />
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Suggest Outfit Button with Occasion Selector */}
+      <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mt-8">
+        <Select
+          value={selectedOccasionId}
+          onChange={setSelectedOccasionId}
+          placeholder="Select occasion"
+          allowClear
+          loading={isLoadingOccasions}
+          size="large"
+          style={{ width: 256 }}
+          listHeight={256}
+        >
+          {occasions.map((occasion) => (
+            <Select.Option key={occasion.id} value={occasion.id}>
+              {occasion.name}
+            </Select.Option>
+          ))}
+        </Select>
+
+        <Select
+          value={totalOutfit}
+          onChange={setTotalOutfit}
+          size="large"
+          style={{ width: 192 }}
+        >
+          <Select.Option value={1}>1 Outfit</Select.Option>
+          <Select.Option value={2}>2 Outfits</Select.Option>
+          <Select.Option value={3}>3 Outfits</Select.Option>
+          <Select.Option value={4}>4 Outfits</Select.Option>
+        </Select>
+
+        <GlassButton
+          onClick={() => handleSuggestOutfit(false)}
+          disabled={isSuggestingOutfit}
+          className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white px-8 py-6 text-lg font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isSuggestingOutfit ? (
+            <>
+              <Loader2 className="w-5 h-5 mr-2 animate-spin inline" />
+              Generating Suggestions...
+            </>
+          ) : (
+            <>
+              <Sparkles className="w-5 h-5 mr-2 inline" />
+              Suggest Today Outfit
+            </>
+          )}
+        </GlassButton>
+      </div>
+
+      {/* Suggestion Results */}
+      {suggestionResults.length > 0 && (
+        <div id="suggestion-results" className="mt-8 pb-8">
+          <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h4 className="font-bricolage font-bold text-xl md:text-2xl lg:text-3xl leading-tight">
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-cyan-200">
+                  Your Suggested Outfits
+                </span>
+              </h4>
+              <p className="text-white/70 mt-2">
+                AI-generated outfit suggestions based on today&apos;s weather
+              </p>
+            </div>
+
+            {/* Mass Add Controls */}
+            {suggestionResults.length > 1 && (
+              <div className="flex flex-wrap items-center gap-3">
+                <Checkbox
+                  checked={selectedOutfitIndexes.length === suggestionResults.length}
+                  indeterminate={selectedOutfitIndexes.length > 0 && selectedOutfitIndexes.length < suggestionResults.length}
+                  onChange={handleSelectAll}
+                  className="text-white"
+                >
+                  <span className="text-white/80">Select All</span>
+                </Checkbox>
+
+                <GlassButton
+                  onClick={handleAddSelectedOutfits}
+                  disabled={selectedOutfitIndexes.length === 0 || isAddingMultiple}
+                  className="bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white px-4 py-2 font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isAddingMultiple ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin inline" />
+                      Adding...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-4 h-4 mr-2 inline" />
+                      Add Selected ({selectedOutfitIndexes.length})
+                    </>
+                  )}
+                </GlassButton>
+              </div>
+            )}
+          </div>
+          <div className="space-y-8">
+            {suggestionResults.map((suggestion, index) => (
+              <div key={index} className="space-y-4">
+                <div className="flex items-center gap-3">
+                  {suggestionResults.length > 1 && (
+                    <Checkbox
+                      checked={selectedOutfitIndexes.includes(index)}
+                      onChange={() => handleToggleOutfitSelection(index)}
+                      className="scale-125"
+                    />
+                  )}
+                  <h5 className="font-bricolage font-semibold text-lg md:text-xl leading-tight">
+                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-purple-100 to-pink-200">
+                      Outfit Option {index + 1}
+                    </span>
+                  </h5>
+                  {selectedOutfitIndexes.includes(index) && (
+                    <Check className="w-5 h-5 text-green-400" />
+                  )}
                 </div>
-              ))}
+                <SuggestionResultView
+                  items={suggestion.suggestedItems}
+                  reason={suggestion.reason}
+                  onClose={handleCloseResults}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  // Render Future Occasion tab content
+  const renderFutureOccasionContent = () => (
+    <div className="space-y-8">
+      {/* Header */}
+      <div>
+        <h4 className="font-dela-gothic text-2xl md:text-3xl lg:text-4xl leading-tight">
+          <span className="bg-clip-text text-transparent bg-linear-to-r from-white via-blue-100 to-cyan-200">
+            Dress to Impress
+          </span>
+        </h4>
+        <p className="bg-clip-text text-transparent bg-linear-to-r from-white via-blue-100 to-cyan-200">
+          Plan your perfect outfit for any upcoming occasion
+        </p>
+      </div>
+
+      {/* 16-Day Weather Forecast Carousel */}
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <h4 className="font-bricolage font-bold text-xl md:text-2xl lg:text-3xl leading-tight">
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-cyan-200">
+              Choose Your Day
+            </span>
+          </h4>
+
+          {/* Location Tabs */}
+          <Radio.Group
+            value={occasionLocationTab}
+            onChange={(e) => {
+              setOccasionLocationTab(e.target.value);
+              setSelectedForecastDay(null);
+            }}
+            buttonStyle="solid"
+            size="large"
+            className="glass-radio-group"
+          >
+            <Radio.Button value="my-location" className="glass-radio-button">
+              <div className="flex items-center gap-2">
+                <span>My Location</span>
+              </div>
+            </Radio.Button>
+            <Radio.Button
+              value="selected-location"
+              disabled={!occasionLocation}
+              className="glass-radio-button"
+            >
+              <div className="flex items-center gap-2">
+                <span>Selected Location</span>
+              </div>
+            </Radio.Button>
+          </Radio.Group>
+
+          <div className="glass-button-hover">
+            <GlassButton
+              variant="custom"
+              borderRadius="14px"
+              blur="8px"
+              brightness={1.12}
+              glowColor="rgba(59,130,246,0.45)"
+              glowIntensity={6}
+              borderColor="rgba(255,255,255,0.28)"
+              borderWidth="1px"
+              textColor="#ffffffff"
+              className="px-4 h-12 font-semibold"
+              displacementScale={5}
+              onClick={() => setIsOccasionLocationModalOpen(true)}
+            >
+              <span className="hidden sm:inline">Choose Another Location</span>
+              <span className="sm:hidden">Change</span>
+            </GlassButton>
+          </div>
+        </div>
+
+        {/* Loading State */}
+        {isLoadingExtendedForecast && (
+          <GlassCard
+            padding="24px"
+            borderRadius="24px"
+            blur="10px"
+            brightness={1.02}
+            glowColor="rgba(34, 211, 238, 0.2)"
+            borderColor="rgba(255, 255, 255, 0.2)"
+            borderWidth="2px"
+            className="bg-gradient-to-br from-cyan-300/20 via-blue-200/10 to-indigo-300/20"
+          >
+            <div className="flex items-center justify-center py-8">
+              <div className="text-center">
+                <div className="w-10 h-10 border-4 border-white/30 border-t-white rounded-full animate-spin mx-auto mb-3" />
+                <p className="text-white/70 text-sm">Loading 16-day forecast...</p>
+              </div>
+            </div>
+          </GlassCard>
+        )}
+
+        {/* Weather Carousel */}
+        {!isLoadingExtendedForecast && extendedForecast.length > 0 && (
+          <div
+            className="weather-carousel-container relative overflow-hidden w-full"
+            onMouseEnter={() => {
+              document.body.style.overflow = "hidden";
+            }}
+            onMouseLeave={() => {
+              document.body.style.overflow = "";
+            }}
+            onWheel={(e) => {
+              e.stopPropagation();
+              if (e.deltaY > 0 || e.deltaX > 0) {
+                carouselRef.current?.next();
+              } else {
+                carouselRef.current?.prev();
+              }
+            }}
+          >
+            {/* Left Arrow - Circular Glass Button (Center of Card) */}
+            <button
+              onClick={() => scrollCarousel("left")}
+              className="carousel-nav-btn absolute left-2 w-11 h-11 md:w-14 md:h-14 rounded-full flex items-center justify-center z-20"
+            >
+              <ChevronLeft className="w-5 h-5 md:w-6 md:h-6 text-white/90" />
+            </button>
+
+            {/* Right Arrow - Circular Glass Button (Center of Card) */}
+            <button
+              onClick={() => scrollCarousel("right")}
+              className="carousel-nav-btn absolute right-2 w-11 h-11 md:w-14 md:h-14 rounded-full flex items-center justify-center z-20"
+            >
+              <ChevronRight className="w-5 h-5 md:w-6 md:h-6 text-white/90" />
+            </button>
+            <Carousel
+              ref={carouselRef}
+              dots={false}
+              infinite={false}
+              slidesToShow={7}
+              slidesToScroll={3}
+              swipeToSlide
+              draggable
+              speed={400}
+              cssEase="cubic-bezier(0.4, 0, 0.2, 1)"
+              responsive={[
+                {
+                  breakpoint: 1280,
+                  settings: {
+                    slidesToShow: 6,
+                    slidesToScroll: 3,
+                  },
+                },
+                {
+                  breakpoint: 1024,
+                  settings: {
+                    slidesToShow: 5,
+                    slidesToScroll: 3,
+                  },
+                },
+                {
+                  breakpoint: 768,
+                  settings: {
+                    slidesToShow: 4,
+                    slidesToScroll: 2,
+                  },
+                },
+                {
+                  breakpoint: 640,
+                  settings: {
+                    slidesToShow: 3,
+                    slidesToScroll: 2,
+                  },
+                },
+                {
+                  breakpoint: 480,
+                  settings: {
+                    slidesToShow: 2,
+                    slidesToScroll: 1,
+                  },
+                },
+              ]}
+            >
+              {extendedForecast.filter((forecast) => {
+                const today = new Date();
+                const forecastDate = new Date(forecast.date);
+                return forecastDate.toDateString() !== today.toDateString();
+              }).map((forecast, index) => {
+                const dateInfo = formatCarouselDate(forecast.date);
+                const isSelected = selectedForecastDay?.date === forecast.date;
+
+                return (
+                  <div key={index} className="px-3 py-2">
+                    <button
+                      onClick={() => setSelectedForecastDay(isSelected ? null : forecast)}
+                      className={`w-full p-4 rounded-2xl transition-all duration-300 border-2 ${
+                        isSelected
+                          ? "bg-gradient-to-br from-cyan-500/40 via-blue-500/30 to-indigo-500/40 border-cyan-400/60 shadow-lg shadow-cyan-500/20 ring-2 ring-cyan-400/40"
+                          : "bg-white/5 backdrop-blur-md border-white/10 hover:bg-white/10 hover:border-white/20"
+                      }`}
+                    >
+                      {/* Day of Week */}
+                      <p className={`text-xs font-semibold mb-1 ${isSelected ? "text-cyan-200" : "text-white/60"}`}>
+                        {dateInfo.day}
+                      </p>
+
+                      {/* Date Number */}
+                      <p className={`text-2xl font-bold ${isSelected ? "text-white" : "text-white/90"}`}>
+                        {dateInfo.date}
+                      </p>
+
+                      {/* Month */}
+                      <p className={`text-xs font-medium mb-2 ${isSelected ? "text-cyan-200" : "text-white/50"}`}>
+                        {dateInfo.month}
+                      </p>
+
+                      {/* Weather Icon */}
+                      <div className="flex justify-center mb-2">
+                        {getWeatherIcon(forecast.description, 36)}
+                      </div>
+
+                      {/* Temperature */}
+                      <p className={`text-lg font-bold ${isSelected ? "text-white" : "text-white/90"}`}>
+                        {Math.round(forecast.temperature)}°C
+                      </p>
+
+                      {/* High/Low */}
+                      <p className={`text-xs ${isSelected ? "text-cyan-200" : "text-white/50"}`}>
+                        {Math.round(forecast.maxTemperature)}° / {Math.round(forecast.minTemperature)}°
+                      </p>
+                    </button>
+                  </div>
+                );
+              })}
+            </Carousel>
+          </div>
+        )}
+
+        {/* No Forecast Available */}
+        {!isLoadingExtendedForecast && extendedForecast.length === 0 && (
+          <GlassCard
+            padding="24px"
+            borderRadius="24px"
+            blur="10px"
+            brightness={1.02}
+            glowColor="rgba(239, 68, 68, 0.2)"
+            borderColor="rgba(248, 113, 113, 0.3)"
+            borderWidth="2px"
+            className="bg-gradient-to-br from-orange-300/20 via-amber-200/10 to-orange-300/20"
+          >
+            <div className="flex items-start gap-4">
+              <AlertCircle className="w-6 h-6 text-orange-300 flex-shrink-0 mt-1" />
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-white mb-2">
+                  Unable to Load Forecast
+                </h3>
+                <p className="text-white/70 text-sm">
+                  Please allow location access to see the 16-day weather forecast for planning your outfits.
+                </p>
+              </div>
+            </div>
+          </GlassCard>
+        )}
+
+      </div>
+
+      {/* Selected Day Weather Card - Outside the carousel container */}
+      {selectedForecastDay && (
+        <div className="mt-2">
+          <WeatherCard
+            forecast={selectedForecastDay}
+            cityName={occasionLocationTab === "selected-location" && occasionLocation ? occasionLocation.cityName : (cityName || "Your Location")}
+          />
+        </div>
+      )}
+
+      {/* User Occasions Section */}
+      <div className="space-y-4">
+        <h4 className="font-bricolage font-bold text-xl md:text-2xl lg:text-3xl leading-tight">
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-cyan-200">
+            Your Upcoming Occasions
+          </span>
+        </h4>
+
+        {/* Loading State */}
+        {isLoadingUserOccasions && (
+          <div className="flex items-center justify-center py-8">
+            <div className="text-center">
+              <div className="w-10 h-10 border-4 border-white/30 border-t-white rounded-full animate-spin mx-auto mb-3" />
+              <p className="text-white/70 text-sm">Loading your occasions...</p>
             </div>
           </div>
         )}
 
-        {/* Location Map Modal */}
+        {/* No User Occasions */}
+        {!isLoadingUserOccasions && calendarEntries.length === 0 && (
+          <GlassCard
+            padding="24px"
+            borderRadius="24px"
+            blur="10px"
+            brightness={1.02}
+            glowColor="rgba(59, 130, 246, 0.2)"
+            borderColor="rgba(147, 197, 253, 0.3)"
+            borderWidth="2px"
+            className="bg-gradient-to-br from-blue-300/20 via-indigo-200/10 to-blue-300/20"
+          >
+            <div className="flex items-start gap-4">
+              <Calendar className="w-6 h-6 text-blue-300 flex-shrink-0 mt-1" />
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-white mb-2">
+                  No Upcoming Occasions
+                </h3>
+                <p className="text-white/70 text-sm">
+                  You don&apos;t have any occasions scheduled in the next 16 days. Add occasions from your calendar to get personalized outfit suggestions.
+                </p>
+              </div>
+            </div>
+          </GlassCard>
+        )}
+
+        {/* User Occasion Cards */}
+        {!isLoadingUserOccasions && calendarEntries.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {calendarEntries.map((entry) => {
+              const occasion = entry.userOccasion;
+              const formattedDate = formatUserOccasionDate(occasion.dateOccasion);
+              const isSelected = selectedCalendarEntry?.userOccasion.id === occasion.id;
+
+              return (
+                <button
+                  key={occasion.id}
+                  onClick={() => handleCalendarEntrySelect(isSelected ? null : entry)}
+                  className={`w-full p-4 rounded-2xl transition-all duration-300 border-2 text-left ${
+                    isSelected
+                      ? "bg-gradient-to-br from-purple-500/40 via-pink-500/30 to-indigo-500/40 border-purple-400/60 shadow-lg shadow-purple-500/20 ring-2 ring-purple-400/40"
+                      : "bg-white/5 backdrop-blur-md border-white/10 hover:bg-white/10 hover:border-white/20"
+                  }`}
+                >
+                  {/* Header with Name and Check */}
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <h5 className={`font-semibold text-base line-clamp-1 ${isSelected ? "text-white" : "text-white/90"}`}>
+                      {occasion.name || occasion.occasionName}
+                    </h5>
+                    {isSelected && (
+                      <div className="w-6 h-6 rounded-full bg-purple-500 flex items-center justify-center flex-shrink-0">
+                        <Check className="w-4 h-4 text-white" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Occasion Type Badge */}
+                  {occasion.occasionName && occasion.name && (
+                    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium mb-2 ${
+                      isSelected ? "bg-pink-500/30 text-pink-200" : "bg-white/10 text-white/60"
+                    }`}>
+                      {occasion.occasionName}
+                    </span>
+                  )}
+
+                  {/* Date and Time */}
+                  <div className={`text-sm mb-2 ${isSelected ? "text-purple-200" : "text-white/70"}`}>
+                    {formattedDate}
+                  </div>
+
+                  {/* Description */}
+                  {occasion.description && (
+                    <p className={`text-xs line-clamp-2 ${isSelected ? "text-white/70" : "text-white/40"}`}>
+                      {occasion.description}
+                    </p>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Outfit Count and Suggest Button */}
+      <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
+        <Select
+          value={totalOutfit}
+          onChange={setTotalOutfit}
+          size="large"
+          style={{ width: 192 }}
+        >
+          <Select.Option value={1}>1 Outfit</Select.Option>
+          <Select.Option value={2}>2 Outfits</Select.Option>
+          <Select.Option value={3}>3 Outfits</Select.Option>
+          <Select.Option value={4}>4 Outfits</Select.Option>
+        </Select>
+
+        <GlassButton
+          onClick={() => handleSuggestOutfit(true)}
+          disabled={isSuggestingOutfit || !selectedCalendarEntry}
+          className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white px-8 py-6 text-lg font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isSuggestingOutfit ? (
+            <>
+              <Loader2 className="w-5 h-5 mr-2 animate-spin inline" />
+              Generating Suggestions...
+            </>
+          ) : (
+            <>
+              <Sparkles className="w-5 h-5 mr-2 inline" />
+              Suggest Outfit
+            </>
+          )}
+        </GlassButton>
+      </div>
+
+      {/* Suggestion Results */}
+      {suggestionResults.length > 0 && (
+        <div id="suggestion-results" className="mt-8 pb-8">
+          <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h4 className="font-bricolage font-bold text-xl md:text-2xl lg:text-3xl leading-tight">
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-purple-100 to-pink-200">
+                  Your Suggested Outfits
+                </span>
+              </h4>
+              <p className="text-white/70 mt-2">
+                AI-generated outfit suggestions for {selectedCalendarEntry?.userOccasion.name || "your upcoming occasion"}
+              </p>
+            </div>
+
+            {/* Mass Add Controls */}
+            {suggestionResults.length > 1 && (
+              <div className="flex flex-wrap items-center gap-3">
+                <Checkbox
+                  checked={selectedOutfitIndexes.length === suggestionResults.length}
+                  indeterminate={selectedOutfitIndexes.length > 0 && selectedOutfitIndexes.length < suggestionResults.length}
+                  onChange={handleSelectAll}
+                  className="text-white"
+                >
+                  <span className="text-white/80">Select All</span>
+                </Checkbox>
+
+                <GlassButton
+                  onClick={handleAddSelectedOutfits}
+                  disabled={selectedOutfitIndexes.length === 0 || isAddingMultiple}
+                  className="bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white px-4 py-2 font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isAddingMultiple ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin inline" />
+                      Adding...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-4 h-4 mr-2 inline" />
+                      Add Selected ({selectedOutfitIndexes.length})
+                    </>
+                  )}
+                </GlassButton>
+              </div>
+            )}
+          </div>
+          <div className="space-y-8">
+            {suggestionResults.map((suggestion, index) => (
+              <div key={index} className="space-y-4">
+                <div className="flex items-center gap-3">
+                  {suggestionResults.length > 1 && (
+                    <Checkbox
+                      checked={selectedOutfitIndexes.includes(index)}
+                      onChange={() => handleToggleOutfitSelection(index)}
+                      className="scale-125"
+                    />
+                  )}
+                  <h5 className="font-bricolage font-semibold text-lg md:text-xl leading-tight">
+                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-purple-100 to-pink-200">
+                      Outfit Option {index + 1}
+                    </span>
+                  </h5>
+                  {selectedOutfitIndexes.includes(index) && (
+                    <Check className="w-5 h-5 text-green-400" />
+                  )}
+                </div>
+                <SuggestionResultView
+                  items={suggestion.suggestedItems}
+                  reason={suggestion.reason}
+                  onClose={handleCloseResults}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen pt-32">
+      <div className="container max-w-7xl mx-auto px-4 py-6 space-y-8">
+        <style jsx global>{`
+          .glass-button-hover {
+            transition: transform 0.2s ease;
+          }
+          .glass-button-hover:hover {
+            transform: scale(1.04);
+          }
+          .glass-button-hover:active {
+            transform: scale(0.98);
+          }
+
+          /* Glassmorphism Tab Card Styling */
+          .suggest-tabs.ant-tabs-card > .ant-tabs-nav::before {
+            border-bottom: none !important;
+          }
+          .suggest-tabs.ant-tabs-card > .ant-tabs-nav .ant-tabs-nav-wrap {
+            border-bottom: none !important;
+          }
+          .suggest-tabs.ant-tabs-card > .ant-tabs-nav {
+            margin-bottom: 24px !important;
+          }
+          .suggest-tabs.ant-tabs-card > .ant-tabs-nav .ant-tabs-nav-list {
+            background: rgba(15, 23, 42, 0.4) !important;
+            backdrop-filter: blur(12px) saturate(180%) !important;
+            -webkit-backdrop-filter: blur(12px) saturate(180%) !important;
+            padding: 6px !important;
+            border-radius: 16px !important;
+            border: 1px solid rgba(148, 163, 184, 0.2) !important;
+            box-shadow:
+              inset 2px 2px 0px -2px rgba(255, 255, 255, 0.3),
+              0 4px 16px rgba(0, 0, 0, 0.2),
+              0 0 24px rgba(6, 182, 212, 0.1) !important;
+          }
+          .suggest-tabs.ant-tabs-card .ant-tabs-tab {
+            background: transparent !important;
+            border: none !important;
+            border-radius: 12px !important;
+            margin: 0 !important;
+            padding: 12px 28px !important;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+          }
+          .suggest-tabs.ant-tabs-card .ant-tabs-tab:hover:not(.ant-tabs-tab-active) {
+            background: rgba(255, 255, 255, 0.08) !important;
+          }
+          .suggest-tabs.ant-tabs-card .ant-tabs-tab .ant-tabs-tab-btn {
+            color: rgba(255, 255, 255, 0.65) !important;
+            transition: color 0.3s ease !important;
+          }
+          .suggest-tabs.ant-tabs-card .ant-tabs-tab:hover .ant-tabs-tab-btn {
+            color: rgba(255, 255, 255, 0.9) !important;
+          }
+          .suggest-tabs.ant-tabs-card .ant-tabs-tab-active {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.35), rgba(6, 182, 212, 0.35)) !important;
+            border: 1px solid rgba(34, 211, 238, 0.4) !important;
+            box-shadow:
+              inset 2px 2px 0px -2px rgba(255, 255, 255, 0.4),
+              0 4px 12px rgba(6, 182, 212, 0.3),
+              0 0 20px rgba(6, 182, 212, 0.2) !important;
+          }
+          .suggest-tabs.ant-tabs-card .ant-tabs-tab-active .ant-tabs-tab-btn {
+            color: #ffffff !important;
+            text-shadow: 0 0 12px rgba(34, 211, 238, 0.5) !important;
+          }
+          .suggest-tabs .ant-tabs-ink-bar {
+            display: none !important;
+          }
+          .suggest-tabs .ant-tabs-content-holder {
+            padding-top: 8px !important;
+            overflow: visible !important;
+          }
+          .suggest-tabs .ant-tabs-content {
+            overflow: visible !important;
+          }
+          .suggest-tabs .ant-tabs-tabpane {
+            overflow: visible !important;
+          }
+
+          /* Hide scrollbar for carousel */
+          .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+          }
+          .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+          }
+
+          /* Weather Carousel Glassmorphism Styling */
+          .weather-carousel-container {
+            width: 100%;
+            max-width: 100%;
+            position: relative;
+          }
+          .weather-carousel-container .slick-slider {
+            width: 100%;
+            position: static !important;
+          }
+          .weather-carousel-container .slick-list {
+            overflow: hidden !important;
+            margin: 0 40px;
+            padding: 4px 0;
+          }
+          .weather-carousel-container .slick-track {
+            display: flex !important;
+            gap: 0;
+          }
+          .weather-carousel-container .slick-slide {
+            height: auto;
+          }
+          .weather-carousel-container .slick-slide > div {
+            height: 100%;
+          }
+          .weather-carousel-container .slick-arrow {
+            display: none !important;
+          }
+          /* Smooth transition for slides */
+          .weather-carousel-container .slick-track {
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+          }
+
+          /* Circular Glass Navigation Button */
+          .carousel-nav-btn {
+            background: linear-gradient(
+              145deg,
+              rgba(255, 255, 255, 0.15) 0%,
+              rgba(255, 255, 255, 0.05) 50%,
+              rgba(255, 255, 255, 0.02) 100%
+            );
+            backdrop-filter: blur(12px) saturate(180%);
+            -webkit-backdrop-filter: blur(12px) saturate(180%);
+            border: 1.5px solid rgba(255, 255, 255, 0.25);
+            box-shadow:
+              inset 0 1px 2px rgba(255, 255, 255, 0.3),
+              inset 0 -1px 2px rgba(0, 0, 0, 0.1),
+              0 4px 16px rgba(0, 0, 0, 0.2),
+              0 0 20px rgba(59, 130, 246, 0.15);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+            top: 50% !important;
+            transform: translateY(-50%) !important;
+          }
+          .carousel-nav-btn::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            right: 2px;
+            bottom: 2px;
+            border-radius: 50%;
+            background: linear-gradient(
+              135deg,
+              rgba(255, 255, 255, 0.1) 0%,
+              transparent 60%
+            );
+            pointer-events: none;
+          }
+          .carousel-nav-btn::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50%;
+            border-radius: 50% 50% 0 0;
+            background: linear-gradient(
+              180deg,
+              rgba(255, 255, 255, 0.15) 0%,
+              transparent 100%
+            );
+            pointer-events: none;
+          }
+          .carousel-nav-btn:hover {
+            background: linear-gradient(
+              145deg,
+              rgba(255, 255, 255, 0.22) 0%,
+              rgba(255, 255, 255, 0.1) 50%,
+              rgba(255, 255, 255, 0.05) 100%
+            );
+            border-color: rgba(255, 255, 255, 0.35);
+            box-shadow:
+              inset 0 1px 3px rgba(255, 255, 255, 0.4),
+              inset 0 -1px 2px rgba(0, 0, 0, 0.1),
+              0 6px 20px rgba(0, 0, 0, 0.25),
+              0 0 30px rgba(59, 130, 246, 0.25);
+            transform: translateY(-50%) scale(1.08) !important;
+          }
+          .carousel-nav-btn:active {
+            transform: translateY(-50%) scale(0.95) !important;
+            box-shadow:
+              inset 0 2px 4px rgba(0, 0, 0, 0.2),
+              inset 0 -1px 2px rgba(255, 255, 255, 0.1),
+              0 2px 8px rgba(0, 0, 0, 0.2);
+          }
+        `}</style>
+
+        {/* Tabs Section - Centered Card Style */}
+        <Tabs
+          defaultActiveKey="today"
+          type="card"
+          size="large"
+          className="suggest-tabs w-full"
+          centered
+          onChange={() => {
+            setSuggestionResults([]);
+            setSelectedOutfitIndexes([]);
+          }}
+          items={[
+            {
+              key: "today",
+              label: (
+                <span className="font-semibold text-base px-4">
+                  Today&apos;s Outfit
+                </span>
+              ),
+              children: renderTodayOutfitContent(),
+            },
+            {
+              key: "future",
+              label: (
+                <span className="font-semibold text-base px-4">
+                  Outfit for Your Occasion
+                </span>
+              ),
+              children: renderFutureOccasionContent(),
+            },
+          ]}
+        />
+
+        {/* Location Map Modal for Today's Outfit */}
         <LocationMapModal
           open={isLocationModalOpen}
           onOpenChange={setIsLocationModalOpen}
@@ -591,6 +1566,29 @@ export default function SuggestPage() {
             } finally {
               setIsLoadingCustomWeather(false);
             }
+          }}
+        />
+
+        {/* Location Map Modal for Occasion Section */}
+        <LocationMapModal
+          open={isOccasionLocationModalOpen}
+          onOpenChange={setIsOccasionLocationModalOpen}
+          initialLocation={occasionLocation ? {
+            lat: occasionLocation.lat,
+            lng: occasionLocation.lng,
+            address: occasionLocation.cityName,
+          } : undefined}
+          onLocationSelect={(lat, lng, address) => {
+            setIsOccasionLocationModalOpen(false);
+            setOccasionLocation({
+              lat,
+              lng,
+              cityName: address,
+            });
+            // Switch to selected location tab and clear selected forecast day
+            setOccasionLocationTab("selected-location");
+            setSelectedForecastDay(null);
+            toast.success(`Location updated to ${address}`);
           }}
         />
       </div>
