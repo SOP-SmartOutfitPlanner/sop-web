@@ -91,8 +91,9 @@ export default function AdminReportsPage() {
     useAdminReportDetails(selectedReportId);
 
   // Transform data
-  const reports = (reportsData ?? []) as AdminReport[];
-  const pendingReports = (pendingData ?? []) as AdminReport[];
+  const reports = reportsData?.reports ?? [];
+  const metaData = reportsData?.metaData;
+  const pendingReports = pendingData?.reports ?? [];
 
   // Active filter chips
   const activeFilterChips = useActiveFilterChips({
@@ -103,35 +104,28 @@ export default function AdminReportsPage() {
     defaultFromDate,
   });
 
-  // Pagination helpers - based on pageIndex and pageSize
-  // Logic: Only allow next if current page has exactly pageSize items
-  // If current page has fewer items than pageSize, there's no next page
-  // This is the correct logic: if we get less than pageSize, we've reached the end
-  const canGoNext = reports.length === filters.pageSize && reports.length > 0;
-  const canGoPrev = filters.pageIndex > 1;
+  // Pagination helpers - now using metaData from API
+  const canGoNext = metaData?.hasNext ?? false;
+  const canGoPrev = metaData?.hasPrevious ?? false;
+  const totalPages = metaData?.totalPages ?? 1;
+  const currentPage = metaData?.currentPage ?? filters.pageIndex;
 
-  // Auto-reset to page 1 if current page returns empty array and we're not on page 1
-  // This handles the case where user navigates to a page that doesn't exist
+  // Auto-reset to page 1 if current page returns empty and we're beyond total pages
   useEffect(() => {
     if (
       !isLoading &&
       !isFetching &&
-      reports.length === 0 &&
-      filters.pageIndex > 1
+      metaData &&
+      filters.pageIndex > metaData.totalPages &&
+      metaData.totalPages > 0
     ) {
-      // Page doesn't exist (returned empty array), reset to page 1
+      // Page doesn't exist (beyond total pages), reset to page 1
       const timer = setTimeout(() => {
         handleFilterChange("pageIndex", 1);
       }, 100);
       return () => clearTimeout(timer);
     }
-  }, [
-    isLoading,
-    isFetching,
-    reports.length,
-    filters.pageIndex,
-    handleFilterChange,
-  ]);
+  }, [isLoading, isFetching, metaData, filters.pageIndex, handleFilterChange]);
 
   // Handlers
   const handleSelectReport = (report: AdminReport) => {
@@ -215,11 +209,12 @@ export default function AdminReportsPage() {
         onRetry={() => refetch()}
       />
 
-      {!isLoading && !error && (
+      {!isLoading && !error && metaData && (
         <Pagination
           pageIndex={filters.pageIndex}
           pageSize={filters.pageSize}
-          totalItems={reports.length}
+          totalCount={metaData.totalCount}
+          totalPages={metaData.totalPages}
           canGoNext={canGoNext}
           canGoPrev={canGoPrev}
           onPageChange={(page) => handleFilterChange("pageIndex", page)}

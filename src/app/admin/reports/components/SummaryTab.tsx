@@ -19,6 +19,7 @@ import {
 import { StatusBadge } from "./StatusBadge";
 import { actionDefinitions, reportTypeLabels } from "../constants";
 import { formatDate, getInitials } from "../utils";
+import { ReportersListSection } from "./ReportersListSection";
 import type {
   AdminReportDetail,
   ResolveReportAction,
@@ -57,12 +58,14 @@ export function SummaryTab({
         </div>
         <div className="rounded-xl border-2 border-red-200 bg-gradient-to-br from-red-50/80 to-red-50/40 p-5 space-y-4 shadow-sm">
           {reportDetail.content.body && (
-            <div
-              className="prose prose-sm max-w-none text-slate-800"
-              dangerouslySetInnerHTML={{
-                __html: reportDetail.content.body ?? "",
-              }}
-            />
+            <div className="max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
+              <div
+                className="prose prose-sm max-w-none text-slate-800"
+                dangerouslySetInnerHTML={{
+                  __html: reportDetail.content.body ?? "",
+                }}
+              />
+            </div>
           )}
           {totalImagesCount > 0 && (
             <div className="space-y-3">
@@ -108,18 +111,28 @@ export function SummaryTab({
         </div>
       </div>
 
-      {/* Priority 2: Report Description */}
+      {/* Priority 2: All Reporters List */}
+      <ReportersListSection
+        reportId={reportDetail.id}
+        totalReporters={reportDetail.reporterCount}
+      />
+
+      {/* Priority 3: Report Description */}
       <div className="space-y-3">
         <div className="flex items-center gap-2">
           <AlertCircle className="h-4 w-4 text-blue-600" />
-          <p className="text-base font-bold text-slate-900">Report Reason</p>
+          <p className="text-base font-bold text-slate-900">
+            Original Report Reason
+          </p>
         </div>
         <blockquote className="border-l-4 border-blue-500 bg-gradient-to-r from-blue-50/80 to-blue-50/40 pl-5 py-4 pr-5 rounded-r-lg text-sm text-slate-700 leading-relaxed shadow-sm">
-          <p className="not-italic">{reportDetail.description}</p>
+          <p className="not-italic">
+            Submitted by {reportDetail.originalReporter.displayName}
+          </p>
         </blockquote>
       </div>
 
-      {/* Priority 3: Compact Metadata */}
+      {/* Priority 4: Compact Metadata */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card className="border-slate-200 shadow-sm hover:shadow-md transition-shadow">
           <CardContent className="p-4">
@@ -166,34 +179,34 @@ export function SummaryTab({
         </Card>
       </div>
 
-      {/* Priority 4: Reporter & Author */}
+      {/* Priority 5: Original Reporter & Author */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card className="border-slate-200 shadow-sm hover:shadow-md transition-shadow">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-3">
               <User className="h-4 w-4 text-slate-400" />
               <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
-                Reporter
+                Original Reporter
               </p>
             </div>
             <div className="flex items-center gap-3">
               <Avatar className="h-10 w-10 ring-2 ring-slate-200">
-                {reportDetail.reporter.avatarUrl && (
+                {reportDetail.originalReporter.avatarUrl && (
                   <AvatarImage
-                    src={reportDetail.reporter.avatarUrl}
-                    alt={reportDetail.reporter.displayName}
+                    src={reportDetail.originalReporter.avatarUrl}
+                    alt={reportDetail.originalReporter.displayName}
                   />
                 )}
                 <AvatarFallback className="bg-gradient-to-br from-slate-100 to-slate-200 text-xs font-bold text-slate-700">
-                  {getInitials(reportDetail.reporter.displayName)}
+                  {getInitials(reportDetail.originalReporter.displayName)}
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-bold text-slate-900 truncate">
-                  {reportDetail.reporter.displayName}
+                  {reportDetail.originalReporter.displayName}
                 </p>
                 <p className="text-xs text-slate-500 truncate mt-0.5">
-                  {reportDetail.reporter.email}
+                  {reportDetail.originalReporter.email}
                 </p>
               </div>
             </div>
@@ -253,7 +266,7 @@ export function SummaryTab({
         </Card>
       </div>
 
-      {/* Priority 5: Dates & Resolution Notes */}
+      {/* Priority 6: Dates & Resolution Notes */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Card className="border-slate-200 shadow-sm">
           <CardContent className="p-4">

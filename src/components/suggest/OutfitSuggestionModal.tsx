@@ -393,7 +393,6 @@ export function OutfitSuggestionModal({
         <SuggestionResultView
           items={suggestionResult.items}
           reason={suggestionResult.reason}
-          onRechooseLocation={handleRechooseLocation}
           onClose={handleClose}
         />
       )}

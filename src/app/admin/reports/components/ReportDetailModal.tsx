@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState, type RefObject } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Loader2 } from "lucide-react";
@@ -125,7 +126,7 @@ export function ReportDetailModal({
       {
         id: "created",
         title: "Report submitted",
-        description: reportDetail.description,
+        description: `Report submitted by ${reportDetail.originalReporter.displayName}`,
         time: formatDate(reportDetail.createdDate),
         icon: AlertCircle,
       },
@@ -201,6 +202,13 @@ export function ReportDetailModal({
             }
           }}
         >
+          <VisuallyHidden>
+            <DialogTitle>
+              {reportDetail
+                ? `Report #${reportDetail.id} Details`
+                : "Report Details"}
+            </DialogTitle>
+          </VisuallyHidden>
           {isLoading ? (
             <div className="flex flex-col items-center justify-center px-6 py-16 min-h-[400px]">
               <div className="relative">

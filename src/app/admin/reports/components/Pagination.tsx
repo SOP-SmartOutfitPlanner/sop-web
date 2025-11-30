@@ -5,7 +5,8 @@ import { ChevronLeft, ChevronRight, ChevronsLeft } from "lucide-react";
 interface PaginationProps {
   pageIndex: number;
   pageSize: number;
-  totalItems: number;
+  totalCount?: number;
+  totalPages?: number;
   canGoNext: boolean;
   canGoPrev: boolean;
   onPageChange: (page: number) => void;
@@ -14,35 +15,32 @@ interface PaginationProps {
 export function Pagination({
   pageIndex,
   pageSize,
-  totalItems,
+  totalCount,
+  totalPages,
   canGoNext,
   canGoPrev,
   onPageChange,
 }: PaginationProps) {
-  const startItem = totalItems > 0 ? (pageIndex - 1) * pageSize + 1 : 0;
+  const startItem =
+    totalCount && totalCount > 0 ? (pageIndex - 1) * pageSize + 1 : 0;
   const endItem =
-    totalItems > 0
-      ? Math.min(pageIndex * pageSize, (pageIndex - 1) * pageSize + totalItems)
+    totalCount && totalCount > 0
+      ? Math.min(pageIndex * pageSize, totalCount)
       : 0;
-  const totalDisplay = canGoNext
-    ? `${pageIndex * pageSize}+`
-    : totalItems > 0
-    ? (pageIndex - 1) * pageSize + totalItems
-    : 0;
 
   return (
     <Card className="border-0 shadow">
       <CardContent className="pt-6">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="text-sm text-gray-600">
-            {totalItems > 0 ? (
+            {totalCount && totalCount > 0 ? (
               <>
                 Showing <span className="font-medium">{startItem}</span> to{" "}
                 <span className="font-medium">{endItem}</span> of{" "}
-                <span className="font-medium">{totalDisplay}</span> reports
+                <span className="font-medium">{totalCount}</span> reports
               </>
             ) : (
-              <span>No reports found on this page</span>
+              <span>No reports found</span>
             )}
           </div>
 
@@ -76,7 +74,7 @@ export function Pagination({
               >
                 {pageIndex}
               </Button>
-              {canGoNext && (
+              {totalPages && totalPages > pageIndex && (
                 <>
                   <Button
                     variant="outline"
@@ -86,7 +84,19 @@ export function Pagination({
                   >
                     {pageIndex + 1}
                   </Button>
-                  <span className="px-2 text-gray-400">...</span>
+                  {totalPages > pageIndex + 1 && (
+                    <span className="px-2 text-gray-400">...</span>
+                  )}
+                  {totalPages > pageIndex + 1 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="min-w-9"
+                      onClick={() => onPageChange(totalPages)}
+                    >
+                      {totalPages}
+                    </Button>
+                  )}
                 </>
               )}
             </div>
