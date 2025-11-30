@@ -11,6 +11,7 @@ import {
   Shirt,
   Share2,
   UserPlus,
+  Send,
 } from "lucide-react";
 import { toast } from "sonner";
 import GlassCard from "@/components/ui/glass-card";
@@ -32,6 +33,7 @@ import {
   useLikeCollection,
   useSaveCollection,
   useFollowStylist,
+  usePublishCollection,
 } from "@/hooks/useCollectionMutations";
 
 const DEFAULT_DESCRIPTION =
@@ -77,6 +79,15 @@ export function CollectionDetail({ collectionId }: CollectionDetailProps) {
     collection?.userId ?? 0,
     collection?.isFollowing
   );
+
+  const publishMutation = usePublishCollection(
+    collectionId,
+    collection?.isPublished
+  );
+
+  // Check if current user is the owner of this collection
+  const isOwner = userId !== null && userId === collection?.userId;
+  const canPublish = isOwner && collection?.isPublished === false;
 
   // Get comment count from API
   const commentsCountQuery = useQuery({
@@ -311,6 +322,23 @@ export function CollectionDetail({ collectionId }: CollectionDetailProps) {
               <Share2 className="h-4 w-4 text-slate-200 transition-transform duration-200 group-hover:scale-110 group-hover:rotate-12" />
               <span className="text-white/90">Share</span>
             </button>
+            {canPublish && (
+              <button
+                onClick={() => publishMutation.mutate()}
+                disabled={publishMutation.isPending}
+                className={cn(
+                  "group relative inline-flex items-center gap-2.5 rounded-xl border-2 px-5 py-2.5 text-sm font-medium text-white transition-all duration-200 shadow-lg",
+                  "border-emerald-400/60 bg-emerald-500/25 backdrop-blur-sm",
+                  "hover:border-emerald-300/80 hover:bg-emerald-500/35 hover:shadow-xl hover:shadow-emerald-500/30 hover:scale-105",
+                  "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-emerald-400/60 disabled:hover:bg-emerald-500/25 disabled:hover:scale-100"
+                )}
+              >
+                <Send className="h-4 w-4 text-emerald-200 transition-transform duration-200 group-hover:scale-110" />
+                <span className="text-white/90">
+                  {publishMutation.isPending ? "Publishing..." : "Publish"}
+                </span>
+              </button>
+            )}
           </div>
         </div>
       </div>
