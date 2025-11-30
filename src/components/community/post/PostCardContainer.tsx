@@ -6,8 +6,8 @@ import { PostHeader } from "./PostHeader";
 import { PostImage } from "./PostImage";
 import { PostContent } from "./PostContent";
 import { PostActions } from "./PostActions";
-import { PostItemsGallery } from "../PostItemsGallery";
-import { PostOutfitDisplay } from "../PostOutfitDisplay";
+import { AttachmentButton } from "../AttachmentButton";
+import { AttachmentModal } from "../AttachmentModal";
 import GlassCard from "@/components/ui/glass-card";
 import { useState } from "react";
 
@@ -57,6 +57,8 @@ export function PostCardContainer({
   authorInfo,
 }: PostCardContainerProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const [isItemsModalOpen, setIsItemsModalOpen] = useState(false);
+  const [isOutfitModalOpen, setIsOutfitModalOpen] = useState(false);
 
   return (
     <div
@@ -125,17 +127,23 @@ export function PostCardContainer({
             </div>
           )}
 
-          {/* Items Display */}
-          {post.items && post.items.length > 0 && (
-            <div className="mx-4 mt-3 p-4 rounded-xl bg-white/5 border border-white/10">
-              <PostItemsGallery items={post.items} />
-            </div>
-          )}
-
-          {/* Outfit Display */}
-          {post.outfit && (
-            <div className="mx-4 mt-3 p-4 rounded-xl bg-white/5 border border-white/10">
-              <PostOutfitDisplay outfit={post.outfit} />
+          {/* Attachments */}
+          {((post.items && post.items.length > 0) || post.outfit) && (
+            <div className="px-4 mt-3 flex flex-wrap gap-2">
+              {post.items && post.items.length > 0 && (
+                <AttachmentButton
+                  type="items"
+                  count={post.items.length}
+                  onClick={() => setIsItemsModalOpen(true)}
+                />
+              )}
+              {post.outfit && (
+                <AttachmentButton
+                  type="outfit"
+                  count={post.outfit.items?.length || 0}
+                  onClick={() => setIsOutfitModalOpen(true)}
+                />
+              )}
             </div>
           )}
 
@@ -152,6 +160,21 @@ export function PostCardContainer({
           </div>
         </div>
       </GlassCard>
+
+      {/* Attachment Modals */}
+      {/* Attachment Modals */}
+      <AttachmentModal
+        isOpen={isItemsModalOpen}
+        onClose={() => setIsItemsModalOpen(false)}
+        type="items"
+        items={post.items || undefined}
+      />
+      <AttachmentModal
+        isOpen={isOutfitModalOpen}
+        onClose={() => setIsOutfitModalOpen(false)}
+        type="outfit"
+        outfit={post.outfit || undefined}
+      />
     </div>
   );
 }
