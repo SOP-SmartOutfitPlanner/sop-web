@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Plus } from "lucide-react";
+import { Plus, Sparkles } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
 import GlassButton from "@/components/ui/glass-button";
@@ -39,6 +39,13 @@ const ViewOutfitDialog = dynamic(
     })),
   { ssr: false }
 );
+const VirtualTryOnDialog = dynamic(
+  () =>
+    import("@/components/outfit/VirtualTryOnDialog").then((mod) => ({
+      default: mod.VirtualTryOnDialog,
+    })),
+  { ssr: false }
+);
 
 export default function OutfitPage() {
   const router = useRouter();
@@ -48,12 +55,14 @@ export default function OutfitPage() {
   const [viewingOutfit, setViewingOutfit] = useState<Outfit | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [isVirtualTryOnDialogOpen, setIsVirtualTryOnDialogOpen] = useState(false);
   const pageSize = 12;
 
   const { isAuthenticated, user } = useAuthStore();
   const {
     searchQuery,
     showFavorites,
+    showSaved,
     isCreateDialogOpen,
     setCreateDialogOpen,
   } = useOutfitStore();
@@ -77,6 +86,7 @@ export default function OutfitPage() {
     takeAll: false,
     search: searchQuery,
     isFavorite: showFavorites ? true : undefined,
+    isSaved: showSaved ? true : undefined,
   });
 
   // Fetch wardrobe items for outfit creation
@@ -209,7 +219,7 @@ export default function OutfitPage() {
       document.body.style.width = "";
       document.body.style.top = "";
     };
-  }, [isCreateDialogOpen, isEditDialogOpen, isViewDialogOpen]);
+  }, [isCreateDialogOpen, isEditDialogOpen, isViewDialogOpen, isVirtualTryOnDialogOpen]);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -253,15 +263,26 @@ export default function OutfitPage() {
             </p>
           </div>
 
-          <GlassButton
-            variant="primary"
-            size="lg"
-            onClick={() => setCreateDialogOpen(true)}
-            className="gap-2"
-          >
-            <Plus className="w-5 h-5" />
-            Create Outfit
-          </GlassButton>
+          <div className="flex gap-2">
+            <GlassButton
+              variant="secondary"
+              size="md"
+              onClick={() => setIsVirtualTryOnDialogOpen(true)}
+              className="gap-1.5"
+            >
+              <Sparkles className="w-4 h-4" />
+              Virtual Try-On
+            </GlassButton>
+            <GlassButton
+              variant="primary"
+              size="md"
+              onClick={() => setCreateDialogOpen(true)}
+              className="gap-1.5"
+            >
+              <Plus className="w-4 h-4" />
+              Create Outfit
+            </GlassButton>
+          </div>
         </div>
 
         {/* Filters */}
@@ -362,6 +383,12 @@ export default function OutfitPage() {
           cancelText=""
           variant="warning"
           isLoading={false}
+        />
+
+        {/* Virtual Try-On Dialog */}
+        <VirtualTryOnDialog
+          open={isVirtualTryOnDialogOpen}
+          onOpenChange={setIsVirtualTryOnDialogOpen}
         />
       </div>
     </div>

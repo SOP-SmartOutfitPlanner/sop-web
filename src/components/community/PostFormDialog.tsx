@@ -22,6 +22,13 @@ import { createPortal } from "react-dom";
 import { getCategoryIcon } from "@/lib/utils/category-icons";
 import { getCategoryColor } from "@/lib/constants/category-colors";
 
+interface SharePostData {
+  imageUrl: string | null;
+  caption: string;
+  outfitId?: number;
+  itemIds?: number[];
+}
+
 interface PostFormDialogProps {
   mode: PostFormMode;
   post?: Post; // Required for edit mode
@@ -36,6 +43,7 @@ interface PostFormDialogProps {
     outfitId?: number;
   }) => void | Promise<void>;
   isSubmitting?: boolean;
+  initialShareData?: SharePostData | null; // For external sharing (e.g., virtual try-on)
 }
 
 export function PostFormDialog({
@@ -44,6 +52,7 @@ export function PostFormDialog({
   isOpen = true,
   onSubmit,
   isSubmitting = false,
+  initialShareData,
 }: PostFormDialogProps) {
   const { user } = useAuthStore();
 
@@ -55,6 +64,7 @@ export function PostFormDialog({
   );
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [caption, setCaption] = useState("");
+  const [hasLoadedShareData, setHasLoadedShareData] = useState(false);
 
   // Item/Outfit selection state
   const [selectionMode, setSelectionMode] = useState<"items" | "outfit" | null>(
@@ -107,6 +117,61 @@ export function PostFormDialog({
       setCaption(editor.getText());
     },
   });
+
+  // Load initial share data (from virtual try-on or other external sources)
+  useEffect(() => {
+    if (initialShareData && !hasLoadedShareData && editor && mode === "create") {
+      console.log("Loading share data:", initialShareData);
+      
+      // Set caption
+      if (initialShareData.caption) {
+        editor.commands.setContent(initialShareData.caption);
+        setCaption(editor.getText());
+      }
+      
+      // Load image from URL
+      if (initialShareData.imageUrl) {
+        // Fetch the image and convert to File
+        fetch(initialShareData.imageUrl)
+          .then(res => res.blob())
+          .then(blob => {
+            const file = new File([blob], `virtual-tryon-${Date.now()}.jpg`, { type: blob.type });
+            setSelectedFiles([file]);
+            
+            // Create preview URL
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              const result = e.target?.result as string;
+              setSelectedImages([result]);
+            };
+            reader.readAsDataURL(file);
+          })
+          .catch(err => console.error("Failed to load share image:", err));
+      }
+      
+      // Set items/outfit if provided
+      if (initialShareData.itemIds && initialShareData.itemIds.length > 0) {
+        setSelectionMode("items");
+        setSelectedItemIds(initialShareData.itemIds);
+        
+        // Fetch full item data
+        Promise.all(
+          initialShareData.itemIds.map(id => 
+            wardrobeAPI.getItem(id).catch(() => null)
+          )
+        ).then(items => {
+          const validItems = items.filter((item): item is ApiWardrobeItem => item !== null);
+          setSelectedItems(validItems);
+        });
+      } else if (initialShareData.outfitId) {
+        setSelectionMode("outfit");
+        setSelectedOutfitId(initialShareData.outfitId);
+        // Note: Full outfit data would need to be fetched here if needed
+      }
+      
+      setHasLoadedShareData(true);
+    }
+  }, [initialShareData, hasLoadedShareData, editor, mode]);
 
   // Initialize editor with post data in edit mode
   useEffect(() => {

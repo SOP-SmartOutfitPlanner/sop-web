@@ -1,13 +1,13 @@
 "use client";
 
 import { memo, useCallback } from "react";
-import { Search, Heart, X } from "lucide-react";
+import { Search, Heart, Bookmark, X } from "lucide-react";
 import GlassButton from "@/components/ui/glass-button";
 import { useOutfitStore } from "@/store/outfit-store";
 import { Input } from "antd";
 
 const OutfitFiltersComponent = () => {
-  const { searchQuery, setSearchQuery, showFavorites, setShowFavorites } =
+  const { searchQuery, setSearchQuery, showFavorites, setShowFavorites, showSaved, setShowSaved } =
     useOutfitStore();
 
   const handleSearchChange = useCallback(
@@ -22,8 +22,22 @@ const OutfitFiltersComponent = () => {
   }, [setSearchQuery]);
 
   const handleToggleFavorites = useCallback(() => {
-    setShowFavorites(!showFavorites);
-  }, [showFavorites, setShowFavorites]);
+    if (showFavorites) {
+      setShowFavorites(false);
+    } else {
+      setShowFavorites(true);
+      setShowSaved(false);
+    }
+  }, [showFavorites, setShowFavorites, setShowSaved]);
+
+  const handleToggleSaved = useCallback(() => {
+    if (showSaved) {
+      setShowSaved(false);
+    } else {
+      setShowSaved(true);
+      setShowFavorites(false);
+    }
+  }, [showSaved, setShowSaved, setShowFavorites]);
 
   return (
     <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center">
@@ -57,6 +71,15 @@ const OutfitFiltersComponent = () => {
         >
           <Heart className={`w-4 h-4 ${showFavorites ? "fill-current" : ""}`} />
           Favorites
+        </GlassButton>
+        <GlassButton
+          variant={showSaved ? "primary" : "secondary"}
+          size="md"
+          onClick={handleToggleSaved}
+          className="gap-2"
+        >
+          <Bookmark className={`w-4 h-4 ${showSaved ? "fill-current" : ""}`} />
+          Saved
         </GlassButton>
       </div>
     </div>

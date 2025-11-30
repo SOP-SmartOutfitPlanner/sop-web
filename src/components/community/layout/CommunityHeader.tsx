@@ -6,6 +6,13 @@ import { NewPostDialog } from "../NewPostDialog";
 import ShareLookButton3D from "@/components/ui/ShareLookButton3D";
 import { useRouter } from "next/navigation";
 
+interface SharePostData {
+  imageUrl: string | null;
+  caption: string;
+  outfitId?: number;
+  itemIds?: number[];
+}
+
 interface CommunityHeaderProps {
   isNewPostOpen: boolean;
   onNewPostOpenChange: (open: boolean) => void;
@@ -14,9 +21,12 @@ interface CommunityHeaderProps {
     captionHtml: string;
     tags: string[];
     files?: File[]; // Changed to File[] for upload
+    itemIds?: number[];
+    outfitId?: number;
   }) => Promise<void>;
   isSubmitting?: boolean;
   onRefreshFeed?: () => void;
+  initialShareData?: SharePostData | null;
 }
 
 /**
@@ -28,6 +38,7 @@ export function CommunityHeader({
   onCreatePost,
   isSubmitting = false,
   onRefreshFeed,
+  initialShareData,
 }: CommunityHeaderProps) {
   const router = useRouter();
 
@@ -65,6 +76,7 @@ export function CommunityHeader({
             isOpen={isNewPostOpen}
             onCreatePost={onCreatePost}
             isSubmitting={isSubmitting}
+            initialShareData={initialShareData}
           />
         </DialogContent>
       </Dialog>

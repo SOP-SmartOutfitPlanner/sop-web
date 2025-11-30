@@ -23,6 +23,9 @@ interface OutfitState {
   showFavorites: boolean;
   setShowFavorites: (show: boolean) => void;
 
+  showSaved: boolean;
+  setShowSaved: (show: boolean) => void;
+
   searchQuery: string;
   setSearchQuery: (query: string) => void;
 }
@@ -53,6 +56,9 @@ export const useOutfitStore = create<OutfitState>((set) => ({
   // Filters
   showFavorites: false,
   setShowFavorites: (show) => set({ showFavorites: show }),
+
+  showSaved: false,
+  setShowSaved: (show) => set({ showSaved: show }),
 
   searchQuery: "",
   setSearchQuery: (query) => set({ searchQuery: query }),
