@@ -82,6 +82,25 @@ export default function SubscriptionContentPage() {
   const currentSubscription = currentData?.data;
   const currentPlanId = currentSubscription?.subscriptionPlanId;
 
+  // Auto-refetch all subscription data when page mounts
+  useEffect(() => {
+    const refreshAllData = async () => {
+      try {
+        await Promise.all([
+          refetch(),
+          refetchCurrent(),
+          refetchHistory(),
+        ]);
+        // Trigger global refresh event for UserSubscriptionInfo
+        window.dispatchEvent(new Event('subscription:refresh'));
+      } catch (error) {
+        console.error('Error refreshing subscription data:', error);
+      }
+    };
+
+    refreshAllData();
+  }, []); // Only run once on mount
+
   // Check pending payment từ localStorage khi mount
   useEffect(() => {
     const checkPendingPayment = () => {

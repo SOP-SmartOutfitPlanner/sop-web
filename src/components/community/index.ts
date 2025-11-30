@@ -33,6 +33,14 @@ export * from "./comment";
 // ===========================
 export { NewPostDialog } from "./NewPostDialog";
 
+// ===========================
+// Attachment Components
+// ===========================
+export { AttachmentButton } from "./AttachmentButton";
+export { AttachmentModal } from "./AttachmentModal";
+export { PostItemsGallery } from "./PostItemsGallery";
+export { PostOutfitDisplay } from "./PostOutfitDisplay";
+
 // Lazy-only exports
 export { ProfileInfo } from "./profile/ProfileInfo";
 export { ProfileHeader } from "./profile/ProfileHeader";

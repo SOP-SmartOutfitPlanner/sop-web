@@ -450,10 +450,9 @@ export default function SuggestPage() {
             style={{ width: 192 }}
           >
             <Select.Option value={1}>1 Outfit</Select.Option>
+            <Select.Option value={2}>2 Outfits</Select.Option>
             <Select.Option value={3}>3 Outfits</Select.Option>
-            <Select.Option value={5}>5 Outfits</Select.Option>
-            <Select.Option value={8}>8 Outfits</Select.Option>
-            <Select.Option value={10}>10 Outfits</Select.Option>
+            <Select.Option value={4}>4 Outfits</Select.Option>
           </Select>
 
           <GlassButton

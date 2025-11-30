@@ -50,7 +50,7 @@ export function PostContent({
   const shouldTruncate = isLongContent && !isExpanded && !isModal; // Don't truncate in modal
 
   return (
-    <div className={`space-y-2 ${isModal ? "" : "px-4"}`}>
+    <div className={`space-y-2`}>
       <div className="space-y-1">
         <div
           className={`text-white font-semibold text-base leading-relaxed prose prose-invert prose-sm max-w-none break-words ${
