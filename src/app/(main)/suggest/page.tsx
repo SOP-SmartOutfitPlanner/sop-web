@@ -543,14 +543,15 @@ export default function SuggestPage() {
   // Render Future Occasion tab content
   const renderFutureOccasionContent = () => (
     <div className="space-y-8">
-      <div className="text-center py-8">
-        <h4 className="font-bricolage font-bold text-xl md:text-2xl leading-tight mb-4">
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-purple-100 to-pink-200">
-            Plan Your Perfect Look
+      {/* Header */}
+      <div>
+        <h4 className="font-dela-gothic text-2xl md:text-3xl lg:text-4xl leading-tight">
+          <span className="bg-clip-text text-transparent bg-linear-to-r from-white via-blue-100 to-cyan-200">
+            Dress to Impress
           </span>
         </h4>
-        <p className="text-white/70 max-w-2xl mx-auto">
-          Get outfit suggestions for upcoming events and special occasions. Select an occasion and let AI help you prepare the perfect outfit in advance.
+        <p className="bg-clip-text text-transparent bg-linear-to-r from-white via-blue-100 to-cyan-200">
+          Plan your perfect outfit for any upcoming occasion
         </p>
       </div>
 
