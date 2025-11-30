@@ -6,6 +6,8 @@ import { Image } from "antd";
 import { motion, AnimatePresence } from "framer-motion";
 import GlassButton from "@/components/ui/glass-button";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { useSharePostStore } from "@/store/share-post-store";
 
 interface VirtualTryOnResultDialogProps {
   open: boolean;
@@ -13,6 +15,8 @@ interface VirtualTryOnResultDialogProps {
   resultUrl: string | null;
   isGenerating: boolean;
   onRegenerate?: () => void;
+  selectedItemIds?: number[];
+  selectedOutfitId?: number | null;
 }
 
 const loadingMessages = [
@@ -30,7 +34,11 @@ export function VirtualTryOnResultDialog({
   resultUrl,
   isGenerating,
   onRegenerate,
+  selectedItemIds = [],
+  selectedOutfitId = null,
 }: VirtualTryOnResultDialogProps) {
+  const router = useRouter();
+  const { setShareData } = useSharePostStore();
   const [isDownloading, setIsDownloading] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
@@ -105,35 +113,34 @@ export function VirtualTryOnResultDialog({
     }
   }, [resultUrl]);
 
-  // Handle share
+  // Handle share - Open community post creation with pre-filled data
   const handleShare = useCallback(async () => {
     if (!resultUrl) return;
 
     setIsSharing(true);
     try {
-      if (navigator.share) {
-        // Use native share if available
-        await navigator.share({
-          title: "My Virtual Try-On",
-          text: "Check out my virtual try-on result!",
-          url: resultUrl,
-        });
-        toast.success("Shared successfully!");
-      } else {
-        // Fallback: Copy to clipboard
-        await navigator.clipboard.writeText(resultUrl);
-        toast.success("Link copied to clipboard!");
-      }
+      // Set share data in store with items/outfit if available
+      setShareData({
+        imageUrl: resultUrl,
+        caption: "Experience with Virtual Try On on Smart Outfit Planner",
+        outfitId: selectedOutfitId || undefined,
+        itemIds: selectedItemIds.length > 0 ? selectedItemIds : undefined,
+      });
+
+      // Close this dialog
+      onOpenChange(false);
+
+      // Navigate to community page - the modal will open automatically
+      router.push("/community?openPost=true");
+      
+      toast.success("Opening post creation...");
     } catch (error) {
-      // User cancelled share or error occurred
-      if ((error as Error).name !== "AbortError") {
-        console.error("❌ Share error:", error);
-        toast.error("Failed to share");
-      }
+      console.error("❌ Share error:", error);
+      toast.error("Failed to open post creation");
     } finally {
       setIsSharing(false);
     }
-  }, [resultUrl]);
+  }, [resultUrl, setShareData, onOpenChange, router, selectedItemIds, selectedOutfitId]);
 
   if (!open) return null;
 

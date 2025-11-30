@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useState, Suspense } from "react";
+import { useCallback, useState, Suspense, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { useCommunityAuth } from "@/hooks/useCommunityAuth";
 import { useCommunityFilters } from "@/hooks/useCommunityFilters";
 import { useCreatePost } from "@/hooks/useCreatePost";
 import { LoadingScreen } from "@/components/community";
+import { useSharePostStore } from "@/store/share-post-store";
 
 const CommunityLayout = dynamic(
   () =>
@@ -73,10 +74,23 @@ export default function Community() {
   const { createPost, isCreating } = useCreatePost();
   const [isNewPostOpen, setIsNewPostOpen] = useState(false);
   const [feedRefreshKey, setFeedRefreshKey] = useState(0);
+  
+  // Share post store for external sharing (e.g., virtual try-on)
+  const { shareData, clearShareData } = useSharePostStore();
 
   const handleFeedRefresh = useCallback(() => {
     setFeedRefreshKey((prev) => prev + 1);
   }, []);
+  
+  // Check URL params to auto-open post creation modal
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("openPost") === "true" && shareData) {
+      setIsNewPostOpen(true);
+      // Clean up URL
+      window.history.replaceState({}, "", "/community");
+    }
+  }, [shareData]);
 
   // Handle post creation and close dialog
   const handleCreatePost = async (postData: {
@@ -84,10 +98,13 @@ export default function Community() {
     captionHtml: string;
     tags: string[];
     files?: File[]; // Changed to File[] for upload
+    itemIds?: number[];
+    outfitId?: number;
   }) => {
     const success = await createPost(postData);
     if (success) {
       setIsNewPostOpen(false);
+      clearShareData(); // Clear share data after successful post
     }
   };
 
@@ -105,6 +122,7 @@ export default function Community() {
         onCreatePost={handleCreatePost}
         isSubmitting={isCreating}
         onRefreshFeed={handleFeedRefresh}
+        initialShareData={shareData}
       />
 
       {/* All filters grouped together */}

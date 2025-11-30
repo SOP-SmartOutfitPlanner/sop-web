@@ -784,6 +784,8 @@ export function VirtualTryOnDialog({
         resultUrl={resultUrl}
         isGenerating={isProcessing}
         onRegenerate={handleRegenerate}
+        selectedItemIds={selectedItemIds}
+        selectedOutfitId={selectedOutfitId}
       />
     </>
   );
