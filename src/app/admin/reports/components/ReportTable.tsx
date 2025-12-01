@@ -32,25 +32,31 @@ function ActionBadge({ action }: { action: string }) {
     SUSPEND: {
       icon: Ban,
       className:
-        "bg-red-100 text-red-700 border-red-300 hover:bg-red-200 font-semibold",
-      iconColor: "text-red-600",
+        "bg-red-500/20 text-red-300 border-red-400/30 hover:bg-red-500/30 font-semibold",
+      iconColor: "text-red-400",
     },
     DELETE: {
       icon: Trash2,
       className:
-        "bg-orange-100 text-orange-700 border-orange-300 hover:bg-orange-200 font-semibold",
-      iconColor: "text-orange-600",
+        "bg-orange-500/20 text-orange-300 border-orange-400/30 hover:bg-orange-500/30 font-semibold",
+      iconColor: "text-orange-400",
+    },
+    WARN: {
+      icon: ShieldAlert,
+      className:
+        "bg-yellow-500/20 text-yellow-300 border-yellow-400/30 hover:bg-yellow-500/30 font-semibold",
+      iconColor: "text-yellow-400",
     },
     HIDE: {
       icon: EyeOff,
       className:
-        "bg-yellow-100 text-yellow-700 border-yellow-300 hover:bg-yellow-200 font-semibold",
-      iconColor: "text-yellow-600",
+        "bg-purple-500/20 text-purple-300 border-purple-400/30 hover:bg-purple-500/30 font-semibold",
+      iconColor: "text-purple-400",
     },
     NONE: {
       icon: Minus,
-      className: "bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200",
-      iconColor: "text-gray-500",
+      className: "bg-white/10 text-white/60 border-white/20 hover:bg-white/20",
+      iconColor: "text-white/50",
     },
   };
 
@@ -81,37 +87,42 @@ export function ReportTable({
   onRetry,
 }: ReportTableProps) {
   return (
-    <Card className="border-0 shadow-lg">
+    <Card className="border border-white/10 shadow-xl bg-white/5 backdrop-blur-xl">
       <CardHeader>
-        <CardTitle>Report table</CardTitle>
-        <p className="text-sm text-muted-foreground mt-1">
+        <CardTitle className="text-white">Report table</CardTitle>
+        <p className="text-sm text-white/60 mt-1">
           Displaying {pageSize} reports per page.
         </p>
       </CardHeader>
       <CardContent className="p-0">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-16">
-            <Loader2 className="h-12 w-12 text-blue-600 animate-spin mb-4" />
-            <p className="text-muted-foreground">Loading data...</p>
+            <Loader2 className="h-12 w-12 text-cyan-400 animate-spin mb-4" />
+            <p className="text-white/70">Loading data...</p>
           </div>
         ) : error ? (
           <div className="flex flex-col items-center justify-center py-16 text-center px-6">
-            <AlertCircle className="h-10 w-10 text-red-500 mb-4" />
-            <p className="font-medium text-gray-900 mb-2">
+            <AlertCircle className="h-10 w-10 text-red-400 mb-4" />
+            <p className="font-medium text-white mb-2">
               Failed to load reports
             </p>
-            <p className="text-sm text-muted-foreground mb-4">
+            <p className="text-sm text-white/60 mb-4">
               Please try again or check your network connection.
             </p>
-            <Button onClick={onRetry}>Retry</Button>
+            <Button 
+              onClick={onRetry}
+              className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700"
+            >
+              Retry
+            </Button>
           </div>
         ) : reports.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center px-6">
-            <ShieldAlert className="h-10 w-10 text-blue-500 mb-4" />
-            <p className="font-medium text-gray-900 mb-2">
+            <ShieldAlert className="h-10 w-10 text-cyan-400 mb-4" />
+            <p className="font-medium text-white mb-2">
               No reports match the current filters
             </p>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-white/60">
               Adjust the filters to see different results.
             </p>
           </div>
@@ -119,44 +130,44 @@ export function ReportTable({
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-slate-50 text-left text-xs uppercase tracking-wide text-muted-foreground">
-                  <th className="px-6 py-3">ID</th>
-                  <th className="px-6 py-3">Type</th>
-                  <th className="px-6 py-3">Reporter(s)</th>
-                  <th className="px-6 py-3">Author</th>
-                  <th className="px-6 py-3">Status</th>
-                  <th className="px-6 py-3">Action</th>
-                  <th className="px-6 py-3">Timestamp</th>
-                  <th className="px-6 py-3 text-right">Details</th>
+                <tr className="bg-white/5 border-b border-white/10 text-left text-xs uppercase tracking-wider text-white/90 font-semibold">
+                  <th className="px-6 py-4">ID</th>
+                  <th className="px-6 py-4">Type</th>
+                  <th className="px-6 py-4">Reporter(s)</th>
+                  <th className="px-6 py-4">Author</th>
+                  <th className="px-6 py-4">Status</th>
+                  <th className="px-6 py-4">Action</th>
+                  <th className="px-6 py-4">Timestamp</th>
+                  <th className="px-6 py-4 text-right">Details</th>
                 </tr>
               </thead>
               <tbody>
                 {reports.map((report) => (
                   <tr
                     key={report.id}
-                    className="border-b last:border-b-0 hover:bg-slate-50"
+                    className="border-b border-white/10 last:border-b-0 hover:bg-white/5 transition-colors"
                   >
-                    <td className="px-6 py-4 font-medium text-gray-900">
+                    <td className="px-6 py-4 font-medium text-white">
                       #{report.id}
                     </td>
                     <td className="px-6 py-4">
-                      <Badge variant="outline">{report.type}</Badge>
+                      <Badge variant="outline" className="bg-white/10 border-white/20 text-white/80">{report.type}</Badge>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
+                    <td className="px-6 py-4 text-sm text-white/70">
                       {report.originalReporter ? (
                         <div className="flex items-center gap-2">
                           <div>
-                            <p className="font-medium text-slate-900">
+                            <p className="font-medium text-white">
                               {report.originalReporter.displayName}
                             </p>
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-xs text-white/50">
                               {report.originalReporter.email}
                             </p>
                           </div>
                           {report.reporterCount > 1 && (
                             <Badge
                               variant="secondary"
-                              className="text-xs bg-blue-100 text-blue-700 border-blue-300 font-semibold"
+                              className="text-xs bg-cyan-500/20 text-cyan-300 border-cyan-400/30 font-semibold"
                             >
                               +{report.reporterCount - 1}
                             </Badge>
@@ -166,13 +177,13 @@ export function ReportTable({
                         "—"
                       )}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
+                    <td className="px-6 py-4 text-sm text-white/70">
                       {report.author ? (
                         <div>
-                          <p className="font-medium text-slate-900">
+                          <p className="font-medium text-white">
                             {report.author.displayName}
                           </p>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-xs text-white/50">
                             {report.author.email}
                           </p>
                         </div>
@@ -186,14 +197,14 @@ export function ReportTable({
                     <td className="px-6 py-4">
                       <ActionBadge action={report.action} />
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
+                    <td className="px-6 py-4 text-sm text-white/70">
                       {formatDate(report.createdDate)}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                        className="gap-2 text-cyan-400 hover:text-cyan-300 hover:bg-white/10"
                         onClick={() => onSelectReport(report)}
                       >
                         <Eye className="h-4 w-4" />

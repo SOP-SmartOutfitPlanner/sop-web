@@ -185,14 +185,14 @@ export default function AdminOccasionsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-200 via-white to-blue-200 bg-clip-text text-transparent">
             Occasion Management
           </h1>
-          <p className="text-gray-600 mt-2">
+          <p className="text-white/70 mt-2">
             Manage occasions for wardrobe items
           </p>
         </div>
@@ -201,7 +201,7 @@ export default function AdminOccasionsPage() {
             setFormName("");
             setIsCreateOpen(true);
           }}
-          className="bg-blue-600 hover:bg-blue-700"
+          className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 shadow-lg shadow-cyan-500/40"
         >
           <Plus className="w-4 h-4 mr-2" />
           Add Occasion
@@ -209,62 +209,63 @@ export default function AdminOccasionsPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="border-0 shadow">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="border border-white/10 shadow-xl bg-white/5 backdrop-blur-xl">
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-gray-900">
+            <div className="text-2xl font-bold text-white">
               {isLoading ? (
                 <Loader2 className="w-6 h-6 animate-spin" />
               ) : (
                 metaData?.totalCount || 0
               )}
             </div>
-            <p className="text-sm text-gray-600 mt-1">Total Occasions</p>
+            <p className="text-sm text-white/60 mt-1">Total Occasions</p>
           </CardContent>
         </Card>
-        <Card className="border-0 shadow">
+        <Card className="border border-white/10 shadow-xl bg-white/5 backdrop-blur-xl">
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-blue-600">
+            <div className="text-2xl font-bold text-cyan-400">
               {isLoading ? (
                 <Loader2 className="w-6 h-6 animate-spin" />
               ) : (
                 metaData?.currentPage || 0
               )}
             </div>
-            <p className="text-sm text-gray-600 mt-1">Current Page</p>
+            <p className="text-sm text-white/60 mt-1">Current Page</p>
           </CardContent>
         </Card>
-        <Card className="border-0 shadow">
+        <Card className="border border-white/10 shadow-xl bg-white/5 backdrop-blur-xl">
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-blue-400">
               {isLoading ? (
                 <Loader2 className="w-6 h-6 animate-spin" />
               ) : (
                 metaData?.totalPages || 0
               )}
             </div>
-            <p className="text-sm text-gray-600 mt-1">Total Pages</p>
+            <p className="text-sm text-white/60 mt-1">Total Pages</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Search & Filters */}
-      <Card className="border-0 shadow">
+      <Card className="border border-white/10 shadow-xl bg-white/5 backdrop-blur-xl">
         <CardContent className="pt-6">
           <div className="flex gap-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/60" />
               <Input
                 placeholder="Search occasions..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
+                className="pl-9 bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:bg-white/15 focus:border-cyan-400/50"
               />
             </div>
             {selectedIds.size > 0 && (
               <Button
                 variant="destructive"
                 onClick={() => setIsBulkDeleteOpen(true)}
+                className="bg-red-500/20 text-red-300 border-red-400/30 hover:bg-red-500/30"
               >
                 <Trash2 className="w-4 h-4 mr-2" />
                 Delete Selected ({selectedIds.size})
@@ -276,16 +277,21 @@ export default function AdminOccasionsPage() {
 
       {/* Selection Toolbar */}
       {selectedIds.size > 0 && (
-        <Card className="border-blue-500 border-2 bg-blue-50">
+        <Card className="border-cyan-400/50 border-2 bg-cyan-500/10 backdrop-blur-xl">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <CheckSquare className="w-5 h-5 text-blue-600" />
-                <span className="font-medium text-gray-900">
+                <CheckSquare className="w-5 h-5 text-cyan-400" />
+                <span className="font-medium text-white">
                   {selectedIds.size} occasion(s) selected
                 </span>
               </div>
-              <Button variant="outline" size="sm" onClick={clearSelection}>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={clearSelection}
+                className="border-white/20 text-white hover:bg-white/10"
+              >
                 <XSquare className="w-4 h-4 mr-2" />
                 Clear Selection
               </Button>
@@ -295,55 +301,59 @@ export default function AdminOccasionsPage() {
       )}
 
       {/* Table */}
-      <Card className="border-0 shadow-lg">
+      <Card className="border border-white/10 shadow-xl bg-white/5 backdrop-blur-xl">
         <CardContent className="pt-6">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-              <span className="ml-3 text-gray-600">Loading occasions...</span>
+              <Loader2 className="w-8 h-8 animate-spin text-cyan-400" />
+              <span className="ml-3 text-white/70">Loading occasions...</span>
             </div>
           ) : occasions.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-gray-600">No occasions found.</p>
+              <p className="text-white/70">No occasions found.</p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12">
-                    <Checkbox
-                      checked={
-                        occasions.length > 0 &&
-                        occasions.every((occ) => selectedIds.has(occ.id))
-                      }
-                      onCheckedChange={(checked: boolean) =>
-                        checked ? selectAll() : clearSelection()
-                      }
-                    />
-                  </TableHead>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Created Date</TableHead>
-                  <TableHead>Updated Date</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <div className="rounded-lg border border-white/10 overflow-hidden bg-white/5">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-b border-white/10 bg-white/5 hover:bg-white/10">
+                      <TableHead className="w-12 text-white/90">
+                        <Checkbox
+                          checked={
+                            occasions.length > 0 &&
+                            occasions.every((occ) => selectedIds.has(occ.id))
+                          }
+                          onCheckedChange={(checked: boolean) =>
+                            checked ? selectAll() : clearSelection()
+                          }
+                          className="border-white/30 data-[state=checked]:bg-cyan-500 data-[state=checked]:border-cyan-500"
+                        />
+                      </TableHead>
+                      <TableHead className="text-white/90 text-xs uppercase tracking-wider font-semibold">ID</TableHead>
+                      <TableHead className="text-white/90 text-xs uppercase tracking-wider font-semibold">Name</TableHead>
+                      <TableHead className="text-white/90 text-xs uppercase tracking-wider font-semibold">Created Date</TableHead>
+                      <TableHead className="text-white/90 text-xs uppercase tracking-wider font-semibold">Updated Date</TableHead>
+                      <TableHead className="text-right text-white/90 text-xs uppercase tracking-wider font-semibold">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                 {occasions.map((occasion) => (
-                  <TableRow key={occasion.id}>
+                  <TableRow key={occasion.id} className="border-b border-white/10 hover:bg-white/5 transition-colors">
                     <TableCell>
                       <Checkbox
                         checked={selectedIds.has(occasion.id)}
                         onCheckedChange={() => toggleSelect(occasion.id)}
+                        className="border-white/30 data-[state=checked]:bg-cyan-500 data-[state=checked]:border-cyan-500"
                       />
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline">{occasion.id}</Badge>
+                      <Badge className="bg-white/10 text-white/80 border border-white/20">{occasion.id}</Badge>
                     </TableCell>
-                    <TableCell className="font-medium">
+                    <TableCell className="font-medium text-white">
                       {occasion.name}
                     </TableCell>
-                    <TableCell className="text-gray-600">
+                    <TableCell className="text-white/70 text-sm">
                       {new Date(occasion.createdDate).toLocaleDateString(
                         "en-US",
                         {
@@ -353,7 +363,7 @@ export default function AdminOccasionsPage() {
                         }
                       )}
                     </TableCell>
-                    <TableCell className="text-gray-600">
+                    <TableCell className="text-white/70 text-sm">
                       {new Date(occasion.updatedDate).toLocaleDateString(
                         "en-US",
                         {
@@ -369,7 +379,7 @@ export default function AdminOccasionsPage() {
                           variant="ghost"
                           size="icon"
                           onClick={() => openEditDialog(occasion)}
-                          className="h-8 w-8"
+                          className="h-8 w-8 hover:bg-white/20 text-white/70 hover:text-white"
                         >
                           <Edit className="w-4 h-4" />
                         </Button>
@@ -377,7 +387,7 @@ export default function AdminOccasionsPage() {
                           variant="ghost"
                           size="icon"
                           onClick={() => openDeleteDialog(occasion)}
-                          className="h-8 w-8 text-red-600 hover:text-red-700"
+                          className="h-8 w-8 hover:bg-red-500/20 text-red-400 hover:text-red-300"
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -387,26 +397,28 @@ export default function AdminOccasionsPage() {
                 ))}
               </TableBody>
             </Table>
+          </div>
+        </div>
           )}
         </CardContent>
       </Card>
 
       {/* Pagination */}
       {metaData && metaData.totalPages > 0 && (
-        <Card className="border-0 shadow">
+        <Card className="border border-white/10 shadow-xl bg-white/5 backdrop-blur-xl">
           <CardContent className="pt-6">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               {/* Pagination Info */}
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-white/70">
                 Showing{" "}
-                <span className="font-medium">
+                <span className="font-semibold text-cyan-300">
                   {(currentPage - 1) * pageSize + 1}
                 </span>{" "}
                 to{" "}
-                <span className="font-medium">
+                <span className="font-semibold text-cyan-300">
                   {Math.min(currentPage * pageSize, metaData.totalCount)}
                 </span>{" "}
-                of <span className="font-medium">{metaData.totalCount}</span>{" "}
+                of <span className="font-semibold text-cyan-300">{metaData.totalCount}</span>{" "}
                 occasions
               </div>
 
@@ -417,7 +429,7 @@ export default function AdminOccasionsPage() {
                   size="sm"
                   disabled={currentPage === 1}
                   onClick={() => setCurrentPage(1)}
-                  className="hidden sm:flex"
+                  className="hidden sm:flex border-white/20 bg-white/5 text-white hover:bg-gradient-to-r hover:from-cyan-500/20 hover:to-blue-500/20 hover:border-cyan-400/50 disabled:opacity-30"
                 >
                   <ChevronsLeft className="w-4 h-4" />
                 </Button>
@@ -427,6 +439,7 @@ export default function AdminOccasionsPage() {
                   size="sm"
                   disabled={!metaData.hasPrevious}
                   onClick={() => setCurrentPage((prev) => prev - 1)}
+                  className="border-white/20 bg-white/5 text-white hover:bg-gradient-to-r hover:from-cyan-500/20 hover:to-blue-500/20 hover:border-cyan-400/50 disabled:opacity-30"
                 >
                   <ChevronLeft className="w-4 h-4 mr-1" />
                   <span className="hidden sm:inline">Previous</span>
@@ -444,7 +457,7 @@ export default function AdminOccasionsPage() {
                     .map((page, index, array) => {
                       if (index > 0 && array[index - 1] !== page - 1) {
                         return (
-                          <span key={`ellipsis-${page}`} className="px-2">
+                          <span key={`ellipsis-${page}`} className="px-2 text-white/40">
                             ...
                           </span>
                         );
@@ -456,8 +469,8 @@ export default function AdminOccasionsPage() {
                           size="sm"
                           className={
                             page === currentPage
-                              ? "bg-blue-600 hover:bg-blue-700 text-white min-w-9"
-                              : "min-w-9"
+                              ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-500/30 border-0 hover:from-cyan-600 hover:to-blue-700 min-w-9"
+                              : "border-white/20 bg-white/5 text-white hover:bg-gradient-to-r hover:from-cyan-500/20 hover:to-blue-500/20 hover:border-cyan-400/50 min-w-9"
                           }
                           onClick={() => setCurrentPage(page)}
                         >
@@ -472,6 +485,7 @@ export default function AdminOccasionsPage() {
                   size="sm"
                   disabled={!metaData.hasNext}
                   onClick={() => setCurrentPage((prev) => prev + 1)}
+                  className="border-white/20 bg-white/5 text-white hover:bg-gradient-to-r hover:from-cyan-500/20 hover:to-blue-500/20 hover:border-cyan-400/50 disabled:opacity-30"
                 >
                   <span className="hidden sm:inline">Next</span>
                   <ChevronRight className="w-4 h-4 ml-1" />
@@ -482,7 +496,7 @@ export default function AdminOccasionsPage() {
                   size="sm"
                   disabled={currentPage === metaData.totalPages}
                   onClick={() => setCurrentPage(metaData.totalPages)}
-                  className="hidden sm:flex"
+                  className="hidden sm:flex border-white/20 bg-white/5 text-white hover:bg-gradient-to-r hover:from-cyan-500/20 hover:to-blue-500/20 hover:border-cyan-400/50 disabled:opacity-30"
                 >
                   <ChevronsRight className="w-4 h-4" />
                 </Button>
