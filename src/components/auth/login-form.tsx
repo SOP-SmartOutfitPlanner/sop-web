@@ -153,10 +153,7 @@ export function LoginForm() {
         {showErrorBanner && (
           <Banner
             variant="danger"
-            message={
-              errorMessage ||
-              "Admin accounts must use the admin portal at /admin/login."
-            }
+            message={errorMessage || "Login failed. Please try again."}
             onDismiss={() => setShowErrorBanner(false)}
           />
         )}

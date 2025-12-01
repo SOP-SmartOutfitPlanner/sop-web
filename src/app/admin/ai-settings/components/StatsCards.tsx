@@ -16,33 +16,29 @@ export function StatsCards({ isLoading, allSettings }: StatsCardsProps) {
       label: "Total Settings",
       value: allSettings.length,
       icon: Settings,
-      color: "text-slate-700",
-      bgGradient: "from-slate-50 to-slate-100",
-      borderColor: "border-slate-200",
+      iconColor: "text-white",
+      bgGradient: "from-white/10 to-white/5",
     },
     {
       label: "API Keys",
       value: allSettings.filter((s) => s.type.includes("API")).length,
       icon: Key,
-      color: "text-blue-600",
-      bgGradient: "from-blue-50 to-blue-100",
-      borderColor: "border-blue-200",
+      iconColor: "text-cyan-400",
+      bgGradient: "from-cyan-500/20 to-blue-500/20",
     },
     {
       label: "Models",
       value: allSettings.filter((s) => s.type.includes("MODEL")).length,
       icon: Cpu,
-      color: "text-purple-600",
-      bgGradient: "from-purple-50 to-purple-100",
-      borderColor: "border-purple-200",
+      iconColor: "text-purple-400",
+      bgGradient: "from-purple-500/20 to-pink-500/20",
     },
     {
       label: "Prompts",
       value: allSettings.filter((s) => s.type.includes("PROMPT")).length,
       icon: FileText,
-      color: "text-green-600",
-      bgGradient: "from-green-50 to-green-100",
-      borderColor: "border-green-200",
+      iconColor: "text-green-400",
+      bgGradient: "from-green-500/20 to-emerald-500/20",
     },
   ];
 
@@ -54,8 +50,7 @@ export function StatsCards({ isLoading, allSettings }: StatsCardsProps) {
           <Card
             key={stat.label}
             className={cn(
-              "border-2 transition-all duration-300 hover:shadow-lg hover:-translate-y-1",
-              stat.borderColor,
+              "border border-white/10 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 backdrop-blur-xl shadow-lg",
               `bg-gradient-to-br ${stat.bgGradient}`
             )}
           >
@@ -63,12 +58,12 @@ export function StatsCards({ isLoading, allSettings }: StatsCardsProps) {
               <div className="flex items-center justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
-                    <Icon className={cn("h-5 w-5", stat.color)} />
-                    <p className="text-sm font-medium text-gray-600">
+                    <Icon className={cn("h-5 w-5", stat.iconColor)} />
+                    <p className="text-sm font-medium text-white/70">
                       {stat.label}
                     </p>
                   </div>
-                  <div className={cn("text-3xl font-bold", stat.color)}>
+                  <div className="text-3xl font-bold text-white">
                     {isLoading ? (
                       <Loader2 className="w-7 h-7 animate-spin" />
                     ) : (

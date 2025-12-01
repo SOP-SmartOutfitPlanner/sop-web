@@ -39,16 +39,16 @@ import {
 
 // Mock data - replace with real API
 const userGrowthData = [
-  { month: "T1", users: 400, active: 240 },
-  { month: "T2", users: 300, active: 139 },
-  { month: "T3", users: 200, active: 200 },
-  { month: "T4", users: 278, active: 190 },
-  { month: "T5", users: 189, active: 180 },
-  { month: "T6", users: 239, active: 200 },
-  { month: "T7", users: 349, active: 280 },
-  { month: "T8", users: 400, active: 320 },
-  { month: "T9", users: 450, active: 350 },
-  { month: "T10", users: 500, active: 400 },
+  { month: "Jan", users: 400, active: 240 },
+  { month: "Feb", users: 300, active: 139 },
+  { month: "Mar", users: 200, active: 200 },
+  { month: "Apr", users: 278, active: 190 },
+  { month: "May", users: 189, active: 180 },
+  { month: "Jun", users: 239, active: 200 },
+  { month: "Jul", users: 349, active: 280 },
+  { month: "Aug", users: 400, active: 320 },
+  { month: "Sep", users: 450, active: 350 },
+  { month: "Oct", users: 500, active: 400 },
 ];
 
 const itemsData = [
@@ -146,18 +146,20 @@ export default function AdminDashboardPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600 mt-2">
-            Tổng quan hệ thống và thống kê 
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-200 via-white to-blue-200 bg-clip-text text-transparent">
+            Dashboard Overview
+          </h1>
+          <p className="text-white/70 mt-2">
+            System statistics and analytics at a glance
           </p>
         </div>
         <Button
           onClick={() => setIsPushDialogOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700"
+          className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 shadow-lg shadow-cyan-500/40 transition-all duration-200"
         >
           <Bell className="w-4 h-4 mr-2" />
           Push Notification
@@ -169,20 +171,24 @@ export default function AdminDashboardPage() {
         {stats.map((stat) => {
           const Icon = stat.icon;
           return (
-            <Card key={stat.title} className="border-0 shadow-lg hover:shadow-xl transition-shadow">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">
+            <Card 
+              key={stat.title} 
+              className="border border-white/10 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 bg-white/5 backdrop-blur-xl overflow-hidden relative group"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <CardHeader className="flex flex-row items-center justify-between pb-2 relative z-10">
+                <CardTitle className="text-sm font-medium text-white/70">
                   {stat.title}
                 </CardTitle>
-                <div className={`${stat.color} p-2 rounded-lg`}>
+                <div className={`${stat.color} p-3 rounded-xl shadow-lg`}>
                   <Icon className="w-5 h-5 text-white" />
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-gray-900">
+              <CardContent className="relative z-10">
+                <div className="text-3xl font-bold text-white">
                   {stat.value}
                 </div>
-                <p className="text-sm text-green-600 mt-1">
+                <p className="text-sm text-cyan-400 mt-1 font-medium">
                   {stat.change} from last month
                 </p>
               </CardContent>
@@ -194,10 +200,10 @@ export default function AdminDashboardPage() {
       {/* Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* User Growth Chart */}
-        <Card className="border-0 shadow-lg">
+        <Card className="border border-white/10 shadow-xl hover:shadow-2xl transition-shadow duration-300 bg-white/5 backdrop-blur-xl">
           <CardHeader>
-            <CardTitle>User Growth</CardTitle>
-            <p className="text-sm text-gray-500">Monthly user registration trends</p>
+            <CardTitle className="text-xl font-bold text-white">User Growth</CardTitle>
+            <p className="text-sm text-white/60">Monthly user registration trends</p>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -227,10 +233,10 @@ export default function AdminDashboardPage() {
         </Card>
 
         {/* Items by Category */}
-        <Card className="border-0 shadow-lg">
+        <Card className="border border-white/10 shadow-xl hover:shadow-2xl transition-shadow duration-300 bg-white/5 backdrop-blur-xl">
           <CardHeader>
-            <CardTitle>Items by Category</CardTitle>
-            <p className="text-sm text-gray-500">Distribution of wardrobe items</p>
+            <CardTitle className="text-xl font-bold text-white">Items by Category</CardTitle>
+            <p className="text-sm text-white/60">Distribution of wardrobe items</p>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -263,10 +269,10 @@ export default function AdminDashboardPage() {
       {/* Charts Row 2 */}
       <div className="grid grid-cols-1 gap-6">
         {/* Weekly Activity */}
-        <Card className="border-0 shadow-lg">
+        <Card className="border border-white/10 shadow-xl hover:shadow-2xl transition-shadow duration-300 bg-white/5 backdrop-blur-xl">
           <CardHeader>
-            <CardTitle>Weekly Activity</CardTitle>
-            <p className="text-sm text-gray-500">User logins and item uploads</p>
+            <CardTitle className="text-xl font-bold text-white">Weekly Activity</CardTitle>
+            <p className="text-sm text-white/60">User logins and item uploads</p>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -285,23 +291,26 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* System Info */}
-      <Card className="border-0 shadow-lg">
+      <Card className="border border-white/10 shadow-xl bg-white/5 backdrop-blur-xl">
         <CardHeader>
-          <CardTitle>System Information</CardTitle>
+          <CardTitle className="text-xl font-bold text-white">System Information</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <p className="text-sm text-gray-600">Version</p>
-              <p className="text-lg font-semibold text-gray-900">v1.0.0</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-white/10 backdrop-blur-sm p-4 rounded-xl shadow-md border border-white/20">
+              <p className="text-sm text-white/70 font-medium">Version</p>
+              <p className="text-2xl font-bold text-white mt-1">v1.0.0</p>
             </div>
-            <div>
-              <p className="text-sm text-gray-600">Last Updated</p>
-              <p className="text-lg font-semibold text-gray-900">2024-10-18</p>
+            <div className="bg-white/10 backdrop-blur-sm p-4 rounded-xl shadow-md border border-white/20">
+              <p className="text-sm text-white/70 font-medium">Last Updated</p>
+              <p className="text-2xl font-bold text-white mt-1">2024-10-18</p>
             </div>
-            <div>
-              <p className="text-sm text-gray-600">Status</p>
-              <p className="text-lg font-semibold text-green-600">Healthy</p>
+            <div className="bg-white/10 backdrop-blur-sm p-4 rounded-xl shadow-md border border-white/20">
+              <p className="text-sm text-white/70 font-medium">Status</p>
+              <p className="text-2xl font-bold text-cyan-400 mt-1 flex items-center gap-2">
+                <span className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse shadow-lg shadow-cyan-400/50"></span>
+                Healthy
+              </p>
             </div>
           </div>
         </CardContent>

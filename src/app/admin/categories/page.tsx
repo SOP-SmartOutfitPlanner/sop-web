@@ -242,26 +242,26 @@ export default function AdminCategoriesPage() {
       return (
         <div key={node.id}>
           <div
-            className="flex items-center gap-2 py-2 px-4 hover:bg-gray-50 rounded-lg group"
+            className="flex items-center gap-2 py-3 px-4 hover:bg-white/10 rounded-lg group transition-all duration-200 border border-transparent hover:border-white/20"
             style={{ paddingLeft: `${level * 24 + 16}px` }}
           >
             {/* Checkbox */}
             <Checkbox
               checked={isSelected}
               onCheckedChange={() => toggleSelect(node.id)}
-              className="mr-2"
+              className="mr-2 border-white/30 data-[state=checked]:bg-cyan-500 data-[state=checked]:border-cyan-500"
             />
 
             {/* Expand/Collapse */}
             {hasChildren ? (
               <button
                 onClick={() => toggleExpand(node.id)}
-                className="p-1 hover:bg-gray-200 rounded"
+                className="p-1 hover:bg-white/20 rounded transition-colors"
               >
                 {isExpanded ? (
-                  <ChevronDown className="w-4 h-4" />
+                  <ChevronDown className="w-4 h-4 text-cyan-300" />
                 ) : (
-                  <ChevronRight className="w-4 h-4" />
+                  <ChevronRight className="w-4 h-4 text-white/60" />
                 )}
               </button>
             ) : (
@@ -272,22 +272,19 @@ export default function AdminCategoriesPage() {
             <div className="flex-1 flex items-center gap-3">
               <FolderTree
                 className={`w-4 h-4 ${
-                  level === 0 ? "text-blue-600" : "text-gray-400"
+                  level === 0 ? "text-cyan-400" : "text-white/50"
                 }`}
               />
               <div>
-                <p className="font-medium text-gray-900">{node.name}</p>
-                {node.parentName && (
-                  <p className="text-xs text-gray-500">
-                    Parent: {node.parentName}
-                  </p>
-                )}
+                <p className="font-medium text-white">{node.name}</p>
               </div>
             </div>
 
             {/* Usage Stats */}
             <div className="flex items-center gap-2 mr-2">
-              <Badge variant="secondary">{node.children.length} children</Badge>
+              {node.children.length > 0 && (
+                <Badge className="bg-white/10 text-white/80 border border-white/20">{node.children.length} children</Badge>
+              )}
               {/* <Badge
                 variant={itemCount > 0 ? "default" : "outline"}
                 className={itemCount > 0 ? "bg-green-600" : ""}
@@ -302,7 +299,7 @@ export default function AdminCategoriesPage() {
                 variant="ghost"
                 size="icon"
                 onClick={() => openEditDialog(node)}
-                className="h-8 w-8"
+                className="h-8 w-8 hover:bg-white/20 text-white/70 hover:text-white"
               >
                 <Edit className="w-4 h-4" />
               </Button>
@@ -310,7 +307,7 @@ export default function AdminCategoriesPage() {
                 variant="ghost"
                 size="icon"
                 onClick={() => openDeleteDialog(node)}
-                className="h-8 w-8 text-red-600 hover:text-red-700"
+                className="h-8 w-8 hover:bg-red-500/20 text-red-400 hover:text-red-300"
               >
                 <Trash2 className="w-4 h-4" />
               </Button>
@@ -330,22 +327,22 @@ export default function AdminCategoriesPage() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600">Loading categories...</p>
+          <Loader2 className="w-12 h-12 animate-spin text-cyan-400 mx-auto mb-4" />
+          <p className="text-white/70">Loading categories...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-200 via-white to-blue-200 bg-clip-text text-transparent">
             Category Management
           </h1>
-          <p className="text-gray-600 mt-2">
+          <p className="text-white/70 mt-2">
             Manage product categories and classifications
           </p>
         </div>
@@ -355,7 +352,7 @@ export default function AdminCategoriesPage() {
             setFormParentId("null");
             setIsCreateOpen(true);
           }}
-          className="bg-blue-600 hover:bg-blue-700"
+          className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 shadow-lg shadow-cyan-500/40"
         >
           <Plus className="w-4 h-4 mr-2" />
           Add Category
@@ -363,53 +360,54 @@ export default function AdminCategoriesPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="border-0 shadow">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="border border-white/10 shadow-xl bg-white/5 backdrop-blur-xl">
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-gray-900">
+            <div className="text-2xl font-bold text-white">
               {data?.metaData.totalCount || 0}
             </div>
-            <p className="text-sm text-gray-600 mt-1">Total Categories</p>
+            <p className="text-sm text-white/60 mt-1">Total Categories</p>
           </CardContent>
         </Card>
-        <Card className="border-0 shadow">
+        <Card className="border border-white/10 shadow-xl bg-white/5 backdrop-blur-xl">
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-blue-600">
+            <div className="text-2xl font-bold text-cyan-400">
               {parentCategories.length}
             </div>
-            <p className="text-sm text-gray-600 mt-1">Parent Categories</p>
+            <p className="text-sm text-white/60 mt-1">Parent Categories</p>
           </CardContent>
         </Card>
-        <Card className="border-0 shadow">
+        <Card className="border border-white/10 shadow-xl bg-white/5 backdrop-blur-xl">
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-blue-400">
               {(data?.metaData.totalCount || 0) - parentCategories.length}
             </div>
-            <p className="text-sm text-gray-600 mt-1">Child Categories</p>
+            <p className="text-sm text-white/60 mt-1">Child Categories</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Selection Toolbar */}
       {selectedIds.size > 0 && (
-        <Card className="border-blue-500 border-2 bg-blue-50">
+        <Card className="border border-cyan-400/50 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 backdrop-blur-xl shadow-xl shadow-cyan-500/20">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <CheckSquare className="w-5 h-5 text-blue-600" />
-                <span className="font-medium text-gray-900">
+                <CheckSquare className="w-5 h-5 text-cyan-300" />
+                <span className="font-medium text-white">
                   {selectedIds.size} category selected
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={clearSelection}>
+                <Button variant="outline" size="sm" onClick={clearSelection} className="border-white/20 bg-white/10 text-white hover:bg-white/20">
                   <XSquare className="w-4 h-4 mr-2" />
                   Clear Selection
                 </Button>
                 <Button
-                  variant="destructive"
+                  variant="outline"
                   size="sm"
                   onClick={() => setIsBulkDeleteOpen(true)}
+                  className="border-red-400/30 bg-red-500/20 text-red-300 hover:bg-red-500/30"
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
                   Delete Selected ({selectedIds.size})
@@ -421,12 +419,12 @@ export default function AdminCategoriesPage() {
       )}
 
       {/* Category Tree */}
-      <Card className="border-0 shadow-lg">
+      <Card className="border border-white/10 shadow-xl bg-white/5 backdrop-blur-xl">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Category Hierarchy</CardTitle>
+            <CardTitle className="text-white">Category Hierarchy</CardTitle>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={selectAll}>
+              <Button variant="outline" size="sm" onClick={selectAll} className="border-white/20 bg-white/5 text-white hover:bg-white/10">
                 <CheckSquare className="w-4 h-4 mr-2" />
                 Select All
               </Button>

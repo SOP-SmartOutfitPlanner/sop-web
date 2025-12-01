@@ -49,9 +49,9 @@ export function SettingsTable({
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-16">
-        <Loader2 className="w-10 h-10 animate-spin text-blue-600 mb-4" />
-        <p className="text-gray-600 font-medium">Loading AI settings...</p>
-        <p className="text-sm text-gray-400 mt-1">
+        <Loader2 className="w-10 h-10 animate-spin text-cyan-400 mb-4" />
+        <p className="text-white font-medium">Loading AI settings...</p>
+        <p className="text-sm text-white/50 mt-1">
           Please wait while we fetch the data
         </p>
       </div>
@@ -61,13 +61,13 @@ export function SettingsTable({
   if (filteredSettings.length === 0) {
     return (
       <div className="text-center py-16">
-        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
-          <Search className="w-8 h-8 text-gray-400" />
+        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/10 flex items-center justify-center">
+          <Search className="w-8 h-8 text-white/40" />
         </div>
-        <p className="text-lg font-medium text-gray-900 mb-1">
+        <p className="text-lg font-medium text-white mb-1">
           No settings found
         </p>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-white/50">
           Try adjusting your search or filter criteria
         </p>
       </div>
@@ -75,25 +75,26 @@ export function SettingsTable({
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-gray-200">
+    <div className="overflow-x-auto rounded-lg border border-white/10">
       <Table>
         <TableHeader>
-          <TableRow className="bg-gray-50/50 hover:bg-gray-50/50">
+          <TableRow className="bg-white/5 hover:bg-white/5 border-b border-white/10">
             <TableHead className="w-12">
               <Checkbox
                 checked={allSelected}
                 onCheckedChange={(checked: boolean) =>
                   checked ? onSelectAll() : onClearSelection()
                 }
+                className="border-white/30 data-[state=checked]:bg-cyan-500"
               />
             </TableHead>
-            <TableHead className="font-semibold">ID</TableHead>
-            <TableHead className="font-semibold">Name</TableHead>
-            <TableHead className="font-semibold">Type</TableHead>
-            <TableHead className="font-semibold">Value</TableHead>
-            <TableHead className="font-semibold">Created</TableHead>
-            <TableHead className="font-semibold">Updated</TableHead>
-            <TableHead className="text-right font-semibold">Actions</TableHead>
+            <TableHead className="font-semibold text-white/90">ID</TableHead>
+            <TableHead className="font-semibold text-white/90">Name</TableHead>
+            <TableHead className="font-semibold text-white/90">Type</TableHead>
+            <TableHead className="font-semibold text-white/90">Value</TableHead>
+            <TableHead className="font-semibold text-white/90">Created</TableHead>
+            <TableHead className="font-semibold text-white/90">Updated</TableHead>
+            <TableHead className="text-right font-semibold text-white/90">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -101,25 +102,26 @@ export function SettingsTable({
             <TableRow
               key={setting.id}
               className={cn(
-                "transition-colors",
-                selectedIds.has(setting.id) && "bg-blue-50/30"
+                "transition-colors border-b border-white/10 hover:bg-white/5",
+                selectedIds.has(setting.id) && "bg-cyan-500/10"
               )}
             >
               <TableCell>
                 <Checkbox
                   checked={selectedIds.has(setting.id)}
                   onCheckedChange={() => onToggleSelect(setting.id)}
+                  className="border-white/30 data-[state=checked]:bg-cyan-500"
                 />
               </TableCell>
               <TableCell>
                 <Badge
                   variant="outline"
-                  className="font-mono font-semibold border-2"
+                  className="font-mono font-semibold bg-white/10 border-white/20 text-white/80"
                 >
                   {setting.id}
                 </Badge>
               </TableCell>
-              <TableCell className="font-medium text-gray-900">
+              <TableCell className="font-medium text-white">
                 {setting.name}
               </TableCell>
               <TableCell>
@@ -134,7 +136,7 @@ export function SettingsTable({
               </TableCell>
               <TableCell className="max-w-md">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-700 truncate font-mono">
+                  <span className="text-sm text-white/70 truncate font-mono">
                     {maskSensitiveValue(setting.value, setting.id)}
                   </span>
                   <div className="flex items-center gap-1">
@@ -142,11 +144,11 @@ export function SettingsTable({
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-7 w-7 hover:bg-blue-100"
+                        className="h-7 w-7 hover:bg-white/10"
                         onClick={() => onViewValue(setting)}
                         title="View full value"
                       >
-                        <Eye className="w-3.5 h-3.5 text-blue-600" />
+                        <Eye className="w-3.5 h-3.5 text-cyan-400" />
                       </Button>
                     )}
                     {/* {(setting.value.startsWith("AIza") ||
@@ -173,7 +175,7 @@ export function SettingsTable({
                   </div>
                 </div>
               </TableCell>
-              <TableCell className="text-gray-600 text-sm">
+              <TableCell className="text-white/70 text-sm">
                 {setting.createdDate
                   ? new Date(setting.createdDate).toLocaleDateString("en-US", {
                       year: "numeric",
@@ -184,7 +186,7 @@ export function SettingsTable({
                     })
                   : "N/A"}
               </TableCell>
-              <TableCell className="text-gray-600 text-sm">
+              <TableCell className="text-white/70 text-sm">
                 {setting.updatedDate
                   ? new Date(setting.updatedDate).toLocaleDateString("en-US", {
                       year: "numeric",
@@ -201,7 +203,7 @@ export function SettingsTable({
                     variant="ghost"
                     size="icon"
                     onClick={() => onEdit(setting)}
-                    className="h-8 w-8 hover:bg-blue-100 hover:text-blue-700"
+                    className="h-8 w-8 hover:bg-cyan-500/20 text-cyan-400 hover:text-cyan-300"
                     title="Edit setting"
                   >
                     <Edit className="w-4 h-4" />
@@ -210,7 +212,7 @@ export function SettingsTable({
                     variant="ghost"
                     size="icon"
                     onClick={() => onDelete(setting)}
-                    className="h-8 w-8 hover:bg-red-100 hover:text-red-700"
+                    className="h-8 w-8 hover:bg-red-500/20 text-red-400 hover:text-red-300"
                     title="Delete setting"
                   >
                     <Trash2 className="w-4 h-4" />

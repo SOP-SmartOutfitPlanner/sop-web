@@ -17,19 +17,16 @@ export function useAuth() {
       if (result.success) {
         toast.success(AUTH_MESSAGES.LOGIN_SUCCESS);
 
-        // Always redirect to wardrobe - onboarding dialog will show if needed
-        router.push(AUTH_ROUTES.DASHBOARD);
-      } else {
-        // Check if error is admin login attempt
-        const { error } = useAuthStore.getState();
-        if (error?.includes("admin login portal")) {
-          if (onAdminDetected) {
-            onAdminDetected(error);
-          }
-          toast.error("Admin accounts must use the admin login portal");
+        // Check if user is admin - redirect to admin dashboard
+        if (result.isAdmin) {
+          router.push('/admin/dashboard');
         } else {
-          toast.error(error || AUTH_MESSAGES.LOGIN_ERROR);
+          // Regular user - redirect to wardrobe (onboarding dialog will show if needed)
+          router.push(AUTH_ROUTES.DASHBOARD);
         }
+      } else {
+        const { error } = useAuthStore.getState();
+        toast.error(error || AUTH_MESSAGES.LOGIN_ERROR);
       }
     } catch (error) {
       console.error(error);

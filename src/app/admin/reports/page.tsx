@@ -137,16 +137,16 @@ export default function AdminReportsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-sm text-gray-500 uppercase tracking-wide">
+          <p className="text-sm text-cyan-300/70 uppercase tracking-wide font-medium">
             Moderation
           </p>
-          <h1 className="text-3xl font-semibold text-gray-900">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-200 via-white to-blue-200 bg-clip-text text-transparent">
             Community Reports
           </h1>
-          <p className="text-gray-600 mt-1">
+          <p className="text-white/70 mt-1">
             Review and resolve reports submitted by the community.
           </p>
         </div>
@@ -154,7 +154,7 @@ export default function AdminReportsPage() {
           variant="outline"
           onClick={() => refetch()}
           disabled={isFetching || isLoading}
-          className="gap-2"
+          className="gap-2 border-white/20 bg-white/5 text-white hover:bg-gradient-to-r hover:from-cyan-500/20 hover:to-blue-500/20 hover:border-cyan-400/50 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isFetching ? (
             <Loader2 className="h-4 w-4 animate-spin" />
