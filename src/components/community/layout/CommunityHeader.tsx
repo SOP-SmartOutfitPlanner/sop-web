@@ -1,6 +1,5 @@
 "use client";
 
-
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { NewPostDialog } from "../NewPostDialog";
 import ShareLookButton3D from "@/components/ui/ShareLookButton3D";
@@ -23,7 +22,7 @@ interface CommunityHeaderProps {
     files?: File[]; // Changed to File[] for upload
     itemIds?: number[];
     outfitId?: number;
-  }) => Promise<void>;
+  }) => Promise<void | boolean>;
   isSubmitting?: boolean;
   onRefreshFeed?: () => void;
   initialShareData?: SharePostData | null;
@@ -68,7 +67,7 @@ export function CommunityHeader({
           <ShareLookButton3D />
         </DialogTrigger>
 
-        <DialogContent 
+        <DialogContent
           showCloseButton={false}
           className="max-w-2xl max-h-[90vh] !overflow-hidden p-0 flex flex-col backdrop-blur-xl bg-gradient-to-br from-cyan-950/60 via-blue-950/50 to-indigo-950/60 border-2 border-cyan-400/25 shadow-2xl shadow-cyan-500/20"
         >
