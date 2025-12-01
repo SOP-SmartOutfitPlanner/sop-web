@@ -15,7 +15,7 @@ interface PostOutfitDisplayProps {
   outfit: PostOutfitDetailModel;
 }
 
-const INITIAL_DISPLAY_COUNT = 4; // Show 4 items initially (1 row of 4)
+const INITIAL_DISPLAY_COUNT = 8; // Show 8 items initially (2 rows of 4)
 
 export function PostOutfitDisplay({ outfit }: PostOutfitDisplayProps) {
   const [imageLoaded, setImageLoaded] = useState<Record<number, boolean>>({});
@@ -37,16 +37,39 @@ export function PostOutfitDisplay({ outfit }: PostOutfitDisplayProps) {
   return (
     <>
       <Tooltip.Provider delayDuration={200}>
-        <div>
-          <h4 className="text-sm font-bricolage font-semibold text-white/90 mb-3">
-            Outfit in this post
-          </h4>
+        <div className="rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-sm font-bricolage font-semibold text-white flex items-center gap-2">
+              <span className="inline-flex items-center justify-center w-5 h-5 rounded-md bg-cyan-500/20 text-cyan-300 text-xs font-bold">
+                {itemCount}
+              </span>
+              Outfit in this post
+            </h4>
+            {shouldShowToggle && (
+              <button
+                onClick={() => setShowAll(!showAll)}
+                className="text-xs text-cyan-400 hover:text-cyan-300 font-medium transition-colors flex items-center gap-1"
+              >
+                {showAll ? (
+                  <>
+                    Show Less
+                    <ChevronUp className="w-3 h-3" />
+                  </>
+                ) : (
+                  <>
+                    +{remainingCount} more
+                    <ChevronDown className="w-3 h-3" />
+                  </>
+                )}
+              </button>
+            )}
+          </div>
 
           {/* Outfit Header */}
           <div className="mb-3">
             <div className="flex items-center gap-2">
               <h5
-                className={`text-base font-bricolage font-bold text-white truncate ${
+                className={`text-sm font-medium text-white truncate ${
                   isDeleted ? "line-through" : ""
                 }`}
                 title={outfit.name}
@@ -54,35 +77,22 @@ export function PostOutfitDisplay({ outfit }: PostOutfitDisplayProps) {
                 {outfit.name}
               </h5>
               {isDeleted && (
-                <Tooltip.Root>
-                  <Tooltip.Trigger asChild>
-                    <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded">
-                      Deleted
-                    </span>
-                  </Tooltip.Trigger>
-                  <Tooltip.Portal>
-                    <Tooltip.Content
-                      className="bg-gray-900 text-white text-sm px-3 py-2 rounded-lg shadow-xl border border-white/10"
-                      sideOffset={5}
-                    >
-                      This outfit was deleted
-                      <Tooltip.Arrow className="fill-gray-900" />
-                    </Tooltip.Content>
-                  </Tooltip.Portal>
-                </Tooltip.Root>
+                <span className="bg-red-500/80 text-white text-xs font-medium px-2 py-0.5 rounded-md">
+                  Deleted
+                </span>
               )}
             </div>
             {outfit.description && (
               <Tooltip.Root>
                 <Tooltip.Trigger asChild>
-                  <p className="text-sm text-white/60 mt-1.5 line-clamp-2">
+                  <p className="text-xs text-white/60 mt-1 line-clamp-2">
                     {outfit.description}
                   </p>
                 </Tooltip.Trigger>
-                {outfit.description.length > 100 && (
+                {outfit.description.length > 80 && (
                   <Tooltip.Portal>
                     <Tooltip.Content
-                      className="bg-gray-900 text-white text-sm px-3 py-2 rounded-lg shadow-xl border border-white/10 max-w-xs"
+                      className="bg-gray-900/95 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-lg shadow-xl border border-white/10 max-w-xs"
                       sideOffset={5}
                     >
                       {outfit.description}
@@ -92,34 +102,11 @@ export function PostOutfitDisplay({ outfit }: PostOutfitDisplayProps) {
                 )}
               </Tooltip.Root>
             )}
-            <div className="flex items-center justify-between mt-1.5">
-              <p className="text-xs text-white/40">
-                {itemCount} {itemCount === 1 ? "item" : "items"}
-              </p>
-              {shouldShowToggle && (
-                <button
-                  onClick={() => setShowAll(!showAll)}
-                  className="text-xs text-cyan-400 hover:text-cyan-300 font-medium transition-colors flex items-center gap-1"
-                >
-                  {showAll ? (
-                    <>
-                      Show Less
-                      <ChevronUp className="w-3.5 h-3.5" />
-                    </>
-                  ) : (
-                    <>
-                      Show All ({remainingCount} more)
-                      <ChevronDown className="w-3.5 h-3.5" />
-                    </>
-                  )}
-                </button>
-              )}
-            </div>
           </div>
 
-          {/* Items Grid - Always visible, responsive for many items */}
+          {/* Items Grid - 4 per row compact layout */}
           {outfit.items && outfit.items.length > 0 && (
-            <div className="grid grid-cols-4 gap-2.5">
+            <div className="grid grid-cols-4 gap-2">
               {displayedItems?.map((item, index) => {
                 const CategoryIcon = getCategoryIcon(item.categoryId);
                 const categoryColor = getCategoryColor(item.categoryId);
@@ -132,88 +119,74 @@ export function PostOutfitDisplay({ outfit }: PostOutfitDisplayProps) {
                         onClick={() =>
                           !isItemDeleted && setSelectedItemId(item.id)
                         }
-                        className={`relative group rounded-xl overflow-hidden bg-white/5 border border-white/10 hover:border-white/30 transition-all ${
+                        className={`relative group rounded-lg overflow-hidden bg-white/5 border border-white/10 hover:border-cyan-400/30 transition-all duration-200 ${
                           isItemDeleted
                             ? "opacity-50 grayscale cursor-not-allowed"
-                            : "cursor-pointer"
+                            : "cursor-pointer hover:bg-white/10"
                         }`}
                         whileHover={
                           !isItemDeleted ? { scale: 1.02 } : undefined
                         }
                         whileTap={!isItemDeleted ? { scale: 0.98 } : undefined}
                       >
-                        {/* Image */}
-                        <div className="aspect-square relative bg-white/5">
+                        {/* Compact Image Container */}
+                        <div className="aspect-square relative bg-slate-900/20 overflow-hidden">
                           <Image
                             src={item.imgUrl}
                             alt={item.name}
                             fill
-                            className={`object-cover transition-opacity duration-200 ${
+                            className={`object-cover transition-all duration-300 ${
                               imageLoaded[item.id] ? "opacity-100" : "opacity-0"
-                            }`}
+                            } ${!isItemDeleted && "group-hover:scale-105"}`}
                             onLoad={() => handleImageLoad(item.id)}
-                            sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
+                            sizes="(max-width: 640px) 25vw, 150px"
+                            priority={false}
                           />
                           {!imageLoaded[item.id] && (
                             <div className="absolute inset-0 flex items-center justify-center">
-                              <div className="animate-spin rounded-full h-8 w-8 border-2 border-white/20 border-t-white"></div>
+                              <div className="animate-spin rounded-full h-6 w-6 border-2 border-cyan-400/30 border-t-cyan-400"></div>
+                            </div>
+                          )}
+
+                          {/* Mini Category Badge */}
+                          <div
+                            className={`absolute top-1.5 right-1.5 ${categoryColor} text-white rounded-md px-1.5 py-0.5 text-xs font-medium shadow-sm backdrop-blur-sm ${
+                              imageLoaded[item.id] ? "opacity-90" : "opacity-0"
+                            }`}
+                          >
+                            <CategoryIcon className="w-3 h-3" />
+                          </div>
+
+                          {/* Deleted Overlay */}
+                          {isItemDeleted && (
+                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                              <div className="bg-red-500/80 text-white text-xs font-medium px-2 py-1 rounded-md backdrop-blur-sm">
+                                Deleted
+                              </div>
                             </div>
                           )}
                         </div>
 
-                        {/* Category Badge */}
-                        <div
-                          className={`absolute bottom-2 left-2 flex items-center gap-1.5 ${categoryColor} text-white rounded-lg px-2 py-0.5 [@media(hover:none)]:px-3 [@media(hover:none)]:py-1.5 text-xs font-medium transition-opacity duration-200 ${
-                            imageLoaded[item.id] ? "opacity-100" : "opacity-0"
-                          }`}
-                        >
-                          <CategoryIcon className="w-3 h-3" />
-                          <span className="hidden sm:inline">
-                            {item.categoryName}
-                          </span>
-                        </div>
-
-                        {/* Deleted Badge */}
-                        {isItemDeleted && (
-                          <div className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
-                            Deleted
-                          </div>
-                        )}
-
-                        {/* Item Name */}
-                        <div className="p-2 bg-white/5">
-                          <Tooltip.Root>
-                            <Tooltip.Trigger asChild>
-                              <p
-                                className={`text-xs text-white/80 truncate font-medium ${
-                                  isItemDeleted ? "line-through" : ""
-                                }`}
-                              >
-                                {item.name}
-                              </p>
-                            </Tooltip.Trigger>
-                            {item.name.length > 20 && (
-                              <Tooltip.Portal>
-                                <Tooltip.Content
-                                  className="bg-gray-900 text-white text-xs px-3 py-2 rounded-lg shadow-xl border border-white/10 max-w-xs z-[70]"
-                                  sideOffset={5}
-                                >
-                                  {item.name}
-                                  <Tooltip.Arrow className="fill-gray-900" />
-                                </Tooltip.Content>
-                              </Tooltip.Portal>
-                            )}
-                          </Tooltip.Root>
+                        {/* Minimal Info Section */}
+                        <div className="p-2 bg-slate-900/40 border-t border-white/5">
+                          <h3
+                            className={`text-xs font-medium text-white truncate ${
+                              isItemDeleted ? "line-through opacity-60" : ""
+                            }`}
+                            title={item.name}
+                          >
+                            {item.name}
+                          </h3>
                         </div>
                       </motion.button>
                     </Tooltip.Trigger>
                     {isItemDeleted && (
                       <Tooltip.Portal>
                         <Tooltip.Content
-                          className="bg-gray-900 text-white text-sm px-3 py-2 rounded-lg shadow-xl border border-white/10"
+                          className="bg-gray-900/95 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-lg shadow-xl border border-white/10 font-poppins"
                           sideOffset={5}
                         >
-                          This item was deleted from your wardrobe
+                          This item has been deleted
                           <Tooltip.Arrow className="fill-gray-900" />
                         </Tooltip.Content>
                       </Tooltip.Portal>
