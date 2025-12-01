@@ -63,10 +63,8 @@ export function AttachmentModal({
       <Dialog open={isOpen} onOpenChange={handleOpenChange}>
         <DialogContent
           showCloseButton={false}
-          className={`w-[65vw] p-0 backdrop-blur-xl bg-slate-950/95 border border-white/10 shadow-2xl rounded-2xl overflow-hidden flex flex-col ${
-            type === "items"
-              ? "!max-w-[45rem] h-auto"
-              : "!max-w-[65vw] h-auto max-h-[92vh]"
+          className={`w-[65vw] p-0 backdrop-blur-xl bg-slate-950/95 border border-white/10 shadow-2xl rounded-2xl overflow-hidden flex flex-col !max-w-[45rem] h-auto ${
+            type === "outfit" ? "max-h-[80vh]" : ""
           }`}
         >
           {/* Header */}
