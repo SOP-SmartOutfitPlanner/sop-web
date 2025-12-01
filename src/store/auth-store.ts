@@ -118,18 +118,6 @@ export const useAuthStore = create<AuthStore>((set) => ({
       // Login successful - tokens are saved automatically by authAPI
       // Extract user info from JWT token
       const accessToken = (response.data as { accessToken: string }).accessToken;
-
-      // CHECK IF USER IS ADMIN - REJECT ADMIN LOGIN FROM USER PORTAL
-      if (isAdminUser(accessToken)) {
-        // Admin user trying to login from user portal - reject
-        set({
-          isLoading: false,
-          error: "Admin accounts must use the admin login portal at /admin/login",
-          successMessage: null,
-        });
-        return { success: false, isFirstTime: false };
-      }
-
       const userInfo = extractUserFromToken(accessToken);
 
       if (!userInfo) {
@@ -196,12 +184,15 @@ export const useAuthStore = create<AuthStore>((set) => ({
         pendingVerificationEmail: null,
       });
 
+      // Check if admin and return flag for redirect
+      const isAdmin = isAdminUser(accessToken);
+
       const userIdNumber = parseInt(userInfo.id, 10);
       if (!isNaN(userIdNumber)) {
         registerUserDevice(userIdNumber);
       }
 
-      return { success: true, isFirstTime };
+      return { success: true, isFirstTime, isAdmin };
     } catch (error: unknown) {
       const errorMessage = error instanceof ApiError
         ? error.message
@@ -213,7 +204,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
         successMessage: null,
       });
 
-      return { success: false, isFirstTime: false };
+      return { success: false, isFirstTime: false, isAdmin: false };
     }
   },
 

@@ -30,7 +30,7 @@ export default function AdminItemsPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(9);
+  const [pageSize, setPageSize] = useState(15);
 
   // Debounce search query
   useEffect(() => {
@@ -90,82 +90,84 @@ export default function AdminItemsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Item Management</h1>
-          <p className="text-gray-600 mt-2">Manage all user wardrobe items</p>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-200 via-white to-blue-200 bg-clip-text text-transparent">
+            Item Management
+          </h1>
+          <p className="text-white/70 mt-2">Manage all user wardrobe items</p>
         </div>
-        {/* <Button className="bg-blue-600 hover:bg-blue-700">
+        {/* <Button className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 shadow-lg shadow-cyan-500/40">
           <Plus className="w-4 h-4 mr-2" />
           Add Item
         </Button> */}
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="border-0 shadow">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card className="border border-white/10 shadow-xl bg-white/5 backdrop-blur-xl">
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-gray-900">
+            <div className="text-2xl font-bold text-white">
               {isLoading ? (
                 <Loader2 className="w-6 h-6 animate-spin" />
               ) : (
                 categoryStats.total.toLocaleString()
               )}
             </div>
-            <p className="text-sm text-gray-600 mt-1">Total Items</p>
+            <p className="text-sm text-white/60 mt-1">Total Items</p>
           </CardContent>
         </Card>
-        <Card className="border-0 shadow">
+        <Card className="border border-white/10 shadow-xl bg-white/5 backdrop-blur-xl">
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-blue-600">
+            <div className="text-2xl font-bold text-cyan-400">
               {isLoading ? (
                 <Loader2 className="w-6 h-6 animate-spin" />
               ) : (
                 categoryStats.tops
               )}
             </div>
-            <p className="text-sm text-gray-600 mt-1">Tops</p>
+            <p className="text-sm text-white/60 mt-1">Tops</p>
           </CardContent>
         </Card>
-        <Card className="border-0 shadow">
+        <Card className="border border-white/10 shadow-xl bg-white/5 backdrop-blur-xl">
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-purple-600">
+            <div className="text-2xl font-bold text-purple-400">
               {isLoading ? (
                 <Loader2 className="w-6 h-6 animate-spin" />
               ) : (
                 categoryStats.bottoms
               )}
             </div>
-            <p className="text-sm text-gray-600 mt-1">Bottoms</p>
+            <p className="text-sm text-white/60 mt-1">Bottoms</p>
           </CardContent>
         </Card>
-        <Card className="border-0 shadow">
+        <Card className="border border-white/10 shadow-xl bg-white/5 backdrop-blur-xl">
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-green-400">
               {isLoading ? (
                 <Loader2 className="w-6 h-6 animate-spin" />
               ) : (
                 categoryStats.footwear
               )}
             </div>
-            <p className="text-sm text-gray-600 mt-1">Footwear</p>
+            <p className="text-sm text-white/60 mt-1">Footwear</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Filters */}
-      <Card className="border-0 shadow">
+      <Card className="border border-white/10 shadow-xl bg-white/5 backdrop-blur-xl">
         <CardContent className="pt-6">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/60" />
               <Input
                 placeholder="Search items..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
+                className="pl-9 bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:bg-white/15 focus:border-cyan-400/50"
               />
             </div>
             <Select value={filterCategory} onValueChange={setFilterCategory}>
@@ -192,10 +194,10 @@ export default function AdminItemsPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="9">9 / page</SelectItem>
-                <SelectItem value="18">18 / page</SelectItem>
+                <SelectItem value="15">15 / page</SelectItem>
                 <SelectItem value="30">30 / page</SelectItem>
-                <SelectItem value="50">50 / page</SelectItem>
+                <SelectItem value="45">45 / page</SelectItem>
+                <SelectItem value="60">60 / page</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -205,15 +207,15 @@ export default function AdminItemsPage() {
       {/* Loading State */}
       {isLoading && (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-          <span className="ml-3 text-gray-600">Loading items...</span>
+          <Loader2 className="w-8 h-8 animate-spin text-cyan-400" />
+          <span className="ml-3 text-white/70">Loading items...</span>
         </div>
       )}
 
       {/* Error State */}
       {error && (
         <div className="text-center py-12">
-          <p className="text-red-600">
+          <p className="text-red-400">
             An error occurred while loading items. Please try again.
           </p>
         </div>
@@ -222,34 +224,34 @@ export default function AdminItemsPage() {
       {/* Empty State */}
       {!isLoading && !error && items.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-gray-600">No items found.</p>
+          <p className="text-white/70">No items found.</p>
         </div>
       )}
 
       {/* Items Grid */}
       {!isLoading && !error && items.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {items.map((item) => (
             <Card
               key={item.id}
-              className="border-0 shadow-lg hover:shadow-xl transition-shadow"
+              className="border border-white/10 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 bg-white/5 backdrop-blur-xl"
             >
               <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="text-lg">{item.name}</CardTitle>
-                    <p className="text-sm text-gray-500 mt-1">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="text-base font-semibold text-white truncate">{item.name}</CardTitle>
+                    <p className="text-xs text-white/50 mt-1 truncate">
                       by {item.userDisplayName}
                     </p>
                   </div>
-                  <Badge variant={item.isAnalyzed ? "default" : "secondary"}>
+                  <Badge className={item.isAnalyzed ? "bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 shadow-lg shadow-cyan-500/20" : "bg-white/10 text-white/70 border border-white/20"}>
                     {item.isAnalyzed ? "Analyzed" : "Manual"}
                   </Badge>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Item Image */}
-                <div className="aspect-square bg-linear-to-br from-gray-100 to-gray-200 rounded-lg overflow-hidden relative">
+                <div className="aspect-square bg-gradient-to-br from-white/5 to-white/10 rounded-lg overflow-hidden relative border border-white/10">
                   {item.imgUrl ? (
                     <Image
                       src={item.imgUrl}
@@ -260,40 +262,53 @@ export default function AdminItemsPage() {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <Search className="w-16 h-16 text-gray-400" />
+                      <Search className="w-16 h-16 text-white/20" />
                     </div>
                   )}
                 </div>
 
                 {/* Item Details */}
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Category:</span>
-                    <span className="font-medium">{item.categoryName}</span>
+                <div className="space-y-2.5 text-xs">
+                  <div className="flex justify-between items-center">
+                    <span className="text-white/50">Category:</span>
+                    <span className="font-medium text-white/90 text-right">{item.categoryName}</span>
                   </div>
                   {item.brand && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Brand:</span>
-                      <span className="font-medium">{item.brand}</span>
+                    <div className="flex justify-between items-center">
+                      <span className="text-white/50">Brand:</span>
+                      <span className="font-medium text-white/90">{item.brand}</span>
                     </div>
                   )}
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Color:</span>
-                    <span className="font-medium">{item.color}</span>
+                  <div className="flex justify-between items-start gap-2">
+                    <span className="text-white/50 flex-shrink-0">Color:</span>
+                    <div className="flex flex-wrap gap-1 justify-end">
+                      {(() => {
+                        try {
+                          const colors = JSON.parse(item.color);
+                          return Array.isArray(colors) ? colors.map((color: { name: string; hex: string }, idx: number) => (
+                            <div key={idx} className="flex items-center gap-1 bg-white/10 border border-white/20 rounded px-1.5 py-0.5">
+                              <div className="w-3 h-3 rounded-full border border-white/30" style={{ backgroundColor: color.hex }} />
+                              <span className="text-white/80 text-[10px]">{color.name}</span>
+                            </div>
+                          )) : <span className="text-white/70">{item.color}</span>;
+                        } catch {
+                          return <span className="text-white/70">{item.color}</span>;
+                        }
+                      })()}
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Condition:</span>
-                    <span className="font-medium">{item.condition}</span>
+                  <div className="flex justify-between items-center">
+                    <span className="text-white/50">Condition:</span>
+                    <span className="font-medium text-white/90">{item.condition}</span>
                   </div>
                   {item.styles.length > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Styles:</span>
-                      <div className="flex flex-wrap gap-1">
+                    <div className="flex justify-between items-start gap-2">
+                      <span className="text-white/50 flex-shrink-0">Styles:</span>
+                      <div className="flex flex-wrap gap-1 justify-end">
                         {item.styles.map((style) => (
                           <Badge
                             key={style.id}
-                            variant="outline"
-                            className="text-xs"
+                            className="bg-white/10 text-white/80 border border-white/20 text-[10px] px-1.5 py-0"
                           >
                             {style.name}
                           </Badge>
@@ -305,16 +320,16 @@ export default function AdminItemsPage() {
 
                 {/* Actions */}
                 <div className="flex gap-2 pt-2">
-                  <Button variant="outline" size="sm" className="flex-1">
-                    <Eye className="w-4 h-4 mr-1" />
+                  <Button variant="outline" size="sm" className="flex-1 border-white/20 bg-white/5 text-white hover:bg-gradient-to-r hover:from-cyan-500/20 hover:to-blue-500/20 hover:border-cyan-400/50">
+                    <Eye className="w-3.5 h-3.5 mr-1" />
                     View
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    className="border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:border-red-400/50"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-3.5 h-3.5" />
                   </Button>
                 </div>
               </CardContent>
@@ -325,23 +340,23 @@ export default function AdminItemsPage() {
 
       {/* Pagination */}
       {metaData && metaData.totalPages > 0 && (
-        <Card className="border-0 shadow">
+        <Card className="border border-white/10 shadow-xl bg-white/5 backdrop-blur-xl">
           <CardContent className="pt-6">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               {/* Pagination Info */}
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-white/70">
                 {items.length > 0 ? (
                   <>
                     Showing{" "}
-                    <span className="font-medium">
+                    <span className="font-semibold text-cyan-300">
                       {(currentPage - 1) * pageSize + 1}
                     </span>{" "}
                     to{" "}
-                    <span className="font-medium">
+                    <span className="font-semibold text-cyan-300">
                       {Math.min(currentPage * pageSize, metaData.totalCount)}
                     </span>{" "}
                     of{" "}
-                    <span className="font-medium">{metaData.totalCount}</span>{" "}
+                    <span className="font-semibold text-cyan-300">{metaData.totalCount}</span>{" "}
                     items
                   </>
                 ) : (
@@ -357,7 +372,7 @@ export default function AdminItemsPage() {
                   size="sm"
                   disabled={currentPage === 1 || isFetching}
                   onClick={() => setCurrentPage(1)}
-                  className="hidden sm:flex"
+                  className="hidden sm:flex border-white/20 bg-white/5 text-white hover:bg-gradient-to-r hover:from-cyan-500/20 hover:to-blue-500/20 hover:border-cyan-400/50 disabled:opacity-30"
                 >
                   <ChevronsLeft className="w-4 h-4" />
                 </Button>
@@ -368,6 +383,7 @@ export default function AdminItemsPage() {
                   size="sm"
                   disabled={!metaData.hasPrevious || isFetching}
                   onClick={() => setCurrentPage((prev) => prev - 1)}
+                  className="border-white/20 bg-white/5 text-white hover:bg-gradient-to-r hover:from-cyan-500/20 hover:to-blue-500/20 hover:border-cyan-400/50 disabled:opacity-30"
                 >
                   <ChevronLeft className="w-4 h-4 mr-1" />
                   <span className="hidden sm:inline">Previous</span>
@@ -392,7 +408,7 @@ export default function AdminItemsPage() {
                         page === currentPage + 2
                       ) {
                         return (
-                          <span key={page} className="px-2 text-gray-400">
+                          <span key={page} className="px-2 text-white/40">
                             ...
                           </span>
                         );
@@ -408,8 +424,8 @@ export default function AdminItemsPage() {
                         disabled={isFetching}
                         className={
                           page === currentPage
-                            ? "bg-blue-600 hover:bg-blue-700 text-white min-w-9"
-                            : "min-w-9"
+                            ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-500/30 border-0 hover:from-cyan-600 hover:to-blue-700 min-w-9"
+                            : "border-white/20 bg-white/5 text-white hover:bg-gradient-to-r hover:from-cyan-500/20 hover:to-blue-500/20 hover:border-cyan-400/50 min-w-9"
                         }
                         onClick={() => setCurrentPage(page)}
                       >
@@ -425,6 +441,7 @@ export default function AdminItemsPage() {
                   size="sm"
                   disabled={!metaData.hasNext || isFetching}
                   onClick={() => setCurrentPage((prev) => prev + 1)}
+                  className="border-white/20 bg-white/5 text-white hover:bg-gradient-to-r hover:from-cyan-500/20 hover:to-blue-500/20 hover:border-cyan-400/50 disabled:opacity-30"
                 >
                   <span className="hidden sm:inline">Next</span>
                   <ChevronRight className="w-4 h-4 ml-1" />
@@ -436,7 +453,7 @@ export default function AdminItemsPage() {
                   size="sm"
                   disabled={currentPage === metaData.totalPages || isFetching}
                   onClick={() => setCurrentPage(metaData.totalPages)}
-                  className="hidden sm:flex"
+                  className="hidden sm:flex border-white/20 bg-white/5 text-white hover:bg-gradient-to-r hover:from-cyan-500/20 hover:to-blue-500/20 hover:border-cyan-400/50 disabled:opacity-30"
                 >
                   <ChevronsRight className="w-4 h-4" />
                 </Button>
@@ -444,7 +461,7 @@ export default function AdminItemsPage() {
 
               {/* Page Jump (Optional - Desktop only) */}
               <div className="hidden lg:flex items-center gap-2">
-                <span className="text-sm text-gray-600">Go to page:</span>
+                <span className="text-sm text-white/70">Go to page:</span>
                 <Input
                   type="number"
                   min={1}
@@ -456,7 +473,7 @@ export default function AdminItemsPage() {
                       setCurrentPage(page);
                     }
                   }}
-                  className="w-16 h-9 text-center"
+                  className="w-16 h-9 text-center bg-white/5 border-white/20 text-white"
                 />
               </div>
             </div>

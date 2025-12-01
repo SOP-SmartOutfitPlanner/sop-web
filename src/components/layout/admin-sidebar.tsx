@@ -41,11 +41,6 @@ const menuItems = [
     href: "/admin/occasion",
   },
   {
-    title: "Seasons",
-    icon: Tags,
-    href: "/admin/seasons",
-  },
-  {
     title: "Styles",
     icon: Tags,
     href: "/admin/styles",
@@ -76,11 +71,11 @@ export function AdminSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-64 bg-slate-900 border-r border-slate-800 flex flex-col">
+    <aside className="fixed left-0 top-0 h-screen w-64 bg-slate-900/40 backdrop-blur-xl border-r border-white/10 flex flex-col shadow-2xl shadow-black/20">
       {/* Logo */}
-      <div className="p-6 border-b border-slate-800">
+      <div className="p-6 border-b border-white/10 bg-white/5">
         <div className="flex items-center gap-3">
-          <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg p-2">
+          <div className="bg-gradient-to-br from-cyan-400 to-blue-500 rounded-xl p-2.5 shadow-lg shadow-cyan-500/30">
             <Shield className="w-6 h-6 text-white" />
           </div>
           <div>
@@ -90,7 +85,7 @@ export function AdminSidebar() {
               height={30}
               className="brightness-0 invert"
             />
-            <p className="text-xs text-slate-400 mt-0.5">Admin Portal</p>
+            <p className="text-xs text-cyan-300/70 mt-0.5">Admin Portal</p>
           </div>
         </div>
       </div>
@@ -107,14 +102,17 @@ export function AdminSidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200",
-                "text-sm font-medium",
+                "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200",
+                "text-sm font-medium group",
                 isActive
-                  ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20"
-                  : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                  ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-500/40"
+                  : "text-white/70 hover:bg-white/10 hover:text-white hover:shadow-md"
               )}
             >
-              <Icon className="w-5 h-5" />
+              <Icon className={cn(
+                "w-5 h-5 transition-transform duration-200",
+                isActive ? "" : "group-hover:scale-110"
+              )} />
               {item.title}
             </Link>
           );
@@ -122,8 +120,8 @@ export function AdminSidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t border-slate-800">
-        <div className="text-xs text-slate-500 text-center">SOP Admin v1.0</div>
+      <div className="p-4 border-t border-white/10 bg-white/5">
+        <div className="text-xs text-white/50 text-center font-medium">SOP Admin v1.0</div>
       </div>
     </aside>
   );
