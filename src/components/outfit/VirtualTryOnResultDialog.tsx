@@ -1,7 +1,14 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { X, Download, Share2, Sparkles, CheckCircle2, AlertCircle } from "lucide-react";
+import {
+  X,
+  Download,
+  Share2,
+  Sparkles,
+  CheckCircle2,
+  AlertCircle,
+} from "lucide-react";
 import { Image } from "antd";
 import { motion, AnimatePresence } from "framer-motion";
 import GlassButton from "@/components/ui/glass-button";
@@ -71,12 +78,12 @@ export function VirtualTryOnResultDialog({
       const originalPosition = document.body.style.position;
       const originalTop = document.body.style.top;
       const originalWidth = document.body.style.width;
-      
+
       document.body.style.position = "fixed";
       document.body.style.top = `-${scrollY}px`;
       document.body.style.width = "100%";
       document.body.style.overflow = "hidden";
-      
+
       return () => {
         document.body.style.position = originalPosition;
         document.body.style.top = originalTop;
@@ -103,7 +110,7 @@ export function VirtualTryOnResultDialog({
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      
+
       toast.success("Image downloaded successfully!");
     } catch (error) {
       console.error("❌ Download error:", error);
@@ -122,7 +129,8 @@ export function VirtualTryOnResultDialog({
       // Set share data in store with items/outfit if available
       setShareData({
         imageUrl: resultUrl,
-        caption: "Experience with Virtual Try On on Smart Outfit Planner",
+        caption:
+          "Experience with Virtual Try On on Smart Outfit Planner #VirtualTryOn #AIFashion",
         outfitId: selectedOutfitId || undefined,
         itemIds: selectedItemIds.length > 0 ? selectedItemIds : undefined,
       });
@@ -132,7 +140,7 @@ export function VirtualTryOnResultDialog({
 
       // Navigate to community page - the modal will open automatically
       router.push("/community?openPost=true");
-      
+
       toast.success("Opening post creation...");
     } catch (error) {
       console.error("❌ Share error:", error);
@@ -140,7 +148,14 @@ export function VirtualTryOnResultDialog({
     } finally {
       setIsSharing(false);
     }
-  }, [resultUrl, setShareData, onOpenChange, router, selectedItemIds, selectedOutfitId]);
+  }, [
+    resultUrl,
+    setShareData,
+    onOpenChange,
+    router,
+    selectedItemIds,
+    selectedOutfitId,
+  ]);
 
   if (!open) return null;
 
@@ -151,7 +166,7 @@ export function VirtualTryOnResultDialog({
   };
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-[10000] flex items-center justify-center p-4 overflow-hidden"
       onWheel={handleWheel}
     >
@@ -190,10 +205,14 @@ export function VirtualTryOnResultDialog({
             </div>
             <div>
               <h2 className="text-xl font-bold text-white font-bricolage">
-                {isGenerating ? "Generating Your Virtual Try-On" : "Virtual Try-On Result"}
+                {isGenerating
+                  ? "Generating Your Virtual Try-On"
+                  : "Virtual Try-On Result"}
               </h2>
               <p className="text-xs text-white/70 mt-0.5">
-                {isGenerating ? "Please wait while AI works its magic..." : "Your AI-generated try-on is ready!"}
+                {isGenerating
+                  ? "Please wait while AI works its magic..."
+                  : "Your AI-generated try-on is ready!"}
               </p>
             </div>
           </div>
@@ -201,7 +220,9 @@ export function VirtualTryOnResultDialog({
             onClick={() => !isGenerating && onOpenChange(false)}
             disabled={isGenerating}
             className="p-2 rounded-xl bg-white/10 hover:bg-white/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            title={isGenerating ? "Please wait for generation to complete" : "Close"}
+            title={
+              isGenerating ? "Please wait for generation to complete" : "Close"
+            }
           >
             <X className="w-5 h-5 text-white" />
           </button>
@@ -222,7 +243,7 @@ export function VirtualTryOnResultDialog({
                 >
                   {/* Animated Gradient Background */}
                   <div className="absolute inset-0 bg-gradient-to-br from-[#4A90E2]/20 via-[#5BA3F5]/20 to-[#4A90E2]/20 animate-pulse" />
-                  
+
                   {/* Shimmer Effect */}
                   <div className="absolute inset-0 overflow-hidden">
                     <motion.div
@@ -241,7 +262,11 @@ export function VirtualTryOnResultDialog({
                   {/* Spinning Icon */}
                   <motion.div
                     animate={{ rotate: 360 }}
-                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      ease: "linear",
+                    }}
                     className="relative z-10"
                   >
                     <div className="p-6 rounded-full bg-gradient-to-br from-[#4A90E2]/30 to-[#5BA3F5]/30 backdrop-blur-sm">
@@ -354,7 +379,9 @@ export function VirtualTryOnResultDialog({
                               AI-Generated Result
                             </h4>
                             <p className="text-xs text-white/70 leading-relaxed">
-                              This image was created using advanced AI technology to virtually try on your selected items.
+                              This image was created using advanced AI
+                              technology to virtually try on your selected
+                              items.
                             </p>
                           </div>
                         </div>
@@ -370,7 +397,8 @@ export function VirtualTryOnResultDialog({
                               Important Notice
                             </h4>
                             <p className="text-xs text-white/70 leading-relaxed">
-                              The result may not be 100% accurate. Colors, fit, and proportions might differ from actual products.
+                              The result may not be 100% accurate. Colors, fit,
+                              and proportions might differ from actual products.
                             </p>
                           </div>
                         </div>
@@ -386,7 +414,8 @@ export function VirtualTryOnResultDialog({
                               Share Your Look
                             </h4>
                             <p className="text-xs text-white/70 leading-relaxed">
-                              Love the result? Download or share it with your friends to get their opinions!
+                              Love the result? Download or share it with your
+                              friends to get their opinions!
                             </p>
                           </div>
                         </div>
@@ -457,7 +486,9 @@ export function VirtualTryOnResultDialog({
                   className="absolute inset-0 flex flex-col items-center justify-center gap-4 text-white/60"
                 >
                   <AlertCircle className="w-16 h-16" />
-                  <p className="text-lg font-medium">Failed to generate virtual try-on</p>
+                  <p className="text-lg font-medium">
+                    Failed to generate virtual try-on
+                  </p>
                   <p className="text-sm">Please try again later</p>
                 </motion.div>
               )}
