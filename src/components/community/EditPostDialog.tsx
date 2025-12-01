@@ -102,6 +102,7 @@ export function EditPostDialog({
       toast.success("Post updated successfully");
       await onSuccess?.(updatedPost);
       onClose?.();
+      return true;
     } catch (error) {
       console.error("Error updating post:", error);
 
@@ -110,6 +111,7 @@ export function EditPostDialog({
         error instanceof Error ? error.message : "Không thể cập nhật bài viết";
 
       toast.error(errorMessage);
+      return false;
     } finally {
       setIsSubmitting(false);
     }

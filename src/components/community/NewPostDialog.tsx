@@ -16,7 +16,7 @@ interface NewPostDialogProps {
     files?: File[];
     itemIds?: number[];
     outfitId?: number;
-  }) => void;
+  }) => void | Promise<void | boolean>;
   isSubmitting?: boolean;
   initialShareData?: SharePostData | null;
 }

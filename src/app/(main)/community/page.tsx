@@ -10,26 +10,22 @@ import { LoadingScreen } from "@/components/community";
 import { useSharePostStore } from "@/store/share-post-store";
 
 const CommunityLayout = dynamic(
-  () =>
-    import("@/components/community").then((mod) => mod.CommunityLayout),
+  () => import("@/components/community").then((mod) => mod.CommunityLayout),
   { ssr: false }
 );
 
 const CommunityHeader = dynamic(
-  () =>
-    import("@/components/community").then((mod) => mod.CommunityHeader),
+  () => import("@/components/community").then((mod) => mod.CommunityHeader),
   { ssr: false }
 );
 
 const CommunityFilters = dynamic(
-  () =>
-    import("@/components/community").then((mod) => mod.CommunityFilters),
+  () => import("@/components/community").then((mod) => mod.CommunityFilters),
   { ssr: false }
 );
 
 const InfiniteScrollFeed = dynamic(
-  () =>
-    import("@/components/community").then((mod) => mod.InfiniteScrollFeed),
+  () => import("@/components/community").then((mod) => mod.InfiniteScrollFeed),
   { ssr: false }
 );
 
@@ -74,14 +70,14 @@ export default function Community() {
   const { createPost, isCreating } = useCreatePost();
   const [isNewPostOpen, setIsNewPostOpen] = useState(false);
   const [feedRefreshKey, setFeedRefreshKey] = useState(0);
-  
+
   // Share post store for external sharing (e.g., virtual try-on)
   const { shareData, clearShareData } = useSharePostStore();
 
   const handleFeedRefresh = useCallback(() => {
     setFeedRefreshKey((prev) => prev + 1);
   }, []);
-  
+
   // Check URL params to auto-open post creation modal
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -106,6 +102,7 @@ export default function Community() {
       setIsNewPostOpen(false);
       clearShareData(); // Clear share data after successful post
     }
+    return success;
   };
 
   // Show loading while auth is initializing

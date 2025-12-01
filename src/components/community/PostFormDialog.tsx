@@ -41,7 +41,7 @@ interface PostFormDialogProps {
     existingImageUrls?: string[];
     itemIds?: number[];
     outfitId?: number;
-  }) => void | Promise<void>;
+  }) => void | Promise<void | boolean>;
   isSubmitting?: boolean;
   initialShareData?: SharePostData | null; // For external sharing (e.g., virtual try-on)
 }
@@ -120,24 +120,31 @@ export function PostFormDialog({
 
   // Load initial share data (from virtual try-on or other external sources)
   useEffect(() => {
-    if (initialShareData && !hasLoadedShareData && editor && mode === "create") {
+    if (
+      initialShareData &&
+      !hasLoadedShareData &&
+      editor &&
+      mode === "create"
+    ) {
       console.log("Loading share data:", initialShareData);
-      
+
       // Set caption
       if (initialShareData.caption) {
         editor.commands.setContent(initialShareData.caption);
         setCaption(editor.getText());
       }
-      
+
       // Load image from URL
       if (initialShareData.imageUrl) {
         // Fetch the image and convert to File
         fetch(initialShareData.imageUrl)
-          .then(res => res.blob())
-          .then(blob => {
-            const file = new File([blob], `virtual-tryon-${Date.now()}.jpg`, { type: blob.type });
+          .then((res) => res.blob())
+          .then((blob) => {
+            const file = new File([blob], `virtual-tryon-${Date.now()}.jpg`, {
+              type: blob.type,
+            });
             setSelectedFiles([file]);
-            
+
             // Create preview URL
             const reader = new FileReader();
             reader.onload = (e) => {
@@ -146,21 +153,23 @@ export function PostFormDialog({
             };
             reader.readAsDataURL(file);
           })
-          .catch(err => console.error("Failed to load share image:", err));
+          .catch((err) => console.error("Failed to load share image:", err));
       }
-      
+
       // Set items/outfit if provided
       if (initialShareData.itemIds && initialShareData.itemIds.length > 0) {
         setSelectionMode("items");
         setSelectedItemIds(initialShareData.itemIds);
-        
+
         // Fetch full item data
         Promise.all(
-          initialShareData.itemIds.map(id => 
+          initialShareData.itemIds.map((id) =>
             wardrobeAPI.getItem(id).catch(() => null)
           )
-        ).then(items => {
-          const validItems = items.filter((item): item is ApiWardrobeItem => item !== null);
+        ).then((items) => {
+          const validItems = items.filter(
+            (item): item is ApiWardrobeItem => item !== null
+          );
           setSelectedItems(validItems);
         });
       } else if (initialShareData.outfitId) {
@@ -168,7 +177,7 @@ export function PostFormDialog({
         setSelectedOutfitId(initialShareData.outfitId);
         // Note: Full outfit data would need to be fetched here if needed
       }
-      
+
       setHasLoadedShareData(true);
     }
   }, [initialShareData, hasLoadedShareData, editor, mode]);
@@ -458,10 +467,14 @@ export function PostFormDialog({
       outfitId: selectedOutfitId || undefined,
     };
 
-    await onSubmit(submitData);
+    const result = await onSubmit(submitData);
 
-    // Reset form for create mode
-    if (!isEditMode) {
+    // Reset form for create mode only if submission was successful
+    // If result is explicitly false, do not reset (error occurred)
+    // If result is undefined (void) or true, proceed with reset
+    const success = result !== false;
+
+    if (success && !isEditMode) {
       editor.commands.setContent("");
       setSelectedImages([]);
       setSelectedFiles([]);

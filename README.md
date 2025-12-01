@@ -1,6 +1,6 @@
 <div align="center">
 
-# 👔 SOP - Smart Oufit Planner
+# 👔 SOP - Smart Outfit Planner
 
 ### _Your AI-Powered Digital Wardrobe_
 
@@ -21,7 +21,7 @@
 
 Ever stood in front of your wardrobe for 20 minutes, only to wear the same outfit you wore last week? **We've all been there.**
 
-**SOP (Smart Oufit Planner)** is your personal AI stylist that lives in your browser. Snap a photo of your clothes, and our AI analyzes colors, patterns, and materials. Get outfit suggestions based on today's weather. Plan your looks for the week. Share your style with a community of fashion enthusiasts.
+**SOP (Smart Outfit Planner)** is your personal AI stylist that lives in your browser. Snap a photo of your clothes, and our AI analyzes colors, patterns, and materials. Get outfit suggestions based on today's weather. Plan your looks for the week. Share your style with a community of fashion enthusiasts.
 
 > 🧠 **The magic?** Our AI doesn't just see "a blue shirt" — it understands _navy cotton oxford with subtle texture, perfect for smart-casual occasions in mild weather_.
 
