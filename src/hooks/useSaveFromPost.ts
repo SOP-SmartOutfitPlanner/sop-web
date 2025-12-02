@@ -123,6 +123,7 @@ export function useSaveOutfitFromPost(
       queryClient.invalidateQueries({ queryKey: ["feed"] });
       queryClient.invalidateQueries({ queryKey: ["savedOutfitsFromPosts"] });
       queryClient.invalidateQueries({ queryKey: ["outfits"] });
+      queryClient.invalidateQueries({ queryKey: ["saved-outfits"] }); // Invalidate saved outfits list
       toast.success("Outfit saved to your collection!");
     },
     onError: (error: Error) => {
@@ -155,6 +156,7 @@ export function useSaveOutfitFromPost(
       queryClient.invalidateQueries({ queryKey: ["feed"] });
       queryClient.invalidateQueries({ queryKey: ["savedOutfitsFromPosts"] });
       queryClient.invalidateQueries({ queryKey: ["outfits"] });
+      queryClient.invalidateQueries({ queryKey: ["saved-outfits"] }); // Invalidate saved outfits list
       toast.success("Outfit removed from saved");
     },
     onError: (error: Error) => {

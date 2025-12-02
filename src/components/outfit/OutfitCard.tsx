@@ -78,7 +78,15 @@ const OutfitCardComponent = ({
   );
 
   const formattedDate = useCallback(() => {
-    return format(new Date(outfit.createdDate), "MMM d, yyyy");
+    try {
+      const date = new Date(outfit.createdDate);
+      if (isNaN(date.getTime())) {
+        return "N/A";
+      }
+      return format(date, "MMM d, yyyy");
+    } catch {
+      return "N/A";
+    }
   }, [outfit.createdDate]);
 
   return (
@@ -141,12 +149,14 @@ const OutfitCardComponent = ({
                 onClick={handleFavoriteClick}
                 disabled={isPending}
                 aria-label={
-                  outfit.isFavorite ? "Remove from favorites" : "Add to favorites"
+                  outfit.isFavorite
+                    ? "Remove from favorites"
+                    : "Add to favorites"
                 }
                 initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ 
-                  scale: 1, 
-                  opacity: outfit.isFavorite || isHovered ? 1 : 0 
+                animate={{
+                  scale: 1,
+                  opacity: outfit.isFavorite || isHovered ? 1 : 0,
                 }}
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}

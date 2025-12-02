@@ -8,14 +8,23 @@ import dynamic from "next/dynamic";
 import GlassButton from "@/components/ui/glass-button";
 import { OutfitGrid } from "@/components/outfit/OutfitGrid";
 import { OutfitFilters } from "@/components/outfit/OutfitFilters";
-import { useOutfits, useDeleteOutfit } from "@/hooks/useOutfits";
+import {
+  useOutfits,
+  useDeleteOutfit,
+  useSavedOutfits,
+  useUnsaveOutfit,
+} from "@/hooks/useOutfits";
 import { useCreateCalendarEntry, useUserOccasions } from "@/hooks/useCalendar";
 import { useOutfitStore } from "@/store/outfit-store";
 import { wardrobeAPI } from "@/lib/api/wardrobe-api";
+import { communityAPI, CommunityPost } from "@/lib/api/community-api";
 import { useAuthStore } from "@/store/auth-store";
-import { Outfit } from "@/types/outfit";
+import { Outfit, SavedOutfit } from "@/types/outfit";
+import { Post, apiPostToPost } from "@/types/community";
 import { format, startOfDay } from "date-fns";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { PostModal } from "@/components/community/profile/PostModal";
+import { toast } from "sonner";
 
 // Dynamic imports to avoid SSR issues with antd Image
 const CreateOutfitDialog = dynamic(
@@ -52,10 +61,17 @@ export default function OutfitPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [editingOutfit, setEditingOutfit] = useState<Outfit | null>(null);
-  const [viewingOutfit, setViewingOutfit] = useState<Outfit | null>(null);
+  const [viewingOutfit, setViewingOutfit] = useState<
+    Outfit | SavedOutfit | null
+  >(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
-  const [isVirtualTryOnDialogOpen, setIsVirtualTryOnDialogOpen] = useState(false);
+  const [isVirtualTryOnDialogOpen, setIsVirtualTryOnDialogOpen] =
+    useState(false);
+  const [isPostModalOpen, setIsPostModalOpen] = useState(false);
+  const [viewingPostId, setViewingPostId] = useState<number | null>(null);
+  const [viewingPost, setViewingPost] = useState<Post | null>(null);
+  const [isLoadingPost, setIsLoadingPost] = useState(false);
   const pageSize = 12;
 
   const { isAuthenticated, user } = useAuthStore();
@@ -68,6 +84,7 @@ export default function OutfitPage() {
   } = useOutfitStore();
 
   const { mutate: deleteOutfit } = useDeleteOutfit();
+  const { mutate: unsaveOutfit } = useUnsaveOutfit();
   const { mutate: createCalendarEntry } = useCreateCalendarEntry();
   const [isPastDateDialogOpen, setIsPastDateDialogOpen] = useState(false);
 
@@ -79,15 +96,36 @@ export default function OutfitPage() {
     Today: true,
   });
 
-  // Fetch outfits
+  // Fetch regular outfits or saved outfits based on showSaved
   const { data, isLoading, error, isError } = useOutfits({
     pageIndex: currentPage,
     pageSize,
     takeAll: false,
     search: searchQuery,
     isFavorite: showFavorites ? true : undefined,
-    isSaved: showSaved ? true : undefined,
+    isSaved: showSaved ? undefined : undefined, // Don't use isSaved param for regular query
   });
+
+  // Fetch saved outfits when showSaved is true
+  const {
+    data: savedOutfitsData,
+    isLoading: isSavedLoading,
+    error: savedError,
+    isError: isSavedError,
+  } = useSavedOutfits(
+    {
+      pageIndex: currentPage,
+      pageSize,
+      search: searchQuery,
+    },
+    showSaved // Only fetch when showSaved is true
+  );
+
+  // Use saved outfits data when showSaved is true
+  const displayData = showSaved ? savedOutfitsData : data;
+  const displayIsLoading = showSaved ? isSavedLoading : isLoading;
+  const displayError = showSaved ? savedError : error;
+  const displayIsError = showSaved ? isSavedError : isError;
 
   // Fetch wardrobe items for outfit creation
   const { data: wardrobeData } = useQuery({
@@ -95,23 +133,27 @@ export default function OutfitPage() {
     queryFn: () => wardrobeAPI.getItems(1, 100),
   });
 
-  const outfits = data?.data?.data || [];
-  const metaData = data?.data?.metaData;
+  const outfits = showSaved
+    ? savedOutfitsData?.data?.data || []
+    : data?.data?.data || [];
+  const metaData = showSaved
+    ? savedOutfitsData?.data?.metaData
+    : data?.data?.metaData;
   const wardrobeItems = wardrobeData?.data || [];
 
   // Log error for debugging
   useEffect(() => {
-    if (isError && error) {
-      console.error("❌ Error fetching outfits:", error);
+    if (displayIsError && displayError) {
+      console.error("❌ Error fetching outfits:", displayError);
     }
-  }, [isError, error]);
+  }, [displayIsError, displayError]);
 
   const handleEditOutfit = useCallback((outfit: Outfit) => {
     setEditingOutfit(outfit);
     setIsEditDialogOpen(true);
   }, []);
 
-  const handleViewOutfit = useCallback((outfit: Outfit) => {
+  const handleViewOutfit = useCallback((outfit: Outfit | SavedOutfit) => {
     setViewingOutfit(outfit);
     setIsViewDialogOpen(true);
   }, []);
@@ -122,6 +164,65 @@ export default function OutfitPage() {
     },
     [deleteOutfit]
   );
+
+  const handleUnsaveOutfit = useCallback(
+    (outfitId: number, sourceId: number, sourceType: "Post" | "Collection") => {
+      unsaveOutfit({ outfitId, sourceId, sourceType });
+    },
+    [unsaveOutfit]
+  );
+
+  const handleOpenPost = useCallback(async (postId: number) => {
+    try {
+      setIsLoadingPost(true);
+      setViewingPostId(postId);
+      const communityPost = await communityAPI.getPostById(postId);
+      const post = apiPostToPost(communityPost);
+      setViewingPost(post);
+      setIsPostModalOpen(true);
+    } catch (error) {
+      console.error("Failed to fetch post:", error);
+      toast.error("Failed to load post");
+      setViewingPostId(null);
+    } finally {
+      setIsLoadingPost(false);
+    }
+  }, []);
+
+  const handleLikePost = useCallback(async () => {
+    if (!viewingPost || !user?.id) return;
+
+    // Optimistically update the UI
+    const previousState = viewingPost;
+    const wasLiked = viewingPost.isLiked;
+
+    setViewingPost({
+      ...viewingPost,
+      isLiked: !viewingPost.isLiked,
+      likes: viewingPost.isLiked
+        ? viewingPost.likes - 1
+        : viewingPost.likes + 1,
+    });
+
+    // Call the API
+    try {
+      await communityAPI.toggleLikePost(
+        parseInt(viewingPost.id),
+        parseInt(user.id.toString())
+      );
+    } catch (error) {
+      // Revert on error
+      console.error("Failed to like post:", error);
+      toast.error("Failed to update like");
+      setViewingPost(previousState);
+    }
+  }, [viewingPost, user]);
+
+  const handleClosePostModal = useCallback(() => {
+    setIsPostModalOpen(false);
+    setViewingPostId(null);
+    setViewingPost(null);
+  }, []);
 
   const handleUseToday = useCallback(
     (outfit: Outfit) => {
@@ -219,7 +320,12 @@ export default function OutfitPage() {
       document.body.style.width = "";
       document.body.style.top = "";
     };
-  }, [isCreateDialogOpen, isEditDialogOpen, isViewDialogOpen, isVirtualTryOnDialogOpen]);
+  }, [
+    isCreateDialogOpen,
+    isEditDialogOpen,
+    isViewDialogOpen,
+    isVirtualTryOnDialogOpen,
+  ]);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -289,14 +395,16 @@ export default function OutfitPage() {
         <OutfitFilters />
 
         {/* Error State */}
-        {isError && (
+        {displayIsError && (
           <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-xl">
             <p className="font-poppins text-sm text-red-600 dark:text-red-400">
               ❌ Failed to load outfits. Please check console for details.
             </p>
-            {error && (
+            {displayError && (
               <p className="font-poppins text-xs text-red-500 dark:text-red-300 mt-2">
-                {error instanceof Error ? error.message : "Unknown error"}
+                {displayError instanceof Error
+                  ? displayError.message
+                  : "Unknown error"}
               </p>
             )}
           </div>
@@ -314,11 +422,14 @@ export default function OutfitPage() {
         {/* Outfit Grid */}
         <OutfitGrid
           outfits={outfits}
-          isLoading={isLoading}
-          onEditOutfit={handleEditOutfit}
-          onDeleteOutfit={handleDeleteOutfit}
+          isLoading={displayIsLoading}
+          onEditOutfit={showSaved ? undefined : handleEditOutfit}
+          onDeleteOutfit={showSaved ? undefined : handleDeleteOutfit}
+          onUnsaveOutfit={showSaved ? handleUnsaveOutfit : undefined}
           onViewOutfit={handleViewOutfit}
-          onUseToday={handleUseToday}
+          onUseToday={showSaved ? undefined : handleUseToday}
+          onOpenPost={showSaved ? handleOpenPost : undefined}
+          isSavedView={showSaved}
         />
 
         {/* Pagination */}
@@ -326,7 +437,10 @@ export default function OutfitPage() {
           <div className="mt-8 flex justify-center gap-2">
             <GlassButton
               variant="secondary"
-              disabled={!metaData.hasPrevious}
+              disabled={
+                ("hasPrevious" in metaData && !metaData.hasPrevious) ||
+                currentPage <= 1
+              }
               onClick={() => setCurrentPage((p) => p - 1)}
             >
               Previous
@@ -334,13 +448,18 @@ export default function OutfitPage() {
 
             <div className="flex items-center gap-2 px-4">
               <span className="font-poppins text-sm text-gray-600 dark:text-gray-400">
-                Page {metaData.currentPage} of {metaData.totalPages}
+                Page{" "}
+                {"currentPage" in metaData ? metaData.currentPage : currentPage}{" "}
+                of {metaData.totalPages}
               </span>
             </div>
 
             <GlassButton
               variant="secondary"
-              disabled={!metaData.hasNext}
+              disabled={
+                ("hasNext" in metaData && !metaData.hasNext) ||
+                currentPage >= metaData.totalPages
+              }
               onClick={() => setCurrentPage((p) => p + 1)}
             >
               Next
@@ -368,9 +487,31 @@ export default function OutfitPage() {
           open={isViewDialogOpen}
           onOpenChange={setIsViewDialogOpen}
           outfit={viewingOutfit}
-          onEdit={handleEditOutfit}
-          onDelete={handleDeleteOutfit}
+          onEdit={showSaved ? undefined : handleEditOutfit}
+          onDelete={showSaved ? undefined : handleDeleteOutfit}
+          onUnsave={showSaved ? handleUnsaveOutfit : undefined}
+          onOpenPost={showSaved ? handleOpenPost : undefined}
         />
+
+        {/* Post Modal for viewing source posts */}
+        {isLoadingPost && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-12 h-12 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+              <p className="text-white font-poppins text-sm">Loading post...</p>
+            </div>
+          </div>
+        )}
+        {isPostModalOpen && viewingPost && (
+          <PostModal
+            post={viewingPost}
+            isOpen={isPostModalOpen}
+            onClose={handleClosePostModal}
+            onLike={handleLikePost}
+            onPostUpdated={() => {}}
+            onPostDeleted={handleClosePostModal}
+          />
+        )}
 
         {/* Past Date Warning Dialog */}
         <ConfirmDialog
