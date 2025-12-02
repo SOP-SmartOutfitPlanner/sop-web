@@ -24,35 +24,37 @@ class OutfitAPI {
    */
   async getOutfits(data: GetOutfitsRequest): Promise<GetOutfitsResponse> {
     const params: Record<string, string | number | boolean> = {
-      'page-index': data.pageIndex,
-      'page-size': data.pageSize,
+      "page-index": data.pageIndex,
+      "page-size": data.pageSize,
     };
 
     if (data.search) {
-      params['search'] = data.search;
+      params["search"] = data.search;
     }
-    
+
     if (data.takeAll !== undefined) {
-      params['take-all'] = data.takeAll;
+      params["take-all"] = data.takeAll;
     }
 
     if (data.isFavorite !== undefined) {
-      params['is-favorite'] = data.isFavorite;
+      params["is-favorite"] = data.isFavorite;
     }
 
     if (data.isSaved !== undefined) {
-      params['is-saved'] = data.isSaved;
+      params["is-saved"] = data.isSaved;
     }
 
     if (data.startDate) {
-      params['start-date'] = data.startDate;
+      params["start-date"] = data.startDate;
     }
 
     if (data.endDate) {
-      params['end-date'] = data.endDate;
+      params["end-date"] = data.endDate;
     }
-    
-    const response = await apiClient.get<GetOutfitsResponse>("/outfits/user", { params });
+
+    const response = await apiClient.get<GetOutfitsResponse>("/outfits/user", {
+      params,
+    });
 
     if (response.statusCode !== 200) {
       throw new Error(response.message || "Failed to fetch outfits");
@@ -67,7 +69,9 @@ class OutfitAPI {
    * @returns Promise<Outfit>
    */
   async getOutfit(id: number): Promise<Outfit> {
-    const response = await apiClient.get<GetOutfitByIdResponse>(`/outfits/${id}`);
+    const response = await apiClient.get<GetOutfitByIdResponse>(
+      `/outfits/${id}`
+    );
 
     if (response.statusCode !== 200) {
       throw new Error(response.message || "Failed to fetch outfit");
@@ -82,7 +86,10 @@ class OutfitAPI {
    * @returns Promise<CreateOutfitResponse>
    */
   async createOutfit(data: CreateOutfitRequest): Promise<CreateOutfitResponse> {
-    const response = await apiClient.post<CreateOutfitResponse>("/outfits", data);
+    const response = await apiClient.post<CreateOutfitResponse>(
+      "/outfits",
+      data
+    );
 
     if (response.statusCode !== 201 && response.statusCode !== 200) {
       throw new Error(response.message || "Failed to create outfit");
@@ -98,10 +105,13 @@ class OutfitAPI {
    * @returns Promise<CreateOutfitResponse>
    */
   async updateOutfit(
-    id: number, 
+    id: number,
     data: Partial<CreateOutfitRequest>
   ): Promise<CreateOutfitResponse> {
-    const response = await apiClient.put<CreateOutfitResponse>(`/outfits/${id}`, data);
+    const response = await apiClient.put<CreateOutfitResponse>(
+      `/outfits/${id}`,
+      data
+    );
 
     if (response.statusCode !== 200) {
       throw new Error(response.message || "Failed to update outfit");
@@ -148,7 +158,9 @@ class OutfitAPI {
    * @returns Promise<Outfit[]>
    */
   async getFavoriteOutfits(): Promise<Outfit[]> {
-    const response = await apiClient.get<GetOutfitsFavoriteResponse>("/outfits/favorites");
+    const response = await apiClient.get<GetOutfitsFavoriteResponse>(
+      "/outfits/favorites"
+    );
 
     if (response.statusCode !== 200) {
       throw new Error(response.message || "Failed to fetch favorite outfits");
@@ -164,7 +176,11 @@ class OutfitAPI {
    * @param occasionId - Optional occasion ID for filtering suggestions
    * @returns Promise with suggested items and reason
    */
-  async getSuggestion(weather: string, userId: number, occasionId?: number): Promise<{
+  async getSuggestion(
+    weather: string,
+    userId: number,
+    occasionId?: number
+  ): Promise<{
     statusCode: number;
     message: string;
     data: {
@@ -229,9 +245,9 @@ class OutfitAPI {
       params: {
         weather,
         userId,
-        ...(occasionId && { occasionId })
+        ...(occasionId && { occasionId }),
       },
-      timeout: 60000
+      timeout: 60000,
     });
 
     if (response.statusCode !== 200) {
@@ -284,7 +300,7 @@ class OutfitAPI {
       }>;
     }>("/outfits/suggestionV2", {
       params,
-      timeout: 120000
+      timeout: 120000,
     });
 
     if (response.statusCode !== 200) {
@@ -302,12 +318,19 @@ class OutfitAPI {
   async massCreateOutfits(
     outfits: CreateOutfitRequest[]
   ): Promise<MassCreateOutfitResponse> {
-    const response = await apiClient.post<MassCreateOutfitResponse>("/outfits/mass", {
-      outfits,
-    });
+    const response = await apiClient.post<MassCreateOutfitResponse>(
+      "/outfits/mass",
+      {
+        outfits,
+      }
+    );
 
     // Accept 201 (all created), 207 (partial success), or 200
-    if (response.statusCode !== 201 && response.statusCode !== 207 && response.statusCode !== 200) {
+    if (
+      response.statusCode !== 201 &&
+      response.statusCode !== 207 &&
+      response.statusCode !== 200
+    ) {
       throw new Error(response.message || "Failed to create outfits");
     }
 
@@ -333,7 +356,7 @@ class OutfitAPI {
   }> {
     const formData = new FormData();
     formData.append("Human", humanImage);
-    
+
     // Add each item URL as separate ItemURLs field
     itemUrls.forEach((url) => {
       formData.append("ItemURLs", url);
@@ -359,12 +382,86 @@ class OutfitAPI {
 
     return response;
   }
+
+  /**
+   * Get saved outfits from both posts and collections
+   * @param params - Request parameters (pageIndex, pageSize, sourceType, search)
+   * @returns Promise<GetSavedOutfitsResponse>
+   */
+  async getSavedOutfits(
+    params: import("../../types/outfit").GetSavedOutfitsRequest
+  ): Promise<import("../../types/outfit").GetSavedOutfitsResponse> {
+    const queryParams: Record<string, string | number> = {
+      "page-index": params.pageIndex,
+      "page-size": params.pageSize,
+    };
+
+    if (params.sourceType) {
+      queryParams["source-type"] = params.sourceType;
+    }
+
+    if (params.search) {
+      queryParams["search"] = params.search;
+    }
+
+    const response = await apiClient.get<
+      import("../../types/outfit").GetSavedOutfitsResponse
+    >("/outfits/saved", { params: queryParams });
+
+    if (response.statusCode !== 200) {
+      throw new Error(response.message || "Failed to fetch saved outfits");
+    }
+
+    return response;
+  }
+
+  /**
+   * Unsave an outfit from a post
+   * @param outfitId - Outfit ID
+   * @param postId - Post ID
+   * @returns Promise<void>
+   */
+  async unsaveFromPost(outfitId: number, postId: number): Promise<void> {
+    const response = await apiClient.delete<{
+      statusCode: number;
+      message: string;
+    }>(`/outfit-post/${outfitId}/${postId}`);
+
+    if (response.statusCode !== 200) {
+      throw new Error(response.message || "Failed to unsave outfit from post");
+    }
+  }
+
+  /**
+   * Unsave an outfit from a collection
+   * @param outfitId - Outfit ID
+   * @param collectionId - Collection ID
+   * @returns Promise<void>
+   */
+  async unsaveFromCollection(
+    outfitId: number,
+    collectionId: number
+  ): Promise<void> {
+    const response = await apiClient.delete<{
+      statusCode: number;
+      message: string;
+    }>(`/outfit-collection/${outfitId}/${collectionId}`);
+
+    if (response.statusCode !== 200) {
+      throw new Error(
+        response.message || "Failed to unsave outfit from collection"
+      );
+    }
+  }
 }
 
 // Create singleton instance
 export const outfitAPI = new OutfitAPI();
 
 // Legacy exports for backward compatibility
-export const GetOutFitAPI = (data: GetOutfitsRequest) => outfitAPI.getOutfits(data);
-export const CreateOutfitAPI = (data: CreateOutfitRequest) => outfitAPI.createOutfit(data);
-export const SaveFavoriteOutfitAPI = (id: number) => outfitAPI.toggleFavorite(id);
+export const GetOutFitAPI = (data: GetOutfitsRequest) =>
+  outfitAPI.getOutfits(data);
+export const CreateOutfitAPI = (data: CreateOutfitRequest) =>
+  outfitAPI.createOutfit(data);
+export const SaveFavoriteOutfitAPI = (id: number) =>
+  outfitAPI.toggleFavorite(id);

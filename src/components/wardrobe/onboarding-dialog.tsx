@@ -372,8 +372,9 @@ useScrollLock(open);
         };
       }
 
-      // If selecting, check maximum limit
-      if (prev.styleIds.length >= MAX_STYLES) {
+      // If selecting, check maximum limit (total of styleIds + otherStyles)
+      const totalSelected = prev.styleIds.length + prev.otherStyles.length;
+      if (totalSelected >= MAX_STYLES) {
         toast.error(`Maximum ${MAX_STYLES} styles allowed`);
         return prev;
       }
@@ -951,10 +952,18 @@ useScrollLock(open);
                               onChange={(e) => setOtherStyleInput(e.target.value)}
                               onPressEnter={() => {
                                 const trimmed = otherStyleInput.trim();
-                                if (trimmed && !formData.otherStyles.includes(trimmed)) {
-                                  setFormData({ ...formData, otherStyles: [...formData.otherStyles, trimmed] });
-                                  setOtherStyleInput("");
+                                if (!trimmed) return;
+                                if (formData.otherStyles.includes(trimmed)) {
+                                  toast.error("This style is already added");
+                                  return;
                                 }
+                                const totalSelected = formData.styleIds.length + formData.otherStyles.length;
+                                if (totalSelected >= MAX_STYLES) {
+                                  toast.error(`Maximum ${MAX_STYLES} styles allowed`);
+                                  return;
+                                }
+                                setFormData({ ...formData, otherStyles: [...formData.otherStyles, trimmed] });
+                                setOtherStyleInput("");
                               }}
                               style={{
                                 backgroundColor: 'rgba(255, 255, 255, 0.9)',
@@ -967,10 +976,18 @@ useScrollLock(open);
                               type="button"
                               onClick={() => {
                                 const trimmed = otherStyleInput.trim();
-                                if (trimmed && !formData.otherStyles.includes(trimmed)) {
-                                  setFormData({ ...formData, otherStyles: [...formData.otherStyles, trimmed] });
-                                  setOtherStyleInput("");
+                                if (!trimmed) return;
+                                if (formData.otherStyles.includes(trimmed)) {
+                                  toast.error("This style is already added");
+                                  return;
                                 }
+                                const totalSelected = formData.styleIds.length + formData.otherStyles.length;
+                                if (totalSelected >= MAX_STYLES) {
+                                  toast.error(`Maximum ${MAX_STYLES} styles allowed`);
+                                  return;
+                                }
+                                setFormData({ ...formData, otherStyles: [...formData.otherStyles, trimmed] });
+                                setOtherStyleInput("");
                               }}
                               disabled={!otherStyleInput.trim()}
                               className={cn(
@@ -986,10 +1003,10 @@ useScrollLock(open);
                           </div>
 
                           {/* Selected Count Badge */}
-                          {formData.styleIds.length > 0 && (
+                          {(formData.styleIds.length + formData.otherStyles.length) > 0 && (
                             <div className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border border-blue-300/50 whitespace-nowrap">
                               <span className="text-sm font-semibold text-white font-bricolage">
-                                {formData.styleIds.length} selected
+                                {formData.styleIds.length + formData.otherStyles.length}/{MAX_STYLES} selected
                               </span>
                             </div>
                           )}
@@ -1014,7 +1031,7 @@ useScrollLock(open);
                         ) : (
                           <div
                             ref={scrollContainerRef}
-                            className="grid grid-cols-4 gap-4 h-[280px] overflow-y-auto hide-scrollbar p-1"
+                            className="grid grid-cols-4 gap-4 h-[420px] overflow-y-auto hide-scrollbar p-1"
                           >
                             {styles.map((style) => (
                               <Card

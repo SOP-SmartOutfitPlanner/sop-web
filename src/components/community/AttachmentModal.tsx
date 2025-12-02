@@ -12,12 +12,17 @@ import {
   DialogTitle,
   DialogClose,
 } from "@/components/ui/dialog";
-import { X, Package } from "lucide-react";
+import { X, Package, Bookmark, Loader2 } from "lucide-react";
 import { PostItemDetailModel, PostOutfitDetailModel } from "@/types/community";
 import { getCategoryIcon } from "@/lib/utils/category-icons";
 import { getCategoryColor } from "@/lib/constants/category-colors";
 import { ViewItemDialog } from "@/components/wardrobe/ViewItemDialog";
 import { useScrollLock } from "@/hooks/useScrollLock";
+import {
+  useSaveItemFromPost,
+  useSaveOutfitFromPost,
+} from "@/hooks/useSaveFromPost";
+import { useAuthStore } from "@/store/auth-store";
 
 interface AttachmentModalProps {
   isOpen: boolean;
@@ -25,6 +30,134 @@ interface AttachmentModalProps {
   type: "items" | "outfit";
   items?: PostItemDetailModel[];
   outfit?: PostOutfitDetailModel;
+  postId: number; // Required for save functionality
+}
+
+// Save button for individual items
+function ItemSaveButton({
+  item,
+  postId,
+}: {
+  item: PostItemDetailModel;
+  postId: number;
+}) {
+  const { isSaved, isLoading, toggleSave } = useSaveItemFromPost(
+    item.id,
+    postId,
+    item.isSaved
+  );
+  const { user } = useAuthStore();
+
+  if (item.isDeleted) return null;
+
+  return (
+    <Tooltip.Provider delayDuration={200}>
+      <Tooltip.Root>
+        <Tooltip.Trigger asChild>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleSave();
+            }}
+            disabled={isLoading || !user}
+            className={`absolute bottom-1.5 right-1.5 flex items-center justify-center w-7 h-7 rounded-md backdrop-blur-sm transition-all duration-200 ${
+              isSaved
+                ? "bg-cyan-500/90 text-white hover:bg-cyan-600/90"
+                : "bg-black/50 text-white/80 hover:bg-black/70 hover:text-white"
+            } ${isLoading ? "opacity-70 cursor-wait" : ""} ${
+              !user ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+            aria-label={isSaved ? "Remove from saved" : "Save item"}
+          >
+            {isLoading ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Bookmark
+                className={`w-3.5 h-3.5 ${isSaved ? "fill-current" : ""}`}
+              />
+            )}
+          </button>
+        </Tooltip.Trigger>
+        <Tooltip.Portal>
+          <Tooltip.Content
+            className="bg-gray-900/95 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-lg shadow-xl border border-white/10 z-[100] font-poppins"
+            sideOffset={5}
+          >
+            {!user
+              ? "Login to save items"
+              : isSaved
+              ? "Remove from saved"
+              : "Save to wardrobe"}
+            <Tooltip.Arrow className="fill-gray-900" />
+          </Tooltip.Content>
+        </Tooltip.Portal>
+      </Tooltip.Root>
+    </Tooltip.Provider>
+  );
+}
+
+// Save button for outfit (in header)
+function OutfitSaveButton({
+  outfit,
+  postId,
+}: {
+  outfit: PostOutfitDetailModel;
+  postId: number;
+}) {
+  const { isSaved, isLoading, toggleSave } = useSaveOutfitFromPost(
+    outfit.id,
+    postId,
+    outfit.isSaved
+  );
+  const { user } = useAuthStore();
+
+  if (outfit.isDeleted) return null;
+
+  return (
+    <Tooltip.Provider delayDuration={200}>
+      <Tooltip.Root>
+        <Tooltip.Trigger asChild>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleSave();
+            }}
+            disabled={isLoading || !user}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+              isSaved
+                ? "bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 hover:bg-cyan-500/30"
+                : "bg-white/10 text-white/80 border border-white/10 hover:bg-white/20 hover:text-white"
+            } ${isLoading ? "opacity-70 cursor-wait" : ""} ${
+              !user ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+            aria-label={isSaved ? "Remove outfit from saved" : "Save outfit"}
+          >
+            {isLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Bookmark
+                className={`w-4 h-4 ${isSaved ? "fill-current" : ""}`}
+              />
+            )}
+            <span>{isSaved ? "Saved" : "Save Outfit"}</span>
+          </button>
+        </Tooltip.Trigger>
+        <Tooltip.Portal>
+          <Tooltip.Content
+            className="bg-gray-900/95 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-lg shadow-xl border border-white/10 z-[100] font-poppins"
+            sideOffset={5}
+          >
+            {!user
+              ? "Login to save outfits"
+              : isSaved
+              ? "Remove outfit from saved"
+              : "Save outfit to your collection"}
+            <Tooltip.Arrow className="fill-gray-900" />
+          </Tooltip.Content>
+        </Tooltip.Portal>
+      </Tooltip.Root>
+    </Tooltip.Provider>
+  );
 }
 
 export function AttachmentModal({
@@ -33,6 +166,7 @@ export function AttachmentModal({
   type,
   items,
   outfit,
+  postId,
 }: AttachmentModalProps) {
   const [imageLoaded, setImageLoaded] = useState<Record<number, boolean>>({});
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
@@ -92,6 +226,10 @@ export function AttachmentModal({
                   </p>
                 )}
               </div>
+              {/* Save Outfit Button - only show for outfit type */}
+              {type === "outfit" && outfit && (
+                <OutfitSaveButton outfit={outfit} postId={postId} />
+              )}
               <DialogClose asChild>
                 <button
                   className="flex items-center justify-center w-8 h-8 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-all duration-200"
@@ -186,6 +324,11 @@ export function AttachmentModal({
                                 >
                                   <CategoryIcon className="w-3 h-3" />
                                 </div>
+
+                                {/* Save Item Button */}
+                                {imageLoaded[item.id] && (
+                                  <ItemSaveButton item={item} postId={postId} />
+                                )}
 
                                 {/* Deleted Overlay */}
                                 {isDeleted && (

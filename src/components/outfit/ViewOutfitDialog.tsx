@@ -1,21 +1,31 @@
 "use client";
 
 import { useEffect, memo, useMemo, useState } from "react";
-import { X, Heart, Edit, Trash2, Calendar, User } from "lucide-react";
+import { X, Heart, Edit, Trash2, User, ExternalLink } from "lucide-react";
 import GlassButton from "@/components/ui/glass-button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Outfit } from "@/types/outfit";
-import { useSaveFavoriteOutfit, useOutfit } from "@/hooks/useOutfits";
-import { format } from "date-fns";
+import { Outfit, SavedOutfit } from "@/types/outfit";
+import {
+  useSaveFavoriteOutfit,
+  useOutfit,
+  useUnsaveOutfit,
+} from "@/hooks/useOutfits";
 import { OutfitItemCard } from "./OutfitItemCard";
 import { ViewItemDialog } from "@/components/wardrobe/ViewItemDialog";
+import { useRouter } from "next/navigation";
 
 interface ViewOutfitDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  outfit: Outfit | null;
-  onEdit?: (outfit: Outfit) => void;
+  outfit: Outfit | SavedOutfit | null;
+  onEdit?: (outfit: Outfit | SavedOutfit) => void;
   onDelete?: (outfitId: number) => void;
+  onUnsave?: (
+    outfitId: number,
+    sourceId: number,
+    sourceType: "Post" | "Collection"
+  ) => void;
+  onOpenPost?: (postId: number) => void;
 }
 
 const ViewOutfitDialogComponent = ({
@@ -24,11 +34,20 @@ const ViewOutfitDialogComponent = ({
   outfit: initialOutfit,
   onEdit,
   onDelete,
+  onUnsave,
+  onOpenPost,
 }: ViewOutfitDialogProps) => {
   const { mutate: toggleFavorite, isPending } = useSaveFavoriteOutfit();
+  const { mutate: unsaveOutfit } = useUnsaveOutfit();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isUnsaveDialogOpen, setIsUnsaveDialogOpen] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
   const [isItemDialogOpen, setIsItemDialogOpen] = useState(false);
+  const router = useRouter();
+
+  // Check if this is a saved outfit
+  const isSavedOutfit = initialOutfit && "sourceType" in initialOutfit;
+  const savedOutfit = isSavedOutfit ? (initialOutfit as SavedOutfit) : null;
 
   // Fetch real-time outfit data from React Query cache
   const { data: latestOutfit } = useOutfit(initialOutfit?.id || null);
@@ -72,9 +91,46 @@ const ViewOutfitDialogComponent = ({
     }
   };
 
+  const handleUnsaveClick = () => {
+    if (savedOutfit) {
+      setIsUnsaveDialogOpen(true);
+    }
+  };
+
+  const handleSourceClick = () => {
+    if (!savedOutfit) return;
+
+    if (savedOutfit.sourceType === "Collection") {
+      router.push(`/collections/${savedOutfit.sourceId}`);
+      handleClose();
+    } else if (savedOutfit.sourceType === "Post" && onOpenPost) {
+      onOpenPost(savedOutfit.sourceId);
+      // Don't close the outfit modal when opening post modal
+    }
+  };
+
   const confirmDelete = () => {
     if (outfit && onDelete) {
       onDelete(outfit.id);
+      handleClose();
+    }
+  };
+
+  const confirmUnsave = () => {
+    if (savedOutfit) {
+      if (onUnsave) {
+        onUnsave(
+          savedOutfit.outfitId,
+          savedOutfit.sourceId,
+          savedOutfit.sourceType
+        );
+      } else {
+        unsaveOutfit({
+          outfitId: savedOutfit.outfitId,
+          sourceId: savedOutfit.sourceId,
+          sourceType: savedOutfit.sourceType,
+        });
+      }
       handleClose();
     }
   };
@@ -111,11 +167,25 @@ const ViewOutfitDialogComponent = ({
     };
   }, [open]);
 
-  // Memoize formatted date
-  const formattedDate = useMemo(() => {
-    if (!outfit) return "";
-    return format(new Date(outfit.createdDate), "MMMM d, yyyy");
-  }, [outfit]);
+  // Prevent body scroll when dialog is open
+  useEffect(() => {
+    if (open) {
+      const scrollY = window.scrollY;
+      document.body.style.position = "fixed";
+      document.body.style.width = "100%";
+      document.body.style.top = `-${scrollY}px`;
+    }
+
+    return () => {
+      const scrollY = Math.abs(parseInt(document.body.style.top || "0"));
+      document.body.style.position = "";
+      document.body.style.width = "";
+      document.body.style.top = "";
+      if (scrollY) {
+        window.scrollTo(0, scrollY);
+      }
+    };
+  }, [open]);
 
   if (!open || !outfit) return null;
 
@@ -123,13 +193,13 @@ const ViewOutfitDialogComponent = ({
     <>
       {/* Backdrop */}
       <div
-        className="fixed h-full inset-0 bg-black/50 backdrop-blur-sm z-50 overflow-hidden overscroll-none"
+        className="fixed h-full inset-0 bg-black/50 backdrop-blur-sm z-40 overflow-hidden overscroll-none"
         style={{ position: "fixed", inset: 0 }}
         onClick={handleClose}
       />
 
       {/* Modal Container */}
-      <div className="fixed inset-0 z-51 flex items-center justify-center p-4 pointer-events-none overflow-hidden">
+      <div className="fixed inset-0 z-41 flex items-center justify-center p-4 pointer-events-none overflow-hidden">
         <div
           className="w-[1200px] max-w-[90vw] max-h-[90vh] rounded-3xl overflow-hidden shadow-2xl pointer-events-auto relative"
           onClick={(e) => e.stopPropagation()}
@@ -147,11 +217,16 @@ const ViewOutfitDialogComponent = ({
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <h2 className="font-dela-gothic text-4xl font-bold bg-clip-text text-transparent bg-linear-to-r from-white via-blue-100 to-cyan-200">
-                    {outfit.name}
+                    {isSavedOutfit && savedOutfit
+                      ? savedOutfit.outfitName
+                      : outfit.name}
                   </h2>
-                  {outfit.description && (
+                  {((isSavedOutfit && savedOutfit?.outfitDescription) ||
+                    (!isSavedOutfit && outfit.description)) && (
                     <p className="font-bricolage text-lg text-gray-200 mt-2">
-                      {outfit.description}
+                      {isSavedOutfit && savedOutfit
+                        ? savedOutfit.outfitDescription
+                        : outfit.description}
                     </p>
                   )}
 
@@ -159,11 +234,11 @@ const ViewOutfitDialogComponent = ({
                   <div className="flex items-center gap-6 mt-4 text-sm text-white/70">
                     <div className="flex items-center gap-2">
                       <User className="w-4 h-4" />
-                      <span>{outfit.userDisplayName}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4" />
-                      <span>{formattedDate}</span>
+                      <span>
+                        {isSavedOutfit && savedOutfit
+                          ? savedOutfit.sourceOwnerDisplayName || "Unknown"
+                          : outfit.userDisplayName}
+                      </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="font-semibold text-white">
@@ -206,60 +281,88 @@ const ViewOutfitDialogComponent = ({
             <div className="px-12 pb-8 pt-4 shrink-0">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  {/* Favorite Button */}
-                  <GlassButton
-                    onClick={handleFavoriteClick}
-                    disabled={isPending}
-                    variant="custom"
-                    backgroundColor={
-                      outfit.isFavorite
-                        ? "rgba(239, 68, 68, 0.6)"
-                        : "rgba(255, 255, 255, 0.2)"
-                    }
-                    borderColor={
-                      outfit.isFavorite
-                        ? "rgba(239, 68, 68, 0.8)"
-                        : "rgba(255, 255, 255, 0.4)"
-                    }
-                    textColor="white"
-                    size="md"
-                    className="gap-2"
-                  >
-                    <Heart
-                      className={`w-5 h-5 ${
-                        outfit.isFavorite ? "fill-current" : ""
-                      }`}
-                    />
-                    {outfit.isFavorite ? "Unfavorite" : "Favorite"}
-                  </GlassButton>
-
-                  {/* Save Badge */}
-                  {outfit.isSaved && (
-                    <span className="px-3 py-2 rounded-full bg-blue-500/50 border border-blue-300/70 text-blue-200 text-sm font-medium">
-                      Saved
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-3">
-                  {/* Delete Button */}
-                  {onDelete && (
+                  {/* Favorite Button - Hide for saved outfits */}
+                  {!isSavedOutfit && (
                     <GlassButton
-                      onClick={handleDeleteClick}
+                      onClick={handleFavoriteClick}
+                      disabled={isPending}
                       variant="custom"
-                      backgroundColor="rgba(239, 68, 68, 0.6)"
-                      borderColor="rgba(239, 68, 68, 0.8)"
+                      backgroundColor={
+                        outfit.isFavorite
+                          ? "rgba(239, 68, 68, 0.6)"
+                          : "rgba(255, 255, 255, 0.2)"
+                      }
+                      borderColor={
+                        outfit.isFavorite
+                          ? "rgba(239, 68, 68, 0.8)"
+                          : "rgba(255, 255, 255, 0.4)"
+                      }
                       textColor="white"
                       size="md"
                       className="gap-2"
                     >
-                      <Trash2 className="w-5 h-5" />
-                      Delete
+                      <Heart
+                        className={`w-5 h-5 ${
+                          outfit.isFavorite ? "fill-current" : ""
+                        }`}
+                      />
+                      {outfit.isFavorite ? "Unfavorite" : "Favorite"}
                     </GlassButton>
                   )}
 
-                  {/* Edit Button */}
-                  {onEdit && (
+                  {/* View Source Button for Saved Outfits */}
+                  {isSavedOutfit && savedOutfit && (
+                    <GlassButton
+                      onClick={handleSourceClick}
+                      variant="custom"
+                      backgroundColor="rgba(59, 130, 246, 0.3)"
+                      borderColor="rgba(59, 130, 246, 0.5)"
+                      textColor="white"
+                      size="md"
+                      className="gap-2"
+                    >
+                      <ExternalLink className="w-5 h-5" />
+                      {savedOutfit.sourceType === "Post"
+                        ? "View Original Post"
+                        : "View Collection"}
+                    </GlassButton>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-3">
+                  {/* Delete or Unsave Button */}
+                  {isSavedOutfit ? (
+                    <GlassButton
+                      onClick={handleUnsaveClick}
+                      variant="custom"
+                      backgroundColor="rgba(239, 130, 68, 0.6)"
+                      borderColor="rgba(239, 130, 68, 0.8)"
+                      textColor="white"
+                      size="md"
+                      className="gap-2"
+                    >
+                      <X className="w-5 h-5" />
+                      Remove from Saved
+                    </GlassButton>
+                  ) : (
+                    onDelete && (
+                      <GlassButton
+                        onClick={handleDeleteClick}
+                        variant="custom"
+                        backgroundColor="rgba(239, 68, 68, 0.6)"
+                        borderColor="rgba(239, 68, 68, 0.8)"
+                        textColor="white"
+                        size="md"
+                        className="gap-2"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                        Delete
+                      </GlassButton>
+                    )
+                  )}
+
+                  {/* Edit Button - Hide for saved outfits */}
+                  {onEdit && !isSavedOutfit && (
                     <GlassButton
                       onClick={handleEditClick}
                       variant="custom"
@@ -300,6 +403,25 @@ const ViewOutfitDialogComponent = ({
         title="Delete Outfit?"
         description={`Are you sure you want to delete "${outfit?.name}"? This action cannot be undone and will permanently remove this outfit from your collection.`}
         confirmText="Delete Outfit"
+        cancelText="Cancel"
+        variant="danger"
+        isLoading={false}
+      />
+
+      {/* Unsave Confirmation Dialog */}
+      <ConfirmDialog
+        open={isUnsaveDialogOpen}
+        onOpenChange={setIsUnsaveDialogOpen}
+        onConfirm={confirmUnsave}
+        title={`Remove from Saved ${
+          savedOutfit?.sourceType === "Post" ? "Posts" : "Collections"
+        }?`}
+        description={`Are you sure you want to remove "${
+          isSavedOutfit && savedOutfit ? savedOutfit.outfitName : outfit?.name
+        }" from your saved ${
+          savedOutfit?.sourceType === "Post" ? "posts" : "collections"
+        }? You can save it again later.`}
+        confirmText="Remove"
         cancelText="Cancel"
         variant="danger"
         isLoading={false}

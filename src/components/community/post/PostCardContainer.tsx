@@ -168,12 +168,14 @@ export function PostCardContainer({
         onClose={() => setIsItemsModalOpen(false)}
         type="items"
         items={post.items || undefined}
+        postId={parseInt(post.id)}
       />
       <AttachmentModal
         isOpen={isOutfitModalOpen}
         onClose={() => setIsOutfitModalOpen(false)}
         type="outfit"
         outfit={post.outfit || undefined}
+        postId={parseInt(post.id)}
       />
     </div>
   );

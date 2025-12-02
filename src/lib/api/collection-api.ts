@@ -19,11 +19,12 @@ export interface CollectionItemDetail {
 }
 
 export interface CollectionOutfitItem {
-  outfitId: number;
+  id: number;
   name: string;
   description: string | null;
   isFavorite: boolean;
   isSaved: boolean;
+  isSavedFromCollection: boolean;
   itemCount: number;
   createdDate: string;
   items: CollectionItemDetail[];
@@ -448,6 +449,82 @@ class CollectionAPI {
     const endpoint = baseHasVersion
       ? `/collections/${collectionId}`
       : `/v1/collections/${collectionId}`;
+
+    return apiClient.delete<{
+      statusCode: number;
+      message: string;
+      data: null;
+    }>(endpoint, config);
+  }
+
+  /**
+   * Save an outfit from a collection to the user's wardrobe
+   */
+  async saveOutfitFromCollection(
+    outfitId: number,
+    collectionId: number,
+    config?: AxiosRequestConfig
+  ): Promise<{
+    statusCode: number;
+    message: string;
+    data: {
+      id: number;
+      userId: number;
+      outfitId: number;
+      collectionId: number;
+      createdDate: string;
+      outfitName: string;
+      outfitDescription: string | null;
+      collectionTitle: string;
+      collectionUserId: number;
+      collectionUserDisplayName: string;
+    };
+  }> {
+    const axiosInstance = apiClient.getAxiosInstance();
+    const baseURL = axiosInstance.defaults.baseURL ?? "";
+    const normalizedBase = baseURL.replace(/\/$/, "");
+    const baseHasVersion = /\/v\d+(\/)?$/.test(normalizedBase);
+    const endpoint = baseHasVersion
+      ? "/outfit-collection"
+      : "/v1/outfit-collection";
+
+    return apiClient.post<{
+      statusCode: number;
+      message: string;
+      data: {
+        id: number;
+        userId: number;
+        outfitId: number;
+        collectionId: number;
+        createdDate: string;
+        outfitName: string;
+        outfitDescription: string | null;
+        collectionTitle: string;
+        collectionUserId: number;
+        collectionUserDisplayName: string;
+      };
+    }>(endpoint, { outfitId, collectionId }, config);
+  }
+
+  /**
+   * Unsave an outfit from a collection (remove from user's wardrobe)
+   */
+  async unsaveOutfitFromCollection(
+    outfitId: number,
+    collectionId: number,
+    config?: AxiosRequestConfig
+  ): Promise<{
+    statusCode: number;
+    message: string;
+    data: null;
+  }> {
+    const axiosInstance = apiClient.getAxiosInstance();
+    const baseURL = axiosInstance.defaults.baseURL ?? "";
+    const normalizedBase = baseURL.replace(/\/$/, "");
+    const baseHasVersion = /\/v\d+(\/)?$/.test(normalizedBase);
+    const endpoint = baseHasVersion
+      ? `/outfit-collection/${outfitId}/${collectionId}`
+      : `/v1/outfit-collection/${outfitId}/${collectionId}`;
 
     return apiClient.delete<{
       statusCode: number;
