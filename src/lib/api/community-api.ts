@@ -26,6 +26,7 @@ export interface PostItemDetailModel {
   imgUrl: string;
   aiDescription: string | null;
   isDeleted: boolean;
+  isSaved: boolean; // Whether current user has saved this item from any post
 }
 
 export interface PostOutfitDetailModel {
@@ -33,6 +34,7 @@ export interface PostOutfitDetailModel {
   name: string;
   description: string | null;
   isDeleted: boolean;
+  isSaved: boolean; // Whether current user has saved this outfit from any post or collection
   items: PostItemDetailModel[];
 }
 
@@ -108,6 +110,46 @@ interface ApiResponse<T> {
   statusCode: number;
   message: string;
   data: T;
+}
+
+// Save Item from Post types
+export interface SavedItemFromPost {
+  id: number;
+  userId: number;
+  itemId: number;
+  postId: number;
+  createdDate: string;
+  itemName: string;
+  itemImgUrl: string;
+  postBody: string;
+  postUserId: number;
+  postUserDisplayName: string;
+}
+
+export interface SaveItemFromPostResponse {
+  statusCode: number;
+  message: string;
+  data: SavedItemFromPost;
+}
+
+// Save Outfit from Post types
+export interface SavedOutfitFromPost {
+  id: number;
+  userId: number;
+  outfitId: number;
+  postId: number;
+  createdDate: string;
+  outfitName: string;
+  outfitDescription: string | null;
+  postBody: string;
+  postUserId: number;
+  postUserDisplayName: string;
+}
+
+export interface SaveOutfitFromPostResponse {
+  statusCode: number;
+  message: string;
+  data: SavedOutfitFromPost;
 }
 
 export interface PostLiker {
@@ -225,13 +267,16 @@ class CommunityAPI {
     pageSize: number = 10,
     currentUserId?: number
   ): Promise<FeedResponse> {
-    const response = await apiClient.get(`${this.BASE_PATH}/hashtag/${hashtagId}`, {
-      params: {
-        ...(currentUserId && { userId: currentUserId }),
-        "page-index": page,
-        "page-size": pageSize,
-      },
-    });
+    const response = await apiClient.get(
+      `${this.BASE_PATH}/hashtag/${hashtagId}`,
+      {
+        params: {
+          ...(currentUserId && { userId: currentUserId }),
+          "page-index": page,
+          "page-size": pageSize,
+        },
+      }
+    );
 
     const feedData = response.data;
 
@@ -265,7 +310,11 @@ class CommunityAPI {
 
     const likersData = response.data;
 
-    if (!likersData || !Array.isArray(likersData.data) || !likersData.metaData) {
+    if (
+      !likersData ||
+      !Array.isArray(likersData.data) ||
+      !likersData.metaData
+    ) {
       console.error("Invalid API response structure:", response);
       throw new Error("Invalid API response structure");
     }
@@ -335,22 +384,38 @@ class CommunityAPI {
       return apiResponse.data;
     } catch (error: unknown) {
       // Map API error messages to user-friendly messages
-      const apiMessage = (error as { response?: { data?: { message?: string } } }).response?.data?.message || (error as Error).message;
-      
+      const apiMessage =
+        (error as { response?: { data?: { message?: string } } }).response?.data
+          ?.message || (error as Error).message;
+
       if (apiMessage?.includes("both items and outfit")) {
-        throw new Error("You can only attach either items or an outfit, not both");
+        throw new Error(
+          "You can only attach either items or an outfit, not both"
+        );
       } else if (apiMessage?.includes("maximum of 4 items")) {
         throw new Error("You can attach a maximum of 4 items per post");
-      } else if (apiMessage?.includes("Item") && apiMessage?.includes("not found")) {
+      } else if (
+        apiMessage?.includes("Item") &&
+        apiMessage?.includes("not found")
+      ) {
         throw new Error("One or more selected items no longer exist");
-      } else if (apiMessage?.includes("Outfit") && apiMessage?.includes("not found")) {
+      } else if (
+        apiMessage?.includes("Outfit") &&
+        apiMessage?.includes("not found")
+      ) {
         throw new Error("The selected outfit no longer exists");
-      } else if (apiMessage?.includes("Item") && apiMessage?.includes("does not belong")) {
+      } else if (
+        apiMessage?.includes("Item") &&
+        apiMessage?.includes("does not belong")
+      ) {
         throw new Error("You can only attach items from your own wardrobe");
-      } else if (apiMessage?.includes("Outfit") && apiMessage?.includes("does not belong")) {
+      } else if (
+        apiMessage?.includes("Outfit") &&
+        apiMessage?.includes("does not belong")
+      ) {
         throw new Error("You can only attach outfits you created");
       }
-      
+
       throw error;
     }
   }
@@ -422,22 +487,38 @@ class CommunityAPI {
       return apiResponse.data;
     } catch (error: unknown) {
       // Map API error messages to user-friendly messages
-      const apiMessage = (error as { response?: { data?: { message?: string } } }).response?.data?.message || (error as Error).message;
-      
+      const apiMessage =
+        (error as { response?: { data?: { message?: string } } }).response?.data
+          ?.message || (error as Error).message;
+
       if (apiMessage?.includes("both items and outfit")) {
-        throw new Error("You can only attach either items or an outfit, not both");
+        throw new Error(
+          "You can only attach either items or an outfit, not both"
+        );
       } else if (apiMessage?.includes("maximum of 4 items")) {
         throw new Error("You can attach a maximum of 4 items per post");
-      } else if (apiMessage?.includes("Item") && apiMessage?.includes("not found")) {
+      } else if (
+        apiMessage?.includes("Item") &&
+        apiMessage?.includes("not found")
+      ) {
         throw new Error("One or more selected items no longer exist");
-      } else if (apiMessage?.includes("Outfit") && apiMessage?.includes("not found")) {
+      } else if (
+        apiMessage?.includes("Outfit") &&
+        apiMessage?.includes("not found")
+      ) {
         throw new Error("The selected outfit no longer exists");
-      } else if (apiMessage?.includes("Item") && apiMessage?.includes("does not belong")) {
+      } else if (
+        apiMessage?.includes("Item") &&
+        apiMessage?.includes("does not belong")
+      ) {
         throw new Error("You can only attach items from your own wardrobe");
-      } else if (apiMessage?.includes("Outfit") && apiMessage?.includes("does not belong")) {
+      } else if (
+        apiMessage?.includes("Outfit") &&
+        apiMessage?.includes("does not belong")
+      ) {
         throw new Error("You can only attach outfits you created");
       }
-      
+
       throw error;
     }
   }
@@ -837,6 +918,130 @@ class CommunityAPI {
       console.error("[API] Error fetching top contributors:", error);
       return [];
     }
+  }
+
+  // ==================== SAVE ITEMS/OUTFITS FROM POSTS ====================
+
+  /**
+   * Save an item from a post to user's wardrobe
+   * API: POST /item-post
+   * @param itemId - The ID of the item to save
+   * @param postId - The ID of the post containing the item
+   */
+  async saveItemFromPost(
+    itemId: number,
+    postId: number
+  ): Promise<SaveItemFromPostResponse> {
+    const response = await apiClient.post<SaveItemFromPostResponse>(
+      "/item-post",
+      { itemId, postId }
+    );
+    return response;
+  }
+
+  /**
+   * Unsave an item from a post
+   * API: DELETE /item-post/{itemId}/{postId}
+   * @param itemId - The ID of the item to unsave
+   * @param postId - The ID of the post
+   */
+  async unsaveItemFromPost(
+    itemId: number,
+    postId: number
+  ): Promise<ApiResponse<null>> {
+    const response = await apiClient.delete<ApiResponse<null>>(
+      `/item-post/${itemId}/${postId}`
+    );
+    return response;
+  }
+
+  /**
+   * Get all saved items from posts for current user
+   * API: GET /item-post
+   */
+  async getSavedItemsFromPosts(): Promise<ApiResponse<SavedItemFromPost[]>> {
+    const response = await apiClient.get<ApiResponse<SavedItemFromPost[]>>(
+      "/item-post"
+    );
+    return response;
+  }
+
+  /**
+   * Check if an item from a post is saved
+   * API: GET /item-post/check/{itemId}/{postId}
+   * @param itemId - The ID of the item
+   * @param postId - The ID of the post
+   */
+  async checkItemSavedFromPost(
+    itemId: number,
+    postId: number
+  ): Promise<ApiResponse<{ isSaved: boolean }>> {
+    const response = await apiClient.get<ApiResponse<{ isSaved: boolean }>>(
+      `/item-post/check/${itemId}/${postId}`
+    );
+    return response;
+  }
+
+  /**
+   * Save an outfit from a post to user's wardrobe
+   * API: POST /outfit-post
+   * @param outfitId - The ID of the outfit to save
+   * @param postId - The ID of the post containing the outfit
+   */
+  async saveOutfitFromPost(
+    outfitId: number,
+    postId: number
+  ): Promise<SaveOutfitFromPostResponse> {
+    const response = await apiClient.post<SaveOutfitFromPostResponse>(
+      "/outfit-post",
+      { outfitId, postId }
+    );
+    return response;
+  }
+
+  /**
+   * Unsave an outfit from a post
+   * API: DELETE /outfit-post/{outfitId}/{postId}
+   * @param outfitId - The ID of the outfit to unsave
+   * @param postId - The ID of the post
+   */
+  async unsaveOutfitFromPost(
+    outfitId: number,
+    postId: number
+  ): Promise<ApiResponse<null>> {
+    const response = await apiClient.delete<ApiResponse<null>>(
+      `/outfit-post/${outfitId}/${postId}`
+    );
+    return response;
+  }
+
+  /**
+   * Get all saved outfits from posts for current user
+   * API: GET /outfit-post
+   */
+  async getSavedOutfitsFromPosts(): Promise<
+    ApiResponse<SavedOutfitFromPost[]>
+  > {
+    const response = await apiClient.get<ApiResponse<SavedOutfitFromPost[]>>(
+      "/outfit-post"
+    );
+    return response;
+  }
+
+  /**
+   * Check if an outfit from a post is saved
+   * API: GET /outfit-post/check/{outfitId}/{postId}
+   * @param outfitId - The ID of the outfit
+   * @param postId - The ID of the post
+   */
+  async checkOutfitSavedFromPost(
+    outfitId: number,
+    postId: number
+  ): Promise<ApiResponse<{ isSaved: boolean }>> {
+    const response = await apiClient.get<ApiResponse<{ isSaved: boolean }>>(
+      `/outfit-post/check/${outfitId}/${postId}`
+    );
+    return response;
   }
 }
 
