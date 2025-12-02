@@ -22,7 +22,7 @@ export function AdminHeader() {
   const handleLogout = async () => {
     await logout();
     toast.success("Successfully logged out");
-    router.push("/admin/login");
+    router.push("/login");
   };
 
   const getInitials = (name: string) => {

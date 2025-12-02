@@ -656,6 +656,107 @@ class WardrobeAPI {
 
     return response.data;
   }
+
+  /**
+   * Get all wardrobe items from system (Admin only)
+   * This endpoint returns items from all users for admin management
+   */
+  async getSystemItems(
+    pageIndex: number = 1,
+    pageSize: number = 10,
+    filters?: {
+      isAnalyzed?: boolean;
+      categoryId?: number;
+      seasonId?: number;
+      styleId?: number;
+      occasionId?: number;
+      sortByDate?: 'asc' | 'desc';
+      searchQuery?: string;
+    }
+  ): Promise<ApiItemsResponse> {
+    // Build query parameters
+    const params: Record<string, string | number | boolean> = {
+      "page-index": pageIndex,
+      "page-size": pageSize,
+    };
+
+    // Add optional filter parameters
+    if (filters?.isAnalyzed !== undefined) {
+      params.IsAnalyzed = filters.isAnalyzed;
+    }
+    if (filters?.categoryId !== undefined) {
+      params.CategoryId = filters.categoryId;
+    }
+    if (filters?.seasonId !== undefined) {
+      params.SeasonId = filters.seasonId;
+    }
+    if (filters?.styleId !== undefined) {
+      params.StyleId = filters.styleId;
+    }
+    if (filters?.occasionId !== undefined) {
+      params.OccasionId = filters.occasionId;
+    }
+    if (filters?.sortByDate) {
+      params.SortByDate = filters.sortByDate === 'asc' ? 0 : 1; // 0 = asc, 1 = desc
+    }
+    if (filters?.searchQuery) {
+      params.search = filters.searchQuery;
+    }
+
+    // Admin endpoint: /items/system with pagination params
+    const response = await apiClient.get<{
+      statusCode: number;
+      message: string;
+      data: {
+        data: ApiWardrobeItem[];
+        metaData: {
+          totalCount: number;
+          pageSize: number;
+          currentPage: number;
+          totalPages: number;
+          hasNext: boolean;
+          hasPrevious: boolean;
+        };
+      };
+    }>('/items/system', {
+      params,
+    });
+
+    // API returns { statusCode, message, data: { data: [...], metaData: {...} } }
+    if (response?.data?.data && Array.isArray(response.data.data)) {
+      return {
+        data: response.data.data,
+        metaData: response.data.metaData,
+      };
+    }
+
+    // Fallback: check if it's a direct array (legacy, no pagination)
+    if (Array.isArray(response?.data)) {
+      return {
+        data: response.data,
+        metaData: {
+          totalCount: response.data.length,
+          pageSize: response.data.length,
+          currentPage: 1,
+          totalPages: 1,
+          hasNext: false,
+          hasPrevious: false,
+        },
+      };
+    }
+
+    return {
+      data: [],
+      metaData: {
+        totalCount: 0,
+        pageSize,
+        currentPage: pageIndex,
+        totalPages: 0,
+        hasNext: false,
+        hasPrevious: false,
+      },
+    };
+  }
 }
 
 export const wardrobeAPI = new WardrobeAPI();

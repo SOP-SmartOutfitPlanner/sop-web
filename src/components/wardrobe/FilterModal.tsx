@@ -117,7 +117,8 @@ export function FilterModal({
     localFilters.categoryId !== undefined ||
     localFilters.seasonId !== undefined ||
     localFilters.styleId !== undefined ||
-    localFilters.occasionId !== undefined;
+    localFilters.occasionId !== undefined ||
+    localFilters.isAnalyzed !== undefined;
 
   return (
     <ConfirmModal
@@ -282,6 +283,27 @@ export function FilterModal({
               }
             />
           </div>
+        </div>
+
+        {/* AI Analysis Filter - Full width */}
+        <div className="col-span-2 space-y-2">
+          <Label className="text-white font-semibold text-base">
+            AI Analysis Status
+          </Label>
+          <Select
+            placeholder="All items"
+            value={localFilters.isAnalyzed}
+            onChange={(value) =>
+              setLocalFilters({ ...localFilters, isAnalyzed: value })
+            }
+            allowClear
+            size="large"
+            className="w-full"
+            options={[
+              { value: true, label: '✨ AI Analyzed' },
+              { value: false, label: 'Not Analyzed' },
+            ]}
+          />
         </div>
       </div>
     </ConfirmModal>
