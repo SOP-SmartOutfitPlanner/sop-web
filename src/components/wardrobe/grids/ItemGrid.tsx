@@ -66,11 +66,11 @@ export function ItemGrid({
 
   useEffect(() => {
     // Only fetch if no external items provided and haven't done initial fetch yet
-    if (!externalItems && !hasInitialFetch && (!filteredItems || filteredItems.length === 0)) {
+    if (!externalItems && !hasInitialFetch) {
       fetchItems();
     }
-
-  }, [externalItems, hasInitialFetch, filteredItems, fetchItems]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalItems, hasInitialFetch]);
 
   const handleDelete = async (id: string) => {
     if (onDeleteItem) {
