@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { X, Edit } from "lucide-react";
+import { X, Edit, Sparkles, ArrowLeft } from "lucide-react";
 import { Image } from "antd";
 import GlassButton from "@/components/ui/glass-button";
-import { wardrobeAPI } from "@/lib/api/wardrobe-api";
+import { wardrobeAPI, AIAnalysisData } from "@/lib/api/wardrobe-api";
 
 export interface ViewItemDialogProps {
   open: boolean;
@@ -45,9 +45,15 @@ export function ViewItemDialog({
 }: ViewItemDialogProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [itemData, setItemData] = useState<ViewItemData | null>(null);
+  const [originalData, setOriginalData] = useState<ViewItemData | null>(null);
+  const [aiAnalysisData, setAiAnalysisData] = useState<AIAnalysisData | null>(
+    null
+  );
+  const [showAiAnalysis, setShowAiAnalysis] = useState(false);
 
   const fetchItemData = useCallback(async () => {
     setIsLoading(true);
+    setShowAiAnalysis(false); // Reset AI analysis view when fetching new data
     try {
       const item = await wardrobeAPI.getItem(itemId);
 
@@ -62,7 +68,7 @@ export function ViewItemDialog({
         }
       }
 
-      setItemData({
+      const originalItemData = {
         name: item.name || "",
         category: item.categoryName || "N/A",
         colors: parsedColors,
@@ -79,7 +85,23 @@ export function ViewItemDialog({
         aiDescription: item.aiDescription || "",
         aiConfidence: item.aiConfidence,
         isAnalyzed: item.isAnalyzed,
-      });
+      };
+
+      setItemData(originalItemData);
+      setOriginalData(originalItemData);
+
+      // Parse AI analysis JSON if available
+      if (item.aiAnalyzeJson) {
+        try {
+          const parsedAiData: AIAnalysisData = JSON.parse(item.aiAnalyzeJson);
+          setAiAnalysisData(parsedAiData);
+        } catch (error) {
+          console.error("Failed to parse AI analysis JSON:", error);
+          setAiAnalysisData(null);
+        }
+      } else {
+        setAiAnalysisData(null);
+      }
     } catch (error) {
       console.error("Failed to fetch item:", error);
     } finally {
@@ -92,6 +114,38 @@ export function ViewItemDialog({
       fetchItemData();
     }
   }, [open, fetchItemData]);
+
+  const handleViewAiAnalysis = useCallback(() => {
+    if (!aiAnalysisData || !originalData) return;
+
+    // Override item data with AI analysis data
+    setItemData({
+      name: originalData.name, // Keep original name
+      category: originalData.category, // We can map categoryId if needed
+      colors: aiAnalysisData.colors,
+      brand: originalData.brand, // Keep original brand
+      frequencyWorn: originalData.frequencyWorn, // Keep original frequency
+      imgUrl: originalData.imgUrl, // Keep original image
+      weatherSuitable: aiAnalysisData.weatherSuitable,
+      condition: aiAnalysisData.condition,
+      pattern: aiAnalysisData.pattern,
+      fabric: aiAnalysisData.fabric,
+      styles: aiAnalysisData.styles.map((s) => s.name),
+      occasions: aiAnalysisData.occasions.map((o) => o.name),
+      seasons: aiAnalysisData.seasons.map((s) => s.name),
+      aiDescription: aiAnalysisData.aiDescription,
+      aiConfidence: aiAnalysisData.confidence,
+      isAnalyzed: true,
+    });
+    setShowAiAnalysis(true);
+  }, [aiAnalysisData, originalData]);
+
+  const handleBackToOriginal = useCallback(() => {
+    if (originalData) {
+      setItemData(originalData);
+      setShowAiAnalysis(false);
+    }
+  }, [originalData]);
 
   if (!open) return null;
 
@@ -124,10 +178,12 @@ export function ViewItemDialog({
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="font-dela-gothic text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-cyan-200">
-                    Item Details
+                    {showAiAnalysis ? "AI Analysis View" : "Item Details"}
                   </h2>
                   <p className="font-bricolage text-sm text-gray-200 mt-0.5">
-                    View your wardrobe item information
+                    {showAiAnalysis
+                      ? "Viewing AI-analyzed item attributes"
+                      : "View your wardrobe item information"}
                   </p>
                 </div>
                 {itemData?.isAnalyzed &&
@@ -146,25 +202,68 @@ export function ViewItemDialog({
                     </div>
                   )}
                 <div className="flex items-center gap-2">
-                  {onEdit && (
+                  {showAiAnalysis ? (
                     <GlassButton
-                      onClick={onEdit}
+                      onClick={handleBackToOriginal}
                       variant="custom"
                       size="sm"
                       borderRadius="12px"
                       blur="8px"
                       brightness={1.1}
-                      glowColor="rgba(59, 130, 246, 0.4)"
+                      glowColor="rgba(156, 163, 175, 0.4)"
                       glowIntensity={4}
-                      borderColor="rgba(59, 130, 246, 0.3)"
+                      borderColor="rgba(156, 163, 175, 0.3)"
                       borderWidth="1px"
                       textColor="#ffffff"
-                      backgroundColor="rgba(59, 130, 246, 0.2)"
+                      backgroundColor="rgba(156, 163, 175, 0.2)"
                       className="gap-2"
                     >
-                      <Edit className="w-4 h-4" />
-                      Edit
+                      <ArrowLeft className="w-4 h-4" />
+                      Back to Original
                     </GlassButton>
+                  ) : (
+                    <>
+                      {aiAnalysisData && (
+                        <GlassButton
+                          onClick={handleViewAiAnalysis}
+                          variant="custom"
+                          size="sm"
+                          borderRadius="12px"
+                          blur="8px"
+                          brightness={1.1}
+                          glowColor="rgba(168, 85, 247, 0.4)"
+                          glowIntensity={4}
+                          borderColor="rgba(168, 85, 247, 0.3)"
+                          borderWidth="1px"
+                          textColor="#ffffff"
+                          backgroundColor="rgba(168, 85, 247, 0.2)"
+                          className="gap-2"
+                        >
+                          <Sparkles className="w-4 h-4" />
+                          View AI Analysis
+                        </GlassButton>
+                      )}
+                      {onEdit && (
+                        <GlassButton
+                          onClick={onEdit}
+                          variant="custom"
+                          size="sm"
+                          borderRadius="12px"
+                          blur="8px"
+                          brightness={1.1}
+                          glowColor="rgba(59, 130, 246, 0.4)"
+                          glowIntensity={4}
+                          borderColor="rgba(59, 130, 246, 0.3)"
+                          borderWidth="1px"
+                          textColor="#ffffff"
+                          backgroundColor="rgba(59, 130, 246, 0.2)"
+                          className="gap-2"
+                        >
+                          <Edit className="w-4 h-4" />
+                          Edit
+                        </GlassButton>
+                      )}
+                    </>
                   )}
                   <button
                     onClick={() => onOpenChange(false)}
@@ -209,7 +308,13 @@ export function ViewItemDialog({
                           itemData.aiConfidence &&
                           itemData.aiConfidence > 50 && (
                             <div className="absolute top-2 right-2">
-                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center shadow-lg border border-white/50">
+                              <div
+                                className={`w-10 h-10 rounded-full flex items-center justify-center shadow-lg border border-white/50 ${
+                                  showAiAnalysis
+                                    ? "bg-gradient-to-br from-purple-400 to-pink-500 animate-pulse"
+                                    : "bg-gradient-to-br from-cyan-400 to-blue-500"
+                                }`}
+                              >
                                 <span className="text-[10px] font-bold text-white">
                                   AI
                                 </span>

@@ -1,5 +1,20 @@
 import { apiClient } from "./client";
 
+// AI Analysis JSON structure
+export interface AIAnalysisData {
+  categoryId: number;
+  colors: Array<{ name: string; hex: string }>;
+  aiDescription: string;
+  weatherSuitable: string;
+  condition: string;
+  pattern: string;
+  fabric: string;
+  styles: Array<{ id: number; name: string }>;
+  occasions: Array<{ id: number; name: string }>;
+  seasons: Array<{ id: number; name: string }>;
+  confidence: number;
+}
+
 // Category mapping for item types
 export const CATEGORY_MAPPING = {
   top: { id: 1, name: "Top" },
@@ -60,6 +75,7 @@ export interface ApiWardrobeItem {
   // AI analysis fields
   aiConfidence?: number;
   isAnalyzed?: boolean;
+  aiAnalyzeJson?: string; // JSON string containing AI analysis data
   // Relational arrays
   styles?: Array<{ id: number; name: string }>;
   occasions?: Array<{ id: number; name: string }>;
