@@ -64,7 +64,9 @@ export const WardrobeHeader = memo(function WardrobeHeader({
       setSearchQuery(debouncedSearchValue || "");
       onFiltersChange({ ...filters, q: debouncedSearchValue || undefined });
     }
-  }, [debouncedSearchValue, filters, onFiltersChange, setSearchQuery]); 
+    // Only depend on debouncedSearchValue to avoid infinite loops
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearchValue]); 
 
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchValue(e.target.value);

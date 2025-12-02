@@ -412,8 +412,8 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
         currentPage: 1, // Reset to first page when filters change
       };
     });
-    // Fetch new items from API with updated filters
-    get().fetchItems();
+    // Note: Filtering is done client-side, no need to refetch from API
+    // If server-side filtering is needed, call fetchItems() manually from the component
   },
 
   clearFilters: () =>
