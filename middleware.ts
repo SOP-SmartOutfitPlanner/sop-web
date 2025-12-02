@@ -43,16 +43,16 @@ export function middleware(request: NextRequest) {
     // Get access token from localStorage (stored in cookies for server-side access)
     const accessToken = request.cookies.get("accessToken")?.value;
 
-    // If no token, redirect to admin login
+    // If no token, redirect to login
     if (!accessToken) {
-      return NextResponse.redirect(new URL("/admin/login", request.url));
+      return NextResponse.redirect(new URL("/login", request.url));
     }
 
     // Decode token to check role
     const payload = decodeJWT(accessToken);
     
     if (!payload) {
-      return NextResponse.redirect(new URL("/admin/login", request.url));
+      return NextResponse.redirect(new URL("/login", request.url));
     }
 
     // Extract role from JWT
@@ -60,8 +60,8 @@ export function middleware(request: NextRequest) {
 
     // Check if user has admin role
     if (role !== "ADMIN" && role !== "SuperAdmin") {
-      // Not an admin - redirect to admin login
-      return NextResponse.redirect(new URL("/admin/login", request.url));
+      // Not an admin - redirect to login
+      return NextResponse.redirect(new URL("/login", request.url));
     }
   }
 

@@ -24,12 +24,12 @@ export default function AdminLayout({
 
     // Check if user is authenticated and has admin role
     if (!isAuthenticated || !user) {
-      router.push("/admin/login");
+      router.push("/login");
       return;
     }
 
     if (user.role !== "ADMIN" && user.role !== "SuperAdmin") {
-      router.push("/admin/login");
+      router.push("/login");
     }
   }, [isAuthenticated, user, router, isLoginPage]);
 
