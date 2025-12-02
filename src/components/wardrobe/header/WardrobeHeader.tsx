@@ -54,8 +54,9 @@ export const WardrobeHeader = memo(function WardrobeHeader({
       filters.seasonId !== undefined ? 1 : 0,
       filters.styleId !== undefined ? 1 : 0,
       filters.occasionId !== undefined ? 1 : 0,
+      filters.isAnalyzed !== undefined ? 1 : 0,
     ].reduce((a, b) => a + b, 0);
-  }, [filters.categoryId, filters.seasonId, filters.styleId, filters.occasionId]);
+  }, [filters.categoryId, filters.seasonId, filters.styleId, filters.occasionId, filters.isAnalyzed]);
 
   // Update search query when debounced search value changes
   useEffect(() => {
@@ -63,7 +64,7 @@ export const WardrobeHeader = memo(function WardrobeHeader({
       setSearchQuery(debouncedSearchValue || "");
       onFiltersChange({ ...filters, q: debouncedSearchValue || undefined });
     }
-  }, [debouncedSearchValue]); 
+  }, [debouncedSearchValue, filters, onFiltersChange, setSearchQuery]); 
 
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchValue(e.target.value);

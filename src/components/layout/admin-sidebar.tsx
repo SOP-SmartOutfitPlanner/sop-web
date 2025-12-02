@@ -10,8 +10,8 @@ import {
   Shield,
   Flag,
   Bot,
+  Package,
 } from "lucide-react";
-import { Logo } from "@/components/ui/logo";
 import { cn } from "@/lib/utils";
 
 const menuItems = [
@@ -24,6 +24,11 @@ const menuItems = [
     title: "Manage Users",
     icon: Users,
     href: "/admin/users",
+  },
+  {
+    title: "Wardrobe System",
+    icon: Package,
+    href: "/admin/wardrobe",
   },
   {
     title: "Manage Items",
@@ -73,19 +78,29 @@ export function AdminSidebar() {
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 bg-slate-900/40 backdrop-blur-xl border-r border-white/10 flex flex-col shadow-2xl shadow-black/20">
       {/* Logo */}
-      <div className="p-6 border-b border-white/10 bg-white/5">
-        <div className="flex items-center gap-3">
-          <div className="bg-gradient-to-br from-cyan-400 to-blue-500 rounded-xl p-2.5 shadow-lg shadow-cyan-500/30">
-            <Shield className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <Logo
-              variant="rectangle"
-              width={100}
-              height={30}
-              className="brightness-0 invert"
-            />
-            <p className="text-xs text-cyan-300/70 mt-0.5">Admin Portal</p>
+      <div className="p-6 border-b border-white/10">
+        <div className="relative">
+          {/* Background glow effect */}
+          <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-purple-500/20 blur-2xl -z-10" />
+          
+          <div className="flex items-center gap-3 relative">
+            {/* Icon container with gradient */}
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-2xl blur-md opacity-60" />
+              <div className="relative bg-gradient-to-br from-cyan-400 to-blue-500 rounded-2xl p-3 shadow-xl">
+                <Shield className="w-7 h-7 text-white drop-shadow-lg" />
+              </div>
+            </div>
+            
+            {/* Text content */}
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-dela-gothic text-2xl bg-clip-text text-transparent bg-gradient-to-r from-white via-cyan-100 to-blue-200">
+                  SOP
+                </span>
+              </div>
+              <p className="text-xs font-medium text-cyan-300/80 tracking-wide">Admin Portal</p>
+            </div>
           </div>
         </div>
       </div>
