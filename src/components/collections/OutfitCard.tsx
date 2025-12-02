@@ -2,14 +2,18 @@
 
 import { useState, useCallback } from "react";
 import Image from "next/image";
-import { ChevronDown, ChevronUp, Shirt } from "lucide-react";
+import { ChevronDown, ChevronUp, Shirt, Bookmark, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import GlassCard from "@/components/ui/glass-card";
+import { cn } from "@/lib/utils";
 import type {
   CollectionItemDetail,
   CollectionOutfit,
   CollectionOutfitItem,
 } from "@/lib/api";
 import { CollectionItemDetailDialog } from "./CollectionItemDetailDialog";
+import { useSaveOutfitFromCollection } from "@/hooks/useCollectionMutations";
+import { useAuthStore } from "@/store/auth-store";
 
 interface OutfitItemCardProps {
   item: CollectionItemDetail;
@@ -59,14 +63,49 @@ interface OutfitCardProps {
   outfit: CollectionOutfitItem | null;
   entry: CollectionOutfit;
   items: CollectionItemDetail[];
+  collectionId: number;
 }
 
-export function OutfitCard({ outfit, entry, items }: OutfitCardProps) {
+export function OutfitCard({
+  outfit,
+  entry,
+  items,
+  collectionId,
+}: OutfitCardProps) {
+  const { user } = useAuthStore();
   const [showDescription, setShowDescription] = useState(true);
   const [selectedItem, setSelectedItem] = useState<CollectionItemDetail | null>(
     null
   );
   const [detailOpen, setDetailOpen] = useState(false);
+
+  // Debug logging
+  console.log("OutfitCard render - outfit:", outfit, "outfitId:", outfit?.id);
+
+  const saveOutfitMutation = useSaveOutfitFromCollection(
+    outfit?.id ?? 0,
+    collectionId,
+    outfit?.isSavedFromCollection
+  );
+
+  const handleSaveOutfit = useCallback(() => {
+    if (!user?.id) {
+      toast.error("Please login to save outfits");
+      return;
+    }
+    if (!outfit) {
+      console.error("Outfit is null or undefined");
+      toast.error("Outfit not found");
+      return;
+    }
+    if (typeof outfit.id !== "number") {
+      console.error("Invalid outfit id:", outfit.id, "Full outfit:", outfit);
+      toast.error("Invalid outfit data");
+      return;
+    }
+    console.log("Saving outfit:", outfit.id, "from collection:", collectionId);
+    saveOutfitMutation.mutate();
+  }, [user?.id, outfit, collectionId, saveOutfitMutation]);
 
   const toggleDescription = useCallback(() => {
     setShowDescription((prev) => !prev);
@@ -98,21 +137,56 @@ export function OutfitCard({ outfit, entry, items }: OutfitCardProps) {
       <div className="space-y-3">
         <div className="flex items-center justify-between gap-2">
           <h3 className="text-base font-semibold text-white">
-            Outfit from Collection
+            {outfit?.name || "Outfit from Collection"}
           </h3>
-          {outfitDescription && (
-            <button
-              onClick={toggleDescription}
-              className="p-1.5 text-slate-400 hover:text-cyan-300 hover:bg-cyan-500/10 rounded-md transition-colors"
-              title={showDescription ? "Hide description" : "Show description"}
-            >
-              {showDescription ? (
-                <ChevronUp className="h-4 w-4" />
-              ) : (
-                <ChevronDown className="h-4 w-4" />
-              )}
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {/* Save/Unsave Outfit Button */}
+            {outfit && (
+              <button
+                onClick={handleSaveOutfit}
+                disabled={saveOutfitMutation.isPending}
+                className={cn(
+                  "group inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-all duration-200",
+                  outfit.isSavedFromCollection
+                    ? "border-emerald-400/60 bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30"
+                    : "border-blue-400/60 bg-blue-500/20 text-blue-300 hover:bg-blue-500/30",
+                  "disabled:opacity-50 disabled:cursor-not-allowed"
+                )}
+                title={
+                  outfit.isSavedFromCollection
+                    ? "Remove from saved"
+                    : "Save outfit"
+                }
+              >
+                {saveOutfitMutation.isPending ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Bookmark
+                    className={cn(
+                      "h-3.5 w-3.5 transition-transform duration-200 group-hover:scale-110",
+                      outfit.isSavedFromCollection && "fill-current"
+                    )}
+                  />
+                )}
+                <span>{outfit.isSavedFromCollection ? "Saved" : "Save"}</span>
+              </button>
+            )}
+            {outfitDescription && (
+              <button
+                onClick={toggleDescription}
+                className="p-1.5 text-slate-400 hover:text-cyan-300 hover:bg-cyan-500/10 rounded-md transition-colors"
+                title={
+                  showDescription ? "Hide description" : "Show description"
+                }
+              >
+                {showDescription ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )}
+              </button>
+            )}
+          </div>
         </div>
         {showDescription && outfitDescription && (
           <div className="rounded-lg border border-cyan-500/30  p-3 mb-3">
