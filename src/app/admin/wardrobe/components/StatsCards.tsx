@@ -1,42 +1,51 @@
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, Settings, Key, Cpu, FileText } from "lucide-react";
+import { Loader2, Shirt, Sparkles, Database, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { AISetting } from "@/lib/api/admin-api";
 
 interface StatsCardsProps {
   isLoading: boolean;
-  allSettings: AISetting[];
+  totalItems: number;
+  analyzedItems: number;
+  totalUsers: number;
 }
 
-export function StatsCards({ isLoading, allSettings }: StatsCardsProps) {
+export function StatsCards({
+  isLoading,
+  totalItems,
+  analyzedItems,
+  totalUsers,
+}: StatsCardsProps) {
   const stats = [
     {
-      label: "Total Settings",
-      value: allSettings.length,
-      icon: Settings,
+      label: "Total Items",
+      value: totalItems,
+      icon: Shirt,
       iconColor: "text-white",
       bgGradient: "from-white/10 to-white/5",
     },
     {
-      label: "API Keys",
-      value: allSettings.filter((s) => s.type.includes("API")).length,
-      icon: Key,
+      label: "Total Users",
+      value: totalUsers,
+      icon: Users,
       iconColor: "text-cyan-400",
       bgGradient: "from-cyan-500/20 to-blue-500/20",
     },
     {
-      label: "Models",
-      value: allSettings.filter((s) => s.type.includes("MODEL")).length,
-      icon: Cpu,
+      label: "AI Analyzed",
+      value: analyzedItems,
+      icon: Sparkles,
       iconColor: "text-purple-400",
       bgGradient: "from-purple-500/20 to-pink-500/20",
     },
     {
-      label: "Prompts",
-      value: allSettings.filter((s) => s.type.includes("PROMPT")).length,
-      icon: FileText,
+      label: "Analysis Rate",
+      value:
+        totalItems > 0
+          ? `${Math.round((analyzedItems / totalItems) * 100)}%`
+          : "0%",
+      icon: Database,
       iconColor: "text-green-400",
       bgGradient: "from-green-500/20 to-emerald-500/20",
     },

@@ -55,16 +55,16 @@ export default function AdminUsersPage() {
 
   const getRoleBadge = (role: number) => {
     if (role === 1) {
-      return <Badge className="bg-blue-600">Admin</Badge>;
+      return <Badge className="bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 shadow-lg shadow-cyan-500/20">Admin</Badge>;
     }
-    return <Badge variant="secondary">User</Badge>;
+    return <Badge className="bg-white/10 text-white/80 border border-white/20">User</Badge>;
   };
 
   const getStatusBadge = (isVerified: boolean) => {
     if (isVerified) {
-      return <Badge className="bg-green-600">Verified</Badge>;
+      return <Badge className="bg-green-500/20 text-green-300 border border-green-400/30 shadow-lg shadow-green-500/20">Verified</Badge>;
     }
-    return <Badge variant="secondary">Unverified</Badge>;
+    return <Badge className="bg-white/10 text-white/60 border border-white/20">Unverified</Badge>;
   };
 
   const getInitials = (name: string) => {
@@ -88,7 +88,7 @@ export default function AdminUsersPage() {
               onClick={() =>
                 column.toggleSorting(column.getIsSorted() === "asc")
               }
-              className="hover:bg-transparent p-0"
+              className="hover:bg-white/10 p-0 text-white/90 hover:text-white"
             >
               User
               <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -108,8 +108,8 @@ export default function AdminUsersPage() {
                 </AvatarFallback>
               </Avatar>
               <div>
-                <p className="font-medium text-gray-900">{user.displayName}</p>
-                <p className="text-xs text-gray-500">ID: {user.id}</p>
+                <p className="font-medium text-white">{user.displayName}</p>
+                <p className="text-xs text-white/50">ID: {user.id}</p>
               </div>
             </div>
           );
@@ -124,7 +124,7 @@ export default function AdminUsersPage() {
               onClick={() =>
                 column.toggleSorting(column.getIsSorted() === "asc")
               }
-              className="hover:bg-transparent p-0"
+              className="hover:bg-white/10 p-0 text-white/90 hover:text-white"
             >
               Email
               <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -132,7 +132,7 @@ export default function AdminUsersPage() {
           );
         },
         cell: ({ getValue }) => (
-          <span className="text-gray-600">{getValue() as string}</span>
+          <span className="text-white/80">{getValue() as string}</span>
         ),
       },
       {
@@ -153,9 +153,9 @@ export default function AdminUsersPage() {
         header: "Premium",
         cell: ({ getValue }) =>
           getValue() ? (
-            <Badge className="bg-purple-600">Premium</Badge>
+            <Badge className="bg-purple-500/20 text-purple-300 border border-purple-400/30 shadow-lg shadow-purple-500/20">Premium</Badge>
           ) : (
-            <Badge variant="outline">Free</Badge>
+            <Badge className="bg-white/10 text-white/60 border border-white/20">Free</Badge>
           ),
       },
       {
@@ -163,7 +163,7 @@ export default function AdminUsersPage() {
         header: "Login Type",
         cell: ({ getValue }) =>
           getValue() ? (
-            <Badge variant="outline" className="gap-1">
+            <Badge className="bg-white/10 text-white/80 border border-white/20 gap-1">
               <svg className="w-3 h-3" viewBox="0 0 24 24">
                 <path
                   fill="currentColor"
@@ -185,7 +185,7 @@ export default function AdminUsersPage() {
               Google
             </Badge>
           ) : (
-            <Badge variant="outline">Email</Badge>
+            <Badge className="bg-white/10 text-white/80 border border-white/20">Email</Badge>
           ),
       },
       {
@@ -197,7 +197,7 @@ export default function AdminUsersPage() {
               onClick={() =>
                 column.toggleSorting(column.getIsSorted() === "asc")
               }
-              className="hover:bg-transparent p-0"
+              className="hover:bg-white/10 p-0 text-white/90 hover:text-white"
             >
               Joined Date
               <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -207,7 +207,7 @@ export default function AdminUsersPage() {
         cell: ({ getValue }) => {
           const date = new Date(getValue() as string);
           return (
-            <div className="flex flex-col gap-1 text-gray-600">
+            <div className="flex flex-col gap-1 text-white/70">
               <span>{format(date, "dd/MM/yyyy")}</span>
             </div>
           );
@@ -220,22 +220,22 @@ export default function AdminUsersPage() {
             <div className="text-right">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon">
+                  <Button variant="ghost" size="icon" className="hover:bg-white/10 text-white/70 hover:text-white">
                     <MoreVertical className="w-4 h-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem>
+                <DropdownMenuContent align="end" className="bg-slate-900/95 backdrop-blur-xl border border-white/10">
+                  <DropdownMenuItem className="text-white/90 hover:bg-white/10 focus:bg-white/10">
                     <Mail className="w-4 h-4 mr-2" />
-                    Gửi email
+                    Send Email
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
+                  <DropdownMenuItem className="text-white/90 hover:bg-white/10 focus:bg-white/10">
                     <Shield className="w-4 h-4 mr-2" />
-                    Đổi quyền
+                    Change Role
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="text-red-600">
+                  <DropdownMenuItem className="text-red-400 hover:bg-red-500/10 focus:bg-red-500/10">
                     <Ban className="w-4 h-4 mr-2" />
-                    Khóa tài khoản
+                    Lock Account
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -288,8 +288,8 @@ export default function AdminUsersPage() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600">Loading data...</p>
+          <Loader2 className="w-12 h-12 animate-spin text-cyan-400 mx-auto mb-4" />
+          <p className="text-white/70">Loading data...</p>
         </div>
       </div>
     );
@@ -300,101 +300,108 @@ export default function AdminUsersPage() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <p className="text-red-600 mb-4">
+          <p className="text-red-400 mb-4">
             An error occurred while loading data
           </p>
-          <Button onClick={() => window.location.reload()}>Thử lại</Button>
+          <Button 
+            onClick={() => window.location.reload()}
+            className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700"
+          >
+            Try Again
+          </Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Manage Users</h1>
-          <p className="text-gray-600 mt-2">Manage users and assign roles</p>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-200 via-white to-blue-200 bg-clip-text text-transparent">
+            User Management
+          </h1>
+          <p className="text-white/70 mt-2">Manage users and assign roles</p>
         </div>
-        <Button className="bg-blue-600 hover:bg-blue-700">
+        <Button className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 shadow-lg shadow-cyan-500/40">
           <UserPlus className="w-4 h-4 mr-2" />
           Add User
         </Button>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="border-0 shadow">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card className="border border-white/10 shadow-xl bg-white/5 backdrop-blur-xl">
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-gray-900">
+            <div className="text-2xl font-bold text-white">
               {metaData?.totalCount || 0}
             </div>
-            <p className="text-sm text-gray-600 mt-1">Total Users</p>
+            <p className="text-sm text-white/60 mt-1">Total Users</p>
           </CardContent>
         </Card>
-        <Card className="border-0 shadow">
+        <Card className="border border-white/10 shadow-xl bg-white/5 backdrop-blur-xl">
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-cyan-400">
               {users.filter((u: (typeof users)[0]) => u.isVerifiedEmail).length}
             </div>
-            <p className="text-sm text-gray-600 mt-1">Verified Users</p>
+            <p className="text-sm text-white/60 mt-1">Verified Users</p>
           </CardContent>
         </Card>
-        <Card className="border-0 shadow">
+        <Card className="border border-white/10 shadow-xl bg-white/5 backdrop-blur-xl">
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-orange-600">
+            <div className="text-2xl font-bold text-orange-400">
               {
                 users.filter((u: (typeof users)[0]) => !u.isVerifiedEmail)
                   .length
               }
             </div>
-            <p className="text-sm text-gray-600 mt-1">Unverified Users</p>
+            <p className="text-sm text-white/60 mt-1">Unverified Users</p>
           </CardContent>
         </Card>
-        <Card className="border-0 shadow">
+        <Card className="border border-white/10 shadow-xl bg-white/5 backdrop-blur-xl">
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-blue-600">
+            <div className="text-2xl font-bold text-blue-400">
               {users.filter((u: (typeof users)[0]) => u.role === 1).length}
             </div>
-            <p className="text-sm text-gray-600 mt-1">Admins</p>
+            <p className="text-sm text-white/60 mt-1">Admins</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Users Table */}
-      <Card className="border-0 shadow-lg">
+      <Card className="border border-white/10 shadow-xl bg-white/5 backdrop-blur-xl">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Danh sách Users</CardTitle>
+            <CardTitle className="text-white">Users List</CardTitle>
             <div className="relative w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/60" />
               <Input
-                placeholder="Tìm kiếm user..."
+                placeholder="Search users..."
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="pl-9"
+                className="pl-9 bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:bg-white/15 focus:border-cyan-400/50"
               />
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border">
+          <div className="rounded-lg border border-white/10 overflow-hidden bg-white/5">
             <div className="overflow-x-auto">
               <table className="w-full caption-bottom text-sm">
-                <thead className="[&_tr]:border-b">
+                <thead className="[&_tr]:border-b [&_tr]:border-white/10">
                   {table.getHeaderGroups().map((headerGroup) => (
                     <tr
                       key={headerGroup.id}
-                      className="border-b transition-colors hover:bg-muted/50"
+                      className="bg-white/5 transition-colors hover:bg-white/10"
                     >
                       {headerGroup.headers.map((header) => (
                         <th
                           key={header.id}
-                          className="h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0"
+                          className="h-12 px-4 text-left align-middle font-semibold text-white/90 text-xs uppercase tracking-wider [&:has([role=checkbox])]:pr-0"
                         >
                           {header.isPlaceholder
                             ? null
@@ -412,7 +419,7 @@ export default function AdminUsersPage() {
                     table.getRowModel().rows.map((row) => (
                       <tr
                         key={row.id}
-                        className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
+                        className="border-b border-white/10 transition-colors hover:bg-white/5 data-[state=selected]:bg-white/10"
                       >
                         {row.getVisibleCells().map((cell) => (
                           <td
@@ -429,7 +436,7 @@ export default function AdminUsersPage() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={columns.length} className="h-24 text-center">
+                      <td colSpan={columns.length} className="h-24 text-center text-white/60">
                         No results.
                       </td>
                     </tr>
@@ -441,20 +448,20 @@ export default function AdminUsersPage() {
 
           {/* Pagination */}
           {metaData && metaData.totalPages > 0 && (
-            <div className="flex items-center justify-between mt-6">
-              <div className="text-sm text-gray-600">
+            <div className="flex items-center justify-between mt-6 px-2">
+              <div className="text-sm text-white/70 font-medium">
                 {users.length > 0 ? (
                   <>
                     Showing{" "}
-                    <span className="font-medium">
+                    <span className="font-semibold text-cyan-300">
                       {(currentPage - 1) * pageSize + 1}
                     </span>{" "}
                     to{" "}
-                    <span className="font-medium">
+                    <span className="font-semibold text-cyan-300">
                       {Math.min(currentPage * pageSize, metaData.totalCount)}
                     </span>{" "}
                     of{" "}
-                    <span className="font-medium">{metaData.totalCount}</span>{" "}
+                    <span className="font-semibold text-cyan-300">{metaData.totalCount}</span>{" "}
                     users
                   </>
                 ) : (
@@ -469,6 +476,7 @@ export default function AdminUsersPage() {
                     !metaData.hasPrevious || isFetching || currentPage === 1
                   }
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  className="border-white/20 bg-white/5 backdrop-blur-sm text-white hover:bg-gradient-to-r hover:from-cyan-500/20 hover:to-blue-500/20 hover:border-cyan-400/50 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-300"
                 >
                   <ChevronLeft className="w-4 h-4 mr-1" />
                   Previous
@@ -488,7 +496,9 @@ export default function AdminUsersPage() {
                         disabled={isFetching || page > metaData.totalPages}
                         onClick={() => setCurrentPage(page)}
                         className={
-                          page === currentPage ? "bg-blue-600 text-white" : ""
+                          page === currentPage 
+                            ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-500/30 border-0 hover:from-cyan-600 hover:to-blue-700 min-w-[2.5rem] transition-all duration-300" 
+                            : "border-white/20 bg-white/5 backdrop-blur-sm text-white hover:bg-gradient-to-r hover:from-cyan-500/20 hover:to-blue-500/20 hover:border-cyan-400/50 min-w-[2.5rem] transition-all duration-300"
                         }
                       >
                         {page}
@@ -505,6 +515,7 @@ export default function AdminUsersPage() {
                     currentPage >= metaData.totalPages
                   }
                   onClick={() => setCurrentPage((p) => p + 1)}
+                  className="border-white/20 bg-white/5 backdrop-blur-sm text-white hover:bg-gradient-to-r hover:from-cyan-500/20 hover:to-blue-500/20 hover:border-cyan-400/50 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-300"
                 >
                   Next
                   <ChevronRight className="w-4 h-4 ml-1" />

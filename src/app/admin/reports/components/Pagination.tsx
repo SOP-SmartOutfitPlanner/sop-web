@@ -29,15 +29,15 @@ export function Pagination({
       : 0;
 
   return (
-    <Card className="border-0 shadow">
+    <Card className="border border-white/10 bg-white/5 backdrop-blur-xl shadow-xl">
       <CardContent className="pt-6">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-white/70">
             {totalCount && totalCount > 0 ? (
               <>
-                Showing <span className="font-medium">{startItem}</span> to{" "}
-                <span className="font-medium">{endItem}</span> of{" "}
-                <span className="font-medium">{totalCount}</span> reports
+                Showing <span className="font-medium text-white">{startItem}</span> to{" "}
+                <span className="font-medium text-white">{endItem}</span> of{" "}
+                <span className="font-medium text-white">{totalCount}</span> reports
               </>
             ) : (
               <span>No reports found</span>
@@ -50,7 +50,7 @@ export function Pagination({
               size="sm"
               disabled={pageIndex === 1}
               onClick={() => onPageChange(1)}
-              className="hidden sm:flex"
+              className="hidden sm:flex border-white/20 bg-white/5 text-white hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <ChevronsLeft className="w-4 h-4" />
             </Button>
@@ -60,6 +60,7 @@ export function Pagination({
               size="sm"
               disabled={!canGoPrev}
               onClick={() => onPageChange(pageIndex - 1)}
+              className="border-white/20 bg-white/5 text-white hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <ChevronLeft className="w-4 h-4 mr-1" />
               <span className="hidden sm:inline">Previous</span>
@@ -69,7 +70,7 @@ export function Pagination({
               <Button
                 variant="default"
                 size="sm"
-                className="bg-blue-600 hover:bg-blue-700 text-white min-w-9"
+                className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white min-w-9 shadow-lg shadow-cyan-500/30 border-0"
                 disabled
               >
                 {pageIndex}
@@ -79,19 +80,19 @@ export function Pagination({
                   <Button
                     variant="outline"
                     size="sm"
-                    className="min-w-9"
+                    className="min-w-9 border-white/20 bg-white/5 text-white hover:bg-white/10"
                     onClick={() => onPageChange(pageIndex + 1)}
                   >
                     {pageIndex + 1}
                   </Button>
                   {totalPages > pageIndex + 1 && (
-                    <span className="px-2 text-gray-400">...</span>
+                    <span className="px-2 text-white/40">...</span>
                   )}
                   {totalPages > pageIndex + 1 && (
                     <Button
                       variant="outline"
                       size="sm"
-                      className="min-w-9"
+                      className="min-w-9 border-white/20 bg-white/5 text-white hover:bg-white/10"
                       onClick={() => onPageChange(totalPages)}
                     >
                       {totalPages}
@@ -106,6 +107,7 @@ export function Pagination({
               size="sm"
               disabled={!canGoNext}
               onClick={() => onPageChange(pageIndex + 1)}
+              className="border-white/20 bg-white/5 text-white hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span className="hidden sm:inline">Next</span>
               <ChevronRight className="w-4 h-4 ml-1" />

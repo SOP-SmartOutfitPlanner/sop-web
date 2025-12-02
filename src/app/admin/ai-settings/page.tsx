@@ -234,26 +234,23 @@ export default function AdminAISettingsPage() {
   };
 
   const getTypeColor = (type: string) => {
-    if (type.includes("API")) return "bg-blue-100 text-blue-800";
-    if (type.includes("MODEL")) return "bg-purple-100 text-purple-800";
-    if (type.includes("PROMPT")) return "bg-green-100 text-green-800";
-    return "bg-gray-100 text-gray-800";
+    if (type.includes("API")) return "bg-cyan-500/20 text-cyan-300 border-cyan-400/30";
+    if (type.includes("MODEL")) return "bg-purple-500/20 text-purple-300 border-purple-400/30";
+    if (type.includes("PROMPT")) return "bg-green-500/20 text-green-300 border-green-400/30";
+    return "bg-white/10 text-white/70 border-white/20";
   };
 
   return (
-    <div className="space-y-6 pb-8">
+    <div className="space-y-8 pb-8">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-3 mb-2">
-            <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-lg">
-              <Sparkles className="w-6 h-6" />
-            </div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-200 via-white to-blue-200 bg-clip-text text-transparent">
               AI Settings Management
             </h1>
           </div>
-          <p className="text-gray-600 ml-15">
+          <p className="text-white/70">
             Manage AI configuration settings, API keys, models, and prompts
           </p>
         </div>
@@ -278,7 +275,7 @@ export default function AdminAISettingsPage() {
       />
 
       {/* Table */}
-      <Card className="border-0 shadow-lg">
+      <Card className="border border-white/10 shadow-xl bg-white/5 backdrop-blur-xl">
         <CardContent className="pt-6">
           <SettingsTable
             isLoading={isLoading}

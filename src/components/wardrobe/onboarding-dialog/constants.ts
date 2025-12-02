@@ -8,7 +8,7 @@ export const STEPS = {
 
 export const TOTAL_STEPS = Object.keys(STEPS).length;
 export const MAX_COLORS = 8;
-export const MAX_STYLES = 10;
+export const MAX_STYLES = 5;
 export const LOCATION_API_BASE = "https://open.oapi.vn/location";
 
 export const COLOR_PRESETS = [

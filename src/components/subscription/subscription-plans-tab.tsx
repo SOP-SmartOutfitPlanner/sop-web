@@ -142,7 +142,6 @@ export function SubscriptionPlansTab({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 max-w-7xl mx-auto items-center">
         {planContent}
       </div>
-
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -150,15 +149,6 @@ export function SubscriptionPlansTab({
         transition={{ delay: 0.5 }}
         className="mt-20 text-center"
       >
-        <p className="font-poppins text-gray-300 mb-4">
-          Need help choosing?{" "}
-          <a
-            href="#"
-            className="text-blue-400 hover:text-blue-300 font-semibold underline"
-          >
-            Compare all features
-          </a>
-        </p>
         <p className="font-poppins text-sm text-gray-400">
           All plans include: Mobile & Web access • Secure cloud storage • Regular
           updates
