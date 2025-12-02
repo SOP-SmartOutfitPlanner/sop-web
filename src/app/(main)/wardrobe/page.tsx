@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { WardrobeHeader } from "@/components/wardrobe/header/WardrobeHeader";
@@ -122,7 +122,7 @@ function WardrobePageContent() {
     await state.fetchItems();
   };
 
-  const handleFiltersChange = (newFilters: WardrobeFilters) => {
+  const handleFiltersChange = useCallback((newFilters: WardrobeFilters) => {
     setStoreFilters(newFilters);
 
     // Update URL query parameters
@@ -149,7 +149,7 @@ function WardrobePageContent() {
     // Update URL without reloading
     const newUrl = params.toString() ? `?${params.toString()}` : '/wardrobe';
     router.replace(newUrl, { scroll: false });
-  };
+  }, [router, setStoreFilters]);
 
   // Initialize filters from URL query parameters
   useEffect(() => {
