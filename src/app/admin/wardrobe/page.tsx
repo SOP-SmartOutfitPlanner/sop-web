@@ -265,9 +265,11 @@ export default function AdminWardrobePage() {
   // Calculate stats
   const stats = useMemo(() => {
     const totalItems = metaData?.totalCount || 0;
+    const analyzedPercentage = metaData?.analyzedPercentage ?? 0;
 
     return {
       totalItems,
+      analyzedPercentage,
     };
   }, [metaData]);
 
@@ -319,10 +321,17 @@ export default function AdminWardrobePage() {
     }
   }, [viewItemId]);
 
-  const handleDeleteItem = useCallback((id: string) => {
+  const handleDeleteItem = useCallback((id: number) => {
     // TODO: Implement delete functionality with confirmation modal
     console.log("Delete item:", id);
   }, []);
+
+  const handleDeleteItemWrapper = useCallback((id: string) => {
+    const numericId = parseInt(id, 10);
+    if (!isNaN(numericId)) {
+      handleDeleteItem(numericId);
+    }
+  }, [handleDeleteItem]);
 
   const handleItemUpdated = useCallback(async () => {
     // Refresh items after edit
@@ -382,7 +391,7 @@ export default function AdminWardrobePage() {
               </div>
               <div className="w-px h-12 bg-white/20" />
               <div className="text-center">
-                <div className="text-3xl font-bold text-cyan-400">{metaData?.analyzedPercentage ?? 0}%</div>
+                <div className="text-3xl font-bold text-cyan-400">{stats.analyzedPercentage}%</div>
                 <div className="text-xs text-white/60">AI Analyzed</div>
               </div>
             </div>
@@ -621,7 +630,7 @@ export default function AdminWardrobePage() {
                   item={item}
                   onView={handleViewItem}
                   onEdit={handleEditItem}
-                  onDelete={handleDeleteItem}
+                  onDelete={handleDeleteItemWrapper}
                   showCheckbox={false}
                 />
               </motion.div>

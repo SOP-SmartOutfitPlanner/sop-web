@@ -92,6 +92,7 @@ export interface ApiItemsResponse {
     totalPages: number;
     hasNext: boolean;
     hasPrevious: boolean;
+    analyzedPercentage?: number;
   };
 }
 

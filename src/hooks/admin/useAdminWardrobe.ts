@@ -56,7 +56,7 @@ export function useDeleteWardrobeItem() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (itemId: number) => wardrobeAPI.deleteItem(itemId.toString()),
+    mutationFn: (itemId: number) => wardrobeAPI.deleteItem(itemId),
     onSuccess: () => {
       toast.success("Item deleted successfully");
       queryClient.invalidateQueries({ queryKey: ["admin-wardrobe"] });
@@ -77,7 +77,7 @@ export function useBulkDeleteWardrobeItems() {
     mutationFn: async (itemIds: number[]) => {
       // Delete items sequentially
       const promises = itemIds.map((id) =>
-        wardrobeAPI.deleteItem(id.toString())
+        wardrobeAPI.deleteItem(id)
       );
       await Promise.all(promises);
     },

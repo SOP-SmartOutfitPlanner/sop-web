@@ -11,13 +11,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import GlassCard from "@/components/ui/glass-card";
-import { ApiWardrobeItem } from "@/lib/types";
+import { ApiWardrobeItem } from "@/lib/api/wardrobe-api";
 import { cn } from "@/lib/utils";
 
 interface AdminItemCardProps {
   item: ApiWardrobeItem;
   onView?: (item: ApiWardrobeItem) => void;
-  onDelete?: (id: string) => void;
+  onDelete?: (id: number) => void;
 }
 
 export const AdminItemCard = memo(function AdminItemCard({
@@ -28,7 +28,11 @@ export const AdminItemCard = memo(function AdminItemCard({
   const [isHovered, setIsHovered] = useState(false);
 
   const handleView = useCallback(() => onView?.(item), [item, onView]);
-  const handleDeleteClick = useCallback(() => onDelete?.(item.id), [item.id, onDelete]);
+  const handleDeleteClick = useCallback(() => {
+    if (item.id !== undefined) {
+      onDelete?.(item.id);
+    }
+  }, [item.id, onDelete]);
 
   // Parse colors
   const colors = item.color?.split(",").map((c) => c.trim()).filter(Boolean) || [];
@@ -106,7 +110,7 @@ export const AdminItemCard = memo(function AdminItemCard({
           {/* Image */}
           <div className="bg-white/5 rounded-xl aspect-square flex items-center justify-center overflow-hidden relative">
             <Image
-              src={item.imageUrl}
+              src={item.imgUrl}
               alt={item.name}
               fill
               className="object-cover"
@@ -131,11 +135,11 @@ export const AdminItemCard = memo(function AdminItemCard({
             </div>
 
             {/* User Badge */}
-            {item.user && (
+            {item.userDisplayName && (
               <div className="flex items-center gap-2 px-2 py-1 rounded-lg bg-white/10 border border-white/20">
                 <User className="w-3.5 h-3.5 text-white/70" />
                 <span className="text-xs text-white/90 font-medium">
-                  {item.user.firstName} {item.user.lastName}
+                  {item.userDisplayName}
                 </span>
               </div>
             )}
