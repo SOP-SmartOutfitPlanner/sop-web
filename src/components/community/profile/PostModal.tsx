@@ -448,14 +448,20 @@ export function PostModal({
                 {/* Items Display */}
                 {post.items && post.items.length > 0 && (
                   <div className="px-4 pb-4">
-                    <PostItemsGallery items={post.items} />
+                    <PostItemsGallery
+                      items={post.items}
+                      postId={parseInt(post.id)}
+                    />
                   </div>
                 )}
 
                 {/* Outfit Display */}
                 {post.outfit && (
                   <div className="px-4 pb-4">
-                    <PostOutfitDisplay outfit={post.outfit} />
+                    <PostOutfitDisplay
+                      outfit={post.outfit}
+                      postId={parseInt(post.id)}
+                    />
                   </div>
                 )}
 

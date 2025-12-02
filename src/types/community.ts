@@ -11,6 +11,7 @@ export interface PostItemDetailModel {
   imgUrl: string;
   aiDescription: string | null;
   isDeleted: boolean;
+  isSaved: boolean; // Whether current user has saved this item from any post
 }
 
 export interface PostOutfitDetailModel {
@@ -18,6 +19,7 @@ export interface PostOutfitDetailModel {
   name: string;
   description: string | null;
   isDeleted: boolean;
+  isSaved: boolean; // Whether current user has saved this outfit from any post or collection
   items: PostItemDetailModel[];
 }
 
@@ -97,7 +99,6 @@ export interface ApiPost {
 
 // Transform API post to UI post
 export function apiPostToPost(apiPost: CommunityPost): Post {
-
   // Images can be:
   // 1. Full URLs from MinIO: https://storage.wizlab.io.vn/sop/xxx.jpg
   // 2. Filenames from old uploads: filename.jpg

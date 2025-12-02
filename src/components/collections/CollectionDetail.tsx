@@ -50,7 +50,9 @@ export function CollectionDetail({ collectionId }: CollectionDetailProps) {
   const query = useQuery({
     queryKey: COLLECTION_QUERY_KEYS.collection(collectionId),
     queryFn: async () => {
-      const response = await collectionAPI.getCollectionById(collectionId);
+      const response = await collectionAPI.getCollectionById(collectionId, {
+        params: userId ? { callerUserId: userId } : undefined,
+      });
       return response.data;
     },
   });
@@ -374,6 +376,7 @@ export function CollectionDetail({ collectionId }: CollectionDetailProps) {
                   outfit={outfit}
                   entry={entry}
                   items={items}
+                  collectionId={collectionId}
                 />
               );
             })}

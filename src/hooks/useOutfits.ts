@@ -1,7 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { outfitAPI } from "@/lib/api/outfit-api";
-import { GetOutfitsRequest, CreateOutfitRequest, Outfit } from "@/types/outfit";
+import {
+  GetOutfitsRequest,
+  CreateOutfitRequest,
+  Outfit,
+  GetSavedOutfitsRequest,
+  SavedOutfit,
+} from "@/types/outfit";
 
 /**
  * Hook to fetch outfits with pagination
@@ -58,8 +64,13 @@ export function useUpdateOutfit() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<CreateOutfitRequest> }) => 
-      outfitAPI.updateOutfit(id, data),
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: number;
+      data: Partial<CreateOutfitRequest>;
+    }) => outfitAPI.updateOutfit(id, data),
     onSuccess: (response, variables) => {
       toast.success(response.message || "Outfit updated successfully!");
       // Invalidate both list and detail queries
@@ -86,7 +97,9 @@ export function useDeleteOutfit() {
       await queryClient.cancelQueries({ queryKey: ["outfits"] });
 
       // Snapshot previous value
-      const previousData = queryClient.getQueriesData({ queryKey: ["outfits"] });
+      const previousData = queryClient.getQueriesData({
+        queryKey: ["outfits"],
+      });
 
       // Optimistically remove from cache
       queryClient.setQueriesData<{ data: { data: Outfit[] } }>(
@@ -140,7 +153,9 @@ export function useSaveFavoriteOutfit() {
       await queryClient.cancelQueries({ queryKey: ["outfit", outfitId] });
 
       // Snapshot previous values
-      const previousListData = queryClient.getQueriesData({ queryKey: ["outfits"] });
+      const previousListData = queryClient.getQueriesData({
+        queryKey: ["outfits"],
+      });
       const previousDetailData = queryClient.getQueryData(["outfit", outfitId]);
 
       // Update outfit list cache optimistically
@@ -185,7 +200,10 @@ export function useSaveFavoriteOutfit() {
         });
       }
       if (context?.previousDetailData) {
-        queryClient.setQueryData(["outfit", outfitId], context.previousDetailData);
+        queryClient.setQueryData(
+          ["outfit", outfitId],
+          context.previousDetailData
+        );
       }
       console.error("Failed to update favorite:", error);
       toast.error("Failed to update favorite status");
@@ -194,6 +212,104 @@ export function useSaveFavoriteOutfit() {
       // Refetch to ensure data is in sync
       queryClient.invalidateQueries({ queryKey: ["outfits"] });
       queryClient.invalidateQueries({ queryKey: ["outfit", outfitId] });
+    },
+  });
+}
+
+/**
+ * Hook to fetch saved outfits from posts and collections
+ */
+export function useSavedOutfits(
+  params: GetSavedOutfitsRequest,
+  enabled = true
+) {
+  return useQuery({
+    queryKey: ["saved-outfits", params],
+    queryFn: () => outfitAPI.getSavedOutfits(params),
+    enabled,
+    staleTime: 0,
+    gcTime: 1000 * 60 * 10,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+  });
+}
+
+/**
+ * Hook to unsave an outfit from a post or collection
+ */
+export function useUnsaveOutfit() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      outfitId,
+      sourceId,
+      sourceType,
+    }: {
+      outfitId: number;
+      sourceId: number;
+      sourceType: "Post" | "Collection";
+    }) => {
+      if (sourceType === "Post") {
+        return outfitAPI.unsaveFromPost(outfitId, sourceId);
+      } else {
+        return outfitAPI.unsaveFromCollection(outfitId, sourceId);
+      }
+    },
+    onMutate: async ({ outfitId }) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["saved-outfits"] });
+
+      // Snapshot previous value
+      const previousData = queryClient.getQueriesData({
+        queryKey: ["saved-outfits"],
+      });
+
+      // Optimistically remove from cache
+      queryClient.setQueriesData<{ data: { data: { items: SavedOutfit[] } } }>(
+        { queryKey: ["saved-outfits"] },
+        (old) => {
+          if (!old?.data?.data?.items) return old;
+
+          return {
+            ...old,
+            data: {
+              ...old.data,
+              data: {
+                ...old.data.data,
+                items: old.data.data.items.filter(
+                  (outfit) => outfit.id !== outfitId
+                ),
+              },
+            },
+          };
+        }
+      );
+
+      return { previousData };
+    },
+    onSuccess: (_, variables) => {
+      const source = variables.sourceType === "Post" ? "post" : "collection";
+      toast.success(`Outfit removed from saved ${source}`);
+    },
+    onError: (error: Error, variables, context) => {
+      // Rollback on error
+      if (context?.previousData) {
+        context.previousData.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+      console.error("Failed to unsave outfit:", error);
+      toast.error(error.message || "Failed to unsave outfit");
+    },
+    onSettled: (data, error, variables) => {
+      // Refetch to ensure data is in sync
+      queryClient.invalidateQueries({ queryKey: ["saved-outfits"] });
+      queryClient.invalidateQueries({ queryKey: ["outfits"] });
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+      // Invalidate all collection queries (both singular and plural)
+      queryClient.invalidateQueries({ queryKey: ["collection"] });
+      queryClient.invalidateQueries({ queryKey: ["collections"] });
     },
   });
 }

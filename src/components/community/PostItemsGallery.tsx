@@ -9,15 +9,81 @@ import { PostItemDetailModel } from "@/types/community";
 import { getCategoryIcon } from "@/lib/utils/category-icons";
 import { getCategoryColor } from "@/lib/constants/category-colors";
 import { ViewItemDialog } from "@/components/wardrobe/ViewItemDialog";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Bookmark, Loader2 } from "lucide-react";
+import { useSaveItemFromPost } from "@/hooks/useSaveFromPost";
+import { useAuthStore } from "@/store/auth-store";
 
 interface PostItemsGalleryProps {
   items: PostItemDetailModel[];
+  postId: number; // Required for save functionality
 }
 
 const INITIAL_DISPLAY_COUNT = 8; // Show 8 items initially (2 rows of 4)
 
-export function PostItemsGallery({ items }: PostItemsGalleryProps) {
+// Save button for individual items
+function ItemSaveButton({
+  item,
+  postId,
+}: {
+  item: PostItemDetailModel;
+  postId: number;
+}) {
+  const { isSaved, isLoading, toggleSave } = useSaveItemFromPost(
+    item.id,
+    postId,
+    item.isSaved
+  );
+  const { user } = useAuthStore();
+
+  if (item.isDeleted) return null;
+
+  return (
+    <Tooltip.Provider delayDuration={200}>
+      <Tooltip.Root>
+        <Tooltip.Trigger asChild>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleSave();
+            }}
+            disabled={isLoading || !user}
+            className={`absolute bottom-1.5 right-1.5 flex items-center justify-center w-6 h-6 rounded-md backdrop-blur-sm transition-all duration-200 ${
+              isSaved
+                ? "bg-cyan-500/90 text-white hover:bg-cyan-600/90"
+                : "bg-black/50 text-white/80 hover:bg-black/70 hover:text-white"
+            } ${isLoading ? "opacity-70 cursor-wait" : ""} ${
+              !user ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+            aria-label={isSaved ? "Remove from saved" : "Save item"}
+          >
+            {isLoading ? (
+              <Loader2 className="w-3 h-3 animate-spin" />
+            ) : (
+              <Bookmark
+                className={`w-3 h-3 ${isSaved ? "fill-current" : ""}`}
+              />
+            )}
+          </button>
+        </Tooltip.Trigger>
+        <Tooltip.Portal>
+          <Tooltip.Content
+            className="bg-gray-900/95 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-lg shadow-xl border border-white/10 z-[100] font-poppins"
+            sideOffset={5}
+          >
+            {!user
+              ? "Login to save items"
+              : isSaved
+              ? "Remove from saved"
+              : "Save to wardrobe"}
+            <Tooltip.Arrow className="fill-gray-900" />
+          </Tooltip.Content>
+        </Tooltip.Portal>
+      </Tooltip.Root>
+    </Tooltip.Provider>
+  );
+}
+
+export function PostItemsGallery({ items, postId }: PostItemsGalleryProps) {
   const [imageLoaded, setImageLoaded] = useState<Record<number, boolean>>({});
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
   const [showAll, setShowAll] = useState(false);
@@ -110,6 +176,11 @@ export function PostItemsGallery({ items }: PostItemsGalleryProps) {
                         >
                           <CategoryIcon className="w-3 h-3" />
                         </div>
+
+                        {/* Save Item Button */}
+                        {imageLoaded[item.id] && (
+                          <ItemSaveButton item={item} postId={postId} />
+                        )}
 
                         {/* Deleted Overlay */}
                         {isDeleted && (

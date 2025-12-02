@@ -48,9 +48,7 @@ export function useLikeCollection(
     onSuccess: () => {
       invalidateQueries();
       toast.success(
-        currentIsLiked
-          ? "Collection unliked"
-          : "Collection liked successfully"
+        currentIsLiked ? "Collection unliked" : "Collection liked successfully"
       );
     },
     onError: (error) => {
@@ -80,9 +78,7 @@ export function useSaveCollection(
     onSuccess: () => {
       invalidateQueries(userId || undefined);
       toast.success(
-        currentIsSaved
-          ? "Collection unsaved"
-          : "Collection saved successfully"
+        currentIsSaved ? "Collection unsaved" : "Collection saved successfully"
       );
     },
     onError: (error) => {
@@ -149,7 +145,9 @@ export function usePublishCollection(
     onError: (error: unknown) => {
       console.error("Error toggling publish:", error);
       const errorMessage =
-        error instanceof Error ? error.message : "Failed to update publish status";
+        error instanceof Error
+          ? error.message
+          : "Failed to update publish status";
       if (errorMessage.includes("permission")) {
         toast.error("You don't have permission to publish this collection");
       } else {
@@ -159,3 +157,44 @@ export function usePublishCollection(
   });
 }
 
+/**
+ * Hook for saving/unsaving an outfit from a collection
+ */
+export function useSaveOutfitFromCollection(
+  outfitId: number,
+  collectionId: number,
+  currentIsSavedFromCollection: boolean | undefined
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      if (currentIsSavedFromCollection) {
+        return collectionAPI.unsaveOutfitFromCollection(outfitId, collectionId);
+      } else {
+        return collectionAPI.saveOutfitFromCollection(outfitId, collectionId);
+      }
+    },
+    onSuccess: () => {
+      // Invalidate the collection query to refresh the isSavedFromCollection status
+      queryClient.invalidateQueries({
+        queryKey: COLLECTION_QUERY_KEYS.collection(collectionId),
+      });
+      toast.success(
+        currentIsSavedFromCollection
+          ? "Outfit removed from saved"
+          : "Outfit saved to your wardrobe"
+      );
+    },
+    onError: (error: unknown) => {
+      console.error("Error toggling outfit save:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to update save status";
+      if (errorMessage.includes("already saved")) {
+        toast.error("This outfit is already saved");
+      } else {
+        toast.error("Failed to update save status");
+      }
+    },
+  });
+}
