@@ -40,9 +40,9 @@ export function OutfitFilters({
   };
 
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center">
       {/* Search Box */}
-      <div className="relative">
+      <div className="relative flex-1">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
         <Input
           placeholder="Search outfits..."
@@ -64,24 +64,40 @@ export function OutfitFilters({
 
       {/* Status Buttons */}
       <div className="flex gap-2">
-        <GlassButton
-          variant={filters.isFavorite ? "primary" : "secondary"}
-          size="md"
+        <button
           onClick={handleToggleFavorite}
-          className="gap-1.5"
+          className={`
+            px-4 py-2 rounded-full font-poppins text-sm font-medium
+            transition-all duration-200 flex items-center gap-2
+            ${
+              filters.isFavorite
+                ? "bg-white/20 text-white shadow-md"
+                : "bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"
+            }
+          `}
         >
-          <Heart className={`w-4 h-4 ${filters.isFavorite ? "fill-current" : ""}`} />
+          <Heart
+            className={`w-4 h-4 ${filters.isFavorite ? "fill-current" : ""}`}
+          />
           Favorites
-        </GlassButton>
-        <GlassButton
-          variant={filters.isSaved ? "primary" : "secondary"}
-          size="md"
+        </button>
+        <button
           onClick={handleToggleSaved}
-          className="gap-1.5"
+          className={`
+            px-4 py-2 rounded-full font-poppins text-sm font-medium
+            transition-all duration-200 flex items-center gap-2
+            ${
+              filters.isSaved
+                ? "bg-white/20 text-white shadow-md"
+                : "bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"
+            }
+          `}
         >
-          <Bookmark className={`w-4 h-4 ${filters.isSaved ? "fill-current" : ""}`} />
+          <Bookmark
+            className={`w-4 h-4 ${filters.isSaved ? "fill-current" : ""}`}
+          />
           Saved
-        </GlassButton>
+        </button>
       </div>
     </div>
   );

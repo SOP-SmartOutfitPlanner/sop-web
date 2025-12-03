@@ -230,7 +230,8 @@ export function PostModal({
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent
-          className={`!p-0 !gap-0 backdrop-blur-2xl bg-slate-950/60 border border-cyan-400/15 shadow-[0_8px_32px_rgba(0,0,0,0.4)] rounded-3xl overflow-hidden flex flex-col ${
+          overlayClassName="z-[70]"
+          className={`z-[71] !p-0 !gap-0 backdrop-blur-2xl bg-slate-950/60 border border-cyan-400/15 shadow-[0_8px_32px_rgba(0,0,0,0.4)] rounded-3xl overflow-hidden flex flex-col ${
             hasMultipleImages || currentImage
               ? "!max-w-[1200px] !w-[90vw] !h-[85vh]"
               : "!max-w-[700px] !w-[90vw] !h-[85vh]"

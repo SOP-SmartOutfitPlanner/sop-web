@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { X, Edit, Sparkles, ArrowLeft } from "lucide-react";
+import { X, Edit, Sparkles, ArrowLeft, ExternalLink } from "lucide-react";
 import { Image } from "antd";
 import GlassButton from "@/components/ui/glass-button";
 import { wardrobeAPI, AIAnalysisData } from "@/lib/api/wardrobe-api";
@@ -11,6 +11,14 @@ export interface ViewItemDialogProps {
   onOpenChange: (open: boolean) => void;
   itemId: number;
   onEdit?: () => void;
+  savedFromPost?: {
+    postId: number;
+    postBody: string;
+    postUserId: number;
+    postUserDisplayName: string;
+  };
+  onOpenPost?: (postId: number) => void;
+  isPostLoading?: boolean;
 }
 
 interface ColorOption {
@@ -43,7 +51,11 @@ export function ViewItemDialog({
   onOpenChange,
   itemId,
   onEdit,
-}: ViewItemDialogProps) {
+  savedFromPost,
+  onOpenPost,
+  isPostLoading = false,
+  zIndex,
+}: ViewItemDialogProps & { zIndex?: number }) {
   const [isLoading, setIsLoading] = useState(true);
   const [itemData, setItemData] = useState<ViewItemData | null>(null);
   const [originalData, setOriginalData] = useState<ViewItemData | null>(null);
@@ -156,7 +168,10 @@ export function ViewItemDialog({
     <>
       {/* Backdrop */}
       <div
-        className="fixed h-full inset-0 bg-black/50 backdrop-blur-sm z-[60]"
+        className={`fixed h-full inset-0 bg-black/50 backdrop-blur-sm ${
+          zIndex ? `z-[${zIndex}]` : "z-[60]"
+        }`}
+        style={zIndex ? { zIndex } : undefined}
         onClick={(e) => {
           e.stopPropagation();
           onOpenChange(false);
@@ -164,7 +179,12 @@ export function ViewItemDialog({
       />
 
       {/* Modal Container */}
-      <div className="fixed inset-0 z-[61] flex items-center justify-center p-4 pointer-events-none">
+      <div
+        className={`fixed inset-0 ${
+          zIndex ? `z-[${zIndex + 1}]` : "z-[61]"
+        } flex items-center justify-center p-4 pointer-events-none`}
+        style={zIndex ? { zIndex: zIndex + 1 } : undefined}
+      >
         <div
           className="w-[1400px] max-w-[95vw] h-[95vh] rounded-3xl overflow-hidden shadow-2xl pointer-events-auto relative flex flex-col"
           onClick={(e) => e.stopPropagation()}
@@ -246,7 +266,32 @@ export function ViewItemDialog({
                           View AI Analysis
                         </GlassButton>
                       )}
-                      {onEdit && (
+                      {savedFromPost && onOpenPost && (
+                        <GlassButton
+                          onClick={() => onOpenPost(savedFromPost.postId)}
+                          disabled={isPostLoading}
+                          variant="custom"
+                          size="sm"
+                          borderRadius="12px"
+                          blur="8px"
+                          brightness={1.1}
+                          glowColor="rgba(34, 211, 238, 0.4)"
+                          glowIntensity={4}
+                          borderColor="rgba(34, 211, 238, 0.3)"
+                          borderWidth="1px"
+                          textColor="#ffffff"
+                          backgroundColor="rgba(34, 211, 238, 0.2)"
+                          className="gap-2"
+                        >
+                          {isPostLoading ? (
+                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          ) : (
+                            <ExternalLink className="w-4 h-4" />
+                          )}
+                          View Post
+                        </GlassButton>
+                      )}
+                      {!savedFromPost && onEdit && (
                         <GlassButton
                           onClick={onEdit}
                           variant="custom"
