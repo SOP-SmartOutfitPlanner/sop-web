@@ -129,26 +129,30 @@ export function SuggestionResultView({
       }
 
       // Step 2: Add to calendar - either to occasion or to selected date
+      const year = targetDate.getFullYear();
+      const month = String(targetDate.getMonth() + 1).padStart(2, '0');
+      const day = String(targetDate.getDate()).padStart(2, '0');
+      const startTime = `${year}-${month}-${day}T05:00:00`;
+      const endTime = `${year}-${month}-${day}T17:00:00`;
+
       if (selectedOccasionId) {
         // Add to the selected occasion
         await CalenderAPI.createCalendarEntry({
           outfitIds: [outfitId],
           isDaily: false,
           userOccasionId: selectedOccasionId,
+          time: startTime,
+          endTime: endTime,
         });
         toast.success("Outfit added to the occasion!", { id: loadingToast });
         onOutfitUsed?.();
       } else {
-        // Add to the selected date at 5:00 AM
-        const year = targetDate.getFullYear();
-        const month = String(targetDate.getMonth() + 1).padStart(2, '0');
-        const day = String(targetDate.getDate()).padStart(2, '0');
-        const dateString = `${year}-${month}-${day}T05:00:00`;
-
+        // Add to the selected date at 5:00 AM - 17:00 PM
         await CalenderAPI.createCalendarEntry({
           outfitIds: [outfitId],
           isDaily: true,
-          time: dateString,
+          time: startTime,
+          endTime: endTime,
         });
         toast.success("Outfit scheduled successfully!", { id: loadingToast });
         onOutfitUsed?.();
