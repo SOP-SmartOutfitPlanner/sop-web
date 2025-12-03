@@ -169,6 +169,7 @@ export function PostCardContainer({
         type="items"
         items={post.items || undefined}
         postId={parseInt(post.id)}
+        isOwnPost={isOwnPost}
       />
       <AttachmentModal
         isOpen={isOutfitModalOpen}
@@ -176,6 +177,7 @@ export function PostCardContainer({
         type="outfit"
         outfit={post.outfit || undefined}
         postId={parseInt(post.id)}
+        isOwnPost={isOwnPost}
       />
     </div>
   );

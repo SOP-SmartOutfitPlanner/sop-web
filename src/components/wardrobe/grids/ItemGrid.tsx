@@ -49,6 +49,7 @@ export function ItemGrid({
     toggleItemSelection,
     isSelectionMode,
     hasInitialFetch,
+    viewMode, // Get view mode to determine read-only status
     // Pagination
     currentPage,
     pageSize,
@@ -205,6 +206,7 @@ export function ItemGrid({
               onAnalyze={handleAnalyze}
               onView={handleView}
               showCheckbox={showCheckboxes || isSelectionMode}
+              isReadOnly={viewMode === "saved-from-posts"}
             />
           </motion.div>
         ))}

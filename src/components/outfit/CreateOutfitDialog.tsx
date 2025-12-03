@@ -346,98 +346,179 @@ export function CreateOutfitDialog({
                 </div>
               </div>
 
-              {/* Selection Header */}
-              <div className="flex items-center justify-between mb-3 shrink-0">
-                <div className="flex items-center gap-3">
-                  <Sparkles className="w-5 h-5 text-yellow-400" />
-                  <span className="font-bricolage text-base text-white font-semibold">
-                    {selectedItemIds.length} of {filteredWardrobeItems.length}{" "}
-                    items selected
-                  </span>
-                  {Object.keys(filters).length > 0 && (
-                    <span className="px-2.5 py-1 rounded-full bg-cyan-500/20 border border-cyan-400/40 text-cyan-200 text-xs font-medium">
-                      {Object.keys(filters).length} filter
-                      {Object.keys(filters).length > 1 ? "s" : ""} active
-                    </span>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  <GlassButton
-                    onClick={() => setIsFilterOpen(true)}
-                    variant="custom"
-                    backgroundColor="rgba(255, 255, 255, 0.15)"
-                    borderColor="rgba(255, 255, 255, 0.3)"
-                    textColor="white"
-                    size="sm"
-                  >
-                    <FilterIcon className="w-4 h-4" />
-                    Filter
-                  </GlassButton>
-                  <GlassButton
-                    onClick={toggleSelectAll}
-                    variant="custom"
-                    backgroundColor="rgba(255, 255, 255, 0.2)"
-                    borderColor="rgba(255, 255, 255, 0.4)"
-                    textColor="white"
-                    size="sm"
-                  >
-                    {selectedItemIds.length === filteredWardrobeItems.length
-                      ? "Deselect All"
-                      : "Select All"}
-                  </GlassButton>
-                </div>
-              </div>
+              {/* Two Column Layout */}
+              <div className="flex-1 flex gap-5 min-h-0 overflow-hidden">
+                {/* Left Column - Selected Items */}
+                <div className="w-[300px] shrink-0 flex flex-col bg-white/5 backdrop-blur-md rounded-2xl border border-white/20 p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-yellow-400" />
+                      <span className="font-bricolage text-sm text-white font-semibold">
+                        Selected ({selectedItemIds.length})
+                      </span>
+                    </div>
+                    {selectedItemIds.length > 0 && (
+                      <button
+                        onClick={clearSelectedItems}
+                        className="text-xs text-red-400 hover:text-red-300 font-medium transition-colors"
+                      >
+                        Clear All
+                      </button>
+                    )}
+                  </div>
 
-              {/* Items Grid */}
-              <div
-                className="flex-1 overflow-y-auto min-h-0 hide-scrollbar"
-                data-lenis-prevent
-              >
-                {filteredWardrobeItems.length === 0 ? (
-                  <div className="flex items-center justify-center h-full">
-                    <div className="text-center">
-                      <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/10 flex items-center justify-center">
-                        <Sparkles className="w-8 h-8 text-white/50" />
+                  <div className="flex-1 overflow-y-auto min-h-0 hide-scrollbar" data-lenis-prevent>
+                    {selectedItemIds.length === 0 ? (
+                      <div className="flex items-center justify-center h-full">
+                        <div className="text-center px-4">
+                          <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-white/10 flex items-center justify-center">
+                            <Sparkles className="w-6 h-6 text-white/50" />
+                          </div>
+                          <p className="text-white/70 text-sm font-bricolage">
+                            No items selected
+                          </p>
+                          <p className="text-white/50 text-xs mt-1">
+                            Select items from the grid
+                          </p>
+                        </div>
                       </div>
-                      <p className="text-white/70 font-bricolage text-lg">
-                        {Object.keys(filters).length > 0
-                          ? "No items match your filters"
-                          : "No wardrobe items found"}
-                      </p>
-                      <p className="text-white/50 text-sm mt-1">
-                        {Object.keys(filters).length > 0
-                          ? "Try adjusting your filters"
-                          : "Add items to your wardrobe first"}
-                      </p>
+                    ) : (
+                      <div className="space-y-3">
+                        {selectedItemIds.map((selectedId) => {
+                          const displayItem = wardrobeItems.find(item => item.id === selectedId);
+                          if (!displayItem) return null;
+
+                          return (
+                            <div
+                              key={selectedId}
+                              className="relative group bg-linear-to-br from-cyan-300/20 via-blue-200/10 to-indigo-300/20 backdrop-blur-md border border-cyan-400/40 rounded-xl p-2 hover:border-cyan-400/60 transition-all"
+                            >
+                              <div className="flex gap-2">
+                                <div className="w-16 h-16 shrink-0 bg-white/5 rounded-lg overflow-hidden">
+                                  <Image
+                                    src={displayItem.imgUrl}
+                                    alt={displayItem.name}
+                                    width={64}
+                                    height={64}
+                                    className="object-cover w-full h-full"
+                                    preview={false}
+                                    loading="lazy"
+                                  />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="text-white text-xs font-semibold truncate">
+                                    {displayItem.name}
+                                  </h4>
+                                  <p className="text-white/60 text-[10px] truncate mt-0.5">
+                                    {displayItem.categoryName || "Uncategorized"}
+                                  </p>
+                                </div>
+                                <button
+                                  onClick={() => toggleItemSelection(selectedId)}
+                                  className="shrink-0 w-6 h-6 rounded-full bg-red-500/80 hover:bg-red-600 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
+                                >
+                                  <X className="w-3.5 h-3.5 text-white" />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right Column - Items Grid */}
+                <div className="flex-1 flex flex-col min-w-0">
+                  {/* Grid Header */}
+                  <div className="flex items-center justify-between mb-3 shrink-0">
+                    <div className="flex items-center gap-3">
+                      <span className="font-bricolage text-sm text-white font-semibold">
+                        All Items ({filteredWardrobeItems.length})
+                      </span>
+                      {Object.keys(filters).length > 0 && (
+                        <span className="px-2.5 py-1 rounded-full bg-cyan-500/20 border border-cyan-400/40 text-cyan-200 text-xs font-medium">
+                          {Object.keys(filters).length} filter{Object.keys(filters).length > 1 ? 's' : ''} active
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <GlassButton
+                        onClick={() => setIsFilterOpen(true)}
+                        variant="custom"
+                        backgroundColor="rgba(255, 255, 255, 0.15)"
+                        borderColor="rgba(255, 255, 255, 0.3)"
+                        textColor="white"
+                        size="sm"
+                      >
+                        <FilterIcon className="w-4 h-4" />
+                        Filter
+                      </GlassButton>
+                      <GlassButton
+                        onClick={toggleSelectAll}
+                        variant="custom"
+                        backgroundColor="rgba(255, 255, 255, 0.2)"
+                        borderColor="rgba(255, 255, 255, 0.4)"
+                        textColor="white"
+                        size="sm"
+                      >
+                        {selectedItemIds.length === filteredWardrobeItems.length
+                          ? "Deselect All"
+                          : "Select All"}
+                      </GlassButton>
                     </div>
                   </div>
-                ) : (
-                  <>
-                    <div className="grid grid-cols-5 gap-5">
-                      {paginatedItems.map((item) => (
-                        <ItemCard
-                          key={item.id}
-                          item={item}
-                          isSelected={selectedSet.has(item.id!)}
-                          onToggle={toggleItemSelection}
-                        />
-                      ))}
-                    </div>
 
-                    {/* Pagination */}
-                    {totalPages > 1 && (
-                      <div className="flex items-center justify-center gap-2 mt-6 pb-2">
-                        <button
-                          onClick={() =>
-                            setCurrentPage((prev) => Math.max(1, prev - 1))
-                          }
-                          disabled={currentPage === 1}
-                          className="px-3 py-1.5 rounded-lg bg-white/10 border border-white/20 text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-all"
-                        >
-                          Previous
-                        </button>
+                  {/* Items Grid */}
+                  <div
+                    className="flex-1 overflow-y-auto min-h-0 hide-scrollbar"
+                    data-lenis-prevent
+                      >
+                    {filteredWardrobeItems.length === 0 ? (
+                      <div className="flex items-center justify-center h-full">
+                        <div className="text-center">
+                          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/10 flex items-center justify-center">
+                            <Sparkles className="w-8 h-8 text-white/50" />
+                          </div>
+                          <p className="text-white/70 font-bricolage text-lg">
+                            {Object.keys(filters).length > 0
+                              ? "No items match your filters"
+                              : "No wardrobe items found"}
+                          </p>
+                          <p className="text-white/50 text-sm mt-1">
+                            {Object.keys(filters).length > 0
+                              ? "Try adjusting your filters"
+                              : "Add items to your wardrobe first"}
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="grid grid-cols-4 gap-4">
+                          {paginatedItems.map((item) => (
+                            <ItemCard
+                              key={item.id}
+                              item={item}
+                              isSelected={selectedSet.has(item.id!)}
+                              onToggle={toggleItemSelection}
+                            />
+                          ))}
+                        </div>
 
-                        <div className="flex items-center gap-1">
+                        {/* Pagination */}
+                        {totalPages > 1 && (
+                          <div className="flex items-center justify-center gap-2 mt-6 pb-2">
+                            <button
+                              onClick={() =>
+                                setCurrentPage((prev) => Math.max(1, prev - 1))
+                              }
+                              disabled={currentPage === 1}
+                              className="px-3 py-1.5 rounded-lg bg-white/10 border border-white/20 text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-all"
+                            >
+                              Previous
+                            </button>
+
+                            <div className="flex items-center gap-1">
                           {Array.from(
                             { length: totalPages },
                             (_, i) => i + 1
@@ -478,27 +559,29 @@ export function CreateOutfitDialog({
                               </button>
                             );
                           })}
-                        </div>
+                            </div>
 
-                        <button
-                          onClick={() =>
-                            setCurrentPage((prev) =>
-                              Math.min(totalPages, prev + 1)
-                            )
-                          }
-                          disabled={currentPage === totalPages}
-                          className="px-3 py-1.5 rounded-lg bg-white/10 border border-white/20 text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-all"
-                        >
-                          Next
-                        </button>
+                            <button
+                              onClick={() =>
+                                setCurrentPage((prev) =>
+                                  Math.min(totalPages, prev + 1)
+                                )
+                              }
+                              disabled={currentPage === totalPages}
+                              className="px-3 py-1.5 rounded-lg bg-white/10 border border-white/20 text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-all"
+                            >
+                              Next
+                            </button>
 
-                        <span className="ml-2 text-white/70 text-sm">
-                          Page {currentPage} of {totalPages}
-                        </span>
-                      </div>
+                            <span className="ml-2 text-white/70 text-sm">
+                              Page {currentPage} of {totalPages}
+                            </span>
+                          </div>
+                        )}
+                      </>
                     )}
-                  </>
-                )}
+                  </div>
+                </div>
               </div>
             </div>
 
