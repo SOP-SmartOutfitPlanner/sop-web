@@ -1,26 +1,47 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Calendar, Clock, Plus, Eye, Trash2, Shirt } from "lucide-react";
 import { format } from "date-fns";
 import GlassCard from "@/components/ui/glass-card";
 import GlassButton from "@/components/ui/glass-button";
 import { UserOccasionFormModal } from "@/components/calendar/UserOccasionFormModal";
+import { OccasionDetailModal } from "@/components/suggest/OccasionDetailModal";
 import { useCalendarEntries } from "@/hooks/useCalendar";
 import { UserOccasion } from "@/types/userOccasion";
+import { Calender } from "@/types/calendar";
+import { CalenderAPI } from "@/lib/api/calender-api";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface UserOccasionListProps {
   selectedDate: Date;
   onOccasionSelect?: (occasionId: number | null) => void;
   selectedOccasionId?: number | null;
+  onRefetchReady?: (refetchFn: () => void) => void;
 }
 
 export function UserOccasionList({
   selectedDate,
   onOccasionSelect,
   selectedOccasionId,
+  onRefetchReady,
 }: UserOccasionListProps) {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [occasionToDelete, setOccasionToDelete] = useState<UserOccasion | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [viewingOccasion, setViewingOccasion] = useState<{ occasion: UserOccasion; outfits: Calender[] } | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   const handleOpenCreateModal = (e?: React.MouseEvent) => {
     e?.preventDefault();
@@ -32,7 +53,7 @@ export function UserOccasionList({
   const nextDateString = format(new Date(selectedDate.getTime() + 86400000), "yyyy-MM-dd"); // +1 day
 
   // Fetch calendar entries for the specific date using start-date and end-date
-  const { data: calendarData, isLoading } = useCalendarEntries({
+  const { data: calendarData, isLoading, refetch } = useCalendarEntries({
     PageIndex: 1,
     PageSize: 100,
     takeAll: true,
@@ -40,22 +61,37 @@ export function UserOccasionList({
     EndDate: nextDateString,
   });
 
-  // Extract unique occasions from calendar entries with outfit counts
+  // Expose refetch function to parent
+  useEffect(() => {
+    if (onRefetchReady) {
+      onRefetchReady(() => refetch());
+    }
+  }, [onRefetchReady, refetch]);
+
+  // Extract unique occasions from calendar entries with outfit counts and outfits
   const occasions = useMemo(() => {
     if (!calendarData?.data?.data) return [];
     
     const entries = calendarData.data.data;
-    const occasionsMap = new Map<number, { occasion: UserOccasion; outfitCount: number }>();
+    const occasionsMap = new Map<number, { occasion: UserOccasion; outfitCount: number; outfits: Calender[]; isDaily: boolean }>();
 
     entries.forEach((entry) => {
-      // Only include non-daily entries with user occasions
-      if (!entry.isDaily && entry.userOccasion) {
+      // Include all entries that have user occasions
+      if (entry.userOccasion) {
         const occasionId = entry.userOccasion.id;
         if (!occasionsMap.has(occasionId)) {
           occasionsMap.set(occasionId, {
             occasion: entry.userOccasion,
             outfitCount: entry.outfits?.length || 0,
+            outfits: entry.outfits || [],
+            isDaily: entry.isDaily,
           });
+        } else {
+          // Merge outfits if same occasion appears multiple times
+          const existing = occasionsMap.get(occasionId)!;
+          const newOutfits = entry.outfits || [];
+          existing.outfits = [...existing.outfits, ...newOutfits];
+          existing.outfitCount = existing.outfits.length;
         }
       }
     });
@@ -74,16 +110,41 @@ export function UserOccasionList({
     }
   };
 
-  const handleViewDetails = (occasion: UserOccasion, e: React.MouseEvent) => {
+  const handleViewDetails = (occasion: UserOccasion, outfits: Calender[], e: React.MouseEvent) => {
     e.stopPropagation();
-    // TODO: Open occasion details modal
-    console.log("View details:", occasion);
+    setViewingOccasion({ occasion, outfits });
+    setIsDetailModalOpen(true);
   };
 
   const handleDelete = (occasion: UserOccasion, e: React.MouseEvent) => {
     e.stopPropagation();
-    // TODO: Implement delete confirmation and API call
-    console.log("Delete occasion:", occasion);
+    setOccasionToDelete(occasion);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!occasionToDelete) return;
+    
+    setIsDeleting(true);
+    try {
+      await CalenderAPI.deleteUserOccasion(occasionToDelete.id);
+      toast.success(`Deleted "${occasionToDelete.name}" successfully`);
+      
+      // Clear selection if deleted occasion was selected
+      if (selectedOccasionId === occasionToDelete.id && onOccasionSelect) {
+        onOccasionSelect(null);
+      }
+      
+      // Refetch the list
+      refetch();
+    } catch (error) {
+      console.error("Failed to delete occasion:", error);
+      toast.error("Failed to delete occasion");
+    } finally {
+      setIsDeleting(false);
+      setDeleteDialogOpen(false);
+      setOccasionToDelete(null);
+    }
   };
 
   return (
@@ -137,7 +198,7 @@ export function UserOccasionList({
         {/* Occasions list */}
         {!isLoading && occasions.length > 0 && (
           <div className="space-y-3">
-            {occasions.map(({ occasion, outfitCount }) => {
+            {occasions.map(({ occasion, outfitCount, outfits }) => {
             const isSelected = selectedOccasionId === occasion.id;
             
             // Format time strings (handle both HH:mm:ss and full datetime formats)
@@ -179,7 +240,7 @@ export function UserOccasionList({
                     </span>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
-                        onClick={(e) => handleViewDetails(occasion, e)}
+                        onClick={(e) => handleViewDetails(occasion, outfits, e)}
                         className="p-1.5 hover:bg-cyan-500/20 rounded-lg transition-all hover:scale-110"
                         title="View details"
                       >
@@ -238,6 +299,50 @@ export function UserOccasionList({
         selectedDate={selectedDate}
       />
     )}
+
+    {/* View Occasion Detail Modal */}
+    {isDetailModalOpen && viewingOccasion && (
+      <OccasionDetailModal
+        open={isDetailModalOpen}
+        onOpenChange={(open) => {
+          setIsDetailModalOpen(open);
+          if (!open) {
+            setViewingOccasion(null);
+          }
+        }}
+        occasion={viewingOccasion.occasion}
+        outfits={viewingOccasion.outfits}
+        selectedDate={selectedDate}
+        onRefetch={refetch}
+      />
+    )}
+
+    {/* Delete Confirmation Dialog */}
+    <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <AlertDialogContent className="bg-slate-900/95 border border-slate-700/50 backdrop-blur-xl">
+        <AlertDialogHeader>
+          <AlertDialogTitle className="text-white">Delete Occasion</AlertDialogTitle>
+          <AlertDialogDescription className="text-gray-300">
+            Are you sure you want to delete &quot;{occasionToDelete?.name}&quot;? This action cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel 
+            className="bg-slate-700/50 border-slate-600 text-white hover:bg-slate-700 hover:text-white"
+            disabled={isDeleting}
+          >
+            Cancel
+          </AlertDialogCancel>
+          <AlertDialogAction
+            onClick={confirmDelete}
+            disabled={isDeleting}
+            className="bg-red-600 hover:bg-red-700 text-white"
+          >
+            {isDeleting ? "Deleting..." : "Delete"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
     </>
   );
 }

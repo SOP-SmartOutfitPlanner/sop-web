@@ -21,7 +21,7 @@ export function PlannedOutfitsGrid({
 }: PlannedOutfitsGridProps) {
   return (
     <div>
-      <h5 className="font-bricolage font-semibold text-white text-sm mb-3 flex items-center gap-2">
+      <h5 className="font-bricolage font-semibold text-white text-sm mb-3 flex items-center gap-2 mt-3">
         <Shirt className="w-4 h-4 text-cyan-400" />
         Planned Outfits
       </h5>
