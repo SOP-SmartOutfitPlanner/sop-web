@@ -86,7 +86,11 @@ function ItemSaveButton({
   );
 }
 
-export function PostItemsGallery({ items, postId, isOwnPost }: PostItemsGalleryProps) {
+export function PostItemsGallery({
+  items,
+  postId,
+  isOwnPost,
+}: PostItemsGalleryProps) {
   const [imageLoaded, setImageLoaded] = useState<Record<number, boolean>>({});
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
   const [showAll, setShowAll] = useState(false);
@@ -182,7 +186,11 @@ export function PostItemsGallery({ items, postId, isOwnPost }: PostItemsGalleryP
 
                         {/* Save Item Button */}
                         {imageLoaded[item.id] && (
-                          <ItemSaveButton item={item} postId={postId} isOwnPost={isOwnPost} />
+                          <ItemSaveButton
+                            item={item}
+                            postId={postId}
+                            isOwnPost={isOwnPost}
+                          />
                         )}
 
                         {/* Deleted Overlay */}
@@ -242,6 +250,7 @@ export function PostItemsGallery({ items, postId, isOwnPost }: PostItemsGalleryP
             itemId={selectedItemId}
             open={!!selectedItemId}
             onOpenChange={(open) => !open && setSelectedItemId(null)}
+            zIndex={80}
           />,
           document.body
         )}
