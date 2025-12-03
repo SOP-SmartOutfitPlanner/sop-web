@@ -196,11 +196,6 @@ export interface GetSavedOutfitsResponse {
   message: string;
   data: {
     data: SavedOutfit[];
-    metaData: {
-      totalCount: number;
-      pageSize: number;
-      currentPage: number;
-      totalPages: number;
-    };
+    metaData: MetaData;
   };
 }
