@@ -16,18 +16,25 @@ import { useScrollLock } from "@/hooks/useScrollLock";
 interface SuggestionResultViewProps {
   items: SuggestedItem[];
   reason: string;
+  selectedDate?: Date;
+  selectedOccasionId?: number | null;
+  onOutfitUsed?: () => void;
   onClose?: () => void;
 }
 
 export function SuggestionResultView({
   items,
   reason,
+  selectedDate,
+  selectedOccasionId,
+  onOutfitUsed,
   onClose,
 }: SuggestionResultViewProps) {
   const [isAddingToWardrobe, setIsAddingToWardrobe] = useState(false);
-  const [isUsingToday, setIsUsingToday] = useState(false);
+  const [isUsingOutfit, setIsUsingOutfit] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [createdOutfitId, setCreatedOutfitId] = useState<number | null>(null);
 
   // Lock scroll when dialog is open
   useScrollLock(isViewDialogOpen);
@@ -91,53 +98,70 @@ export function SuggestionResultView({
     }
   };
 
-  // Handle Use Outfit Today - Create outfit + Add to calendar for today
-  const handleUseOutfitToday = async () => {
+  // Handle Use This Outfit - Create outfit + Add to occasion or selected date
+  const handleUseThisOutfit = async () => {
     if (items.length === 0) {
       toast.error("No items to add");
       return;
     }
 
-    setIsUsingToday(true);
-    const loadingToast = toast.loading("Setting up outfit for today...");
+    setIsUsingOutfit(true);
+    const loadingToast = toast.loading(selectedOccasionId ? "Adding outfit to occasion..." : "Setting up outfit...");
 
     try {
-      // Step 1: Create the outfit
-      const itemIds = items.map((item) => item.id);
-      const outfitResponse = await outfitAPI.createOutfit({
-        name: `Today's Outfit - ${new Date().toLocaleDateString()}`,
-        description: reason,
-        itemIds: itemIds,
-      });
+      // Step 1: Create the outfit (or reuse existing one)
+      let outfitId: number;
+      const targetDate = selectedDate || new Date();
+      
+      if (createdOutfitId) {
+        // Reuse existing outfit ID
+        outfitId = createdOutfitId;
+      } else {
+        // Create new outfit
+        const itemIds = items.map((item) => item.id);
+        const outfitResponse = await outfitAPI.createOutfit({
+          name: `AI Suggested Outfit - ${targetDate.toLocaleDateString()}`,
+          description: reason,
+          itemIds: itemIds,
+        });
+        outfitId = outfitResponse.data.id;
+        setCreatedOutfitId(outfitId);
+      }
 
-      const outfitId = outfitResponse.data.id;
+      // Step 2: Add to calendar - either to occasion or to selected date
+      if (selectedOccasionId) {
+        // Add to the selected occasion
+        await CalenderAPI.createCalendarEntry({
+          outfitIds: [outfitId],
+          isDaily: false,
+          userOccasionId: selectedOccasionId,
+        });
+        toast.success("Outfit added to the occasion!", { id: loadingToast });
+        onOutfitUsed?.();
+      } else {
+        // Add to the selected date at 5:00 AM
+        const year = targetDate.getFullYear();
+        const month = String(targetDate.getMonth() + 1).padStart(2, '0');
+        const day = String(targetDate.getDate()).padStart(2, '0');
+        const dateString = `${year}-${month}-${day}T05:00:00`;
 
-      // Step 2: Add to calendar for today
-      const today = new Date();
-      const year = today.getFullYear();
-      const month = String(today.getMonth() + 1).padStart(2, '0');
-      const day = String(today.getDate()).padStart(2, '0');
-      const hours = String(today.getHours()).padStart(2, '0');
-      const minutes = String(today.getMinutes()).padStart(2, '0');
-      const seconds = String(today.getSeconds()).padStart(2, '0');
-      const todayString = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
-
-      await CalenderAPI.createCalendarEntry({
-        outfitIds: [outfitId],
-        isDaily: true,
-        time: todayString,
-      });
-
-      toast.success("Outfit added and scheduled for today!", { id: loadingToast });
+        await CalenderAPI.createCalendarEntry({
+          outfitIds: [outfitId],
+          isDaily: true,
+          time: dateString,
+        });
+        toast.success("Outfit scheduled successfully!", { id: loadingToast });
+        onOutfitUsed?.();
+      }
       onClose?.();
     } catch (error) {
-      console.error("Error using outfit today:", error);
+      console.error("Error using outfit:", error);
       toast.error(
-        error instanceof Error ? error.message : "Failed to set up outfit for today",
+        error instanceof Error ? error.message : "Failed to set up outfit",
         { id: loadingToast }
       );
     } finally {
-      setIsUsingToday(false);
+      setIsUsingOutfit(false);
     }
   };
 
@@ -350,12 +374,12 @@ export function SuggestionResultView({
                   textColor="#ffffff"
                   backgroundColor="rgba(0, 98, 255, 0.9)"
                   onClick={handleAddToWardrobe}
-                  disabled={isAddingToWardrobe || isUsingToday}
+                  disabled={isAddingToWardrobe || isUsingOutfit}
                   className={cn(
                     "relative w-full h-16 font-bold text-base tracking-wide",
                     "transition-all duration-300",
                     "disabled:opacity-50 disabled:cursor-not-allowed",
-                    !isAddingToWardrobe && !isUsingToday && "hover:scale-[1.02] active:scale-[0.98]"
+                    !isAddingToWardrobe && !isUsingOutfit && "hover:scale-[1.02] active:scale-[0.98]"
                   )}
                 >
                   <span className="relative z-10 flex items-center justify-center gap-2">
@@ -368,7 +392,7 @@ export function SuggestionResultView({
               </div>
             </div>
 
-            {/* Use Outfit Today Button */}
+            {/* Use This Outfit Button */}
             <div className=" group/btn">
               <div className="relative">
                 <GlassButton
@@ -382,20 +406,20 @@ export function SuggestionResultView({
                   borderWidth="2px"
                   textColor="#ffffff"
                   backgroundColor="rgba(9, 133, 28, 0.91)"
-                  onClick={handleUseOutfitToday}
-                  disabled={isAddingToWardrobe || isUsingToday}
+                  onClick={handleUseThisOutfit}
+                  disabled={isAddingToWardrobe || isUsingOutfit}
                   className={cn(
                     "relative w-full h-16 font-bold text-base tracking-wide",
                     "transition-all duration-300",
                     "disabled:opacity-50 disabled:cursor-not-allowed",
-                    !isAddingToWardrobe && !isUsingToday && "hover:scale-[1.02] active:scale-[0.98]"
+                    !isAddingToWardrobe && !isUsingOutfit && "hover:scale-[1.02] active:scale-[0.98]"
                   )}
                 >
                   <span className="relative z-10 flex items-center justify-center gap-2">
-                    {isUsingToday && (
+                    {isUsingOutfit && (
                       <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     )}
-                    {isUsingToday ? "Setting up..." : "Use Outfit Today"}
+                    {isUsingOutfit ? "Setting up..." : "Use This Outfit"}
                   </span>
                 </GlassButton>
               </div>
