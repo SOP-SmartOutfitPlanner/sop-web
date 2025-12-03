@@ -171,7 +171,9 @@ export function useSaveFavoriteOutfit() {
           const newData = old.data.data.map((outfit) => {
             if (outfit.id === outfitId) {
               console.log(
-                `✅ Toggling favorite for outfit ${outfitId}: ${outfit.isFavorite} -> ${!outfit.isFavorite}`
+                `✅ Toggling favorite for outfit ${outfitId}: ${
+                  outfit.isFavorite
+                } -> ${!outfit.isFavorite}`
               );
               // Create a brand new object to ensure React detects the change
               return {
@@ -271,25 +273,21 @@ export function useUnsaveOutfit() {
       });
 
       // Optimistically remove from cache
-      queryClient.setQueriesData<{ data: { data: { items: SavedOutfit[] } } }>(
-        { queryKey: ["saved-outfits"] },
-        (old) => {
-          if (!old?.data?.data?.items) return old;
+      queryClient.setQueriesData<{
+        data: { data: SavedOutfit[]; metaData: unknown };
+      }>({ queryKey: ["saved-outfits"] }, (old) => {
+        if (!old?.data?.data) return old;
 
-          return {
-            ...old,
-            data: {
-              ...old.data,
-              data: {
-                ...old.data.data,
-                items: old.data.data.items.filter(
-                  (outfit) => outfit.id !== outfitId
-                ),
-              },
-            },
-          };
-        }
-      );
+        return {
+          ...old,
+          data: {
+            ...old.data,
+            data: old.data.data.filter(
+              (outfit) => outfit.outfitId !== outfitId
+            ),
+          },
+        };
+      });
 
       return { previousData };
     },
@@ -307,7 +305,7 @@ export function useUnsaveOutfit() {
       console.error("Failed to unsave outfit:", error);
       toast.error(error.message || "Failed to unsave outfit");
     },
-    onSettled: (data, error, variables) => {
+    onSettled: () => {
       // Refetch to ensure data is in sync
       queryClient.invalidateQueries({ queryKey: ["saved-outfits"] });
       queryClient.invalidateQueries({ queryKey: ["outfits"] });

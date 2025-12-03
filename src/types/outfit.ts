@@ -150,16 +150,38 @@ export interface Outfit {
   }[];
 }
 
-export interface SavedOutfit extends Outfit {
+export interface SavedOutfit {
+  id: number;
   outfitId: number;
-  outfitName: string;
-  outfitDescription: string;
+  outfitName: string | null;
+  outfitDescription: string | null;
+  userId: number;
   savedDate: string;
   sourceType: "Post" | "Collection";
   sourceId: number;
   sourceTitle: string | null;
   sourceOwnerId: number | null;
   sourceOwnerDisplayName: string | null;
+  items: {
+    itemId: number;
+    name: string;
+    categoryId: number;
+    categoryName: string;
+    color: string;
+    aiDescription: string;
+    brand: string;
+    frequencyWorn: string;
+    lastWornAt: string | null;
+    imgUrl: string;
+    weatherSuitable: string;
+    condition: string;
+    pattern: string;
+    fabric: string;
+    itemType: string;
+    occasions: Array<{ id: number; name: string }>;
+    seasons: Array<{ id: number; name: string }>;
+    styles: Array<{ id: number; name: string }>;
+  }[];
 }
 
 export interface GetSavedOutfitsRequest {

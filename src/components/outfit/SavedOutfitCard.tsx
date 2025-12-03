@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, memo, useCallback, MouseEvent } from "react";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { User, X, ExternalLink } from "lucide-react";
 import { SavedOutfit } from "@/types/outfit";
@@ -102,17 +103,17 @@ const SavedOutfitCardComponent = ({
                 return (
                   <div
                     key={
-                      item
-                        ? `${outfit.id}-${item.itemId || item.id}`
-                        : `empty-${index}`
+                      item ? `${outfit.id}-${item.itemId}` : `empty-${index}`
                     }
                     className="bg-white/5 rounded-xl aspect-square flex items-center justify-center overflow-hidden relative"
                   >
                     {item && (
-                      <img
+                      <Image
                         src={item.imgUrl}
                         alt={item.name}
-                        className="w-full h-full object-cover"
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 25vw, 20vw"
                       />
                     )}
                   </div>
