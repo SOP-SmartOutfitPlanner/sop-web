@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { Outfit } from "@/types/outfit";
 
-export type OutfitViewMode = "my-outfits" | "saved-from-collections" | "saved-from-posts";
+export type OutfitViewMode = "my-outfits" | "saved";
 
 interface OutfitState {
   // Selected outfit for viewing/editing

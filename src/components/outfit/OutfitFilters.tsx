@@ -54,6 +54,7 @@ const OutfitFiltersComponent = () => {
           {searchQuery && (
             <button
               onClick={handleClearSearch}
+              aria-label="Clear search"
               className="absolute right-3 top-1/2 -translate-y-1/2 text-white hover:text-white/70"
             >
               <X className="w-5 h-5" />
@@ -100,32 +101,18 @@ const OutfitFiltersComponent = () => {
           My Outfits
         </button>
         <button
-          onClick={() => handleViewModeChange("saved-from-collections")}
+          onClick={() => handleViewModeChange("saved")}
           className={`
             px-4 py-2 rounded-full font-poppins text-sm font-medium
             transition-all duration-200
             ${
-              viewMode === "saved-from-collections"
+              viewMode === "saved"
                 ? "bg-white/20 text-white shadow-md"
                 : "text-white/70 hover:text-white"
             }
           `}
         >
-          Saved from Collections
-        </button>
-        <button
-          onClick={() => handleViewModeChange("saved-from-posts")}
-          className={`
-            px-4 py-2 rounded-full font-poppins text-sm font-medium
-            transition-all duration-200
-            ${
-              viewMode === "saved-from-posts"
-                ? "bg-white/20 text-white shadow-md"
-                : "text-white/70 hover:text-white"
-            }
-          `}
-        >
-          Saved from Posts
+          Saved
         </button>
       </div>
     </div>

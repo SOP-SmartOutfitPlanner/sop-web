@@ -3,7 +3,15 @@
 import { useState, memo, useCallback } from "react";
 import Image from "next/image";
 import { Tooltip } from "antd";
-import { MoreVertical, Edit, Trash2, Flower2, Sun, Leaf, Snowflake, Wand2, AlertTriangle } from "lucide-react";
+import {
+  MoreVertical,
+  Edit,
+  Trash2,
+  Flower2,
+  Sun,
+  Leaf,
+  Snowflake,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,6 +22,25 @@ import GlassCard from "@/components/ui/glass-card";
 import { DeleteItemModal } from "@/components/wardrobe/DeleteItemModal";
 import { WardrobeItem } from "@/types";
 import { cn } from "@/lib/utils";
+
+// Utility to format date in a user-friendly way
+const formatRelativeDate = (dateString: string): string => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffInMs = now.getTime() - date.getTime();
+  const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+  if (diffInDays === 0) return "Today";
+  if (diffInDays === 1) return "Yesterday";
+  if (diffInDays < 7) return `${diffInDays} days ago`;
+  if (diffInDays < 30) return `${Math.floor(diffInDays / 7)} weeks ago`;
+  if (diffInDays < 365) return `${Math.floor(diffInDays / 30)} months ago`;
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+};
 
 interface ItemCardProps {
   item: WardrobeItem;
@@ -30,12 +57,11 @@ interface ItemCardProps {
 export const ItemCard = memo(function ItemCard({
   item,
   isSelected = false,
-  onSelect,
   onEdit,
   onDelete,
   onAnalyze,
   onView,
-  isReadOnly = false
+  isReadOnly = false,
 }: ItemCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -54,21 +80,26 @@ export const ItemCard = memo(function ItemCard({
     }
   }, [item.id, onDelete]);
   const handleView = useCallback(() => onView?.(item), [item, onView]);
-  const handleAnalyze = useCallback(async (e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    if (isAnalyzing) return;
-    setIsAnalyzing(true);
-    try {
-      await onAnalyze?.(item.id);
-    } finally {
-      setIsAnalyzing(false);
-    }
-  }, [isAnalyzing, item.id, onAnalyze]);
+  const handleAnalyze = useCallback(
+    async (e?: React.MouseEvent) => {
+      e?.stopPropagation();
+      if (isAnalyzing) return;
+      setIsAnalyzing(true);
+      try {
+        await onAnalyze?.(item.id);
+      } finally {
+        setIsAnalyzing(false);
+      }
+    },
+    [isAnalyzing, item.id, onAnalyze]
+  );
 
   // Helper function to format season/occasion/style names
-  const formatNames = (items: Array<string | { id: number; name: string }> | undefined): string => {
+  const formatNames = (
+    items: Array<string | { id: number; name: string }> | undefined
+  ): string => {
     if (!items || items.length === 0) return "N/A";
-    return items.map((s) => (typeof s === 'string' ? s : s.name)).join(", ");
+    return items.map((s) => (typeof s === "string" ? s : s.name)).join(", ");
   };
 
   const styles = formatNames(item.styles);
@@ -76,14 +107,49 @@ export const ItemCard = memo(function ItemCard({
   // Get season data for badges
   const getSeasonData = (seasonName: string) => {
     const name = seasonName.toLowerCase();
-    if (name === 'spring') return { icon: Flower2, color: 'text-pink-200', bg: 'bg-pink-500/50', border: 'border-pink-300/70', circleBg: 'bg-pink-500' };
-    if (name === 'summer') return { icon: Sun, color: 'text-yellow-200', bg: 'bg-yellow-500/50', border: 'border-yellow-300/70', circleBg: 'bg-yellow-500' };
-    if (name === 'fall' || name === 'autumn') return { icon: Leaf, color: 'text-orange-200', bg: 'bg-orange-500/50', border: 'border-orange-300/70', circleBg: 'bg-orange-500' };
-    if (name === 'winter') return { icon: Snowflake, color: 'text-cyan-200', bg: 'bg-cyan-500/50', border: 'border-cyan-300/70', circleBg: 'bg-cyan-500' };
-    return { icon: null, color: 'text-gray-200', bg: 'bg-gray-500/50', border: 'border-gray-300/70', circleBg: 'bg-gray-500' };
+    if (name === "spring")
+      return {
+        icon: Flower2,
+        color: "text-pink-200",
+        bg: "bg-pink-500/50",
+        border: "border-pink-300/70",
+        circleBg: "bg-pink-500",
+      };
+    if (name === "summer")
+      return {
+        icon: Sun,
+        color: "text-yellow-200",
+        bg: "bg-yellow-500/50",
+        border: "border-yellow-300/70",
+        circleBg: "bg-yellow-500",
+      };
+    if (name === "fall" || name === "autumn")
+      return {
+        icon: Leaf,
+        color: "text-orange-200",
+        bg: "bg-orange-500/50",
+        border: "border-orange-300/70",
+        circleBg: "bg-orange-500",
+      };
+    if (name === "winter")
+      return {
+        icon: Snowflake,
+        color: "text-cyan-200",
+        bg: "bg-cyan-500/50",
+        border: "border-cyan-300/70",
+        circleBg: "bg-cyan-500",
+      };
+    return {
+      icon: null,
+      color: "text-gray-200",
+      bg: "bg-gray-500/50",
+      border: "border-gray-300/70",
+      circleBg: "bg-gray-500",
+    };
   };
 
-  const seasonItems = item.seasons?.map(s => typeof s === 'string' ? s : s.name) || [];
+  const seasonItems =
+    item.seasons?.map((s) => (typeof s === "string" ? s : s.name)) || [];
 
   return (
     <>
@@ -112,7 +178,9 @@ export const ItemCard = memo(function ItemCard({
 
               {/* Main badge */}
               <div className="relative w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 via-cyan-500 to-blue-500 flex items-center justify-center shadow-xl border-2 border-white">
-                <span className="text-xs font-black text-white drop-shadow-lg">AI</span>
+                <span className="text-xs font-black text-white drop-shadow-lg">
+                  AI
+                </span>
               </div>
             </div>
           </div>
@@ -136,20 +204,26 @@ export const ItemCard = memo(function ItemCard({
                   <MoreVertical className="w-4 h-4" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 bg-white/90 backdrop-blur-xl border-white/50">
-                <DropdownMenuItem onClick={handleEdit} className="hover:bg-white/60">
+              <DropdownMenuContent
+                align="end"
+                className="w-48 bg-white/90 backdrop-blur-xl border-white/50"
+              >
+                <DropdownMenuItem
+                  onClick={handleEdit}
+                  className="hover:bg-white/60"
+                >
                   <Edit className="w-4 h-4 mr-2" />
                   Edit Item
                 </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={handleDeleteClick}
-                className="text-red-600 focus:text-red-600 hover:bg-red-50/60"
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                <DropdownMenuItem
+                  onClick={handleDeleteClick}
+                  className="text-red-600 focus:text-red-600 hover:bg-red-50/60"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         )}
 
@@ -158,8 +232,12 @@ export const ItemCard = memo(function ItemCard({
           borderRadius="24px"
           blur="4px"
           brightness={1.02}
-          glowColor={isSelected ? "rgba(34, 211, 238, 0.4)" : "rgba(34, 211, 238, 0.2)"}
-          borderColor={isSelected ? "rgba(34, 211, 238, 0.5)" : "rgba(255, 255, 255, 0.2)"}
+          glowColor={
+            isSelected ? "rgba(34, 211, 238, 0.4)" : "rgba(34, 211, 238, 0.2)"
+          }
+          borderColor={
+            isSelected ? "rgba(34, 211, 238, 0.5)" : "rgba(255, 255, 255, 0.2)"
+          }
           borderWidth="2px"
           className={cn(
             "relative h-full flex flex-col item-card-transition cursor-pointer",
@@ -169,9 +247,7 @@ export const ItemCard = memo(function ItemCard({
           )}
           onClick={handleView}
         >
-
           <div className="w-full flex flex-col flex-1 relative z-10">
-
             {/* Image with aspect ratio */}
             <div className="bg-white/5 rounded-xl aspect-square flex items-center justify-center overflow-hidden relative">
               <Image
@@ -197,12 +273,20 @@ export const ItemCard = memo(function ItemCard({
                     {item.category?.name || "Uncategorized"}
                   </span>
                 </div>
+                {/* Last Worn - Prominent placement */}
+                {item.lastWornAt && (
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-cyan-400/60" />
+                    <span className="text-cyan-200/80 text-xs font-medium">
+                      Last worn: {formatRelativeDate(item.lastWornAt)}
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* No data display for unanalyzed item - center the button */}
               {!item.isAnalyzed ? (
                 <div className="flex-1 flex flex-col items-center justify-center gap-4 pb-5">
-
                   {/* Magic Button with Tooltip */}
                   <Tooltip
                     title={isAnalyzing ? "Analyzing..." : "AI Analysis"}
@@ -231,16 +315,18 @@ export const ItemCard = memo(function ItemCard({
                       )}
 
                       {/* Image button */}
-                      <div className={cn(
-                        "relative w-20 h-20 rounded-full overflow-hidden",
-                        "bg-white/10 backdrop-blur-sm",
-                        "border-2 border-white/20",
-                        "shadow-xl",
-                        "transition-all duration-300",
-                        "group-hover/magic:scale-110 group-hover/magic:border-purple-400/50",
-                        "active:scale-95",
-                        isAnalyzing && "opacity-30"
-                      )}>
+                      <div
+                        className={cn(
+                          "relative w-20 h-20 rounded-full overflow-hidden",
+                          "bg-white/10 backdrop-blur-sm",
+                          "border-2 border-white/20",
+                          "shadow-xl",
+                          "transition-all duration-300",
+                          "group-hover/magic:scale-110 group-hover/magic:border-purple-400/50",
+                          "active:scale-95",
+                          isAnalyzing && "opacity-30"
+                        )}
+                      >
                         <Image
                           src="/icon/ai-icon.png"
                           alt=""
@@ -282,12 +368,16 @@ export const ItemCard = memo(function ItemCard({
 
                   {/* Fabric */}
                   <div className="flex items-center gap-2">
-                    <span className="text-white/70 truncate">{item.fabric || "N/A"}</span>
+                    <span className="text-white/70 truncate">
+                      {item.fabric || "N/A"}
+                    </span>
                   </div>
 
                   {/* Weather */}
                   <div className="flex items-center gap-2">
-                    <span className="text-white/70 truncate">{item.weatherSuitable || "N/A"}</span>
+                    <span className="text-white/70 truncate">
+                      {item.weatherSuitable || "N/A"}
+                    </span>
                   </div>
 
                   {/* Seasons */}
@@ -309,7 +399,12 @@ export const ItemCard = memo(function ItemCard({
                                 seasonData.border
                               )}
                             >
-                              <span className={cn(" font-xs truncate", seasonData.color)}>
+                              <span
+                                className={cn(
+                                  " font-xs truncate",
+                                  seasonData.color
+                                )}
+                              >
                                 {season}
                               </span>
                             </div>
@@ -321,14 +416,21 @@ export const ItemCard = memo(function ItemCard({
                                   seasonData.circleBg
                                 )}
                               >
-                                <Icon className={cn("w-3.5 h-3.5", seasonData.color)} />
+                                <Icon
+                                  className={cn(
+                                    "w-3.5 h-3.5",
+                                    seasonData.color
+                                  )}
+                                />
                               </div>
                             )}
                           </div>
                         );
                       })
                     ) : (
-                      <span className="text-white/50 text-xs col-span-2">N/A</span>
+                      <span className="text-white/50 text-xs col-span-2">
+                        N/A
+                      </span>
                     )}
                   </div>
 
@@ -339,8 +441,6 @@ export const ItemCard = memo(function ItemCard({
                 </div>
               )}
             </div>
-
-
           </div>
         </GlassCard>
 
@@ -353,12 +453,17 @@ export const ItemCard = memo(function ItemCard({
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
           }
           .custom-ai-tooltip .ant-tooltip-inner {
-            background: linear-gradient(135deg, rgb(147 51 234 / 0.95), rgb(109 40 217 / 0.95)) !important;
+            background: linear-gradient(
+              135deg,
+              rgb(147 51 234 / 0.95),
+              rgb(109 40 217 / 0.95)
+            ) !important;
             backdrop-filter: blur(12px);
             border: 2px solid rgba(168, 85, 247, 0.5);
             color: white;
             font-weight: 600;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1),
+              0 2px 4px -2px rgb(0 0 0 / 0.1);
             padding: 8px 12px;
             font-size: 14px;
           }
