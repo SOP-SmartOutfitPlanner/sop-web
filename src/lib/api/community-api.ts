@@ -152,6 +152,53 @@ export interface SaveOutfitFromPostResponse {
   data: SavedOutfitFromPost;
 }
 
+// Saved Item Detail from API (new detailed structure)
+export interface SavedItemDetail {
+  id: number;
+  userId: number;
+  itemId: number;
+  postId: number;
+  createdDate: string;
+  item: {
+    id: number;
+    userId: number;
+    userDisplayName: string;
+    name: string;
+    categoryId: number;
+    categoryName: string;
+    color: string;
+    aiDescription: string | null;
+    brand: string | null;
+    usageCount: number;
+    lastWornAt: string | null;
+    imgUrl: string;
+    weatherSuitable: string | null;
+    condition: string | null;
+    pattern: string | null;
+    fabric: string | null;
+    isAnalyzed: boolean;
+    aiConfidence: number | null;
+    itemType: "USER" | "SYSTEM";
+    aiAnalyzeJson: string | null;
+    wornAtHistoryJson: string | null;
+    occasions: Array<{ id: number; name: string }>;
+    seasons: Array<{ id: number; name: string }>;
+    styles: Array<{ id: number; name: string }>;
+  };
+  postBody: string;
+  postUserId: number;
+  postUserDisplayName: string;
+}
+
+export interface SavedItemsResponse {
+  statusCode: number;
+  message: string;
+  data: {
+    data: SavedItemDetail[];
+    metaData: FeedMetaData;
+  };
+}
+
 export interface PostLiker {
   userId: number;
   displayName: string;
@@ -956,13 +1003,67 @@ class CommunityAPI {
   }
 
   /**
-   * Get all saved items from posts for current user
+   * Get all saved items from posts for current user (legacy, no pagination)
    * API: GET /item-post
    */
   async getSavedItemsFromPosts(): Promise<ApiResponse<SavedItemFromPost[]>> {
     const response = await apiClient.get<ApiResponse<SavedItemFromPost[]>>(
       "/item-post"
     );
+    return response;
+  }
+
+  /**
+   * Get saved items from posts with pagination and filters
+   * API: GET /api/v1/item-post
+   * @param pageIndex - Page number (default: 1)
+   * @param pageSize - Items per page (default: 10)
+   * @param filters - Optional filters (search, categoryId, seasonId, styleId, occasionId, sortByDate)
+   */
+  async getSavedItemsPaginated(
+    pageIndex: number = 1,
+    pageSize: number = 10,
+    filters?: {
+      search?: string;
+      categoryId?: number;
+      seasonId?: number;
+      styleId?: number;
+      occasionId?: number;
+      sortByDate?: 'asc' | 'desc';
+    }
+  ): Promise<SavedItemsResponse> {
+    const params: Record<string, string | number> = {
+      "page-index": pageIndex,
+      "page-size": pageSize,
+    };
+
+    if (filters?.search) {
+      params.search = filters.search;
+    }
+    if (filters?.categoryId !== undefined) {
+      params.CategoryId = filters.categoryId;
+    }
+    if (filters?.seasonId !== undefined) {
+      params.SeasonId = filters.seasonId;
+    }
+    if (filters?.styleId !== undefined) {
+      params.StyleId = filters.styleId;
+    }
+    if (filters?.occasionId !== undefined) {
+      params.OccasionId = filters.occasionId;
+    }
+    if (filters?.sortByDate) {
+      params.SortByDate = filters.sortByDate === 'asc' ? 'Ascending' : 'Descending';
+    }
+
+    console.log('🔍 getSavedItemsPaginated - params:', params);
+    
+    const response = await apiClient.get<SavedItemsResponse>("/item-post", {
+      params,
+    });
+    
+    console.log('✅ getSavedItemsPaginated - response:', response);
+    
     return response;
   }
 

@@ -3,6 +3,7 @@ import {
   CreateOutfitResponse,
   GetOutfitByIdResponse,
   GetOutfitsFavoriteResponse,
+  GetFavoriteOutfitsListResponse,
   GetOutfitsRequest,
   GetOutfitsResponse,
   MassCreateOutfitRequest,
@@ -158,7 +159,7 @@ class OutfitAPI {
    * @returns Promise<Outfit[]>
    */
   async getFavoriteOutfits(): Promise<Outfit[]> {
-    const response = await apiClient.get<GetOutfitsFavoriteResponse>(
+    const response = await apiClient.get<GetFavoriteOutfitsListResponse>(
       "/outfits/favorites"
     );
 
@@ -391,22 +392,26 @@ class OutfitAPI {
   async getSavedOutfits(
     params: import("../../types/outfit").GetSavedOutfitsRequest
   ): Promise<import("../../types/outfit").GetSavedOutfitsResponse> {
+    // Use specific endpoint based on sourceType
+    const endpoint =
+      params.sourceType === "Collection"
+        ? "/outfit-collection"
+        : params.sourceType === "Post"
+        ? "/outfit-post"
+        : "/outfits/saved";
+
     const queryParams: Record<string, string | number> = {
       "page-index": params.pageIndex,
       "page-size": params.pageSize,
     };
 
-    if (params.sourceType) {
-      queryParams["source-type"] = params.sourceType;
-    }
-
     if (params.search) {
-      queryParams["search"] = params.search;
+      queryParams.search = params.search;
     }
 
     const response = await apiClient.get<
       import("../../types/outfit").GetSavedOutfitsResponse
-    >("/outfits/saved", { params: queryParams });
+    >(endpoint, { params: queryParams });
 
     if (response.statusCode !== 200) {
       throw new Error(response.message || "Failed to fetch saved outfits");

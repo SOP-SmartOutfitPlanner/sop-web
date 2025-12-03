@@ -111,35 +111,5 @@ const OutfitGridComponent = ({
   );
 };
 
-// Memoize grid to prevent unnecessary re-renders
-export const OutfitGrid = memo(OutfitGridComponent, (prevProps, nextProps) => {
-  // Check if loading state changed
-  if (prevProps.isLoading !== nextProps.isLoading) return false;
-
-  // Check if saved view changed
-  if (prevProps.isSavedView !== nextProps.isSavedView) return false;
-
-  // Check if outfit count changed
-  if (prevProps.outfits.length !== nextProps.outfits.length) return false;
-
-  // Check if handlers changed
-  if (
-    prevProps.onViewOutfit !== nextProps.onViewOutfit ||
-    prevProps.onEditOutfit !== nextProps.onEditOutfit ||
-    prevProps.onDeleteOutfit !== nextProps.onDeleteOutfit ||
-    prevProps.onUnsaveOutfit !== nextProps.onUnsaveOutfit ||
-    prevProps.onUseToday !== nextProps.onUseToday
-  ) {
-    return false;
-  }
-
-  // Check if any outfit changed (including isFavorite, isSaved, etc.)
-  return prevProps.outfits.every((prevOutfit, index) => {
-    const nextOutfit = nextProps.outfits[index];
-    return (
-      prevOutfit.id === nextOutfit?.id &&
-      prevOutfit.name === nextOutfit?.name &&
-      prevOutfit.description === nextOutfit?.description
-    );
-  });
-});
+// Export without memo to ensure immediate updates
+export const OutfitGrid = OutfitGridComponent;

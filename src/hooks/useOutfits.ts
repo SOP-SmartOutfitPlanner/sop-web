@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { outfitAPI } from "@/lib/api/outfit-api";
 import {
   GetOutfitsRequest,
+  GetOutfitsResponse,
   CreateOutfitRequest,
   Outfit,
   GetSavedOutfitsRequest,
@@ -12,10 +13,11 @@ import {
 /**
  * Hook to fetch outfits with pagination
  */
-export function useOutfits(params: GetOutfitsRequest) {
+export function useOutfits(params: GetOutfitsRequest, enabled = true) {
   return useQuery({
     queryKey: ["outfits", params],
     queryFn: () => outfitAPI.getOutfits(params),
+    enabled,
     staleTime: 0, // Always consider data stale, refetch on mount
     gcTime: 1000 * 60 * 10, // 10 minutes cache
     refetchOnWindowFocus: true, // Refetch when window regains focus
@@ -148,70 +150,73 @@ export function useSaveFavoriteOutfit() {
   return useMutation({
     mutationFn: (outfitId: number) => outfitAPI.toggleFavorite(outfitId),
     onMutate: async (outfitId) => {
-      // Cancel outgoing refetches for both list and detail
+      // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: ["outfits"] });
-      await queryClient.cancelQueries({ queryKey: ["outfit", outfitId] });
 
-      // Snapshot previous values
-      const previousListData = queryClient.getQueriesData({
+      // Snapshot the previous value
+      const previousData = queryClient.getQueriesData<GetOutfitsResponse>({
         queryKey: ["outfits"],
       });
-      const previousDetailData = queryClient.getQueryData(["outfit", outfitId]);
 
-      // Update outfit list cache optimistically
-      queryClient.setQueriesData<{ data: { data: Outfit[] } }>(
+      // Optimistically update to the new value - CREATE COMPLETELY NEW OBJECTS
+      queryClient.setQueriesData<GetOutfitsResponse>(
         { queryKey: ["outfits"] },
         (old) => {
-          if (!old?.data?.data) return old;
+          if (!old?.data?.data) {
+            console.log("❌ No old data found");
+            return old;
+          }
 
-          // Create new array with updated outfit
-          const updatedData = old.data.data.map((outfit) =>
-            outfit.id === outfitId
-              ? { ...outfit, isFavorite: !outfit.isFavorite }
-              : outfit
-          );
+          // Create a completely new array with new objects
+          const newData = old.data.data.map((outfit) => {
+            if (outfit.id === outfitId) {
+              console.log(
+                `✅ Toggling favorite for outfit ${outfitId}: ${outfit.isFavorite} -> ${!outfit.isFavorite}`
+              );
+              // Create a brand new object to ensure React detects the change
+              return {
+                ...outfit,
+                isFavorite: !outfit.isFavorite,
+              } as Outfit;
+            }
+            return outfit;
+          });
 
-          return {
-            ...old,
+          // Return completely new structure
+          const result = {
+            statusCode: old.statusCode,
+            message: old.message,
             data: {
-              ...old.data,
-              data: updatedData,
+              data: newData,
+              metaData: old.data.metaData,
             },
           };
+
+          console.log("✅ Cache updated with new data");
+          return result;
         }
       );
 
-      // Update outfit detail cache optimistically
-      queryClient.setQueryData<Outfit>(["outfit", outfitId], (old) => {
-        if (!old) return old;
-        return { ...old, isFavorite: !old.isFavorite };
-      });
+      return { previousData };
+    },
+    onSuccess: (response, outfitId) => {
+      // Show success toast
+      const action = response.data.isFavorite ? "added to" : "removed from";
+      toast.success(`Outfit ${action} favorites`);
 
-      return { previousListData, previousDetailData };
+      // Refetch to ensure sync with server
+      queryClient.invalidateQueries({ queryKey: ["outfits"] });
+      queryClient.invalidateQueries({ queryKey: ["outfit", outfitId] });
     },
-    onSuccess: () => {
-      toast.success("Favorite status updated!");
-    },
-    onError: (error: Error, outfitId, context) => {
-      // Rollback on error
-      if (context?.previousListData) {
-        context.previousListData.forEach(([queryKey, data]) => {
+    onError: (error: Error, _outfitId, context) => {
+      // Rollback to previous data on error
+      if (context?.previousData) {
+        context.previousData.forEach(([queryKey, data]) => {
           queryClient.setQueryData(queryKey, data);
         });
       }
-      if (context?.previousDetailData) {
-        queryClient.setQueryData(
-          ["outfit", outfitId],
-          context.previousDetailData
-        );
-      }
       console.error("Failed to update favorite:", error);
       toast.error("Failed to update favorite status");
-    },
-    onSettled: (data, error, outfitId) => {
-      // Refetch to ensure data is in sync
-      queryClient.invalidateQueries({ queryKey: ["outfits"] });
-      queryClient.invalidateQueries({ queryKey: ["outfit", outfitId] });
     },
   });
 }

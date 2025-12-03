@@ -78,14 +78,48 @@ export const WardrobeHeader = memo(function WardrobeHeader({
     onFiltersChange({ ...filters, q: value || undefined });
   }, [filters, onFiltersChange, setSearchQuery]);
 
+  const { viewMode, setViewMode } = useWardrobeStore();
+
   return (
     <div className="space-y-6 mb-8">
-      {/* Title */}
-      <h4 className="font-dela-gothic text-2xl md:text-3xl lg:text-4xl leading-tight">
-        <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-cyan-200">
-          My Wardrobe
-        </span>
-      </h4>
+      {/* Title with View Mode Toggle */}
+      <div className="flex items-center justify-between">
+        <h4 className="font-dela-gothic text-2xl md:text-3xl lg:text-4xl leading-tight">
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-cyan-200">
+            My Wardrobe
+          </span>
+        </h4>
+        
+        {/* Compact View Mode Toggle */}
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 backdrop-blur-sm rounded-full border border-white/10">
+          <button
+            onClick={() => setViewMode("my-items")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+              viewMode === "my-items"
+                ? "bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-md"
+                : "text-white/60 hover:text-white/90"
+            }`}
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+            </svg>
+            <span>My Items</span>
+          </button>
+          <button
+            onClick={() => setViewMode("saved-from-posts")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+              viewMode === "saved-from-posts"
+                ? "bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-md"
+                : "text-white/60 hover:text-white/90"
+            }`}
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+            </svg>
+            <span>Saved</span>
+          </button>
+        </div>
+      </div>
 
       {/* Search Bar and Buttons */}
       <div className="flex items-center gap-4">
@@ -196,26 +230,34 @@ export const WardrobeHeader = memo(function WardrobeHeader({
         </div>
 
         {/* Add Item Button */}
-        <div className="glass-button-hover">
-          <GlassButton
-            onClick={onAddItem}
-            disabled={isLoading}
-            variant="custom"
-            borderRadius="14px"
-            blur="8px"
-            brightness={1.12}
-            glowColor="rgba(59,130,246,0.45)"
-            glowIntensity={6}
-            borderColor="rgba(255,255,255,0.28)"
-            borderWidth="1px"
-            textColor="#ffffffff"
-            className="px-4 h-12 font-semibold"
-            displacementScale={5}
-          >
-            {isLoading ? (
-              <>
+        <Tooltip title={viewMode === "saved-from-posts" ? "Cannot add items in Saved mode" : "Add new item"}>
+          <div className={viewMode === "saved-from-posts" ? "opacity-50 cursor-not-allowed" : "glass-button-hover"}>
+            <GlassButton
+              onClick={viewMode === "saved-from-posts" ? undefined : onAddItem}
+              disabled={isLoading || viewMode === "saved-from-posts"}
+              variant="custom"
+              borderRadius="14px"
+              blur="8px"
+              brightness={1.12}
+              glowColor={viewMode === "saved-from-posts" ? "rgba(239,68,68,0.45)" : "rgba(59,130,246,0.45)"}
+              glowIntensity={6}
+              borderColor={viewMode === "saved-from-posts" ? "rgba(239,68,68,0.28)" : "rgba(255,255,255,0.28)"}
+              borderWidth="1px"
+              textColor="#ffffffff"
+              className="px-4 h-12 font-semibold"
+              displacementScale={5}
+            >
+              {isLoading ? (
+                <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Adding...
+              </>
+            ) : viewMode === "saved-from-posts" ? (
+              <>
+                <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                </svg>
+                Add Item
               </>
             ) : (
               <>
@@ -224,7 +266,8 @@ export const WardrobeHeader = memo(function WardrobeHeader({
               </>
             )}
           </GlassButton>
-        </div>
+          </div>
+        </Tooltip>
       </div>
 
       <style jsx>{`

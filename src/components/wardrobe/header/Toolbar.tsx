@@ -607,8 +607,46 @@ export const Toolbar = memo(function Toolbar({
 
   const activeFiltersCount = useFilterCount(filters);
 
+  const { viewMode, setViewMode } = useWardrobeStore();
+
   return (
     <div className="space-y-4">
+      {/* View Mode Toggle */}
+      <div className="flex gap-2 p-1 bg-white/5 backdrop-blur-sm rounded-lg border border-white/10">
+        <Button
+          onClick={() => setViewMode("my-items")}
+          variant={viewMode === "my-items" ? "default" : "ghost"}
+          size="sm"
+          className={cn(
+            "flex-1 transition-all",
+            viewMode === "my-items" 
+              ? "bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg" 
+              : "text-white/70 hover:text-white hover:bg-white/5"
+          )}
+        >
+          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+          </svg>
+          My Items
+        </Button>
+        <Button
+          onClick={() => setViewMode("saved-from-posts")}
+          variant={viewMode === "saved-from-posts" ? "default" : "ghost"}
+          size="sm"
+          className={cn(
+            "flex-1 transition-all",
+            viewMode === "saved-from-posts" 
+              ? "bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg" 
+              : "text-white/70 hover:text-white hover:bg-white/5"
+          )}
+        >
+          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+          </svg>
+          Saved from Posts
+        </Button>
+      </div>
+
       {/* Main Toolbar */}
       <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center">
         <SearchInput
@@ -641,10 +679,12 @@ export const Toolbar = memo(function Toolbar({
           </>
         )}
 
-        <SelectModeButton
-          isSelectMode={isSelectMode}
-          onToggle={() => onSelectMode(!isSelectMode)}
-        />
+        {viewMode === "my-items" && (
+          <SelectModeButton
+            isSelectMode={isSelectMode}
+            onToggle={() => onSelectMode(!isSelectMode)}
+          />
+        )}
       </div>
 
       {/* Selection Bar */}

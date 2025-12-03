@@ -16,6 +16,7 @@ import { useAuthStore } from "@/store/auth-store";
 interface PostItemsGalleryProps {
   items: PostItemDetailModel[];
   postId: number; // Required for save functionality
+  isOwnPost?: boolean; // Hide save buttons on own posts
 }
 
 const INITIAL_DISPLAY_COUNT = 8; // Show 8 items initially (2 rows of 4)
@@ -24,9 +25,11 @@ const INITIAL_DISPLAY_COUNT = 8; // Show 8 items initially (2 rows of 4)
 function ItemSaveButton({
   item,
   postId,
+  isOwnPost,
 }: {
   item: PostItemDetailModel;
   postId: number;
+  isOwnPost?: boolean;
 }) {
   const { isSaved, isLoading, toggleSave } = useSaveItemFromPost(
     item.id,
@@ -35,7 +38,7 @@ function ItemSaveButton({
   );
   const { user } = useAuthStore();
 
-  if (item.isDeleted) return null;
+  if (item.isDeleted || isOwnPost) return null;
 
   return (
     <Tooltip.Provider delayDuration={200}>
@@ -83,7 +86,7 @@ function ItemSaveButton({
   );
 }
 
-export function PostItemsGallery({ items, postId }: PostItemsGalleryProps) {
+export function PostItemsGallery({ items, postId, isOwnPost }: PostItemsGalleryProps) {
   const [imageLoaded, setImageLoaded] = useState<Record<number, boolean>>({});
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
   const [showAll, setShowAll] = useState(false);
@@ -179,7 +182,7 @@ export function PostItemsGallery({ items, postId }: PostItemsGalleryProps) {
 
                         {/* Save Item Button */}
                         {imageLoaded[item.id] && (
-                          <ItemSaveButton item={item} postId={postId} />
+                          <ItemSaveButton item={item} postId={postId} isOwnPost={isOwnPost} />
                         )}
 
                         {/* Deleted Overlay */}
