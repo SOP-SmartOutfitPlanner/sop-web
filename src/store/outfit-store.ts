@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import { Outfit } from "@/types/outfit";
 
+export type OutfitViewMode = "my-outfits" | "saved-from-collections" | "saved-from-posts";
+
 interface OutfitState {
   // Selected outfit for viewing/editing
   selectedOutfit: Outfit | null;
@@ -19,12 +21,13 @@ interface OutfitState {
   clearSelectedItems: () => void;
   setSelectedItems: (itemIds: number[]) => void;
 
+  // View mode
+  viewMode: OutfitViewMode;
+  setViewMode: (mode: OutfitViewMode) => void;
+
   // Filter states
   showFavorites: boolean;
   setShowFavorites: (show: boolean) => void;
-
-  showSaved: boolean;
-  setShowSaved: (show: boolean) => void;
 
   searchQuery: string;
   setSearchQuery: (query: string) => void;
@@ -53,12 +56,13 @@ export const useOutfitStore = create<OutfitState>((set) => ({
   clearSelectedItems: () => set({ selectedItemIds: [] }),
   setSelectedItems: (itemIds) => set({ selectedItemIds: itemIds }),
 
+  // View mode
+  viewMode: "my-outfits",
+  setViewMode: (mode) => set({ viewMode: mode }),
+
   // Filters
   showFavorites: false,
   setShowFavorites: (show) => set({ showFavorites: show }),
-
-  showSaved: false,
-  setShowSaved: (show) => set({ showSaved: show }),
 
   searchQuery: "",
   setSearchQuery: (query) => set({ searchQuery: query }),

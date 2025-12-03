@@ -31,15 +31,18 @@ interface AttachmentModalProps {
   items?: PostItemDetailModel[];
   outfit?: PostOutfitDetailModel;
   postId: number; // Required for save functionality
+  isOwnPost?: boolean; // Hide save buttons on own posts
 }
 
 // Save button for individual items
 function ItemSaveButton({
   item,
   postId,
+  isOwnPost,
 }: {
   item: PostItemDetailModel;
   postId: number;
+  isOwnPost?: boolean;
 }) {
   const { isSaved, isLoading, toggleSave } = useSaveItemFromPost(
     item.id,
@@ -48,7 +51,7 @@ function ItemSaveButton({
   );
   const { user } = useAuthStore();
 
-  if (item.isDeleted) return null;
+  if (item.isDeleted || isOwnPost) return null;
 
   return (
     <Tooltip.Provider delayDuration={200}>
@@ -100,9 +103,11 @@ function ItemSaveButton({
 function OutfitSaveButton({
   outfit,
   postId,
+  isOwnPost,
 }: {
   outfit: PostOutfitDetailModel;
   postId: number;
+  isOwnPost?: boolean;
 }) {
   const { isSaved, isLoading, toggleSave } = useSaveOutfitFromPost(
     outfit.id,
@@ -111,7 +116,7 @@ function OutfitSaveButton({
   );
   const { user } = useAuthStore();
 
-  if (outfit.isDeleted) return null;
+  if (outfit.isDeleted || isOwnPost) return null;
 
   return (
     <Tooltip.Provider delayDuration={200}>
@@ -167,6 +172,7 @@ export function AttachmentModal({
   items,
   outfit,
   postId,
+  isOwnPost,
 }: AttachmentModalProps) {
   const [imageLoaded, setImageLoaded] = useState<Record<number, boolean>>({});
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
@@ -197,7 +203,7 @@ export function AttachmentModal({
       <Dialog open={isOpen} onOpenChange={handleOpenChange}>
         <DialogContent
           showCloseButton={false}
-          className={`w-[65vw] p-0 backdrop-blur-xl bg-slate-950/95 border border-white/10 shadow-2xl rounded-2xl overflow-hidden flex flex-col !max-w-[45rem] h-auto ${
+          className={`w-[70vw] p-0 backdrop-blur-xl bg-slate-950/95 border border-white/10 shadow-2xl rounded-2xl overflow-hidden flex flex-col !max-w-[46rem] h-auto ${
             type === "outfit" ? "max-h-[80vh]" : ""
           }`}
         >
@@ -228,7 +234,7 @@ export function AttachmentModal({
               </div>
               {/* Save Outfit Button - only show for outfit type */}
               {type === "outfit" && outfit && (
-                <OutfitSaveButton outfit={outfit} postId={postId} />
+                <OutfitSaveButton outfit={outfit} postId={postId} isOwnPost={isOwnPost} />
               )}
               <DialogClose asChild>
                 <button
@@ -252,7 +258,7 @@ export function AttachmentModal({
                 className={`${
                   type === "items"
                     ? "flex gap-3 overflow-x-auto w-full pb-2"
-                    : "grid grid-cols-4 gap-3"
+                    : "grid grid-cols-3 gap-4 w-full"
                 }`}
               >
                 <AnimatePresence mode="popLayout">
@@ -327,7 +333,7 @@ export function AttachmentModal({
 
                                 {/* Save Item Button */}
                                 {imageLoaded[item.id] && (
-                                  <ItemSaveButton item={item} postId={postId} />
+                                  <ItemSaveButton item={item} postId={postId} isOwnPost={isOwnPost} />
                                 )}
 
                                 {/* Deleted Overlay */}

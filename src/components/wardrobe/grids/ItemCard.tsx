@@ -24,6 +24,7 @@ interface ItemCardProps {
   onAnalyze?: (id: string) => void;
   onView?: (item: WardrobeItem) => void;
   showCheckbox?: boolean;
+  isReadOnly?: boolean; // Disable edit/delete for saved items from posts
 }
 
 export const ItemCard = memo(function ItemCard({
@@ -33,7 +34,8 @@ export const ItemCard = memo(function ItemCard({
   onEdit,
   onDelete,
   onAnalyze,
-  onView
+  onView,
+  isReadOnly = false
 }: ItemCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -100,9 +102,10 @@ export const ItemCard = memo(function ItemCard({
         onMouseLeave={() => setIsHovered(false)}
         className="group relative w-full h-full flex flex-col"
       >
-        {/* AI Badge*/}
-        {item.isAnalyzed && item.aiConfidence && (
+        {/* Badges - Hide in saved from posts mode */}
+        {!isReadOnly && item.isAnalyzed && item.aiConfidence && (
           <div className="absolute -top-2 -left-2 z-20">
+            {/* AI Badge */}
             <div className="relative">
               {/* Glow effect */}
               <div className="absolute inset-0 w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 blur-md opacity-75 animate-pulse" />
@@ -115,29 +118,29 @@ export const ItemCard = memo(function ItemCard({
           </div>
         )}
 
-
-        {/* Menu - Positioned outside the card */}
-        <div className="absolute top-2 right-2 z-20">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                className={cn(
-                  "p-2 rounded-lg",
-                  "bg-white/30 border border-white/30",
-                  "text-white hover:bg-white/40 hover:border-white/40",
-                  "shadow-lg shadow-white/10",
-                  "transition-all duration-200",
-                  isHovered ? "opacity-100" : "opacity-0"
-                )}
-              >
-                <MoreVertical className="w-4 h-4" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48 bg-white/90 backdrop-blur-xl border-white/50">
-              <DropdownMenuItem onClick={handleEdit} className="hover:bg-white/60">
-                <Edit className="w-4 h-4 mr-2" />
-                Edit Item
-              </DropdownMenuItem>
+        {/* Menu - Positioned outside the card (hide for read-only items) */}
+        {!isReadOnly && (
+          <div className="absolute top-2 right-2 z-20">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className={cn(
+                    "p-2 rounded-lg",
+                    "bg-white/30 border border-white/30",
+                    "text-white hover:bg-white/40 hover:border-white/40",
+                    "shadow-lg shadow-white/10",
+                    "transition-all duration-200",
+                    isHovered ? "opacity-100" : "opacity-0"
+                  )}
+                >
+                  <MoreVertical className="w-4 h-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 bg-white/90 backdrop-blur-xl border-white/50">
+                <DropdownMenuItem onClick={handleEdit} className="hover:bg-white/60">
+                  <Edit className="w-4 h-4 mr-2" />
+                  Edit Item
+                </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={handleDeleteClick}
                 className="text-red-600 focus:text-red-600 hover:bg-red-50/60"
@@ -147,7 +150,8 @@ export const ItemCard = memo(function ItemCard({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        </div>
+          </div>
+        )}
 
         <GlassCard
           padding="16px"

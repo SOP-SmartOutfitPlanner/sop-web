@@ -19,6 +19,9 @@ interface WardrobeStore {
   selectedItems: string[];
   isSelectionMode: boolean;
   hasInitialFetch: boolean;
+  // View mode: "my-items" or "saved-from-posts"
+  viewMode: "my-items" | "saved-from-posts";
+  setViewMode: (mode: "my-items" | "saved-from-posts") => void;
   // Pagination
   currentPage: number;
   pageSize: number;
@@ -190,6 +193,12 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
   selectedItems: [],
   isSelectionMode: false,
   hasInitialFetch: false,
+  // View mode
+  viewMode: "my-items",
+  setViewMode: (mode) => {
+    set({ viewMode: mode, currentPage: 1 }); // Reset to page 1 when switching mode
+    get().fetchItems(); // Refetch items with new mode
+  },
   // Pagination state
   currentPage: 1,
   pageSize: 15,
@@ -212,37 +221,106 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const state = get();
+      console.log('📦 fetchItems - viewMode:', state.viewMode);
+      console.log('📦 fetchItems - filters:', state.filters);
+      console.log('📦 fetchItems - searchQuery:', state.searchQuery);
 
-      // Build API filter parameters from current filters
-      const apiFilters = {
-        isAnalyzed: state.filters.isAnalyzed,
-        categoryId: state.filters.categoryId,
-        seasonId: state.filters.seasonId,
-        styleId: state.filters.styleId,
-        occasionId: state.filters.occasionId,
-        sortByDate: state.filters.sortByDate,
-        searchQuery: state.searchQuery || undefined,
-      };
+      if (state.viewMode === "saved-from-posts") {
+        // Fetch saved items from community posts
+        const { communityAPI } = await import("@/lib/api/community-api");
+        
+        const apiFilters = {
+          search: state.searchQuery || undefined,
+          categoryId: state.filters.categoryId,
+          seasonId: state.filters.seasonId,
+          styleId: state.filters.styleId,
+          occasionId: state.filters.occasionId,
+          sortByDate: state.filters.sortByDate,
+        };
+        
+        console.log('📦 Saved mode - API filters:', apiFilters);
 
-      const response = await wardrobeAPI.getItems(
-        state.currentPage,
-        state.pageSize,
-        apiFilters
-      );
-      const items = response.data.map(apiItemToWardrobeItem);
-      const filtered = filterItems(items, state.filters, state.searchQuery);
-      const sorted = sortItems(filtered, state.sortBy);
-      set({
-        items,
-        rawApiItems: response.data, // Store raw API items
-        isLoading: false,
-        filteredItems: sorted,
-        hasInitialFetch: true,
-        totalCount: response.metaData.totalCount,
-        totalPages: response.metaData.totalPages,
-        hasNext: response.metaData.hasNext,
-        hasPrevious: response.metaData.hasPrevious,
-      });
+        const response = await communityAPI.getSavedItemsPaginated(
+          state.currentPage,
+          state.pageSize,
+          apiFilters
+        );
+
+        // Transform saved items to WardrobeItem format
+        const items = response.data.data.map((savedItem) => {
+          const item = savedItem.item;
+          return apiItemToWardrobeItem({
+            id: item.id,
+            userId: item.userId,
+            name: item.name,
+            categoryId: item.categoryId,
+            categoryName: item.categoryName,
+            color: item.color,
+            brand: item.brand,
+            imgUrl: item.imgUrl,
+            aiDescription: item.aiDescription,
+            weatherSuitable: item.weatherSuitable,
+            condition: item.condition,
+            pattern: item.pattern,
+            fabric: item.fabric,
+            isAnalyzed: item.isAnalyzed,
+            aiConfidence: item.aiConfidence,
+            tag: item.occasions.map(o => o.name).join(", "),
+            usageCount: item.usageCount,
+            lastWornAt: item.lastWornAt,
+            itemType: item.itemType,
+            occasions: item.occasions,
+            seasons: item.seasons,
+            styles: item.styles,
+          } as ApiWardrobeItem);
+        });
+
+        // No need for client-side filtering since API already filtered
+        const sorted = sortItems(items, state.sortBy);
+        
+        set({
+          items,
+          rawApiItems: [], // Saved items are read-only, no raw API items
+          isLoading: false,
+          filteredItems: sorted,
+          hasInitialFetch: true,
+          totalCount: response.data.metaData.totalCount,
+          totalPages: response.data.metaData.totalPages,
+          hasNext: response.data.metaData.hasNext,
+          hasPrevious: response.data.metaData.hasPrevious,
+        });
+      } else {
+        // Fetch user's own items (default behavior)
+        const apiFilters = {
+          isAnalyzed: state.filters.isAnalyzed,
+          categoryId: state.filters.categoryId,
+          seasonId: state.filters.seasonId,
+          styleId: state.filters.styleId,
+          occasionId: state.filters.occasionId,
+          sortByDate: state.filters.sortByDate,
+          searchQuery: state.searchQuery || undefined,
+        };
+
+        const response = await wardrobeAPI.getItems(
+          state.currentPage,
+          state.pageSize,
+          apiFilters
+        );
+        const items = response.data.map(apiItemToWardrobeItem);
+        const filtered = filterItems(items, state.filters, state.searchQuery);
+        const sorted = sortItems(filtered, state.sortBy);
+        set({
+          items,
+          rawApiItems: response.data, // Store raw API items
+          isLoading: false,
+          filteredItems: sorted,
+          hasInitialFetch: true,
+          totalCount: response.metaData.totalCount,
+          totalPages: response.metaData.totalPages,
+          hasNext: response.metaData.hasNext,
+          hasPrevious: response.metaData.hasPrevious,
+        });
+      }
     } catch (error) {
       console.error("Failed to fetch items:", error);
       set({
@@ -403,6 +481,7 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
 
   // Filter functionality
   setFilters: (filters) => {
+    console.log('🔍 setFilters called with:', filters);
     set((state) => {
       const filtered = filterItems(state.items, filters, state.searchQuery);
       const sorted = sortItems(filtered, state.sortBy);
@@ -413,6 +492,7 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
       };
     });
     // Fetch new items from API with updated filters
+    console.log('🔄 Triggering fetchItems after filter change');
     get().fetchItems();
   },
 

@@ -305,31 +305,5 @@ const OutfitCardComponent = ({
   );
 };
 
-// Memoize component to prevent unnecessary re-renders
-export const OutfitCard = memo(OutfitCardComponent, (prevProps, nextProps) => {
-  // If any of these change, re-render
-  if (
-    prevProps.outfit.id !== nextProps.outfit.id ||
-    prevProps.outfit.name !== nextProps.outfit.name ||
-    prevProps.outfit.description !== nextProps.outfit.description ||
-    prevProps.outfit.isFavorite !== nextProps.outfit.isFavorite ||
-    prevProps.outfit.isSaved !== nextProps.outfit.isSaved ||
-    prevProps.outfit.items.length !== nextProps.outfit.items.length ||
-    prevProps.outfit.createdDate !== nextProps.outfit.createdDate ||
-    prevProps.outfit.userDisplayName !== nextProps.outfit.userDisplayName
-  ) {
-    return false; // Props changed, should re-render
-  }
-
-  // Handlers comparison
-  if (
-    prevProps.onView !== nextProps.onView ||
-    prevProps.onEdit !== nextProps.onEdit ||
-    prevProps.onDelete !== nextProps.onDelete ||
-    prevProps.onUseToday !== nextProps.onUseToday
-  ) {
-    return false;
-  }
-
-  return true; // Props are equal, skip re-render
-});
+// Export without memo to ensure re-renders happen immediately
+export const OutfitCard = OutfitCardComponent;
