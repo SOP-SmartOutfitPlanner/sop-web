@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, memo, useState } from "react";
+import { createPortal } from "react-dom";
 import { X, Heart, Edit, Trash2, User, ExternalLink } from "lucide-react";
 import GlassButton from "@/components/ui/glass-button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -453,14 +454,18 @@ const ViewOutfitDialogComponent = ({
         isLoading={false}
       />
 
-      {/* Item Detail Dialog */}
-      {selectedItemId && (
-        <ViewItemDialog
-          open={isItemDialogOpen}
-          onOpenChange={handleItemDialogClose}
-          itemId={selectedItemId}
-        />
-      )}
+      {/* Item Detail Dialog - Rendered via portal to ensure it's on top */}
+      {selectedItemId &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <ViewItemDialog
+            open={isItemDialogOpen}
+            onOpenChange={handleItemDialogClose}
+            itemId={selectedItemId}
+            zIndex={80}
+          />,
+          document.body
+        )}
     </>
   );
 };

@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { communityAPI } from "@/lib/api";
 import { useAuthStore } from "@/store/auth-store";
+import { useWardrobeStore } from "@/store/wardrobe-store";
 
 /**
  * Hook for saving/unsaving an item from a post
@@ -32,6 +33,13 @@ export function useSaveItemFromPost(
       queryClient.invalidateQueries({ queryKey: ["posts"] });
       queryClient.invalidateQueries({ queryKey: ["feed"] });
       queryClient.invalidateQueries({ queryKey: ["savedItemsFromPosts"] });
+
+      // Refresh wardrobe store if in saved mode
+      const wardrobeStore = useWardrobeStore.getState();
+      if (wardrobeStore.viewMode === "saved-from-posts") {
+        wardrobeStore.fetchItems();
+      }
+
       toast.success("Item saved to your wardrobe!");
     },
     onError: (error: Error) => {
@@ -63,6 +71,13 @@ export function useSaveItemFromPost(
       queryClient.invalidateQueries({ queryKey: ["posts"] });
       queryClient.invalidateQueries({ queryKey: ["feed"] });
       queryClient.invalidateQueries({ queryKey: ["savedItemsFromPosts"] });
+
+      // Refresh wardrobe store if in saved mode
+      const wardrobeStore = useWardrobeStore.getState();
+      if (wardrobeStore.viewMode === "saved-from-posts") {
+        wardrobeStore.fetchItems();
+      }
+
       toast.success("Item removed from saved");
     },
     onError: (error: Error) => {
