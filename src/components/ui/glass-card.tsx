@@ -27,6 +27,7 @@ interface GlassCardProps {
   width?: string;
   height?: string;
   onClick?: () => void;
+  style?: React.CSSProperties;
 }
 
 const GlassCard: React.FC<GlassCardProps> = ({
@@ -47,7 +48,8 @@ const GlassCard: React.FC<GlassCardProps> = ({
   displacementScale = 200,
   width = 'auto',
   height = 'auto',
-  onClick
+  onClick,
+  style
 }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const positionRef = useRef<Position>({ x: 0, y: 0 });
@@ -87,6 +89,7 @@ const GlassCard: React.FC<GlassCardProps> = ({
     cursor: draggable ? 'move' : 'default',
     touchAction: draggable ? 'none' : 'auto',
     ...(backgroundColor && { backgroundColor }),
+    ...style,
   };
 
   const beforeStyle: React.CSSProperties = {

@@ -29,7 +29,6 @@ interface FormData {
   dateOccasion: string; // "2025-12-08"
   startTime: string;    // "09:00"
   endTime: string;      // "17:00"
-  weatherSnapshot: string;
 }
 
 export function UserOccasionFormModal({
@@ -56,7 +55,6 @@ export function UserOccasionFormModal({
     dateOccasion: getInitialDate(),
     startTime: "09:00",
     endTime: "17:00",
-    weatherSnapshot: "Sunny",
   });
 
   // Fetch occasion types
@@ -119,7 +117,6 @@ export function UserOccasionFormModal({
         dateOccasion: dateOccasion || getDateString(),
         startTime: startTime || "09:00",
         endTime: endTime || "17:00",
-        weatherSnapshot: editingOccasion.weatherSnapshot || "",
       });
     } else {
       // Reset for new occasion
@@ -130,7 +127,6 @@ export function UserOccasionFormModal({
         dateOccasion: getDateString(),
         startTime: "09:00",
         endTime: "17:00",
-        weatherSnapshot: "Sunny",
       });
     }
   }, [editingOccasion, selectedDate, open]);
@@ -165,7 +161,7 @@ export function UserOccasionFormModal({
       dateOccasion: `${formData.dateOccasion}T${formData.startTime}:00`,
       startTime: `${formData.dateOccasion}T${formData.startTime}:00`,
       endTime: `${formData.dateOccasion}T${formData.endTime}:00`,
-      weatherSnapshot: formData.weatherSnapshot,
+      weatherSnapshot: "",
     };
 
     // console.log('📤 Submitting occasion:', { isEditing, payload });
@@ -215,25 +211,25 @@ export function UserOccasionFormModal({
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-60"
+        className="fixed inset-0 bg-black/70 backdrop-blur-md z-[100]"
         onClick={() => !isPending && onOpenChange(false)}
       />
 
       {/* Modal */}
-      <div className="fixed inset-0 z-61 flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-[101] flex items-center justify-center p-4">
         <div
-          className="w-[600px] max-w-[95vw] rounded-3xl overflow-hidden shadow-2xl bg-linear-to-br from-slate-900/95 via-blue-900/95 to-slate-900/95 backdrop-blur-xl border border-white/10"
+          className="w-[600px] max-w-[95vw] rounded-3xl overflow-hidden shadow-2xl bg-gradient-to-br from-slate-900/95 via-blue-900/95 to-slate-900/95 backdrop-blur-xl border border-cyan-500/30"
           onClick={(e) => e.stopPropagation()}
         >
           <form onSubmit={handleSubmit} className="flex flex-col max-h-[90vh] h-full">
             {/* Header */}
-            <div className="px-8 pt-6 pb-4 shrink-0 border-b border-white/10">
+            <div className="px-8 pt-6 pb-4 shrink-0 border-b border-cyan-500/20 bg-gradient-to-r from-transparent via-cyan-500/5 to-transparent">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="font-dela-gothic text-2xl font-bold text-white">
-                    {isEditing ? '✏️ Edit Occasion' : '➕ New Occasion'}
+                  <h2 className="font-bricolage text-2xl font-bold bg-gradient-to-r from-cyan-300 via-blue-300 to-indigo-300 bg-clip-text text-transparent">
+                    {isEditing ? '✏️ Edit Occasion' : '✨ Create New Occasion'}
                   </h2>
-                  <p className="font-bricolage text-gray-300 mt-1 text-sm">
+                  <p className="font-poppins text-cyan-200/80 mt-1 text-sm">
                     {format(selectedDate, 'EEEE, MMMM d, yyyy')}
                   </p>
                 </div>
@@ -241,11 +237,11 @@ export function UserOccasionFormModal({
                   type="button"
                   onClick={() => onOpenChange(false)}
                   disabled={isPending}
-                  className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-all duration-200"
+                  className="w-10 h-10 rounded-full bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400/30 flex items-center justify-center transition-all duration-200 hover:scale-110"
                   title="Close"
                   aria-label="Close dialog"
                 >
-                  <X className="w-5 h-5 text-white" />
+                  <X className="w-5 h-5 text-cyan-300" />
                 </button>
               </div>
             </div>
@@ -254,12 +250,12 @@ export function UserOccasionFormModal({
             <div 
               ref={scrollContainerRef}
               className="flex-1 px-8 py-6 overflow-y-auto overflow-x-hidden min-h-0 scroll-smooth
-                [&::-webkit-scrollbar]:w-1.5
-                [&::-webkit-scrollbar-track]:bg-white/10
+                [&::-webkit-scrollbar]:w-2
+                [&::-webkit-scrollbar-track]:bg-cyan-500/10
                 [&::-webkit-scrollbar-track]:rounded-full
-                [&::-webkit-scrollbar-thumb]:bg-purple-400/60
+                [&::-webkit-scrollbar-thumb]:bg-cyan-400/60
                 [&::-webkit-scrollbar-thumb]:rounded-full
-                [&::-webkit-scrollbar-thumb]:hover:bg-purple-400/80"
+                [&::-webkit-scrollbar-thumb]:hover:bg-cyan-400/80"
               style={{ 
                 WebkitOverflowScrolling: 'touch',
                 overscrollBehavior: 'contain',
@@ -269,7 +265,8 @@ export function UserOccasionFormModal({
               <div className="space-y-5">
                 {/* Occasion Type */}
                 <div>
-                  <label className="block font-bricolage text-sm font-semibold text-white mb-2">
+                  <label className="block font-poppins text-sm font-semibold text-cyan-200 mb-2 flex items-center gap-2">
+                    <span className="w-1 h-4 bg-gradient-to-b from-cyan-400 to-blue-500 rounded-full"></span>
                     Occasion Type *
                   </label>
                   <Select
@@ -288,7 +285,8 @@ export function UserOccasionFormModal({
 
                 {/* Name */}
                 <div>
-                  <label className="block font-bricolage text-sm font-semibold text-white mb-2">
+                  <label className="block font-poppins text-sm font-semibold text-cyan-200 mb-2 flex items-center gap-2">
+                    <span className="w-1 h-4 bg-gradient-to-b from-cyan-400 to-blue-500 rounded-full"></span>
                     Name *
                   </label>
                   <input
@@ -298,13 +296,14 @@ export function UserOccasionFormModal({
                     placeholder="e.g., Team Lunch, Birthday Party"
                     required
                     disabled={isPending}
-                    className="w-full px-4 py-2.5 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400/50"
+                    className="w-full px-4 py-2.5 rounded-lg bg-cyan-950/30 border border-cyan-500/30 text-white placeholder-cyan-300/40 focus:outline-none focus:ring-2 focus:ring-cyan-400/50 focus:border-cyan-400/50 transition-all"
                   />
                 </div>
 
                 {/* Description */}
                 <div>
-                  <label className="block font-bricolage text-sm font-semibold text-white mb-2">
+                  <label className="block font-poppins text-sm font-semibold text-cyan-200 mb-2 flex items-center gap-2">
+                    <span className="w-1 h-4 bg-gradient-to-b from-cyan-400 to-blue-500 rounded-full"></span>
                     Description
                   </label>
                   <textarea
@@ -313,17 +312,18 @@ export function UserOccasionFormModal({
                     placeholder="Add details about this occasion..."
                     rows={3}
                     disabled={isPending}
-                    className="w-full px-4 py-2.5 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400/50 resize-none"
+                    className="w-full px-4 py-2.5 rounded-lg bg-cyan-950/30 border border-cyan-500/30 text-white placeholder-cyan-300/40 focus:outline-none focus:ring-2 focus:ring-cyan-400/50 focus:border-cyan-400/50 resize-none transition-all"
                   />
                 </div>
 
                 {/* Date */}
                 <div>
-                  <label className="block font-bricolage text-sm font-semibold text-white mb-2">
+                  <label className="block font-poppins text-sm font-semibold text-cyan-200 mb-2 flex items-center gap-2">
+                    <span className="w-1 h-4 bg-gradient-to-b from-cyan-400 to-blue-500 rounded-full"></span>
                     Date *
                   </label>
                   <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
+                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-cyan-400" />
                     <input
                       type="date"
                       value={formData.dateOccasion || ""}
@@ -333,11 +333,11 @@ export function UserOccasionFormModal({
                       disabled={isPending}
                       title="Date"
                       aria-label="Date"
-                      className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-cyan-400/50"
+                      className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-cyan-950/30 border border-cyan-500/30 text-white focus:outline-none focus:ring-2 focus:ring-cyan-400/50 focus:border-cyan-400/50 transition-all"
                     />
                   </div>
                   {!isEditing && (
-                    <p className="text-[11px] text-white/50 mt-1">
+                    <p className="text-[11px] text-cyan-300/60 mt-1.5">
                       You can only create occasions for today or future dates
                     </p>
                   )}
@@ -346,11 +346,12 @@ export function UserOccasionFormModal({
                 {/* Time Range */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block font-bricolage text-sm font-semibold text-white mb-2">
+                    <label className="block font-poppins text-sm font-semibold text-cyan-200 mb-2 flex items-center gap-2">
+                      <span className="w-1 h-4 bg-gradient-to-b from-cyan-400 to-blue-500 rounded-full"></span>
                       Start Time *
                     </label>
                     <div className="relative">
-                      <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
+                      <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-cyan-400" />
                       <input
                         type="time"
                         value={formData.startTime || ""}
@@ -359,17 +360,18 @@ export function UserOccasionFormModal({
                         disabled={isPending}
                         title="Start Time"
                         aria-label="Start Time"
-                        className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-cyan-400/50"
+                        className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-cyan-950/30 border border-cyan-500/30 text-white focus:outline-none focus:ring-2 focus:ring-cyan-400/50 focus:border-cyan-400/50 transition-all"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block font-bricolage text-sm font-semibold text-white mb-2">
+                    <label className="block font-poppins text-sm font-semibold text-cyan-200 mb-2 flex items-center gap-2">
+                      <span className="w-1 h-4 bg-gradient-to-b from-cyan-400 to-blue-500 rounded-full"></span>
                       End Time *
                     </label>
                     <div className="relative">
-                      <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
+                      <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-cyan-400" />
                       <input
                         type="time"
                         value={formData.endTime || ""}
@@ -378,33 +380,18 @@ export function UserOccasionFormModal({
                         disabled={isPending}
                         title="End Time"
                         aria-label="End Time"
-                        className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-cyan-400/50"
+                        className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-cyan-950/30 border border-cyan-500/30 text-white focus:outline-none focus:ring-2 focus:ring-cyan-400/50 focus:border-cyan-400/50 transition-all"
                       />
                     </div>
                   </div>
                 </div>
 
-                {/* Weather Snapshot */}
-                <div>
-                  <label className="block font-bricolage text-sm font-semibold text-white mb-2">
-                    Weather Info
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.weatherSnapshot || ""}
-                    onChange={(e) => setFormData({ ...formData, weatherSnapshot: e.target.value })}
-                    placeholder="e.g., Sunny, 25°C"
-                    disabled={isPending}
-                    title="Weather Info"
-                    aria-label="Weather Info"
-                    className="w-full px-4 py-2.5 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400/50"
-                  />
-                </div>
+
               </div>
             </div>
 
             {/* Footer */}
-            <div className="px-8 pb-6 pt-4 shrink-0 border-t border-white/10">
+            <div className="px-8 pb-6 pt-4 shrink-0 border-t border-cyan-500/20 bg-gradient-to-r from-transparent via-cyan-500/5 to-transparent">
               <div className="flex items-center justify-between">
                 {/* Delete Button (only when editing) */}
                 {isEditing && (
