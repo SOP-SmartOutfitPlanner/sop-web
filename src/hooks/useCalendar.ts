@@ -26,6 +26,18 @@ export function useUserOccasions(params: GetUserOccasionRequest) {
 }
 
 /**
+ * Hook to fetch user occasions for a specific date
+ */
+export function useUserOccasionsByDate(params: GetUserOccasionRequest) {
+  return useQuery({
+    queryKey: ["user-occasions", "by-date", params],
+    queryFn: () => CalenderAPI.getUserOccasions(params),
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    refetchOnWindowFocus: false,
+  });
+}
+
+/**
  * Hook to fetch calendar entries (outfit-occasion links)
  */
 export function useCalendarEntries(params: GetCalenderRequest) {

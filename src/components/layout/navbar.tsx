@@ -34,6 +34,7 @@ const mainNavigationItems = [
   { path: "/wardrobe", label: "Wardrobe", icon: Shirt, enabled: true },
   { path: "/outfit", label: "Outfit", icon: Sparkles, enabled: true },
   { path: "/suggest", label: "Suggest", icon: Sparkles, enabled: true },
+  { path: "/suggest-v2", label: "Suggest V2", icon: Sparkles, enabled: true },
   { path: "/calendar", label: "Calendar", icon: CalendarDays, enabled: true },
   { path: "/community", label: "Community", icon: Users, enabled: true },
   { path: "/collections", label: "Collections", icon: ImgIcon, enabled: true },
@@ -59,11 +60,6 @@ const CUSTOM_NAV_ICONS: Record<string, { active: string; inactive: string; alt: 
     active: "/icon/blue-shirt-icon.png",
     inactive: "/icon/blue-shirt-icon.png",
     alt: "outfit",
-  },
-  "/suggest": {
-    active: "/icon/blue-ai-icon.png",
-    inactive: "/icon/blue-ai-icon.png",
-    alt: "suggest",
   },
   "/calendar": {
     active: "/icon/blue-calendar-icon.png",
