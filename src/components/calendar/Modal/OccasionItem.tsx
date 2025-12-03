@@ -215,7 +215,7 @@ export function OccasionItem({
 
           {/* Available Outfits CTA */}
           {availableOutfits.length > 0 && (
-            <div className="p-4 rounded-2xl border border-white/10 bg-white/5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="p-4 rounded-2xl border border-white/10 bg-white/5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-4">
               <div>
                 <p className="font-bricolage text-base font-semibold text-white">
                   Add more outfits to this occasion
