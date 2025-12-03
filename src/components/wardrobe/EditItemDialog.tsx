@@ -36,6 +36,7 @@ interface EditFormData {
   colors: ColorOption[];
   brand: string;
   frequencyWorn: string;
+  lastWornAt?: string;
   imgUrl: string;
   weatherSuitable: string;
   condition: string;
@@ -96,7 +97,9 @@ export function EditItemDialog({
   // Options from API
   const [categoryTreeData, setCategoryTreeData] = useState<TreeNodeData[]>([]);
   const [styles, setStyles] = useState<{ id: number; name: string }[]>([]);
-  const [occasions, setOccasions] = useState<{ id: number; name: string }[]>([]);
+  const [occasions, setOccasions] = useState<{ id: number; name: string }[]>(
+    []
+  );
   const [seasons, setSeasons] = useState<{ id: number; name: string }[]>([]);
 
   const fetchItemData = useCallback(async () => {
@@ -126,6 +129,7 @@ export function EditItemDialog({
         categoryName: item.categoryName || "",
         brand: item.brand || "",
         frequencyWorn: item.frequencyWorn || "",
+        lastWornAt: item.lastWornAt,
         imgUrl: item.imgUrl,
         weatherSuitable: item.weatherSuitable || "",
         condition: item.condition || "",
@@ -193,7 +197,6 @@ export function EditItemDialog({
     }
   };
 
-
   const handleSave = async () => {
     if (!formData) return;
 
@@ -215,7 +218,11 @@ export function EditItemDialog({
       let userId = 0;
       if (token) {
         const payload = JSON.parse(atob(token.split(".")[1]));
-        userId = payload?.UserId ? parseInt(payload.UserId) : payload?.id ? parseInt(payload.id) : 0;
+        userId = payload?.UserId
+          ? parseInt(payload.UserId)
+          : payload?.id
+          ? parseInt(payload.id)
+          : 0;
       }
 
       const updatePayload = {
@@ -310,320 +317,349 @@ export function EditItemDialog({
           </div>
         </div>
       ) : formData ? (
-                <div className="grid grid-cols-3 gap-3 h-full overflow-hidden">
-                  {/* Column 1: Image, Name, Colors */}
-                  <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-3 flex flex-col gap-2 overflow-hidden">
-                    {/* Image */}
-                    <div className="flex-shrink-0">
-                      <Label className="text-sm font-medium text-white mb-1.5 block">
-                        Image
-                      </Label>
-                      <div className="aspect-square rounded-xl overflow-hidden bg-white/5">
-                        <Image
-                          src={formData.imgUrl}
-                          alt={formData.name}
-                          width="100%"
-                          height="100%"
-                          className="object-cover"
-                          preview={true}
-                        />
-                      </div>
-                    </div>
+        <div className="grid grid-cols-3 gap-3 h-full overflow-hidden">
+          {/* Column 1: Image, Name, Colors */}
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-3 flex flex-col gap-2 overflow-hidden">
+            {/* Image */}
+            <div className="flex-shrink-0">
+              <Label className="text-sm font-medium text-white mb-1.5 block">
+                Image
+              </Label>
+              <div className="aspect-square rounded-xl overflow-hidden bg-white/5">
+                <Image
+                  src={formData.imgUrl}
+                  alt={formData.name}
+                  width="100%"
+                  height="100%"
+                  className="object-cover"
+                  preview={true}
+                />
+              </div>
+            </div>
 
-                    {/* Name */}
-                    <div className="flex-shrink-0">
-                      <Label
-                        htmlFor="name"
-                        className="text-lg font-medium text-white mb-1.5 block"
-                      >
-                        Name
-                      </Label>
-                      <Input
-                        id="name"
-                        type="text"
-                        value={formData.name}
-                        onChange={(e) =>
-                          setFormData({ ...formData, name: e.target.value })
-                        }
-                        placeholder="Item name"
-                        className="bg-white border-white/30 text-gray-900 placeholder:text-gray-400 h-9"
-                      />
-                    </div>
+            {/* Name */}
+            <div className="flex-shrink-0">
+              <Label
+                htmlFor="name"
+                className="text-lg font-medium text-white mb-1.5 block"
+              >
+                Name
+              </Label>
+              <Input
+                id="name"
+                type="text"
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+                placeholder="Item name"
+                className="bg-white border-white/30 text-gray-900 placeholder:text-gray-400 h-9"
+              />
+            </div>
 
-                    {/* Colors */}
-                    <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-                      <Label className="text-lg font-medium text-white mb-1.5 block flex-shrink-0">
-                        Colors
-                      </Label>
-                      <div className="flex gap-2 flex-wrap overflow-y-auto wizard-scrollbar">
-                        {formData.colors.map((color, index) => (
-                          <button
-                            key={index}
-                            type="button"
-                            onClick={() => handleRemoveColor(index)}
-                            className="group relative w-9 h-9 rounded-lg border-2 border-white/30 shadow-sm hover:scale-105 transition-all duration-200 flex-shrink-0"
-                            style={{ backgroundColor: color.hex }}
-                            title={`${color.hex} (click to remove)`}
-                          >
-                            <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-30 rounded-lg transition-opacity" />
-                            <X className="w-4 h-4 text-white drop-shadow-lg absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity" strokeWidth={3} />
-                          </button>
-                        ))}
-                        <ColorPicker
-                          disabledAlpha
-                          format="hex"
-                          onChangeComplete={handleAddColor}
-                          presets={[]}
-                        >
-                          <button
-                            type="button"
-                            className="w-9 h-9 rounded-lg bg-white/10 border-2 border-dashed border-white/30 text-white hover:bg-white/20 hover:border-white/50 flex items-center justify-center transition-all flex-shrink-0"
-                          >
-                            <Plus className="w-4 h-4" />
-                          </button>
-                        </ColorPicker>
-                      </div>
-                    </div>
-                  </div>
+            {/* Colors */}
+            <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+              <Label className="text-lg font-medium text-white mb-1.5 block flex-shrink-0">
+                Colors
+              </Label>
+              <div className="flex gap-2 flex-wrap overflow-y-auto wizard-scrollbar">
+                {formData.colors.map((color, index) => (
+                  <button
+                    key={index}
+                    type="button"
+                    onClick={() => handleRemoveColor(index)}
+                    className="group relative w-9 h-9 rounded-lg border-2 border-white/30 shadow-sm hover:scale-105 transition-all duration-200 flex-shrink-0"
+                    style={{ backgroundColor: color.hex }}
+                    title={`${color.hex} (click to remove)`}
+                  >
+                    <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-30 rounded-lg transition-opacity" />
+                    <X
+                      className="w-4 h-4 text-white drop-shadow-lg absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
+                      strokeWidth={3}
+                    />
+                  </button>
+                ))}
+                <ColorPicker
+                  disabledAlpha
+                  format="hex"
+                  onChangeComplete={handleAddColor}
+                  presets={[]}
+                >
+                  <button
+                    type="button"
+                    className="w-9 h-9 rounded-lg bg-white/10 border-2 border-dashed border-white/30 text-white hover:bg-white/20 hover:border-white/50 flex items-center justify-center transition-all flex-shrink-0"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                </ColorPicker>
+              </div>
+            </div>
+          </div>
 
-                  {/* Column 2: Category, Brand, Pattern, Fabric, Condition, Frequency */}
-                  <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-3 flex flex-col gap-2 overflow-y-auto wizard-scrollbar">
-                    {/* Category */}
-                    <div className="flex-shrink-0">
-                      <Label className="text-lg font-medium text-white mb-1.5 block">
-                        Category
-                      </Label>
-                      <TreeSelect
-                        showSearch
-                        value={formData.categoryId}
-                        onChange={(value) => {
-                          setFormData({
-                            ...formData,
-                            categoryId: value,
-                          });
-                        }}
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        treeData={categoryTreeData as unknown as any[]}
-                        className="w-full"
-                        size="large"
-                        placeholder="Select category"
-                        popupMatchSelectWidth={false}
-                        filterTreeNode={(search, item) =>
-                          (item.title as string)
-                            .toLowerCase()
-                            .includes(search.toLowerCase())
-                        }
-                      />
-                    </div>
+          {/* Column 2: Category, Brand, Pattern, Fabric, Condition, Frequency */}
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-3 flex flex-col gap-2 overflow-y-auto wizard-scrollbar">
+            {/* Category */}
+            <div className="flex-shrink-0">
+              <Label className="text-lg font-medium text-white mb-1.5 block">
+                Category
+              </Label>
+              <TreeSelect
+                showSearch
+                value={formData.categoryId}
+                onChange={(value) => {
+                  setFormData({
+                    ...formData,
+                    categoryId: value,
+                  });
+                }}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                treeData={categoryTreeData as unknown as any[]}
+                className="w-full"
+                size="large"
+                placeholder="Select category"
+                popupMatchSelectWidth={false}
+                filterTreeNode={(search, item) =>
+                  (item.title as string)
+                    .toLowerCase()
+                    .includes(search.toLowerCase())
+                }
+              />
+            </div>
 
-                    {/* Brand */}
-                    <div className="flex-shrink-0">
-                      <Label
-                        htmlFor="brand"
-                        className="text-lg font-medium text-white mb-1.5 block"
-                      >
-                        Brand (Optional)
-                      </Label>
-                      <Input
-                        id="brand"
-                        type="text"
-                        value={formData.brand}
-                        onChange={(e) =>
-                          setFormData({ ...formData, brand: e.target.value })
-                        }
-                        placeholder="e.g., Nike, Zara, Uniqlo"
-                        className="bg-white border-white/30 text-gray-900 placeholder:text-gray-400 h-9"
-                      />
-                    </div>
+            {/* Brand */}
+            <div className="flex-shrink-0">
+              <Label
+                htmlFor="brand"
+                className="text-lg font-medium text-white mb-1.5 block"
+              >
+                Brand (Optional)
+              </Label>
+              <Input
+                id="brand"
+                type="text"
+                value={formData.brand}
+                onChange={(e) =>
+                  setFormData({ ...formData, brand: e.target.value })
+                }
+                placeholder="e.g., Nike, Zara, Uniqlo"
+                className="bg-white border-white/30 text-gray-900 placeholder:text-gray-400 h-9"
+              />
+            </div>
 
-                    {/* Pattern */}
-                    <div className="flex-shrink-0">
-                      <Label className="text-lg font-medium text-white mb-1.5 block">
-                        Pattern
-                      </Label>
-                      <Select
-                        value={formData.pattern}
-                        onChange={(value) =>
-                          setFormData({ ...formData, pattern: value })
-                        }
-                        className="w-full"
-                        size="large"
-                        placeholder="Select pattern"
-                        options={PATTERN_OPTIONS.map((p) => ({
-                          label: p,
-                          value: p,
-                        }))}
-                      />
-                    </div>
+            {/* Pattern */}
+            <div className="flex-shrink-0">
+              <Label className="text-lg font-medium text-white mb-1.5 block">
+                Pattern
+              </Label>
+              <Select
+                value={formData.pattern}
+                onChange={(value) =>
+                  setFormData({ ...formData, pattern: value })
+                }
+                className="w-full"
+                size="large"
+                placeholder="Select pattern"
+                options={PATTERN_OPTIONS.map((p) => ({
+                  label: p,
+                  value: p,
+                }))}
+              />
+            </div>
 
-                    {/* Fabric */}
-                    <div className="flex-shrink-0">
-                      <Label className="text-lg font-medium text-white mb-1.5 block">
-                        Fabric
-                      </Label>
-                      <Select
-                        value={formData.fabric}
-                        onChange={(value) =>
-                          setFormData({ ...formData, fabric: value })
-                        }
-                        className="w-full"
-                        size="large"
-                        placeholder="Select fabric"
-                        options={FABRIC_OPTIONS.map((f) => ({
-                          label: f,
-                          value: f,
-                        }))}
-                      />
-                    </div>
+            {/* Fabric */}
+            <div className="flex-shrink-0">
+              <Label className="text-lg font-medium text-white mb-1.5 block">
+                Fabric
+              </Label>
+              <Select
+                value={formData.fabric}
+                onChange={(value) =>
+                  setFormData({ ...formData, fabric: value })
+                }
+                className="w-full"
+                size="large"
+                placeholder="Select fabric"
+                options={FABRIC_OPTIONS.map((f) => ({
+                  label: f,
+                  value: f,
+                }))}
+              />
+            </div>
 
-                    {/* Condition */}
-                    <div className="flex-shrink-0">
-                      <Label className="text-lg font-medium text-white mb-1.5 block">
-                        Condition
-                      </Label>
-                      <Input
-                        id="condition"
-                        type="text"
-                        value={formData.condition}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            condition: e.target.value,
-                          })
-                        }
-                        placeholder="e.g., New, Laundry"
-                        className="bg-white border-white/30 text-gray-900 placeholder:text-gray-400 h-9"
-                      />
-                    </div>
+            {/* Condition */}
+            <div className="flex-shrink-0">
+              <Label className="text-lg font-medium text-white mb-1.5 block">
+                Condition
+              </Label>
+              <Input
+                id="condition"
+                type="text"
+                value={formData.condition}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    condition: e.target.value,
+                  })
+                }
+                placeholder="e.g., New, Laundry"
+                className="bg-white border-white/30 text-gray-900 placeholder:text-gray-400 h-9"
+              />
+            </div>
 
-                    {/* Frequency Worn */}
-                    <div className="flex-shrink-0">
-                      <Label
-                        htmlFor="frequency"
-                        className="text-lg font-medium text-white mb-1.5 block"
-                      >
-                        Frequency Worn
-                      </Label>
-                      <Input
-                        id="frequency"
-                        type="text"
-                        value={formData.frequencyWorn}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            frequencyWorn: e.target.value,
-                          })
-                        }
-                        placeholder="e.g., Weekly, Monthly"
-                        className="bg-white border-white/30 text-gray-900 placeholder:text-gray-400 h-9"
-                      />
-                    </div>
-                  </div>
+            {/* Frequency Worn */}
+            <div className="flex-shrink-0">
+              <Label
+                htmlFor="frequency"
+                className="text-lg font-medium text-white mb-1.5 block"
+              >
+                Frequency Worn
+              </Label>
+              <Input
+                id="frequency"
+                type="text"
+                value={formData.frequencyWorn}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    frequencyWorn: e.target.value,
+                  })
+                }
+                placeholder="e.g., Weekly, Monthly"
+                className="bg-white border-white/30 text-gray-900 placeholder:text-gray-400 h-9"
+              />
+            </div>
 
-                  {/* Column 3: Weather, Styles, Occasions, Seasons */}
-                  <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-3 flex flex-col gap-2 overflow-y-auto wizard-scrollbar">
-                    {/* Weather Suitable */}
-                    <div className="flex-shrink-0">
-                      <Label className="text-lg font-medium text-white mb-1.5 block">
-                        Weather Suitable
-                      </Label>
-                      <div className="flex flex-wrap gap-1.5">
-                        {WEATHER_OPTIONS.map((weather) => (
-                          <button
-                            key={weather}
-                            type="button"
-                            onClick={() => toggleWeatherOption(weather)}
-                            className={cn(
-                              "px-2.5 py-1 rounded-md text- font-medium transition-all",
-                              formData.weatherSuitable.includes(weather)
-                                ? "bg-gradient-to-br from-orange-600 to-orange-500 text-white shadow-md"
-                                : "bg-white/5 text-white/70 hover:bg-white/10"
-                            )}
-                          >
-                            {weather}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
+            {/* Last Worn (Read-only) */}
+            <div className="flex-shrink-0">
+              <Label
+                htmlFor="lastWorn"
+                className="text-lg font-medium text-white mb-1.5 block"
+              >
+                Last Worn
+              </Label>
+              <Input
+                id="lastWorn"
+                type="text"
+                value={
+                  formData.lastWornAt
+                    ? new Date(formData.lastWornAt).toLocaleString("en-US", {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : "Never worn"
+                }
+                readOnly
+                disabled
+                className="bg-white/10 border-white/20 text-gray-300 placeholder:text-gray-500 h-9 cursor-not-allowed"
+              />
+            </div>
+          </div>
 
-                    {/* Styles */}
-                    <div className="flex-shrink-0">
-                      <Label className="text-lg font-medium text-white mb-1.5 block">
-                        Styles
-                      </Label>
-                      <div className="flex flex-wrap gap-1.5">
-                        {styles.map((style) => (
-                          <button
-                            key={style.id}
-                            type="button"
-                            onClick={() => toggleArraySelection("styleIds", style.id)}
-                            className={cn(
-                              "px-2.5 py-1 rounded-md text-sm font-medium transition-all",
-                              formData.styleIds.includes(style.id)
-                                ? "bg-gradient-to-br from-blue-600 to-blue-500 text-white shadow-md"
-                                : "bg-white/5 text-white/70 hover:bg-white/10"
-                            )}
-                          >
-                            {style.name}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
+          {/* Column 3: Weather, Styles, Occasions, Seasons */}
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-3 flex flex-col gap-2 overflow-y-auto wizard-scrollbar">
+            {/* Weather Suitable */}
+            <div className="flex-shrink-0">
+              <Label className="text-lg font-medium text-white mb-1.5 block">
+                Weather Suitable
+              </Label>
+              <div className="flex flex-wrap gap-1.5">
+                {WEATHER_OPTIONS.map((weather) => (
+                  <button
+                    key={weather}
+                    type="button"
+                    onClick={() => toggleWeatherOption(weather)}
+                    className={cn(
+                      "px-2.5 py-1 rounded-md text- font-medium transition-all",
+                      formData.weatherSuitable.includes(weather)
+                        ? "bg-gradient-to-br from-orange-600 to-orange-500 text-white shadow-md"
+                        : "bg-white/5 text-white/70 hover:bg-white/10"
+                    )}
+                  >
+                    {weather}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-                    {/* Occasions */}
-                    <div className="flex-shrink-0">
-                      <Label className="text-lg font-medium text-white mb-1.5 block">
-                        Occasions
-                      </Label>
-                      <div className="flex flex-wrap gap-1.5">
-                        {occasions.map((occasion) => (
-                          <button
-                            key={occasion.id}
-                            type="button"
-                            onClick={() =>
-                              toggleArraySelection("occasionIds", occasion.id)
-                            }
-                            className={cn(
-                              "px-2.5 py-1 rounded-md text-sm font-medium transition-all",
-                              formData.occasionIds.includes(occasion.id)
-                                ? "bg-gradient-to-br from-blue-600 to-blue-500 text-white shadow-md"
-                                : "bg-white/5 text-white/70 hover:bg-white/10"
-                            )}
-                          >
-                            {occasion.name}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
+            {/* Styles */}
+            <div className="flex-shrink-0">
+              <Label className="text-lg font-medium text-white mb-1.5 block">
+                Styles
+              </Label>
+              <div className="flex flex-wrap gap-1.5">
+                {styles.map((style) => (
+                  <button
+                    key={style.id}
+                    type="button"
+                    onClick={() => toggleArraySelection("styleIds", style.id)}
+                    className={cn(
+                      "px-2.5 py-1 rounded-md text-sm font-medium transition-all",
+                      formData.styleIds.includes(style.id)
+                        ? "bg-gradient-to-br from-blue-600 to-blue-500 text-white shadow-md"
+                        : "bg-white/5 text-white/70 hover:bg-white/10"
+                    )}
+                  >
+                    {style.name}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-                    {/* Seasons */}
-                    <div className="flex-shrink-0">
-                      <Label className="text-lg font-medium text-white mb-1.5 block">
-                        Seasons
-                      </Label>
-                      <div className="flex flex-wrap gap-1.5">
-                        {seasons.map((season) => (
-                          <button
-                            key={season.id}
-                            type="button"
-                            onClick={() =>
-                              toggleArraySelection("seasonIds", season.id)
-                            }
-                            className={cn(
-                              "px-2.5 py-1 rounded-md text-sm font-medium transition-all",
-                              formData.seasonIds.includes(season.id)
-                                ? "bg-gradient-to-br from-blue-600 to-blue-500 text-white shadow-md"
-                                : "bg-white/5 text-white/70 hover:bg-white/10"
-                            )}
-                          >
-                            {season.name}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ) : null}
+            {/* Occasions */}
+            <div className="flex-shrink-0">
+              <Label className="text-lg font-medium text-white mb-1.5 block">
+                Occasions
+              </Label>
+              <div className="flex flex-wrap gap-1.5">
+                {occasions.map((occasion) => (
+                  <button
+                    key={occasion.id}
+                    type="button"
+                    onClick={() =>
+                      toggleArraySelection("occasionIds", occasion.id)
+                    }
+                    className={cn(
+                      "px-2.5 py-1 rounded-md text-sm font-medium transition-all",
+                      formData.occasionIds.includes(occasion.id)
+                        ? "bg-gradient-to-br from-blue-600 to-blue-500 text-white shadow-md"
+                        : "bg-white/5 text-white/70 hover:bg-white/10"
+                    )}
+                  >
+                    {occasion.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Seasons */}
+            <div className="flex-shrink-0">
+              <Label className="text-lg font-medium text-white mb-1.5 block">
+                Seasons
+              </Label>
+              <div className="flex flex-wrap gap-1.5">
+                {seasons.map((season) => (
+                  <button
+                    key={season.id}
+                    type="button"
+                    onClick={() => toggleArraySelection("seasonIds", season.id)}
+                    className={cn(
+                      "px-2.5 py-1 rounded-md text-sm font-medium transition-all",
+                      formData.seasonIds.includes(season.id)
+                        ? "bg-gradient-to-br from-blue-600 to-blue-500 text-white shadow-md"
+                        : "bg-white/5 text-white/70 hover:bg-white/10"
+                    )}
+                  >
+                    {season.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </ConfirmModal>
   );
 }

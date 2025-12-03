@@ -24,6 +24,7 @@ interface ViewItemData {
   colors: ColorOption[];
   brand: string;
   frequencyWorn: string;
+  lastWornAt?: string;
   imgUrl: string;
   weatherSuitable: string;
   condition: string;
@@ -74,6 +75,7 @@ export function ViewItemDialog({
         colors: parsedColors,
         brand: item.brand || "N/A",
         frequencyWorn: item.frequencyWorn || "N/A",
+        lastWornAt: item.lastWornAt,
         imgUrl: item.imgUrl,
         weatherSuitable: item.weatherSuitable || "N/A",
         condition: item.condition || "N/A",
@@ -125,6 +127,7 @@ export function ViewItemDialog({
       colors: aiAnalysisData.colors,
       brand: originalData.brand, // Keep original brand
       frequencyWorn: originalData.frequencyWorn, // Keep original frequency
+      lastWornAt: originalData.lastWornAt, // Keep original last worn
       imgUrl: originalData.imgUrl, // Keep original image
       weatherSuitable: aiAnalysisData.weatherSuitable,
       condition: aiAnalysisData.condition,
@@ -358,7 +361,7 @@ export function ViewItemDialog({
 
                   {/* Column 2: Details */}
                   <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-3 overflow-y-auto custom-scrollbar space-y-3">
-                    {/* Category & Brand */}
+                    {/* Category */}
                     <div>
                       <p className="text-lg font-medium text-white mb-1.5">
                         Category
@@ -368,6 +371,7 @@ export function ViewItemDialog({
                       </p>
                     </div>
 
+                    {/* Brand */}
                     <div>
                       <p className="text-lg font-medium text-white mb-1.5">
                         Brand
@@ -377,24 +381,7 @@ export function ViewItemDialog({
                       </p>
                     </div>
 
-                    <div>
-                      <p className="text-lg font-medium text-white mb-1.5">
-                        Frequency Worn
-                      </p>
-                      <p className="text-white/90 bg-white/10 rounded-lg px-3 py-2 text-sm">
-                        {itemData.frequencyWorn}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-lg font-medium text-white mb-1.5">
-                        Fabric
-                      </p>
-                      <p className="text-white/90 bg-white/10 rounded-lg px-3 py-2 text-sm">
-                        {itemData.fabric}
-                      </p>
-                    </div>
-
+                    {/* Pattern */}
                     <div>
                       <p className="text-lg font-medium text-white mb-1.5">
                         Pattern
@@ -404,6 +391,17 @@ export function ViewItemDialog({
                       </p>
                     </div>
 
+                    {/* Fabric */}
+                    <div>
+                      <p className="text-lg font-medium text-white mb-1.5">
+                        Fabric
+                      </p>
+                      <p className="text-white/90 bg-white/10 rounded-lg px-3 py-2 text-sm">
+                        {itemData.fabric}
+                      </p>
+                    </div>
+
+                    {/* Condition */}
                     <div>
                       <p className="text-lg font-medium text-white mb-1.5">
                         Condition
@@ -413,18 +411,65 @@ export function ViewItemDialog({
                       </p>
                     </div>
 
+                    {/* Frequency Worn */}
                     <div>
                       <p className="text-lg font-medium text-white mb-1.5">
-                        Weather Suitable
+                        Frequency Worn
                       </p>
                       <p className="text-white/90 bg-white/10 rounded-lg px-3 py-2 text-sm">
-                        {itemData.weatherSuitable}
+                        {itemData.frequencyWorn}
+                      </p>
+                    </div>
+
+                    {/* Last Worn */}
+                    <div>
+                      <p className="text-lg font-medium text-white mb-1.5">
+                        Last Worn
+                      </p>
+                      <p className="text-white/90 bg-white/10 rounded-lg px-3 py-2 text-sm">
+                        {itemData.lastWornAt
+                          ? new Date(itemData.lastWornAt).toLocaleString(
+                              "en-US",
+                              {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              }
+                            )
+                          : "Never worn"}
                       </p>
                     </div>
                   </div>
 
                   {/* Column 3: Tags */}
                   <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-3 overflow-y-auto custom-scrollbar space-y-3">
+                    {/* Weather Suitable */}
+                    <div>
+                      <p className="text-lg font-medium text-white mb-1.5">
+                        Weather Suitable
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {itemData.weatherSuitable ? (
+                          itemData.weatherSuitable
+                            .split(", ")
+                            .map((weather, index) => (
+                              <span
+                                key={index}
+                                className="px-2 py-1 rounded-md bg-orange-500/20 border border-orange-400/30 text-orange-200 text-md"
+                              >
+                                {weather}
+                              </span>
+                            ))
+                        ) : (
+                          <p className="text-white/50 text-xs">
+                            No weather info
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
                     {/* Styles */}
                     <div>
                       <p className="text-lg font-medium text-white mb-1.5">

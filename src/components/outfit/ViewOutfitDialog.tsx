@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, memo, useMemo, useState } from "react";
+import { useEffect, memo, useState } from "react";
 import { X, Heart, Edit, Trash2, User, ExternalLink } from "lucide-react";
 import GlassButton from "@/components/ui/glass-button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -14,11 +14,29 @@ import { OutfitItemCard } from "./OutfitItemCard";
 import { ViewItemDialog } from "@/components/wardrobe/ViewItemDialog";
 import { useRouter } from "next/navigation";
 
+// Interface matching OutfitItemCard props
+interface OutfitItemCardProps {
+  itemId: number;
+  id?: number;
+  name: string;
+  categoryId: number;
+  categoryName: string;
+  color: string;
+  imgUrl: string;
+  fabric: string;
+  brand?: string | null;
+  weatherSuitable: string;
+  condition: string;
+  pattern: string;
+  aiDescription?: string;
+  itemType?: string;
+}
+
 interface ViewOutfitDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   outfit: Outfit | SavedOutfit | null;
-  onEdit?: (outfit: Outfit | SavedOutfit) => void;
+  onEdit?: (outfit: Outfit) => void;
   onDelete?: (outfitId: number) => void;
   onUnsave?: (
     outfitId: number,
@@ -76,8 +94,8 @@ const ViewOutfitDialogComponent = ({
   };
 
   const handleEditClick = () => {
-    if (outfit && onEdit) {
-      onEdit(outfit);
+    if (outfit && onEdit && !isSavedOutfit) {
+      onEdit(outfit as Outfit);
       // Don't close immediately - let parent handle the transition
       setTimeout(() => {
         handleClose();
@@ -218,15 +236,15 @@ const ViewOutfitDialogComponent = ({
                 <div className="flex-1">
                   <h2 className="font-dela-gothic text-4xl font-bold bg-clip-text text-transparent bg-linear-to-r from-white via-blue-100 to-cyan-200">
                     {isSavedOutfit && savedOutfit
-                      ? savedOutfit.outfitName
-                      : outfit.name}
+                      ? savedOutfit.outfitName || "Unnamed Outfit"
+                      : (outfit as Outfit).name}
                   </h2>
                   {((isSavedOutfit && savedOutfit?.outfitDescription) ||
-                    (!isSavedOutfit && outfit.description)) && (
+                    (!isSavedOutfit && (outfit as Outfit).description)) && (
                     <p className="font-bricolage text-lg text-gray-200 mt-2">
                       {isSavedOutfit && savedOutfit
                         ? savedOutfit.outfitDescription
-                        : outfit.description}
+                        : (outfit as Outfit).description}
                     </p>
                   )}
 
@@ -237,7 +255,7 @@ const ViewOutfitDialogComponent = ({
                       <span>
                         {isSavedOutfit && savedOutfit
                           ? savedOutfit.sourceOwnerDisplayName || "Unknown"
-                          : outfit.userDisplayName}
+                          : (outfit as Outfit).userDisplayName}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -267,10 +285,10 @@ const ViewOutfitDialogComponent = ({
               {/* Items Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                 {outfit.items.map((item) => (
-                  <div key={item.itemId || item.id} className="h-[420px]">
+                  <div key={item.itemId} className="h-[420px]">
                     <OutfitItemCard
-                      item={item}
-                      onClick={() => handleItemClick(item.itemId || item.id!)}
+                      item={item as unknown as OutfitItemCardProps}
+                      onClick={() => handleItemClick(item.itemId)}
                     />
                   </div>
                 ))}
@@ -288,12 +306,12 @@ const ViewOutfitDialogComponent = ({
                       disabled={isPending}
                       variant="custom"
                       backgroundColor={
-                        outfit.isFavorite
+                        (outfit as Outfit).isFavorite
                           ? "rgba(239, 68, 68, 0.6)"
                           : "rgba(255, 255, 255, 0.2)"
                       }
                       borderColor={
-                        outfit.isFavorite
+                        (outfit as Outfit).isFavorite
                           ? "rgba(239, 68, 68, 0.8)"
                           : "rgba(255, 255, 255, 0.4)"
                       }
@@ -303,10 +321,12 @@ const ViewOutfitDialogComponent = ({
                     >
                       <Heart
                         className={`w-5 h-5 ${
-                          outfit.isFavorite ? "fill-current" : ""
+                          (outfit as Outfit).isFavorite ? "fill-current" : ""
                         }`}
                       />
-                      {outfit.isFavorite ? "Unfavorite" : "Favorite"}
+                      {(outfit as Outfit).isFavorite
+                        ? "Unfavorite"
+                        : "Favorite"}
                     </GlassButton>
                   )}
 
@@ -401,7 +421,11 @@ const ViewOutfitDialogComponent = ({
         onOpenChange={setIsDeleteDialogOpen}
         onConfirm={confirmDelete}
         title="Delete Outfit?"
-        description={`Are you sure you want to delete "${outfit?.name}"? This action cannot be undone and will permanently remove this outfit from your collection.`}
+        description={`Are you sure you want to delete "${
+          isSavedOutfit && savedOutfit
+            ? savedOutfit.outfitName
+            : (outfit as Outfit)?.name
+        }"? This action cannot be undone and will permanently remove this outfit from your collection.`}
         confirmText="Delete Outfit"
         cancelText="Cancel"
         variant="danger"
@@ -417,7 +441,9 @@ const ViewOutfitDialogComponent = ({
           savedOutfit?.sourceType === "Post" ? "Posts" : "Collections"
         }?`}
         description={`Are you sure you want to remove "${
-          isSavedOutfit && savedOutfit ? savedOutfit.outfitName : outfit?.name
+          isSavedOutfit && savedOutfit
+            ? savedOutfit.outfitName || "this outfit"
+            : (outfit as Outfit)?.name || "this outfit"
         }" from your saved ${
           savedOutfit?.sourceType === "Post" ? "posts" : "collections"
         }? You can save it again later.`}
@@ -443,11 +469,13 @@ const ViewOutfitDialogComponent = ({
 export const ViewOutfitDialog = memo(
   ViewOutfitDialogComponent,
   (prevProps, nextProps) => {
+    const isSaved = nextProps.outfit && "sourceType" in nextProps.outfit;
     return (
       prevProps.open === nextProps.open &&
       prevProps.outfit?.id === nextProps.outfit?.id &&
-      prevProps.outfit?.isFavorite === nextProps.outfit?.isFavorite &&
-      prevProps.outfit?.isSaved === nextProps.outfit?.isSaved &&
+      !isSaved &&
+      (prevProps.outfit as Outfit)?.isFavorite ===
+        (nextProps.outfit as Outfit)?.isFavorite &&
       prevProps.onEdit === nextProps.onEdit &&
       prevProps.onDelete === nextProps.onDelete
     );

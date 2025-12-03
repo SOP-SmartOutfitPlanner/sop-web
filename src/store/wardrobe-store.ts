@@ -103,8 +103,8 @@ const filterItems = (
     if (
       filters.occasions?.length &&
       !filters.occasions.some((o) =>
-        item.occasions?.some(occasion =>
-          typeof occasion === 'string'
+        item.occasions?.some((occasion) =>
+          typeof occasion === "string"
             ? occasion === o
             : occasion.name?.toLowerCase() === o.toLowerCase()
         )
@@ -114,8 +114,8 @@ const filterItems = (
 
     // Collection filter - based on occasions or tags
     if (filters.collectionId && filters.collectionId !== "all") {
-      const hasOccasion = item.occasions?.some(occasion =>
-        typeof occasion === 'string'
+      const hasOccasion = item.occasions?.some((occasion) =>
+        typeof occasion === "string"
           ? occasion === filters.collectionId
           : occasion.name?.toLowerCase() === filters.collectionId?.toLowerCase()
       );
@@ -132,8 +132,8 @@ const filterItems = (
     if (
       filters.seasons?.length &&
       !filters.seasons.some((s) =>
-        item.seasons?.some(season =>
-          typeof season === 'string'
+        item.seasons?.some((season) =>
+          typeof season === "string"
             ? season === s
             : season.name?.toLowerCase() === s.toLowerCase()
         )
@@ -143,7 +143,9 @@ const filterItems = (
     if (
       filters.colors?.length &&
       !filters.colors.some((c) =>
-        item.colors?.some((ic) => ic.name.toLowerCase().includes(c.toLowerCase()))
+        item.colors?.some((ic) =>
+          ic.name.toLowerCase().includes(c.toLowerCase())
+        )
       )
     )
       return false;
@@ -221,14 +223,14 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const state = get();
-      console.log('📦 fetchItems - viewMode:', state.viewMode);
-      console.log('📦 fetchItems - filters:', state.filters);
-      console.log('📦 fetchItems - searchQuery:', state.searchQuery);
+      console.log("📦 fetchItems - viewMode:", state.viewMode);
+      console.log("📦 fetchItems - filters:", state.filters);
+      console.log("📦 fetchItems - searchQuery:", state.searchQuery);
 
       if (state.viewMode === "saved-from-posts") {
         // Fetch saved items from community posts
         const { communityAPI } = await import("@/lib/api/community-api");
-        
+
         const apiFilters = {
           search: state.searchQuery || undefined,
           categoryId: state.filters.categoryId,
@@ -237,8 +239,8 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
           occasionId: state.filters.occasionId,
           sortByDate: state.filters.sortByDate,
         };
-        
-        console.log('📦 Saved mode - API filters:', apiFilters);
+
+        console.log("📦 Saved mode - API filters:", apiFilters);
 
         const response = await communityAPI.getSavedItemsPaginated(
           state.currentPage,
@@ -265,7 +267,7 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
             fabric: item.fabric,
             isAnalyzed: item.isAnalyzed,
             aiConfidence: item.aiConfidence,
-            tag: item.occasions.map(o => o.name).join(", "),
+            tag: item.occasions.map((o) => o.name).join(", "),
             usageCount: item.usageCount,
             lastWornAt: item.lastWornAt,
             itemType: item.itemType,
@@ -277,7 +279,7 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
 
         // No need for client-side filtering since API already filtered
         const sorted = sortItems(items, state.sortBy);
-        
+
         set({
           items,
           rawApiItems: [], // Saved items are read-only, no raw API items
@@ -377,13 +379,13 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
   // ⚡ Optimistic update: Add item immediately without API fetch
   addItemOptimistic: (apiItem) => {
     const newItem = apiItemToWardrobeItem(apiItem);
-    
+
     set((state) => {
       const newItems = [...state.items, newItem];
       const newRawItems = [...state.rawApiItems, apiItem];
       const filtered = filterItems(newItems, state.filters, state.searchQuery);
       const sorted = sortItems(filtered, state.sortBy);
-      
+
       return {
         items: newItems,
         rawApiItems: newRawItems,
@@ -412,7 +414,11 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
       // Convert WardrobeItem fields to API format
       const apiUpdateData: Partial<CreateWardrobeItemRequest> = {
         name: updatedData.name,
-        color: updatedData.color || (typeof updatedData.colors?.[0] === 'object' ? updatedData.colors[0].name : updatedData.colors?.[0]),
+        color:
+          updatedData.color ||
+          (typeof updatedData.colors?.[0] === "object"
+            ? updatedData.colors[0].name
+            : updatedData.colors?.[0]),
         brand: updatedData.brand,
         imgUrl: updatedData.imageUrl,
         // Add other necessary fields as needed
@@ -481,7 +487,7 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
 
   // Filter functionality
   setFilters: (filters) => {
-    console.log('🔍 setFilters called with:', filters);
+    console.log("🔍 setFilters called with:", filters);
     set((state) => {
       const filtered = filterItems(state.items, filters, state.searchQuery);
       const sorted = sortItems(filtered, state.sortBy);
@@ -492,7 +498,7 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
       };
     });
     // Fetch new items from API with updated filters
-    console.log('🔄 Triggering fetchItems after filter change');
+    console.log("🔄 Triggering fetchItems after filter change");
     get().fetchItems();
   },
 
@@ -615,15 +621,15 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
         analyzingItem: {
           id,
           imageUrl: item.imageUrl,
-          name: item.name
+          name: item.name,
         },
-        analysisProgress: 0
+        analysisProgress: 0,
       });
 
       // Simulate progress
       const progressInterval = setInterval(() => {
         set((state) => ({
-          analysisProgress: Math.min(state.analysisProgress + 10, 90)
+          analysisProgress: Math.min(state.analysisProgress + 10, 90),
         }));
       }, 200);
 
@@ -779,20 +785,24 @@ const apiItemToWardrobeItem = (apiItem: ApiWardrobeItem): WardrobeItem => {
     return seasons;
   };
 
-  const type = getTypeFromCategory(apiItem.categoryName || apiItem.category?.name || "");
+  const type = getTypeFromCategory(
+    apiItem.categoryName || apiItem.category?.name || ""
+  );
   const seasons = parseSeasons(apiItem.weatherSuitable);
   const occasions: ("casual" | "formal" | "sport" | "travel")[] = ["casual"]; // Default to casual
 
   // Parse color JSON string into ColorInfo array
-  const parseColors = (colorString: string | null): Array<{ name: string; hex: string }> => {
+  const parseColors = (
+    colorString: string | null
+  ): Array<{ name: string; hex: string }> => {
     if (!colorString) return [];
 
     try {
       const parsed = JSON.parse(colorString);
       if (Array.isArray(parsed)) {
-        return parsed.map(c => ({
+        return parsed.map((c) => ({
           name: c.name || "Unknown",
-          hex: c.hex || "#808080"
+          hex: c.hex || "#808080",
         }));
       }
     } catch {
@@ -817,6 +827,7 @@ const apiItemToWardrobeItem = (apiItem: ApiWardrobeItem): WardrobeItem => {
     occasions: apiItem.occasions || occasions,
     status: "active", // Default status
     frequencyWorn: apiItem.frequencyWorn || undefined,
+    lastWornAt: apiItem.lastWornAt,
     // Additional fields from API
     aiDescription: apiItem.aiDescription,
     weatherSuitable: apiItem.weatherSuitable || undefined,

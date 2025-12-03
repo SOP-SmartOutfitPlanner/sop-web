@@ -9,7 +9,16 @@ export type TypeKind = "top" | "bottom" | "shoes" | "outer" | "accessory";
 
 export type Season = "spring" | "summer" | "fall" | "winter";
 
-export type Occasion = "casual" | "formal" | "sport" | "travel" | "work" | "party" | "date" | "vacation" | "smart";
+export type Occasion =
+  | "casual"
+  | "formal"
+  | "sport"
+  | "travel"
+  | "work"
+  | "party"
+  | "date"
+  | "vacation"
+  | "smart";
 
 export type ColorInfo = {
   name: string;
@@ -31,6 +40,7 @@ export type WardrobeItem = {
   timesWorn?: number;
   frequencyWorn?: string;
   lastWorn?: string; // ISO date string
+  lastWornAt?: string; // ISO date string
   tags?: string[];
   createdAt: string; // ISO date string
   updatedAt: string; // ISO date string
@@ -62,7 +72,6 @@ export interface Filter {
   brand?: string;
   tags?: string[];
 }
-
 
 export interface ApiResponse<T> {
   data: T;

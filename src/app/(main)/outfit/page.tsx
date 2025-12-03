@@ -17,7 +17,7 @@ import {
 import { useCreateCalendarEntry, useUserOccasions } from "@/hooks/useCalendar";
 import { useOutfitStore } from "@/store/outfit-store";
 import { wardrobeAPI } from "@/lib/api/wardrobe-api";
-import { communityAPI, CommunityPost } from "@/lib/api/community-api";
+import { communityAPI } from "@/lib/api/community-api";
 import { useAuthStore } from "@/store/auth-store";
 import { Outfit, SavedOutfit } from "@/types/outfit";
 import { Post, apiPostToPost } from "@/types/community";
@@ -69,7 +69,6 @@ export default function OutfitPage() {
   const [isVirtualTryOnDialogOpen, setIsVirtualTryOnDialogOpen] =
     useState(false);
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
-  const [viewingPostId, setViewingPostId] = useState<number | null>(null);
   const [viewingPost, setViewingPost] = useState<Post | null>(null);
   const [isLoadingPost, setIsLoadingPost] = useState(false);
   const pageSize = 12;
@@ -108,66 +107,31 @@ export default function OutfitPage() {
     viewMode === "my-outfits" // Only fetch when in my-outfits mode
   );
 
-  // Fetch saved outfits from collections
+  // Fetch saved outfits from both posts and collections
   const {
-    data: savedFromCollectionsData,
-    isLoading: isCollectionsLoading,
-    error: collectionsError,
-    isError: isCollectionsError,
+    data: savedOutfitsData,
+    isLoading: isSavedLoading,
+    error: savedError,
+    isError: isSavedError,
   } = useSavedOutfits(
     {
       pageIndex: currentPage,
       pageSize,
       search: searchQuery,
-      sourceType: "Collection",
+      // Don't specify sourceType to get both posts and collections
     },
-    viewMode === "saved-from-collections"
-  );
-
-  // Fetch saved outfits from posts
-  const {
-    data: savedFromPostsData,
-    isLoading: isPostsLoading,
-    error: postsError,
-    isError: isPostsError,
-  } = useSavedOutfits(
-    {
-      pageIndex: currentPage,
-      pageSize,
-      search: searchQuery,
-      sourceType: "Post",
-    },
-    viewMode === "saved-from-posts"
+    viewMode === "saved"
   );
 
   // Select data based on view mode
-  const displayData =
-    viewMode === "my-outfits"
-      ? data
-      : viewMode === "saved-from-collections"
-      ? savedFromCollectionsData
-      : savedFromPostsData;
+  const displayData = viewMode === "my-outfits" ? data : savedOutfitsData;
 
   const displayIsLoading =
-    viewMode === "my-outfits"
-      ? isLoading
-      : viewMode === "saved-from-collections"
-      ? isCollectionsLoading
-      : isPostsLoading;
+    viewMode === "my-outfits" ? isLoading : isSavedLoading;
 
-  const displayError =
-    viewMode === "my-outfits"
-      ? error
-      : viewMode === "saved-from-collections"
-      ? collectionsError
-      : postsError;
+  const displayError = viewMode === "my-outfits" ? error : savedError;
 
-  const displayIsError =
-    viewMode === "my-outfits"
-      ? isError
-      : viewMode === "saved-from-collections"
-      ? isCollectionsError
-      : isPostsError;
+  const displayIsError = viewMode === "my-outfits" ? isError : isSavedError;
 
   // Fetch wardrobe items for outfit creation
   const { data: wardrobeData } = useQuery({
@@ -175,7 +139,10 @@ export default function OutfitPage() {
     queryFn: () => wardrobeAPI.getItems(1, 100),
   });
 
-  const outfits = displayData?.data?.data || [];
+  const outfits =
+    displayData?.data?.data && Array.isArray(displayData.data.data)
+      ? displayData.data.data
+      : [];
   const metaData = displayData?.data?.metaData;
   const wardrobeItems = wardrobeData?.data || [];
   const isReadOnly = viewMode !== "my-outfits";
@@ -214,7 +181,6 @@ export default function OutfitPage() {
   const handleOpenPost = useCallback(async (postId: number) => {
     try {
       setIsLoadingPost(true);
-      setViewingPostId(postId);
       const communityPost = await communityAPI.getPostById(postId);
       const post = apiPostToPost(communityPost);
       setViewingPost(post);
@@ -222,7 +188,6 @@ export default function OutfitPage() {
     } catch (error) {
       console.error("Failed to fetch post:", error);
       toast.error("Failed to load post");
-      setViewingPostId(null);
     } finally {
       setIsLoadingPost(false);
     }
@@ -233,7 +198,6 @@ export default function OutfitPage() {
 
     // Optimistically update the UI
     const previousState = viewingPost;
-    const wasLiked = viewingPost.isLiked;
 
     setViewingPost({
       ...viewingPost,
@@ -259,7 +223,6 @@ export default function OutfitPage() {
 
   const handleClosePostModal = useCallback(() => {
     setIsPostModalOpen(false);
-    setViewingPostId(null);
     setViewingPost(null);
   }, []);
 
