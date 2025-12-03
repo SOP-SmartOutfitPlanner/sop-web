@@ -34,7 +34,6 @@ const mainNavigationItems = [
   { path: "/wardrobe", label: "Wardrobe", icon: Shirt, enabled: true },
   { path: "/outfit", label: "Outfit", icon: Sparkles, enabled: true },
   { path: "/suggest", label: "Suggest", icon: Sparkles, enabled: true },
-  { path: "/suggest-v2", label: "Suggest V2", icon: Sparkles, enabled: true },
   { path: "/calendar", label: "Calendar", icon: CalendarDays, enabled: true },
   { path: "/community", label: "Community", icon: Users, enabled: true },
   { path: "/collections", label: "Collections", icon: ImgIcon, enabled: true },
