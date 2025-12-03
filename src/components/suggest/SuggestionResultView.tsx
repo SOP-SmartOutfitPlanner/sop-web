@@ -74,19 +74,28 @@ export function SuggestionResultView({
       return;
     }
 
+    // If outfit already created, don't create again
+    if (createdOutfitId) {
+      toast.success("Outfit already added!");
+      onClose?.();
+      return;
+    }
+
     setIsAddingToWardrobe(true);
     const loadingToast = toast.loading("Adding to your outfit...");
 
     try {
       const itemIds = items.map((item) => item.id);
-      await outfitAPI.createOutfit({
+      const outfitResponse = await outfitAPI.createOutfit({
         name: `AI Suggested Outfit - ${new Date().toLocaleDateString()}`,
         description: reason,
         itemIds: itemIds,
       });
 
+      // Save the created outfit ID for later use
+      setCreatedOutfitId(outfitResponse.data.id);
+
       toast.success("Added successfully to your outfit!", { id: loadingToast });
-      onClose?.();
     } catch (error) {
       console.error("Error adding outfit to wardrobe:", error);
       toast.error(
