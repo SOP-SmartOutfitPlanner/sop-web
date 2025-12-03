@@ -262,14 +262,20 @@ class OutfitAPI {
    * Get AI outfit suggestion V2 based on weather with multiple outfit options
    * @param userId - User ID
    * @param totalOutfit - Number of outfit suggestions to generate (2 or 3)
+   * @param gapDay - Optional number of days to avoid recently worn items
+   * @param targetDate - Optional target date for the outfit suggestion (defaults to today)
    * @param occasionId - Optional occasion ID for filtering suggestions
+   * @param userOccasionId - Optional user's specific occasion/event ID for detailed context
    * @param weather - Optional weather string
    * @returns Promise with array of suggested outfits
    */
   async getSuggestionV2(
     userId: number,
     totalOutfit: number,
+    gapDay?: number,
+    targetDate?: string,
     occasionId?: number,
+    userOccasionId?: number,
     weather?: string
   ): Promise<{
     statusCode: number;
@@ -284,8 +290,20 @@ class OutfitAPI {
       totalOutfit,
     };
 
+    if (gapDay !== undefined) {
+      params.gapDay = gapDay;
+    }
+
+    if (targetDate) {
+      params.targetDate = targetDate;
+    }
+
     if (occasionId) {
       params.occasionId = occasionId;
+    }
+
+    if (userOccasionId) {
+      params.userOccasionId = userOccasionId;
     }
 
     if (weather) {

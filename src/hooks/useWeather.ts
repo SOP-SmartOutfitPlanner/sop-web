@@ -41,23 +41,27 @@ export const useWeather = (options: UseWeatherOptions = {}) => {
 
     if (parts.length >= 3) {
       // "province, city, ward" format
-      // Try first 2 parts (province, city)
+      // Try first 2 parts (province, city) - most likely to work
       searchTerms.push(parts.slice(0, 2).join(', '));
-      searchTerms.push(parts[0]); // Just the first part (province/city)
-      searchTerms.push(parts[1]); // Just the second part (city/district)
+      // Try just major parts like provinces/cities
+      searchTerms.push(parts[0]);
+      if (parts[1]) searchTerms.push(parts[1]);
     } else if (parts.length === 2) {
       // "province, city" or "city, province" - try both combinations
-      searchTerms.push(parts.join(', ')); // Full "province, city"
-      searchTerms.push(parts[0]); // Just first part
-      searchTerms.push(parts[1]); // Just second part
+      searchTerms.push(parts.join(', ')); 
+      searchTerms.push(parts[0]);
+      searchTerms.push(parts[1]);
     } else if (parts.length === 1) {
-      // Just "city"
       searchTerms.push(parts[0]);
     }
 
-    // Also add the full location string as a fallback
-    if (!searchTerms.includes(location)) {
-      searchTerms.push(location);
+    // Also add simplified versions (remove special chars/diacritics if needed)
+    // Add major Vietnamese cities as fallback if parsing fails
+    const majorCities = ['Ho Chi Minh', 'Hanoi', 'Da Nang', 'Can Tho', 'Hai Phong'];
+    for (const city of majorCities) {
+      if (location.toLowerCase().includes(city.toLowerCase()) && !searchTerms.some(term => term.toLowerCase().includes(city.toLowerCase()))) {
+        searchTerms.push(city);
+      }
     }
 
     // Try each search term until we find a match
@@ -67,19 +71,20 @@ export const useWeather = (options: UseWeatherOptions = {}) => {
 
         if (response.data?.cities && response.data.cities.length > 0) {
           const city = response.data.cities[0];
-
+          console.log(`✅ Found city for "${searchTerm}":`, city.name);
           return {
             latitude: city.latitude,
             longitude: city.longitude,
           };
         }
       } catch (error) {
-        console.error(`Failed to search for "${searchTerm}":`, error);
+        console.warn(`Failed to search for "${searchTerm}":`, error);
         // Continue to next search term
       }
     }
 
-    console.error("No matching city found for location:", location);
+    console.warn("❌ No matching city found for location:", location);
+    console.warn("Tried search terms:", searchTerms);
     return null;
   };
 
@@ -120,50 +125,50 @@ export const useWeather = (options: UseWeatherOptions = {}) => {
       setIsRequestingLocation(true);
       setLocationError(null);
 
-      // First, try profile location as a fallback in case browser location fails
-      let fallbackCoords: Coordinates | null = null;
+      // Strategy 1: Try profile location FIRST
+      console.log("📍 Trying profile location:", user?.location);
       try {
-        fallbackCoords = await getUserCoordinatesFromProfile();
-      } catch {
-        // Profile location error - continue to browser geolocation
+        const profileCoords = await getUserCoordinatesFromProfile();
+        if (profileCoords) {
+          console.log("✅ Profile location found:", profileCoords);
+          setCoordinates(profileCoords);
+          setLocationError(null);
+          setIsRequestingLocation(false);
+          return;
+        } else {
+          console.warn("⚠️ Profile location not found or invalid, trying browser location...");
+        }
+      } catch (profileError) {
+        console.error("❌ Profile location error:", profileError);
       }
 
-      // Priority: Try to get user's browser location
+      // Strategy 2: Request browser geolocation
       if (navigator.geolocation) {
         try {
+          console.log("🌍 Requesting browser location permission...");
           const coords = await weatherAPI.getCurrentLocation();
+          console.log("✅ Browser location acquired:", coords);
           setCoordinates(coords);
           setLocationError(null);
           setIsRequestingLocation(false);
           return;
-        } catch {
-          // Browser location failed, use profile location if available
-          if (fallbackCoords) {
-            setCoordinates(fallbackCoords);
-            setLocationError(null);
-            setIsRequestingLocation(false);
-            return;
-          }
-        }
-      } else {
-        // No geolocation support, use profile location
-        if (fallbackCoords) {
-          setCoordinates(fallbackCoords);
-          setLocationError(null);
-          setIsRequestingLocation(false);
-          return;
+        } catch (geoError) {
+          console.warn("⚠️ Browser location denied or failed:", geoError);
         }
       }
 
-      // No location available at all
-      setLocationError(
-        "Unable to determine location. Please share your location or update your profile with a city name."
-      );
+      // Strategy 3: Fallback to Ho Chi Minh City hardcoded
+      console.log("🏛️ Using default location: Ho Chi Minh City");
+      const hoChiMinhCoords: Coordinates = {
+        latitude: 10.8231,
+        longitude: 106.6297,
+      };
+      setCoordinates(hoChiMinhCoords);
+      setLocationError(null);
       setIsRequestingLocation(false);
     };
 
     // Only run if we don't have coordinates AND user is loaded
-    // (user can be loaded without location, that's ok - we'll try browser location)
     if (enabled && !coordinates && user !== null) {
       initializeLocation();
     }
