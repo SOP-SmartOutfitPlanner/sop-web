@@ -72,8 +72,15 @@ export interface GetOutfitByIdResponse {
 export interface GetOutfitsFavoriteResponse {
   statusCode: number;
   message: string;
+  data: Outfit;
+}
+
+export interface GetFavoriteOutfitsListResponse {
+  statusCode: number;
+  message: string;
   data: Outfit[];
 }
+
 export interface EditOutfitResponse {
   statusCode: number;
   message: string;

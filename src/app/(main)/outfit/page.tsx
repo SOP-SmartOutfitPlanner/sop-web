@@ -78,7 +78,7 @@ export default function OutfitPage() {
   const {
     searchQuery,
     showFavorites,
-    showSaved,
+    viewMode,
     isCreateDialogOpen,
     setCreateDialogOpen,
   } = useOutfitStore();
@@ -96,36 +96,78 @@ export default function OutfitPage() {
     Today: true,
   });
 
-  // Fetch regular outfits or saved outfits based on showSaved
-  const { data, isLoading, error, isError } = useOutfits({
-    pageIndex: currentPage,
-    pageSize,
-    takeAll: false,
-    search: searchQuery,
-    isFavorite: showFavorites ? true : undefined,
-    isSaved: showSaved ? undefined : undefined, // Don't use isSaved param for regular query
-  });
+  // Fetch regular outfits when in my-outfits mode
+  const { data, isLoading, error, isError } = useOutfits(
+    {
+      pageIndex: currentPage,
+      pageSize,
+      takeAll: false,
+      search: searchQuery,
+      isFavorite: showFavorites ? true : undefined,
+    },
+    viewMode === "my-outfits" // Only fetch when in my-outfits mode
+  );
 
-  // Fetch saved outfits when showSaved is true
+  // Fetch saved outfits from collections
   const {
-    data: savedOutfitsData,
-    isLoading: isSavedLoading,
-    error: savedError,
-    isError: isSavedError,
+    data: savedFromCollectionsData,
+    isLoading: isCollectionsLoading,
+    error: collectionsError,
+    isError: isCollectionsError,
   } = useSavedOutfits(
     {
       pageIndex: currentPage,
       pageSize,
       search: searchQuery,
+      sourceType: "Collection",
     },
-    showSaved // Only fetch when showSaved is true
+    viewMode === "saved-from-collections"
   );
 
-  // Use saved outfits data when showSaved is true
-  const displayData = showSaved ? savedOutfitsData : data;
-  const displayIsLoading = showSaved ? isSavedLoading : isLoading;
-  const displayError = showSaved ? savedError : error;
-  const displayIsError = showSaved ? isSavedError : isError;
+  // Fetch saved outfits from posts
+  const {
+    data: savedFromPostsData,
+    isLoading: isPostsLoading,
+    error: postsError,
+    isError: isPostsError,
+  } = useSavedOutfits(
+    {
+      pageIndex: currentPage,
+      pageSize,
+      search: searchQuery,
+      sourceType: "Post",
+    },
+    viewMode === "saved-from-posts"
+  );
+
+  // Select data based on view mode
+  const displayData =
+    viewMode === "my-outfits"
+      ? data
+      : viewMode === "saved-from-collections"
+      ? savedFromCollectionsData
+      : savedFromPostsData;
+
+  const displayIsLoading =
+    viewMode === "my-outfits"
+      ? isLoading
+      : viewMode === "saved-from-collections"
+      ? isCollectionsLoading
+      : isPostsLoading;
+
+  const displayError =
+    viewMode === "my-outfits"
+      ? error
+      : viewMode === "saved-from-collections"
+      ? collectionsError
+      : postsError;
+
+  const displayIsError =
+    viewMode === "my-outfits"
+      ? isError
+      : viewMode === "saved-from-collections"
+      ? isCollectionsError
+      : isPostsError;
 
   // Fetch wardrobe items for outfit creation
   const { data: wardrobeData } = useQuery({
@@ -133,13 +175,10 @@ export default function OutfitPage() {
     queryFn: () => wardrobeAPI.getItems(1, 100),
   });
 
-  const outfits = showSaved
-    ? savedOutfitsData?.data?.data || []
-    : data?.data?.data || [];
-  const metaData = showSaved
-    ? savedOutfitsData?.data?.metaData
-    : data?.data?.metaData;
+  const outfits = displayData?.data?.data || [];
+  const metaData = displayData?.data?.metaData;
   const wardrobeItems = wardrobeData?.data || [];
+  const isReadOnly = viewMode !== "my-outfits";
 
   // Log error for debugging
   useEffect(() => {
@@ -375,6 +414,7 @@ export default function OutfitPage() {
               size="md"
               onClick={() => setIsVirtualTryOnDialogOpen(true)}
               className="gap-1.5"
+              disabled={isReadOnly}
             >
               <Sparkles className="w-4 h-4" />
               Virtual Try-On
@@ -384,6 +424,7 @@ export default function OutfitPage() {
               size="md"
               onClick={() => setCreateDialogOpen(true)}
               className="gap-1.5"
+              disabled={isReadOnly}
             >
               <Plus className="w-4 h-4" />
               Create Outfit
@@ -423,13 +464,13 @@ export default function OutfitPage() {
         <OutfitGrid
           outfits={outfits}
           isLoading={displayIsLoading}
-          onEditOutfit={showSaved ? undefined : handleEditOutfit}
-          onDeleteOutfit={showSaved ? undefined : handleDeleteOutfit}
-          onUnsaveOutfit={showSaved ? handleUnsaveOutfit : undefined}
+          onEditOutfit={isReadOnly ? undefined : handleEditOutfit}
+          onDeleteOutfit={isReadOnly ? undefined : handleDeleteOutfit}
+          onUnsaveOutfit={isReadOnly ? handleUnsaveOutfit : undefined}
           onViewOutfit={handleViewOutfit}
-          onUseToday={showSaved ? undefined : handleUseToday}
-          onOpenPost={showSaved ? handleOpenPost : undefined}
-          isSavedView={showSaved}
+          onUseToday={isReadOnly ? undefined : handleUseToday}
+          onOpenPost={isReadOnly ? handleOpenPost : undefined}
+          isSavedView={isReadOnly}
         />
 
         {/* Pagination */}
@@ -487,10 +528,10 @@ export default function OutfitPage() {
           open={isViewDialogOpen}
           onOpenChange={setIsViewDialogOpen}
           outfit={viewingOutfit}
-          onEdit={showSaved ? undefined : handleEditOutfit}
-          onDelete={showSaved ? undefined : handleDeleteOutfit}
-          onUnsave={showSaved ? handleUnsaveOutfit : undefined}
-          onOpenPost={showSaved ? handleOpenPost : undefined}
+          onEdit={isReadOnly ? undefined : handleEditOutfit}
+          onDelete={isReadOnly ? undefined : handleDeleteOutfit}
+          onUnsave={isReadOnly ? handleUnsaveOutfit : undefined}
+          onOpenPost={isReadOnly ? handleOpenPost : undefined}
         />
 
         {/* Post Modal for viewing source posts */}
