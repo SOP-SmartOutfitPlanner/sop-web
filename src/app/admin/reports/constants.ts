@@ -79,25 +79,29 @@ export const statusMetadata: Record<
 > = {
   PENDING: {
     label: "Pending review",
-    color: "bg-amber-100 text-amber-900",
+    color:
+      "bg-gradient-to-r from-amber-500/20 to-amber-400/10 border border-amber-500/30 text-amber-200 shadow-sm",
     icon: Clock3,
     tooltip: "Report is awaiting moderation",
   },
   RESOLVED: {
     label: "Resolved",
-    color: "bg-emerald-100 text-emerald-900",
+    color:
+      "bg-gradient-to-r from-emerald-500/20 to-emerald-400/10 border border-emerald-500/30 text-emerald-200 shadow-sm",
     icon: CheckCircle2,
     tooltip: "Report has been handled",
   },
   REJECTED: {
     label: "Rejected",
-    color: "bg-rose-100 text-rose-900",
+    color:
+      "bg-gradient-to-r from-rose-500/20 to-rose-400/10 border border-rose-500/30 text-rose-200 shadow-sm",
     icon: AlertTriangle,
     tooltip: "Report was dismissed",
   },
   IN_PROGRESS: {
     label: "In progress",
-    color: "bg-blue-100 text-blue-900",
+    color:
+      "bg-gradient-to-r from-cyan-500/20 to-cyan-400/10 border border-cyan-500/30 text-cyan-200 shadow-sm",
     icon: History,
     tooltip: "Report is currently under review",
   },
@@ -117,4 +121,3 @@ export const reportTypeIcons: Record<
   POST: FileText,
   COMMENT: MessageSquare,
 };
-

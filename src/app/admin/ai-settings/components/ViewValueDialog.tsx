@@ -1,19 +1,11 @@
 "use client";
 
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { Copy, Check, FileText } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { AISetting } from "@/lib/api/admin-api";
+import { AdminModal } from "@/components/admin/AdminModal";
+import GlassButton from "@/components/ui/glass-button";
 
 interface ViewValueDialogProps {
   isOpen: boolean;
@@ -43,58 +35,49 @@ export function ViewValueDialog({
   if (!setting) return null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 text-white">
-              <FileText className="w-5 h-5" />
-            </div>
-            <div>
-              <DialogTitle className="text-2xl">View Setting Value</DialogTitle>
-              <DialogDescription className="text-base mt-1">
-                {setting.name} • {setting.type.replace(/_/g, " ")}
-              </DialogDescription>
-            </div>
-          </div>
-        </DialogHeader>
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label className="text-sm font-semibold">Full Value</Label>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleCopy}
-                className="h-8"
-              >
-                {copied ? (
-                  <>
-                    <Check className="w-3.5 h-3.5 mr-2 text-green-600" />
-                    Copied
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-3.5 h-3.5 mr-2" />
-                    Copy
-                  </>
-                )}
-              </Button>
-            </div>
-            <div className="p-5 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg border-2 border-gray-200">
-              <pre className="whitespace-pre-wrap break-words text-sm font-mono text-gray-800 leading-relaxed">
-                {setting.value}
-              </pre>
-            </div>
-          </div>
+    <AdminModal
+      open={isOpen}
+      onOpenChange={onClose}
+      title="View Setting Value"
+      subtitle={`${setting.name} • ${setting.type.replace(/_/g, " ")}`}
+      icon={<FileText className="w-5 h-5" />}
+      iconClassName="from-green-500 to-emerald-600"
+      maxWidth="900px"
+      maxHeight="90vh"
+      showConfirmButton={false}
+      cancelButtonText="Close"
+      contentClassName="overflow-y-auto"
+    >
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <label className="text-sm font-medium text-white/90">
+            Full Value
+          </label>
+          <GlassButton
+            variant="outline"
+            size="sm"
+            onClick={handleCopy}
+            className="h-8"
+          >
+            {copied ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-green-400" />
+                Copied
+              </>
+            ) : (
+              <>
+                <Copy className="w-3.5 h-3.5" />
+                Copy
+              </>
+            )}
+          </GlassButton>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} className="border-2">
-            Close
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        <div className="p-5 rounded-xl bg-white/5 border border-white/10 min-h-[300px] max-h-[60vh] overflow-y-auto">
+          <pre className="whitespace-pre-wrap break-words text-sm font-mono text-white/90 leading-relaxed">
+            {setting.value}
+          </pre>
+        </div>
+      </div>
+    </AdminModal>
   );
 }
-
