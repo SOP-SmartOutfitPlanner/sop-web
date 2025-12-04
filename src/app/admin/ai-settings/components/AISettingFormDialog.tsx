@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Sparkles, Save, Plus } from "lucide-react";
+import { Sparkles, Save, Plus } from "lucide-react";
 import type { AISettingType } from "@/lib/api/admin-api";
 import { AdminModal } from "@/components/admin/AdminModal";
 import {

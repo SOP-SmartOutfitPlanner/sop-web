@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, Sparkles, AlertTriangle, Trash2 } from "lucide-react";
+import { AlertTriangle, Trash2 } from "lucide-react";
 import {
   useAdminAISettings,
   useCreateAISetting,
@@ -105,6 +105,7 @@ export default function AdminAISettingsPage() {
     setSelectedIds(new Set());
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const maskSensitiveValue = (value: string, id: number): string => {
     // Mask API keys and sensitive values
     // Check if it looks like an API key (starts with common prefixes)

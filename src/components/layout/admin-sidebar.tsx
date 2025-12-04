@@ -11,6 +11,7 @@ import {
   Flag,
   Bot,
   Package,
+  Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -60,16 +61,11 @@ const menuItems = [
     icon: Bot,
     href: "/admin/ai-settings",
   },
-  // {
-  //   title: "Thống kê",
-  //   icon: BarChart3,
-  //   href: "/admin/analytics",
-  // },
-  // {
-  //   title: "Cài đặt",
-  //   icon: Settings,
-  //   href: "/admin/settings",
-  // },
+  {
+    title: "Notification",
+    icon: Bell,
+    href: "/admin/notifications",
+  }
 ];
 
 export function AdminSidebar() {

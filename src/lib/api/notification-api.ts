@@ -72,6 +72,18 @@ export interface GetNotificationsParams {
 }
 
 /**
+ * Get system notifications (admin)
+ */
+export interface GetAdminNotificationsParams {
+  pageIndex?: number;
+  pageSize?: number;
+  takeAll?: boolean;
+  search?: string;
+  newestFirst?: boolean;
+  searchTerm?: string;
+}
+
+/**
  * Notification API Service
  */
 class NotificationAPI {
@@ -249,6 +261,49 @@ class NotificationAPI {
       return response;
     } catch (error) {
       console.error("❌ Failed to get notification detail:", error);
+      throw error;
+    }
+  }
+  /**
+   * Get system notifications for admin
+   * GET /api/v1/notifications/system
+   */
+  async getNotificationAdmin(
+    params: GetAdminNotificationsParams
+  ): Promise<ApiResponse<NotificationsListResponse>> {
+    try {
+      const { pageIndex, pageSize, takeAll, search, newestFirst, searchTerm } = params;
+
+      const queryParams = new URLSearchParams();
+
+      if (pageIndex !== undefined) {
+        queryParams.append("page-index", pageIndex.toString());
+      }
+      if (pageSize !== undefined) {
+        queryParams.append("page-size", pageSize.toString());
+      }
+      if (takeAll !== undefined) {
+        queryParams.append("take-all", String(takeAll));
+      }
+      if (search !== undefined) {
+        queryParams.append("search", search);
+      }
+      if (newestFirst !== undefined) {
+        queryParams.append("newestFirst", String(newestFirst));
+      }
+      if (searchTerm !== undefined) {
+        queryParams.append("searchTerm", searchTerm);
+      }
+
+      const queryString = queryParams.toString();
+      const endpoint = `${this.NOTIFICATIONS_PATH}/system${queryString ? `?${queryString}` : ""}`;
+
+      const response =
+        await apiClient.get<ApiResponse<NotificationsListResponse>>(endpoint);
+
+      return response;
+    } catch (error) {
+      console.error("❌ Failed to get notification admin:", error);
       throw error;
     }
   }

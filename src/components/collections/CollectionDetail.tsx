@@ -93,23 +93,6 @@ export function CollectionDetail({ collectionId }: CollectionDetailProps) {
   // Check if current user is the owner of this collection
   const isOwner = userId !== null && userId === collection?.userId;
   const canPublish = isOwner && collection?.isPublished === false;
-  
-  // Check if user has permission to view this collection
-  // Private collections (isPublished === false) can only be viewed by the owner
-  const canView = !collection || collection.isPublished || isOwner;
-
-  // Get comment count from API
-  const commentsCountQuery = useQuery({
-    queryKey: COLLECTION_QUERY_KEYS.collectionCommentsCount(collectionId),
-    queryFn: async () => {
-      const response = await collectionAPI.getCollectionComments(collectionId, {
-        pageSize: 1,
-        takeAll: true,
-      });
-      return response.data.metaData.totalCount;
-    },
-    enabled: !!collectionId && canView,
-  });
 
   // Show loading while checking auth
   if (!isInitialized || (isInitialized && !user)) {
