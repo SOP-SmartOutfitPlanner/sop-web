@@ -7,6 +7,7 @@ import Image from "next/image";
 interface PlannedOutfitsGridProps {
   outfits: Calender[];
   isDeletingEntry: boolean;
+  isOccasionEnded?: boolean;
   onDeleteEntry: (entryId: number, e?: React.MouseEvent) => void;
   onEditEntry: (entry: Calender, e?: React.MouseEvent) => void;
   onViewOutfit?: (outfit: Calender, e?: React.MouseEvent) => void;
@@ -16,6 +17,7 @@ interface PlannedOutfitsGridProps {
 export function PlannedOutfitsGrid({
   outfits,
   isDeletingEntry,
+  isOccasionEnded = false,
   onDeleteEntry,
   onViewOutfit,
 }: PlannedOutfitsGridProps) {
@@ -83,20 +85,22 @@ export function PlannedOutfitsGrid({
               </div>
             </div>
 
-            {/* Delete Button */}
-            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDeleteEntry(outfit.calendarId, e);
-                }}
-                className="p-1.5 bg-red-500/90 hover:bg-red-600 rounded-md transition-colors shadow-lg"
-                title="Remove outfit"
-                disabled={isDeletingEntry}
-              >
-                <Trash2 className="w-3.5 h-3.5 text-white" />
-              </button>
-            </div>
+            {/* Delete Button - Hidden for ended occasions */}
+            {!isOccasionEnded && (
+              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteEntry(outfit.calendarId, e);
+                  }}
+                  className="p-1.5 bg-red-500/90 hover:bg-red-600 rounded-md transition-colors shadow-lg"
+                  title="Remove outfit"
+                  disabled={isDeletingEntry}
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-white" />
+                </button>
+              </div>
+            )}
           </div>
         ))}
       </div>
