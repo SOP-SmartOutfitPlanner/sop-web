@@ -61,7 +61,7 @@ export function useTopContributors(currentUserId?: string) {
   const handleFollow = useCallback(
     async (contributor: Contributor) => {
       if (!currentUserId) {
-        toast.error("Vui lòng đăng nhập để theo dõi");
+        toast.error("Please log in to follow users.");
         return;
       }
 

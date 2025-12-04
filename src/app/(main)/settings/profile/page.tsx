@@ -8,7 +8,7 @@ export default function ProfileSettingsPage() {
   const { user } = useAuthStore();
 
   if (!user) {
-    return <LoadingScreen message="Đang tải thông tin tài khoản..." />;
+    return <LoadingScreen message="Loading user profile ...." />;
   }
 
   return (

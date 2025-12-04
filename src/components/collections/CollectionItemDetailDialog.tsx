@@ -163,7 +163,7 @@ export function CollectionItemDetailDialog({
           <DetailSkeleton />
         ) : isError ? (
           <div className="py-12 text-center text-sm text-red-400">
-            Không thể tải chi tiết item. Vui lòng thử lại sau.
+            Unable to load item details. Please try again later.
           </div>
         ) : normalized ? (
           <div className="flex h-full flex-col gap-6">
@@ -260,12 +260,6 @@ export function CollectionItemDetailDialog({
                   </div>
                 )}
 
-                {normalized.aiDescription && (
-                  <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/5 p-4 text-sm text-slate-200">
-                    {normalized.aiDescription}
-                  </div>
-                )}
-
                 {(normalized.styles?.length ||
                   normalized.occasions?.length ||
                   normalized.seasons?.length) && (
@@ -315,7 +309,7 @@ export function CollectionItemDetailDialog({
                           {normalized.seasons.map((season) => (
                             <Badge
                               key={season}
-                              className="border-slate-500/40 bg-slate-800/60 text-slate-100"
+                              className="border-emerald-400/30 bg-emerald-500/10 text-emerald-100"
                             >
                               {season}
                             </Badge>
