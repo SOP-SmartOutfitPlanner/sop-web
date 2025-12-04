@@ -98,14 +98,14 @@ export function ActionsTab({
 }: ActionsTabProps) {
   if (reportDetail.status === "RESOLVED") {
     return (
-      <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50/50 p-4 text-sm text-slate-700">
-        <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" />
+      <div className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 p-4 text-sm text-white/80">
+        <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-400" />
         <p>
           This report has been resolved. View details in the{" "}
           <button
             type="button"
             onClick={() => onTabChange("history")}
-            className="font-medium text-blue-600 hover:text-blue-700 underline"
+            className="font-medium text-cyan-400 hover:text-cyan-300 underline"
           >
             History tab
           </button>
@@ -122,8 +122,8 @@ export function ActionsTab({
           className={cn(
             "rounded-2xl border p-3 text-sm",
             inlineFeedback.type === "success"
-              ? "border-emerald-200 bg-emerald-50 text-emerald-900"
-              : "border-rose-200 bg-rose-50 text-rose-900"
+              ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-200"
+              : "border-rose-500/30 bg-rose-500/10 text-rose-200"
           )}
         >
           <div className="flex items-center justify-between gap-3">
@@ -139,15 +139,19 @@ export function ActionsTab({
         </div>
       )}
       {lastActionSummary && (
-        <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
+        <div className="rounded-2xl border border-cyan-500/30 bg-cyan-500/10 p-4 text-sm text-cyan-100">
           <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
             <div>
               <p className="font-semibold">{lastActionSummary.title}</p>
-              <p className="text-sm text-blue-800">
+              <p className="text-sm text-cyan-200">
                 {lastActionSummary.description}
               </p>
             </div>
-            <Button variant="ghost" size="sm">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-cyan-300 hover:text-cyan-100 hover:bg-cyan-500/20"
+            >
               Undo
             </Button>
           </div>
@@ -155,15 +159,15 @@ export function ActionsTab({
       )}
 
       <div className="space-y-6 pb-2">
-        <Card className="border-2 border-emerald-200 bg-gradient-to-br from-emerald-50/50 to-white shadow-sm">
+        <Card className="border-2 border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 to-emerald-500/5">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-              <CardTitle className="text-lg font-bold text-slate-900">
+              <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+              <CardTitle className="text-lg font-bold text-white">
                 Close as no violation
               </CardTitle>
             </div>
-            <p className="text-sm text-slate-600 mt-1.5">
+            <p className="text-sm text-white/60 mt-1.5">
               Close the report when the content does not break policy.
             </p>
           </CardHeader>
@@ -173,20 +177,20 @@ export function ActionsTab({
               value={noViolationNotes}
               onChange={(event) => onNoViolationNotesChange(event.target.value)}
               rows={4}
-              className="border-slate-300 focus:border-emerald-400 focus:ring-emerald-400"
+              className="bg-white/5 border-white/20 text-white placeholder:text-white/40 focus:border-emerald-400 focus:ring-emerald-400"
             />
           </CardContent>
         </Card>
 
-        <Card className="border-2 border-slate-200 bg-white shadow-sm">
+        <Card className="border-2 border-white/10 bg-white/5">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
-              <ShieldCheck className="h-5 w-5 text-blue-600" />
-              <CardTitle className="text-lg font-bold text-slate-900">
+              <ShieldCheck className="h-5 w-5 text-cyan-400" />
+              <CardTitle className="text-lg font-bold text-white">
                 Apply enforcement action
               </CardTitle>
             </div>
-            <p className="text-sm text-slate-600 mt-1.5">
+            <p className="text-sm text-white/60 mt-1.5">
               Choose the appropriate measure for the content/account.
             </p>
           </CardHeader>
@@ -208,14 +212,14 @@ export function ActionsTab({
             </div>
 
             {isResolveActionSuspension && (
-              <div className="rounded-lg border-2 border-red-200 bg-red-50/50 p-4 space-y-2">
+              <div className="rounded-lg border-2 border-red-500/30 bg-red-500/10 p-4 space-y-2">
                 <div className="flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4 text-red-600" />
-                  <p className="text-sm font-semibold text-red-900">
+                  <AlertCircle className="h-4 w-4 text-red-400" />
+                  <p className="text-sm font-semibold text-red-200">
                     Suspension Period
                   </p>
                 </div>
-                <p className="text-xs text-red-700">
+                <p className="text-xs text-red-300/80">
                   Enter the number of days to suspend the account (1 - 365 days)
                 </p>
                 <Input
@@ -231,13 +235,13 @@ export function ActionsTab({
                     })
                   }
                   className={cn(
-                    "border-red-300 focus:border-red-500 focus:ring-red-500",
+                    "bg-white/5 border-red-500/30 text-white placeholder:text-white/40 focus:border-red-400 focus:ring-red-400",
                     isSuspensionDaysInvalid && "border-red-500"
                   )}
                   placeholder="Enter days (1-365)"
                 />
                 {isSuspensionDaysInvalid && (
-                  <p className="text-xs font-medium text-red-600 flex items-center gap-1">
+                  <p className="text-xs font-medium text-red-400 flex items-center gap-1">
                     <AlertCircle className="h-3 w-3" />
                     Please enter a valid number of days between 1 and 365.
                   </p>
@@ -247,11 +251,9 @@ export function ActionsTab({
 
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <FileText className="h-4 w-4 text-slate-500" />
-                <p className="text-sm font-semibold text-slate-900">
-                  Action notes
-                </p>
-                <span className="text-xs text-slate-400">(Optional)</span>
+                <FileText className="h-4 w-4 text-white/50" />
+                <p className="text-sm font-semibold text-white">Action notes</p>
+                <span className="text-xs text-white/40">(Optional)</span>
               </div>
               <Textarea
                 placeholder="Provide details for this action..."
@@ -263,28 +265,28 @@ export function ActionsTab({
                   })
                 }
                 rows={4}
-                className="border-slate-300 focus:border-blue-400 focus:ring-blue-400"
+                className="bg-white/5 border-white/20 text-white placeholder:text-white/40 focus:border-cyan-400 focus:ring-cyan-400"
               />
-              <p className="text-xs text-slate-500">
-                These notes will be recorded in the report history and visible to
-                other moderators.
+              <p className="text-xs text-white/50">
+                These notes will be recorded in the report history and visible
+                to other moderators.
               </p>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <div className="sticky bottom-0 -mx-6 mt-8 border-t-2 border-slate-200 bg-white/98 px-6 py-6 backdrop-blur-sm shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
-        <div className="flex items-start gap-3 mb-5 p-4 rounded-lg bg-slate-50 border border-slate-200">
-          <Info className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
+      <div className="sticky bottom-0 -mx-6 mt-8 border-t-2 border-white/10 bg-slate-900/90 px-6 py-6 backdrop-blur-sm">
+        <div className="flex items-start gap-3 mb-5 p-4 rounded-lg bg-white/5 border border-white/10">
+          <Info className="h-5 w-5 text-cyan-400 mt-0.5 shrink-0" />
           <div className="flex-1">
-            <p className="text-sm font-medium text-slate-900 mb-1">
+            <p className="text-sm font-medium text-white mb-1">
               {actionableReportActions.includes(
                 actionForm.action as ResolveReportAction
               ) ? (
                 <>
                   Ready to apply{" "}
-                  <span className="font-bold text-blue-700">
+                  <span className="font-bold text-cyan-300">
                     {
                       actionDefinitions[
                         actionForm.action as ResolveReportAction
@@ -296,7 +298,7 @@ export function ActionsTab({
                 "Review and confirm your action"
               )}
             </p>
-            <p className="text-xs text-slate-600">
+            <p className="text-xs text-white/60">
               {actionableReportActions.includes(
                 actionForm.action as ResolveReportAction
               )
@@ -313,7 +315,7 @@ export function ActionsTab({
               !canSubmitNoViolation || resolveNoViolationMutation.isPending
             }
             onClick={onResolveNoViolation}
-            className="gap-2 border-2 border-emerald-300 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-400 hover:text-emerald-800 font-semibold"
+            className="gap-2 border-2 border-emerald-500/50 text-emerald-300 hover:bg-emerald-500/20 hover:border-emerald-400 hover:text-emerald-200 font-semibold bg-transparent"
           >
             {resolveNoViolationMutation.isPending ? (
               <>
@@ -331,7 +333,7 @@ export function ActionsTab({
             size="lg"
             disabled={!canSubmitAction || resolveWithActionMutation.isPending}
             onClick={onResolveWithAction}
-            className="gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-md hover:shadow-lg transition-all"
+            className="gap-2 bg-cyan-500 hover:bg-cyan-600 text-white font-semibold shadow-md hover:shadow-lg transition-all"
           >
             {resolveWithActionMutation.isPending ? (
               <>
@@ -350,4 +352,3 @@ export function ActionsTab({
     </>
   );
 }
-

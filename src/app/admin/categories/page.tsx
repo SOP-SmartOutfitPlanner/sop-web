@@ -3,35 +3,8 @@
 import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import {
   Plus,
   Edit,
@@ -42,6 +15,8 @@ import {
   FolderTree,
   CheckSquare,
   XSquare,
+  AlertTriangle,
+  Save,
 } from "lucide-react";
 import {
   useAdminCategories,
@@ -53,6 +28,8 @@ import {
 } from "@/hooks/admin/useAdminCategories";
 import type { Category } from "@/lib/api/admin-api";
 import { toast } from "sonner";
+import { AdminModal } from "@/components/admin/AdminModal";
+import { AdminInput, AdminSelect } from "@/components/admin/AdminFormInputs";
 
 interface CategoryTreeNode extends Category {
   children: CategoryTreeNode[];
@@ -283,7 +260,9 @@ export default function AdminCategoriesPage() {
             {/* Usage Stats */}
             <div className="flex items-center gap-2 mr-2">
               {node.children.length > 0 && (
-                <Badge className="bg-white/10 text-white/80 border border-white/20">{node.children.length} children</Badge>
+                <Badge className="bg-white/10 text-white/80 border border-white/20">
+                  {node.children.length} children
+                </Badge>
               )}
               {/* <Badge
                 variant={itemCount > 0 ? "default" : "outline"}
@@ -399,7 +378,12 @@ export default function AdminCategoriesPage() {
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={clearSelection} className="border-white/20 bg-white/10 text-white hover:bg-white/20">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={clearSelection}
+                  className="border-white/20 bg-white/10 text-white hover:bg-white/20"
+                >
                   <XSquare className="w-4 h-4 mr-2" />
                   Clear Selection
                 </Button>
@@ -424,7 +408,12 @@ export default function AdminCategoriesPage() {
           <div className="flex items-center justify-between">
             <CardTitle className="text-white">Category Hierarchy</CardTitle>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={selectAll} className="border-white/20 bg-white/5 text-white hover:bg-white/10">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={selectAll}
+                className="border-white/20 bg-white/5 text-white hover:bg-white/10"
+              >
                 <CheckSquare className="w-4 h-4 mr-2" />
                 Select All
               </Button>
@@ -437,173 +426,144 @@ export default function AdminCategoriesPage() {
       </Card>
 
       {/* Create Dialog */}
-      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create New Category</DialogTitle>
-            <DialogDescription>
-              Add a new category to the system. Select a parent if this is a subcategory.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Category Name</Label>
-              <Input
-                id="name"
-                placeholder="Enter category name..."
-                value={formName}
-                onChange={(e) => setFormName(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="parent">Parent Category</Label>
-              <Select value={formParentId} onValueChange={setFormParentId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select parent category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="null">None (Root Category)</SelectItem>
-                  {parentCategories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id.toString()}>
-                      {cat.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleCreate} disabled={createMutation.isPending}>
-              {createMutation.isPending ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Creating...
-                </>
-              ) : (
-                "Create"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AdminModal
+        open={isCreateOpen}
+        onOpenChange={setIsCreateOpen}
+        onConfirm={handleCreate}
+        title="Create New Category"
+        subtitle="Add a new category to the system. Select a parent if this is a subcategory."
+        icon={<Plus className="w-5 h-5" />}
+        iconClassName="from-cyan-500 to-blue-600"
+        maxWidth="500px"
+        confirmButtonText="Create Category"
+        confirmButtonIcon={<Plus className="w-4 h-4" />}
+        confirmButtonColor="rgba(59, 130, 246, 0.8)"
+        confirmButtonBorderColor="rgba(59, 130, 246, 1)"
+        isLoading={createMutation.isPending}
+        loadingText="Creating..."
+      >
+        <div className="space-y-5">
+          <AdminInput
+            id="name"
+            label="Category Name"
+            placeholder="Enter category name..."
+            value={formName}
+            onChange={(e) => setFormName(e.target.value)}
+            required
+          />
+          <AdminSelect
+            id="parent"
+            label="Parent Category"
+            value={formParentId}
+            onChange={setFormParentId}
+            placeholder="Select parent category"
+            options={[
+              { value: "null", label: "None (Root Category)" },
+              ...parentCategories.map((cat) => ({
+                value: cat.id.toString(),
+                label: cat.name,
+              })),
+            ]}
+          />
+        </div>
+      </AdminModal>
 
       {/* Edit Dialog */}
-      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Category</DialogTitle>
-            <DialogDescription>Update category information</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-name">Category Name</Label>
-              <Input
-                id="edit-name"
-                placeholder="Enter category name..."
-                value={formName}
-                onChange={(e) => setFormName(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-parent">Parent Category</Label>
-              <Select value={formParentId} onValueChange={setFormParentId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select parent category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="null">None (Root Category)</SelectItem>
-                  {parentCategories
-                    .filter((cat) => cat.id !== selectedCategory?.id)
-                    .map((cat) => (
-                      <SelectItem key={cat.id} value={cat.id.toString()}>
-                        {cat.name}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleEdit} disabled={updateMutation.isPending}>
-              {updateMutation.isPending ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                "Save"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AdminModal
+        open={isEditOpen}
+        onOpenChange={setIsEditOpen}
+        onConfirm={handleEdit}
+        title="Edit Category"
+        subtitle="Update category information"
+        icon={<Edit className="w-5 h-5" />}
+        iconClassName="from-cyan-500 to-blue-600"
+        maxWidth="500px"
+        confirmButtonText="Save Changes"
+        confirmButtonIcon={<Save className="w-4 h-4" />}
+        confirmButtonColor="rgba(59, 130, 246, 0.8)"
+        confirmButtonBorderColor="rgba(59, 130, 246, 1)"
+        isLoading={updateMutation.isPending}
+        loadingText="Saving..."
+      >
+        <div className="space-y-5">
+          <AdminInput
+            id="edit-name"
+            label="Category Name"
+            placeholder="Enter category name..."
+            value={formName}
+            onChange={(e) => setFormName(e.target.value)}
+            required
+          />
+          <AdminSelect
+            id="edit-parent"
+            label="Parent Category"
+            value={formParentId}
+            onChange={setFormParentId}
+            placeholder="Select parent category"
+            options={[
+              { value: "null", label: "None (Root Category)" },
+              ...parentCategories
+                .filter((cat) => cat.id !== selectedCategory?.id)
+                .map((cat) => ({
+                  value: cat.id.toString(),
+                  label: cat.name,
+                })),
+            ]}
+          />
+        </div>
+      </AdminModal>
 
       {/* Delete Single Confirmation */}
-      <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete the category{" "}
-              <strong>{selectedCategory?.name}</strong>? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              className="bg-red-600 hover:bg-red-700"
-              disabled={deleteMutation.isPending}
-            >
-              {deleteMutation.isPending ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Deleting...
-                </>
-              ) : (
-                "Delete"
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <AdminModal
+        open={isDeleteOpen}
+        onOpenChange={setIsDeleteOpen}
+        onConfirm={handleDelete}
+        title="Confirm Deletion"
+        subtitle="This action cannot be undone"
+        icon={<AlertTriangle className="w-5 h-5" />}
+        iconClassName="from-red-500 to-red-600"
+        maxWidth="480px"
+        confirmButtonText="Delete Category"
+        confirmButtonIcon={<Trash2 className="w-4 h-4" />}
+        isLoading={deleteMutation.isPending}
+        loadingText="Deleting..."
+        variant="danger"
+      >
+        <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+          <p className="font-bricolage text-sm text-gray-200 leading-relaxed">
+            Are you sure you want to delete the category{" "}
+            <strong className="text-white">{selectedCategory?.name}</strong>?
+            This action cannot be undone.
+          </p>
+        </div>
+      </AdminModal>
 
       {/* Bulk Delete Confirmation */}
-      <AlertDialog open={isBulkDeleteOpen} onOpenChange={setIsBulkDeleteOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Bulk Deletion</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete{" "}
-              <strong>{selectedIds.size} categories</strong>? This action
-              cannot be undone and may affect related data.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleBulkDelete}
-              className="bg-red-600 hover:bg-red-700"
-              disabled={bulkDeleteMutation.isPending}
-            >
-              {bulkDeleteMutation.isPending ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Deleting...
-                </>
-              ) : (
-                `Delete ${selectedIds.size} categories`
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <AdminModal
+        open={isBulkDeleteOpen}
+        onOpenChange={setIsBulkDeleteOpen}
+        onConfirm={handleBulkDelete}
+        title="Confirm Bulk Deletion"
+        subtitle="This action cannot be undone"
+        icon={<AlertTriangle className="w-5 h-5" />}
+        iconClassName="from-red-500 to-red-600"
+        maxWidth="480px"
+        confirmButtonText={`Delete ${selectedIds.size} Categories`}
+        confirmButtonIcon={<Trash2 className="w-4 h-4" />}
+        isLoading={bulkDeleteMutation.isPending}
+        loadingText="Deleting..."
+        variant="danger"
+      >
+        <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+          <p className="font-bricolage text-sm text-gray-200 leading-relaxed">
+            Are you sure you want to delete{" "}
+            <strong className="text-white">
+              {selectedIds.size} categories
+            </strong>
+            ? This action cannot be undone and may affect related data.
+          </p>
+        </div>
+      </AdminModal>
     </div>
   );
 }
