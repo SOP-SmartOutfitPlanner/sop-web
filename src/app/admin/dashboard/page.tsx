@@ -3,24 +3,8 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  RadioGroup,
-  RadioGroupItem,
-} from "@/components/ui/radio-group";
-import { Users, Shirt, TrendingUp, Activity, Bell } from "lucide-react";
+import { Users, Shirt, TrendingUp, Activity, Bell, Send } from "lucide-react";
 import { usePushNotification } from "@/hooks/admin/usePushNotification";
-import { Loader2 } from "lucide-react";
 import {
   LineChart,
   Line,
@@ -36,6 +20,8 @@ import {
   Pie,
   Cell,
 } from "recharts";
+import { AdminModal } from "@/components/admin/AdminModal";
+import { AdminInput, AdminTextarea } from "@/components/admin/AdminFormInputs";
 
 // Mock data - replace with real API
 const userGrowthData = [
@@ -72,7 +58,9 @@ const COLORS = ["#3B82F6", "#8B5CF6", "#10B981", "#F59E0B"];
 
 export default function AdminDashboardPage() {
   const [isPushDialogOpen, setIsPushDialogOpen] = useState(false);
-  const [notificationType, setNotificationType] = useState<"all" | "user">("all");
+  const [notificationType, setNotificationType] = useState<"all" | "user">(
+    "all"
+  );
   const [formTitle, setFormTitle] = useState("");
   const [formMessage, setFormMessage] = useState("");
   const [formHref, setFormHref] = useState("");
@@ -171,8 +159,8 @@ export default function AdminDashboardPage() {
         {stats.map((stat) => {
           const Icon = stat.icon;
           return (
-            <Card 
-              key={stat.title} 
+            <Card
+              key={stat.title}
               className="border border-white/10 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 bg-white/5 backdrop-blur-xl overflow-hidden relative group"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -202,8 +190,12 @@ export default function AdminDashboardPage() {
         {/* User Growth Chart */}
         <Card className="border border-white/10 shadow-xl hover:shadow-2xl transition-shadow duration-300 bg-white/5 backdrop-blur-xl">
           <CardHeader>
-            <CardTitle className="text-xl font-bold text-white">User Growth</CardTitle>
-            <p className="text-sm text-white/60">Monthly user registration trends</p>
+            <CardTitle className="text-xl font-bold text-white">
+              User Growth
+            </CardTitle>
+            <p className="text-sm text-white/60">
+              Monthly user registration trends
+            </p>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -213,17 +205,17 @@ export default function AdminDashboardPage() {
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Line 
-                  type="monotone" 
-                  dataKey="users" 
-                  stroke="#3B82F6" 
+                <Line
+                  type="monotone"
+                  dataKey="users"
+                  stroke="#3B82F6"
                   strokeWidth={2}
                   name="New Users"
                 />
-                <Line 
-                  type="monotone" 
-                  dataKey="active" 
-                  stroke="#10B981" 
+                <Line
+                  type="monotone"
+                  dataKey="active"
+                  stroke="#10B981"
                   strokeWidth={2}
                   name="Active Users"
                 />
@@ -235,8 +227,12 @@ export default function AdminDashboardPage() {
         {/* Items by Category */}
         <Card className="border border-white/10 shadow-xl hover:shadow-2xl transition-shadow duration-300 bg-white/5 backdrop-blur-xl">
           <CardHeader>
-            <CardTitle className="text-xl font-bold text-white">Items by Category</CardTitle>
-            <p className="text-sm text-white/60">Distribution of wardrobe items</p>
+            <CardTitle className="text-xl font-bold text-white">
+              Items by Category
+            </CardTitle>
+            <p className="text-sm text-white/60">
+              Distribution of wardrobe items
+            </p>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -248,7 +244,8 @@ export default function AdminDashboardPage() {
                   labelLine={false}
                   label={(props) => {
                     const name = (props as unknown as { name: string }).name;
-                    const percent = (props as unknown as { percent: number }).percent;
+                    const percent = (props as unknown as { percent: number })
+                      .percent;
                     return `${name}: ${(percent * 100).toFixed(0)}%`;
                   }}
                   outerRadius={80}
@@ -256,7 +253,10 @@ export default function AdminDashboardPage() {
                   dataKey="count"
                 >
                   {itemsData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={COLORS[index % COLORS.length]}
+                    />
                   ))}
                 </Pie>
                 <Tooltip />
@@ -271,8 +271,12 @@ export default function AdminDashboardPage() {
         {/* Weekly Activity */}
         <Card className="border border-white/10 shadow-xl hover:shadow-2xl transition-shadow duration-300 bg-white/5 backdrop-blur-xl">
           <CardHeader>
-            <CardTitle className="text-xl font-bold text-white">Weekly Activity</CardTitle>
-            <p className="text-sm text-white/60">User logins and item uploads</p>
+            <CardTitle className="text-xl font-bold text-white">
+              Weekly Activity
+            </CardTitle>
+            <p className="text-sm text-white/60">
+              User logins and item uploads
+            </p>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -293,7 +297,9 @@ export default function AdminDashboardPage() {
       {/* System Info */}
       <Card className="border border-white/10 shadow-xl bg-white/5 backdrop-blur-xl">
         <CardHeader>
-          <CardTitle className="text-xl font-bold text-white">System Information</CardTitle>
+          <CardTitle className="text-xl font-bold text-white">
+            System Information
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -317,118 +323,112 @@ export default function AdminDashboardPage() {
       </Card>
 
       {/* Push Notification Dialog */}
-      <Dialog open={isPushDialogOpen} onOpenChange={setIsPushDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Push Notification</DialogTitle>
-            <DialogDescription>
-              Send a push notification to users. Use actorUserId = 1 to send to all users.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="notification-type">Recipient</Label>
-              <RadioGroup
-                value={notificationType}
-                onValueChange={(value) => setNotificationType(value as "all" | "user")}
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="all" id="all" />
-                  <Label htmlFor="all" className="font-normal cursor-pointer">
-                    All Users (Broadcast)
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="user" id="user" />
-                  <Label htmlFor="user" className="font-normal cursor-pointer">
-                    Specific User
-                  </Label>
-                </div>
-              </RadioGroup>
-            </div>
-
-            {notificationType === "user" && (
-              <div className="space-y-2">
-                <Label htmlFor="user-id">User ID</Label>
-                <Input
-                  id="user-id"
-                  type="number"
-                  placeholder="Enter user ID..."
-                  value={formUserId}
-                  onChange={(e) => setFormUserId(e.target.value)}
+      <AdminModal
+        open={isPushDialogOpen}
+        onOpenChange={setIsPushDialogOpen}
+        onConfirm={handlePushNotification}
+        title="Push Notification"
+        subtitle="Send a push notification to users"
+        icon={<Bell className="w-5 h-5" />}
+        iconClassName="from-cyan-500 to-blue-600"
+        maxWidth="600px"
+        confirmButtonText="Send Notification"
+        confirmButtonIcon={<Send className="w-4 h-4" />}
+        confirmButtonColor="rgba(59, 130, 246, 0.8)"
+        confirmButtonBorderColor="rgba(59, 130, 246, 1)"
+        isLoading={pushNotificationMutation.isPending}
+        loadingText="Sending..."
+      >
+        <div className="space-y-5">
+          {/* Recipient Type */}
+          <div className="space-y-3">
+            <label className="block text-sm font-medium text-white/90">
+              Recipient
+            </label>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2 cursor-pointer group">
+                <input
+                  type="radio"
+                  name="notificationType"
+                  value="all"
+                  checked={notificationType === "all"}
+                  onChange={() => setNotificationType("all")}
+                  className="w-4 h-4 text-cyan-500 bg-white/10 border-white/30 focus:ring-cyan-500/50 focus:ring-offset-0"
                 />
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <Label htmlFor="title">Title *</Label>
-              <Input
-                id="title"
-                placeholder="Enter notification title..."
-                value={formTitle}
-                onChange={(e) => setFormTitle(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="message">Message *</Label>
-              <Textarea
-                id="message"
-                placeholder="Enter notification message..."
-                value={formMessage}
-                onChange={(e) => setFormMessage(e.target.value)}
-                rows={4}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="href">Link (Optional)</Label>
-              <Input
-                id="href"
-                placeholder="e.g., /wardrobe, /profile/123"
-                value={formHref}
-                onChange={(e) => setFormHref(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="image-url">Image URL (Optional)</Label>
-              <Input
-                id="image-url"
-                type="url"
-                placeholder="https://example.com/image.jpg"
-                value={formImageUrl}
-                onChange={(e) => setFormImageUrl(e.target.value)}
-              />
+                <span className="text-sm text-white/80 group-hover:text-white transition-colors">
+                  All Users (Broadcast)
+                </span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer group">
+                <input
+                  type="radio"
+                  name="notificationType"
+                  value="user"
+                  checked={notificationType === "user"}
+                  onChange={() => setNotificationType("user")}
+                  className="w-4 h-4 text-cyan-500 bg-white/10 border-white/30 focus:ring-cyan-500/50 focus:ring-offset-0"
+                />
+                <span className="text-sm text-white/80 group-hover:text-white transition-colors">
+                  Specific User
+                </span>
+              </label>
             </div>
           </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsPushDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handlePushNotification}
-              disabled={pushNotificationMutation.isPending}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              {pushNotificationMutation.isPending ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                <>
-                  <Bell className="w-4 h-4 mr-2" />
-                  Send Notification
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+
+          {/* User ID (conditional) */}
+          {notificationType === "user" && (
+            <AdminInput
+              id="user-id"
+              type="number"
+              label="User ID"
+              placeholder="Enter user ID..."
+              value={formUserId}
+              onChange={(e) => setFormUserId(e.target.value)}
+              required
+            />
+          )}
+
+          {/* Title */}
+          <AdminInput
+            id="title"
+            label="Title"
+            placeholder="Enter notification title..."
+            value={formTitle}
+            onChange={(e) => setFormTitle(e.target.value)}
+            required
+          />
+
+          {/* Message */}
+          <AdminTextarea
+            id="message"
+            label="Message"
+            placeholder="Enter notification message..."
+            value={formMessage}
+            onChange={(e) => setFormMessage(e.target.value)}
+            rows={4}
+            required
+          />
+
+          {/* Link */}
+          <AdminInput
+            id="href"
+            label="Link (Optional)"
+            placeholder="e.g., /wardrobe, /profile/123"
+            value={formHref}
+            onChange={(e) => setFormHref(e.target.value)}
+          />
+
+          {/* Image URL */}
+          <AdminInput
+            id="image-url"
+            type="url"
+            label="Image URL (Optional)"
+            placeholder="https://example.com/image.jpg"
+            value={formImageUrl}
+            onChange={(e) => setFormImageUrl(e.target.value)}
+          />
+        </div>
+      </AdminModal>
     </div>
   );
 }

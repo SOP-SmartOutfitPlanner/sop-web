@@ -35,7 +35,11 @@ export const AdminItemCard = memo(function AdminItemCard({
   }, [item.id, onDelete]);
 
   // Parse colors
-  const colors = item.color?.split(",").map((c) => c.trim()).filter(Boolean) || [];
+  const colors =
+    item.color
+      ?.split(",")
+      .map((c) => c.trim())
+      .filter(Boolean) || [];
 
   return (
     <div
@@ -52,7 +56,9 @@ export const AdminItemCard = memo(function AdminItemCard({
 
             {/* Main badge */}
             <div className="relative w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 via-cyan-500 to-blue-500 flex items-center justify-center shadow-xl border-2 border-white">
-              <span className="text-xs font-black text-white drop-shadow-lg">AI</span>
+              <span className="text-xs font-black text-white drop-shadow-lg">
+                AI
+              </span>
             </div>
           </div>
         </div>
@@ -71,18 +77,26 @@ export const AdminItemCard = memo(function AdminItemCard({
                 "transition-all duration-200",
                 isHovered ? "opacity-100" : "opacity-0"
               )}
+              title="Item options"
+              aria-label="Item options"
             >
               <MoreVertical className="w-4 h-4" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48 bg-white/90 backdrop-blur-xl border-white/50">
-            <DropdownMenuItem onClick={handleView} className="hover:bg-white/60">
+          <DropdownMenuContent
+            align="end"
+            className="w-48 bg-gradient-to-br from-slate-900/95 via-blue-900/90 to-slate-900/95 backdrop-blur-xl border-white/20 shadow-xl shadow-cyan-500/10"
+          >
+            <DropdownMenuItem
+              onClick={handleView}
+              className="text-white/90 hover:text-white hover:bg-white/10 focus:bg-white/10 focus:text-white cursor-pointer"
+            >
               <Eye className="w-4 h-4 mr-2" />
               View Details
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={handleDeleteClick}
-              className="text-red-600 focus:text-red-600 hover:bg-red-50/60"
+              className="text-red-400 hover:text-red-300 hover:bg-red-500/20 focus:bg-red-500/20 focus:text-red-300 cursor-pointer"
             >
               <Trash2 className="w-4 h-4 mr-2" />
               Delete
@@ -171,7 +185,10 @@ export const AdminItemCard = memo(function AdminItemCard({
                   AI Analyzed
                 </Badge>
               ) : (
-                <Badge variant="secondary" className="bg-white/10 text-white/60 border-white/20 text-xs">
+                <Badge
+                  variant="secondary"
+                  className="bg-white/10 text-white/60 border-white/20 text-xs"
+                >
                   Not Analyzed
                 </Badge>
               )}
