@@ -67,7 +67,7 @@ export function useFeedFollowStatus(
   const handleFollow = useCallback(
     async (targetUserId: string) => {
       if (!currentUserId) {
-        toast.error("Vui lòng đăng nhập để follow");
+        toast.error("Please log in to follow users.");
         return;
       }
 

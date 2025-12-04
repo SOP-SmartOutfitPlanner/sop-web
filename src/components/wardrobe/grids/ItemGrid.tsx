@@ -21,6 +21,7 @@ interface GridProps {
   onDeleteItem?: (id: string) => void;
   onUseInOutfit?: (item: WardrobeItem) => void;
   onViewItem?: (item: WardrobeItem) => void;
+  onOpenPost?: (postId: number) => void;
   showCheckboxes?: boolean;
   emptyMessage?: string;
 }
@@ -35,6 +36,7 @@ export function ItemGrid({
   onDeleteItem,
   onUseInOutfit,
   onViewItem,
+  onOpenPost,
   showCheckboxes = false,
   emptyMessage = "No items found",
 }: GridProps) {
@@ -44,6 +46,7 @@ export function ItemGrid({
     error: storeError,
     fetchItems,
     deleteItem,
+    unsaveItem,
     analyzeItem,
     selectedItems: storeSelectedItems,
     toggleItemSelection,
@@ -193,7 +196,7 @@ export function ItemGrid({
             transition={{
               duration: 0.3,
               delay: index * 0.05,
-              ease: "easeOut"
+              ease: "easeOut",
             }}
             className="h-full"
           >
@@ -205,6 +208,8 @@ export function ItemGrid({
               onDelete={handleDelete}
               onAnalyze={handleAnalyze}
               onView={handleView}
+              onOpenPost={onOpenPost}
+              onUnsave={unsaveItem}
               showCheckbox={showCheckboxes || isSelectionMode}
               isReadOnly={viewMode === "saved-from-posts"}
             />
@@ -236,7 +241,9 @@ export function ItemGrid({
               }
             }}
             showSizeChanger
-            showTotal={(total, range) => `${range[0]}-${range[1]} of ${total} items`}
+            showTotal={(total, range) =>
+              `${range[0]}-${range[1]} of ${total} items`
+            }
             pageSizeOptions={[15, 30, 45, 60]}
             className="antd-pagination"
           />

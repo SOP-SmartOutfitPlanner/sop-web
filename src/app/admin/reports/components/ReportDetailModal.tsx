@@ -190,7 +190,15 @@ export function ReportDetailModal({
     <>
       <Dialog open={!!reportId} onOpenChange={(open) => !open && onClose()}>
         <DialogContent
-          className="min-w-4xl w-[95vw] max-h-[90vh] overflow-hidden p-0 flex flex-col"
+          className="min-w-4xl w-[95vw] max-h-[90vh] overflow-hidden p-0 flex flex-col border-0"
+          style={{
+            background:
+              "linear-gradient(135deg, rgba(15, 23, 42, 0.98) 0%, rgba(30, 58, 138, 0.95) 50%, rgba(15, 23, 42, 0.98) 100%)",
+            backdropFilter: "blur(20px)",
+            boxShadow:
+              "0 0 60px rgba(6, 182, 212, 0.15), 0 0 100px rgba(59, 130, 246, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
+            border: "1px solid rgba(255, 255, 255, 0.1)",
+          }}
           onInteractOutside={(e) => {
             const target = e.target as HTMLElement;
             if (
@@ -202,6 +210,22 @@ export function ReportDetailModal({
             }
           }}
         >
+          {/* Decorative glow orbs */}
+          <div
+            className="absolute -top-20 -right-20 w-40 h-40 rounded-full pointer-events-none"
+            style={{
+              background:
+                "radial-gradient(circle, rgba(6, 182, 212, 0.15) 0%, transparent 70%)",
+            }}
+          />
+          <div
+            className="absolute -bottom-20 -left-20 w-40 h-40 rounded-full pointer-events-none"
+            style={{
+              background:
+                "radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%)",
+            }}
+          />
+
           <VisuallyHidden>
             <DialogTitle>
               {reportDetail
@@ -210,22 +234,22 @@ export function ReportDetailModal({
             </DialogTitle>
           </VisuallyHidden>
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center px-6 py-16 min-h-[400px]">
+            <div className="flex flex-col items-center justify-center px-6 py-16 min-h-[400px] relative z-10">
               <div className="relative">
-                <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
-                <div className="absolute inset-0 h-12 w-12 animate-ping text-blue-600/20" />
+                <Loader2 className="h-12 w-12 animate-spin text-cyan-400" />
+                <div className="absolute inset-0 h-12 w-12 animate-ping rounded-full bg-cyan-400/20" />
               </div>
-              <p className="text-sm font-medium text-slate-600 mt-4">
+              <p className="text-sm font-medium text-white/80 mt-4">
                 Loading report details...
               </p>
-              <p className="text-xs text-slate-400 mt-1">
+              <p className="text-xs text-white/50 mt-1">
                 Please wait while we fetch the information
               </p>
             </div>
           ) : reportDetail ? (
             <TooltipProvider>
               <div
-                className="flex-1 overflow-y-auto overscroll-contain scroll-smooth"
+                className="flex-1 overflow-y-auto overscroll-contain scroll-smooth relative z-10"
                 onWheel={(e) => {
                   e.stopPropagation();
                 }}

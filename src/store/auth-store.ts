@@ -495,7 +495,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
     } catch (error: unknown) {
       const errorMessage = error instanceof ApiError 
         ? error.message 
-        : "Đăng ký thất bại. Vui lòng thử lại.";
+        : "Registration failed. Please try again.";
       
       set({
         isLoading: false,

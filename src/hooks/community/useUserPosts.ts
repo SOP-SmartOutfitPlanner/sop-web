@@ -136,7 +136,7 @@ export function useUserPosts(userId: string, currentUserId?: string) {
   const handleLike = useCallback(
     async (postId: number) => {
       if (!currentUserId) {
-        toast.error("Vui lòng đăng nhập");
+        toast.error("Please log in to like posts.");
         return;
       }
 

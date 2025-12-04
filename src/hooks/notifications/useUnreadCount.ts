@@ -3,15 +3,17 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { notificationAPI } from "@/lib/api";
 
 interface UseUnreadCountOptions {
+  /** @deprecated Use enabled instead. Polling is no longer supported - count updates via push notifications */
   poll?: boolean;
-  intervalMs?: number;
+  /** Enable fetching unread count. Defaults to true when userId is valid */
+  enabled?: boolean;
 }
 
 export function useUnreadCount(
   userId?: string,
   options: UseUnreadCountOptions = {}
 ) {
-  const { poll = false, intervalMs = 30_000 } = options;
+  const { enabled = true } = options;
   const queryClient = useQueryClient();
 
   const numericUserId = useMemo(() => {
@@ -35,13 +37,13 @@ export function useUnreadCount(
       const response = await notificationAPI.getUnreadCount(numericUserId);
       return response.data ?? 0;
     },
-    enabled: Boolean(numericUserId) && poll,
+    enabled: Boolean(numericUserId) && enabled,
     initialData: cachedData,
-    staleTime: 60_000,
-    refetchInterval: poll ? intervalMs : false,
-    refetchOnWindowFocus: poll,
-    refetchOnReconnect: poll,
-    refetchOnMount: poll,
+    staleTime: Infinity, // Never stale - only invalidate on push notification
+    refetchInterval: false, // No polling
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: cachedData === undefined, // Only fetch if no cached data
   });
 }
 

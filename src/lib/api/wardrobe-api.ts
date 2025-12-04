@@ -76,6 +76,7 @@ export interface ApiWardrobeItem {
   aiConfidence?: number;
   isAnalyzed?: boolean;
   aiAnalyzeJson?: string; // JSON string containing AI analysis data
+  itemType?: string;
   // Relational arrays
   styles?: Array<{ id: number; name: string }>;
   occasions?: Array<{ id: number; name: string }>;
@@ -147,6 +148,32 @@ export interface CreateWardrobeItemRequest extends ItemCreateModel {
   tag?: string;
 }
 
+// Worn History Interfaces
+export interface WornHistoryItem {
+  id: number;
+  itemId: number;
+  itemName: string;
+  itemImgUrl: string;
+  wornAt: string;
+  createdDate: string;
+}
+
+export interface WornHistoryResponse {
+  statusCode: number;
+  message: string;
+  data: {
+    data: WornHistoryItem[];
+    metaData: {
+      totalCount: number;
+      pageSize: number;
+      currentPage: number;
+      totalPages: number;
+      hasNext: boolean;
+      hasPrevious: boolean;
+    };
+  };
+}
+
 class WardrobeAPI {
   /**
    * Get all wardrobe items for current user with pagination and filters
@@ -160,7 +187,7 @@ class WardrobeAPI {
       seasonId?: number;
       styleId?: number;
       occasionId?: number;
-      sortByDate?: 'asc' | 'desc';
+      sortByDate?: "asc" | "desc";
       searchQuery?: string;
     }
   ): Promise<ApiItemsResponse> {
@@ -204,7 +231,7 @@ class WardrobeAPI {
       params.OccasionId = filters.occasionId;
     }
     if (filters?.sortByDate) {
-      params.SortByDate = filters.sortByDate === 'asc' ? 0 : 1; // 0 = asc, 1 = desc
+      params.SortByDate = filters.sortByDate === "asc" ? 0 : 1; // 0 = asc, 1 = desc
     }
     if (filters?.searchQuery) {
       params.search = filters.searchQuery;
@@ -346,9 +373,7 @@ class WardrobeAPI {
    * Note: The API returns 404 for partial success, but the client interceptor
    * converts it to 207 Multi-Status for proper handling.
    */
-  async bulkUploadAuto(
-    data: BulkItemRequestAutoModel
-  ): Promise<{
+  async bulkUploadAuto(data: BulkItemRequestAutoModel): Promise<{
     itemIds: number[];
     failedItems?: Array<{ imageUrl: string; reason: string }>;
   }> {
@@ -359,7 +384,10 @@ class WardrobeAPI {
         count?: number;
         itemIds?: number[];
         successfulItems?: { count: number; itemIds: number[] };
-        failedItems?: { count: number; items: Array<{ imageUrl: string; reason: string }> };
+        failedItems?: {
+          count: number;
+          items: Array<{ imageUrl: string; reason: string }>;
+        };
       };
     }>("/items/bulk-upload/auto", data);
 
@@ -368,7 +396,7 @@ class WardrobeAPI {
       // Convert to array if it's an object with numeric keys
       const itemIds = Array.isArray(response.data.itemIds)
         ? response.data.itemIds
-        : Object.values(response.data.itemIds) as number[];
+        : (Object.values(response.data.itemIds) as number[]);
       return { itemIds };
     }
 
@@ -378,11 +406,11 @@ class WardrobeAPI {
       // Convert to array if it's an object with numeric keys
       const itemIds = Array.isArray(response.data.successfulItems.itemIds)
         ? response.data.successfulItems.itemIds
-        : Object.values(response.data.successfulItems.itemIds) as number[];
+        : (Object.values(response.data.successfulItems.itemIds) as number[]);
       const failedItems = response.data.failedItems?.items || [];
       return {
         itemIds,
-        failedItems
+        failedItems,
       };
     }
 
@@ -418,7 +446,7 @@ class WardrobeAPI {
     // Convert to array if it's an object with numeric keys
     const itemIds = Array.isArray(response.data.itemIds)
       ? response.data.itemIds
-      : Object.values(response.data.itemIds) as number[];
+      : (Object.values(response.data.itemIds) as number[]);
 
     return { itemIds };
   }
@@ -460,7 +488,6 @@ class WardrobeAPI {
     await apiClient.delete(`/items/${id}`);
   }
 
-
   /**
    * Get all available styles (only system-created)
    */
@@ -472,8 +499,12 @@ class WardrobeAPI {
       const allStyles = response.data?.data || [];
       // Filter only SYSTEM-created styles
       const systemStyles = allStyles.filter(
-        (style: { id: number; name: string; description?: string; createdBy?: string }) =>
-          style.createdBy === "SYSTEM"
+        (style: {
+          id: number;
+          name: string;
+          description?: string;
+          createdBy?: string;
+        }) => style.createdBy === "SYSTEM"
       );
       return systemStyles;
     } catch (error) {
@@ -536,7 +567,9 @@ class WardrobeAPI {
   async getRootCategories(
     pageIndex: number = 1,
     pageSize: number = 100
-  ): Promise<{ id: number; name: string; parentId?: number; parentName?: string }[]> {
+  ): Promise<
+    { id: number; name: string; parentId?: number; parentName?: string }[]
+  > {
     try {
       const response = await apiClient.get("/categories/root", {
         params: {
@@ -561,7 +594,9 @@ class WardrobeAPI {
     parentId: number,
     pageIndex: number = 1,
     pageSize: number = 100
-  ): Promise<{ id: number; name: string; parentId?: number; parentName?: string }[]> {
+  ): Promise<
+    { id: number; name: string; parentId?: number; parentName?: string }[]
+  > {
     try {
       const response = await apiClient.get(`/categories/parent/${parentId}`, {
         params: {
@@ -629,13 +664,15 @@ class WardrobeAPI {
    * Response format (400 Bad Request):
    * { statusCode: 400, message: "Failed to split image" }
    */
-  async splitOutfitImage(file: File): Promise<{
-    category: string;
-    url: string;
-    fileName: string;
-  }[]> {
+  async splitOutfitImage(file: File): Promise<
+    {
+      category: string;
+      url: string;
+      fileName: string;
+    }[]
+  > {
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append("file", file);
 
     const response = await apiClient.post<{
       statusCode: number;
@@ -645,14 +682,14 @@ class WardrobeAPI {
         url: string;
         fileName: string;
       }>;
-    }>('/items/split-item', formData, {
+    }>("/items/split-item", formData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        "Content-Type": "multipart/form-data",
       },
     });
 
     if (response.statusCode !== 200) {
-      throw new Error(response.message || 'Failed to split image');
+      throw new Error(response.message || "Failed to split image");
     }
 
     return response.data;
@@ -671,7 +708,7 @@ class WardrobeAPI {
       seasonId?: number;
       styleId?: number;
       occasionId?: number;
-      sortByDate?: 'asc' | 'desc';
+      sortByDate?: "asc" | "desc";
       searchQuery?: string;
     }
   ): Promise<ApiItemsResponse> {
@@ -698,7 +735,7 @@ class WardrobeAPI {
       params.OccasionId = filters.occasionId;
     }
     if (filters?.sortByDate) {
-      params.SortByDate = filters.sortByDate === 'asc' ? 0 : 1; // 0 = asc, 1 = desc
+      params.SortByDate = filters.sortByDate === "asc" ? 0 : 1; // 0 = asc, 1 = desc
     }
     if (filters?.searchQuery) {
       params.search = filters.searchQuery;
@@ -719,7 +756,7 @@ class WardrobeAPI {
           hasPrevious: boolean;
         };
       };
-    }>('/items/system', {
+    }>("/items/system", {
       params,
     });
 
@@ -757,6 +794,28 @@ class WardrobeAPI {
         hasPrevious: false,
       },
     };
+  }
+
+  /**
+   * Get item worn history
+   */
+  async getWornHistory(
+    itemId: number,
+    pageIndex: number = 1,
+    pageSize: number = 10
+  ): Promise<WornHistoryResponse["data"]> {
+    const response = await apiClient.get<WornHistoryResponse>(
+      `/items/${itemId}/worn-at-history`,
+      {
+        params: { "page-index": pageIndex, "page-size": pageSize },
+      }
+    );
+
+    if (response.statusCode !== 200) {
+      throw new Error(response.message || "Failed to fetch worn history");
+    }
+
+    return response.data;
   }
 }
 

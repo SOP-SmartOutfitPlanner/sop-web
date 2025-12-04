@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   ChevronDown,
   ChevronUp,
@@ -11,7 +11,7 @@ import {
   Clock,
   Plus,
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, isPast, parseISO } from "date-fns";
 import { UserOccasion } from "@/types/userOccasion";
 import { Outfit } from "@/types/outfit";
 import { CalendarEntry, Calender } from "@/types/calendar";
@@ -65,6 +65,18 @@ export function OccasionItem({
   const [viewingOutfit, setViewingOutfit] = useState<Outfit | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isAvailableModalOpen, setIsAvailableModalOpen] = useState(false);
+
+  // Check if the occasion has ended based on its endTime
+  const isOccasionEnded = useMemo(() => {
+    if (!occasion.endTime) {
+      // If no endTime, check if dateOccasion is in the past (end of that day)
+      const occasionDate = parseISO(occasion.dateOccasion);
+      occasionDate.setHours(23, 59, 59, 999);
+      return isPast(occasionDate);
+    }
+    // Check if endTime is in the past
+    return isPast(parseISO(occasion.endTime));
+  }, [occasion.endTime, occasion.dateOccasion]);
 
   // Convert Calender to Outfit format
   const convertCalenderToOutfit = (calender: Calender): Outfit => {
@@ -167,25 +179,27 @@ export function OccasionItem({
           </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex items-center gap-2">
-            {/* Edit Button */}
-            <button
-              onClick={(e) => onEdit(occasion, e)}
-              className="p-2.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 hover:border-blue-400/50 transition-all duration-200"
-              title="Edit occasion"
-            >
-              <Edit className="w-4 h-4 text-blue-300" />
-            </button>
-            {/* Delete Button */}
-            <button
-              onClick={(e) => onDeleteOccasion(occasion.id, e)}
-              className="p-2.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 hover:border-red-400/50 transition-all duration-200"
-              title="Delete occasion"
-            >
-              <Trash2 className="w-4 h-4 text-red-300" />
-            </button>
-          </div>
+          {/* Action Buttons - Hidden for ended occasions */}
+          {!isOccasionEnded && (
+            <div className="flex items-center gap-2">
+              {/* Edit Button */}
+              <button
+                onClick={(e) => onEdit(occasion, e)}
+                className="p-2.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 hover:border-blue-400/50 transition-all duration-200"
+                title="Edit occasion"
+              >
+                <Edit className="w-4 h-4 text-blue-300" />
+              </button>
+              {/* Delete Button */}
+              <button
+                onClick={(e) => onDeleteOccasion(occasion.id, e)}
+                className="p-2.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 hover:border-red-400/50 transition-all duration-200"
+                title="Delete occasion"
+              >
+                <Trash2 className="w-4 h-4 text-red-300" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -206,6 +220,7 @@ export function OccasionItem({
             <PlannedOutfitsGrid
               outfits={plannedOutfits}
               isDeletingEntry={isDeletingEntry}
+              isOccasionEnded={isOccasionEnded}
               onDeleteEntry={onDeleteEntry}
               onEditEntry={onEditEntry}
               onViewOutfit={handleViewOutfit}
@@ -213,8 +228,8 @@ export function OccasionItem({
             />
           )}
 
-          {/* Available Outfits CTA */}
-          {availableOutfits.length > 0 && (
+          {/* Available Outfits CTA - Hidden for ended occasions */}
+          {!isOccasionEnded && availableOutfits.length > 0 && (
             <div className="p-4 rounded-2xl border border-white/10 bg-white/5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-4">
               <div>
                 <p className="font-bricolage text-base font-semibold text-white">
@@ -237,7 +252,7 @@ export function OccasionItem({
             </div>
           )}
 
-          {availableOutfits.length === 0 && plannedCount > 0 && (
+          {!isOccasionEnded && availableOutfits.length === 0 && plannedCount > 0 && (
             <div className="text-center py-6">
               <Shirt className="w-10 h-10 mx-auto mb-2 text-white/20" />
               <p className="font-poppins text-sm text-white/50">

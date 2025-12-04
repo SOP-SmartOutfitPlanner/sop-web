@@ -506,29 +506,6 @@ export function EditItemDialog({
               />
             </div>
 
-            {/* Frequency Worn */}
-            <div className="flex-shrink-0">
-              <Label
-                htmlFor="frequency"
-                className="text-lg font-medium text-white mb-1.5 block"
-              >
-                Frequency Worn
-              </Label>
-              <Input
-                id="frequency"
-                type="text"
-                value={formData.frequencyWorn}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    frequencyWorn: e.target.value,
-                  })
-                }
-                placeholder="e.g., Weekly, Monthly"
-                className="bg-white border-white/30 text-gray-900 placeholder:text-gray-400 h-9"
-              />
-            </div>
-
             {/* Last Worn (Read-only) */}
             <div className="flex-shrink-0">
               <Label

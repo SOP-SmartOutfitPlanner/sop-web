@@ -1,16 +1,25 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { X, Edit, Sparkles, ArrowLeft } from "lucide-react";
+import { X, Edit, Sparkles, ArrowLeft, ExternalLink } from "lucide-react";
 import { Image } from "antd";
 import GlassButton from "@/components/ui/glass-button";
 import { wardrobeAPI, AIAnalysisData } from "@/lib/api/wardrobe-api";
+import { ItemHistoryDialog } from "./ItemHistoryDialog";
 
 export interface ViewItemDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   itemId: number;
   onEdit?: () => void;
+  savedFromPost?: {
+    postId: number;
+    postBody: string;
+    postUserId: number;
+    postUserDisplayName: string;
+  };
+  onOpenPost?: (postId: number) => void;
+  isPostLoading?: boolean;
 }
 
 interface ColorOption {
@@ -43,7 +52,11 @@ export function ViewItemDialog({
   onOpenChange,
   itemId,
   onEdit,
-}: ViewItemDialogProps) {
+  savedFromPost,
+  onOpenPost,
+  isPostLoading = false,
+  zIndex,
+}: ViewItemDialogProps & { zIndex?: number }) {
   const [isLoading, setIsLoading] = useState(true);
   const [itemData, setItemData] = useState<ViewItemData | null>(null);
   const [originalData, setOriginalData] = useState<ViewItemData | null>(null);
@@ -51,6 +64,7 @@ export function ViewItemDialog({
     null
   );
   const [showAiAnalysis, setShowAiAnalysis] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
 
   const fetchItemData = useCallback(async () => {
     setIsLoading(true);
@@ -150,13 +164,38 @@ export function ViewItemDialog({
     }
   }, [originalData]);
 
+  const renderField = (
+    label: string,
+    value: string | undefined,
+    originalValue: string | undefined
+  ) => {
+    const hasChanged = showAiAnalysis && value !== originalValue;
+    return (
+      <div>
+        <p className="text-lg font-medium text-white mb-1.5">{label}</p>
+        <div className="text-white/90 bg-white/10 rounded-lg px-3 py-2 text-sm">
+          <p>{value || "N/A"}</p>
+          {hasChanged && (
+            <div className="mt-2 pt-2 border-t border-white/10">
+              <p className="text-xs text-white/50 mb-0.5">Current Value:</p>
+              <p className="text-yellow-200/90">{originalValue || "N/A"}</p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   if (!open) return null;
 
   return (
     <>
       {/* Backdrop */}
       <div
-        className="fixed h-full inset-0 bg-black/50 backdrop-blur-sm z-[60]"
+        className={`fixed h-full inset-0 bg-black/50 backdrop-blur-sm ${
+          zIndex ? `z-[${zIndex}]` : "z-[60]"
+        }`}
+        style={zIndex ? { zIndex } : undefined}
         onClick={(e) => {
           e.stopPropagation();
           onOpenChange(false);
@@ -164,7 +203,18 @@ export function ViewItemDialog({
       />
 
       {/* Modal Container */}
-      <div className="fixed inset-0 z-[61] flex items-center justify-center p-4 pointer-events-none">
+      <div
+        className={`fixed inset-0 ${
+          zIndex ? `z-[${zIndex + 1}]` : "z-[61]"
+        } flex items-center justify-center p-4 pointer-events-none`}
+        style={zIndex ? { zIndex: zIndex + 1 } : undefined}
+      >
+        <ItemHistoryDialog
+          open={showHistory}
+          onOpenChange={setShowHistory}
+          itemId={itemId}
+          itemName={itemData?.name || ""}
+        />
         <div
           className="w-[1400px] max-w-[95vw] h-[95vh] rounded-3xl overflow-hidden shadow-2xl pointer-events-auto relative flex flex-col"
           onClick={(e) => e.stopPropagation()}
@@ -246,7 +296,32 @@ export function ViewItemDialog({
                           View AI Analysis
                         </GlassButton>
                       )}
-                      {onEdit && (
+                      {savedFromPost && onOpenPost && (
+                        <GlassButton
+                          onClick={() => onOpenPost(savedFromPost.postId)}
+                          disabled={isPostLoading}
+                          variant="custom"
+                          size="sm"
+                          borderRadius="12px"
+                          blur="8px"
+                          brightness={1.1}
+                          glowColor="rgba(34, 211, 238, 0.4)"
+                          glowIntensity={4}
+                          borderColor="rgba(34, 211, 238, 0.3)"
+                          borderWidth="1px"
+                          textColor="#ffffff"
+                          backgroundColor="rgba(34, 211, 238, 0.2)"
+                          className="gap-2"
+                        >
+                          {isPostLoading ? (
+                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          ) : (
+                            <ExternalLink className="w-4 h-4" />
+                          )}
+                          View Post
+                        </GlassButton>
+                      )}
+                      {!savedFromPost && onEdit && (
                         <GlassButton
                           onClick={onEdit}
                           variant="custom"
@@ -271,6 +346,7 @@ export function ViewItemDialog({
                   <button
                     onClick={() => onOpenChange(false)}
                     className="p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-all"
+                    aria-label="Close"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -362,70 +438,49 @@ export function ViewItemDialog({
                   {/* Column 2: Details */}
                   <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-3 overflow-y-auto custom-scrollbar space-y-3">
                     {/* Category */}
-                    <div>
-                      <p className="text-lg font-medium text-white mb-1.5">
-                        Category
-                      </p>
-                      <p className="text-white/90 bg-white/10 rounded-lg px-3 py-2 text-sm">
-                        {itemData.category}
-                      </p>
-                    </div>
+                    {renderField(
+                      "Category",
+                      itemData.category,
+                      originalData?.category
+                    )}
 
                     {/* Brand */}
-                    <div>
-                      <p className="text-lg font-medium text-white mb-1.5">
-                        Brand
-                      </p>
-                      <p className="text-white/90 bg-white/10 rounded-lg px-3 py-2 text-sm">
-                        {itemData.brand}
-                      </p>
-                    </div>
+                    {renderField("Brand", itemData.brand, originalData?.brand)}
 
                     {/* Pattern */}
-                    <div>
-                      <p className="text-lg font-medium text-white mb-1.5">
-                        Pattern
-                      </p>
-                      <p className="text-white/90 bg-white/10 rounded-lg px-3 py-2 text-sm">
-                        {itemData.pattern}
-                      </p>
-                    </div>
+                    {renderField(
+                      "Pattern",
+                      itemData.pattern,
+                      originalData?.pattern
+                    )}
 
                     {/* Fabric */}
-                    <div>
-                      <p className="text-lg font-medium text-white mb-1.5">
-                        Fabric
-                      </p>
-                      <p className="text-white/90 bg-white/10 rounded-lg px-3 py-2 text-sm">
-                        {itemData.fabric}
-                      </p>
-                    </div>
+                    {renderField(
+                      "Fabric",
+                      itemData.fabric,
+                      originalData?.fabric
+                    )}
 
                     {/* Condition */}
-                    <div>
-                      <p className="text-lg font-medium text-white mb-1.5">
-                        Condition
-                      </p>
-                      <p className="text-white/90 bg-white/10 rounded-lg px-3 py-2 text-sm">
-                        {itemData.condition}
-                      </p>
-                    </div>
-
-                    {/* Frequency Worn */}
-                    <div>
-                      <p className="text-lg font-medium text-white mb-1.5">
-                        Frequency Worn
-                      </p>
-                      <p className="text-white/90 bg-white/10 rounded-lg px-3 py-2 text-sm">
-                        {itemData.frequencyWorn}
-                      </p>
-                    </div>
+                    {renderField(
+                      "Condition",
+                      itemData.condition,
+                      originalData?.condition
+                    )}
 
                     {/* Last Worn */}
                     <div>
-                      <p className="text-lg font-medium text-white mb-1.5">
-                        Last Worn
-                      </p>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <p className="text-lg font-medium text-white">
+                          Last Worn
+                        </p>
+                        <button
+                          onClick={() => setShowHistory(true)}
+                          className="text-xs text-blue-300 hover:text-blue-200 underline"
+                        >
+                          View History
+                        </button>
+                      </div>
                       <p className="text-white/90 bg-white/10 rounded-lg px-3 py-2 text-sm">
                         {itemData.lastWornAt
                           ? new Date(itemData.lastWornAt).toLocaleString(
@@ -441,6 +496,81 @@ export function ViewItemDialog({
                           : "Never worn"}
                       </p>
                     </div>
+
+                    {/* AI Analysis Data */}
+                    {showAiAnalysis && (
+                      <>
+                        {/* AI Confidence */}
+                        {itemData.aiConfidence !== undefined && (
+                          <div className="flex items-center gap-4 mt-2 p-3 bg-white/5 rounded-xl border border-white/10">
+                            <div className="relative w-12 h-12 flex-shrink-0">
+                              <svg className="w-full h-full transform -rotate-90">
+                                <circle
+                                  cx="24"
+                                  cy="24"
+                                  r="20"
+                                  stroke="currentColor"
+                                  strokeWidth="4"
+                                  fill="transparent"
+                                  className="text-white/10"
+                                />
+                                <circle
+                                  cx="24"
+                                  cy="24"
+                                  r="20"
+                                  stroke="currentColor"
+                                  strokeWidth="4"
+                                  fill="transparent"
+                                  strokeDasharray={2 * Math.PI * 20}
+                                  strokeDashoffset={
+                                    2 *
+                                    Math.PI *
+                                    20 *
+                                    (1 - itemData.aiConfidence / 100)
+                                  }
+                                  className={
+                                    itemData.aiConfidence >= 80
+                                      ? "text-green-400"
+                                      : itemData.aiConfidence >= 60
+                                      ? "text-yellow-400"
+                                      : "text-red-400"
+                                  }
+                                />
+                              </svg>
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <span className="text-xs font-bold text-white">
+                                  {itemData.aiConfidence}%
+                                </span>
+                              </div>
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-white">
+                                AI Confidence
+                              </p>
+                              <p className="text-xs text-white/60">
+                                {itemData.aiConfidence >= 80
+                                  ? "High confidence"
+                                  : itemData.aiConfidence >= 60
+                                  ? "Moderate confidence"
+                                  : "Low confidence"}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* AI Description */}
+                        {itemData.aiDescription && (
+                          <div>
+                            <p className="text-lg font-medium text-white mb-1.5">
+                              AI Description
+                            </p>
+                            <p className="text-white/90 bg-white/10 rounded-lg px-3 py-2 text-sm italic leading-relaxed">
+                              {itemData.aiDescription}
+                            </p>
+                          </div>
+                        )}
+                      </>
+                    )}
                   </div>
 
                   {/* Column 3: Tags */}
@@ -468,6 +598,18 @@ export function ViewItemDialog({
                           </p>
                         )}
                       </div>
+                      {showAiAnalysis &&
+                        itemData.weatherSuitable !==
+                          originalData?.weatherSuitable && (
+                          <div className="mt-2 pt-2 border-t border-white/10">
+                            <p className="text-xs text-white/50 mb-0.5">
+                              Current Value:
+                            </p>
+                            <p className="text-yellow-200/90 text-sm">
+                              {originalData?.weatherSuitable || "N/A"}
+                            </p>
+                          </div>
+                        )}
                     </div>
 
                     {/* Styles */}
@@ -489,6 +631,20 @@ export function ViewItemDialog({
                           <p className="text-white/50 text-xs">No styles</p>
                         )}
                       </div>
+                      {showAiAnalysis &&
+                        JSON.stringify(itemData.styles.slice().sort()) !==
+                          JSON.stringify(
+                            originalData?.styles.slice().sort()
+                          ) && (
+                          <div className="mt-2 pt-2 border-t border-white/10">
+                            <p className="text-xs text-white/50 mb-0.5">
+                              Current Value:
+                            </p>
+                            <p className="text-yellow-200/90 text-sm">
+                              {originalData?.styles.join(", ") || "N/A"}
+                            </p>
+                          </div>
+                        )}
                     </div>
 
                     {/* Occasions */}
@@ -510,6 +666,20 @@ export function ViewItemDialog({
                           <p className="text-white/50 text-xs">No occasions</p>
                         )}
                       </div>
+                      {showAiAnalysis &&
+                        JSON.stringify(itemData.occasions.slice().sort()) !==
+                          JSON.stringify(
+                            originalData?.occasions.slice().sort()
+                          ) && (
+                          <div className="mt-2 pt-2 border-t border-white/10">
+                            <p className="text-xs text-white/50 mb-0.5">
+                              Current Value:
+                            </p>
+                            <p className="text-yellow-200/90 text-sm">
+                              {originalData?.occasions.join(", ") || "N/A"}
+                            </p>
+                          </div>
+                        )}
                     </div>
 
                     {/* Seasons */}
@@ -531,6 +701,20 @@ export function ViewItemDialog({
                           <p className="text-white/50 text-xs">No seasons</p>
                         )}
                       </div>
+                      {showAiAnalysis &&
+                        JSON.stringify(itemData.seasons.slice().sort()) !==
+                          JSON.stringify(
+                            originalData?.seasons.slice().sort()
+                          ) && (
+                          <div className="mt-2 pt-2 border-t border-white/10">
+                            <p className="text-xs text-white/50 mb-0.5">
+                              Current Value:
+                            </p>
+                            <p className="text-yellow-200/90 text-sm">
+                              {originalData?.seasons.join(", ") || "N/A"}
+                            </p>
+                          </div>
+                        )}
                     </div>
                   </div>
                 </div>

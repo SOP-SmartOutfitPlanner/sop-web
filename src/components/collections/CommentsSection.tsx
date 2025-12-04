@@ -1,11 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import Image from "next/image";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   MessageCircle,
-  UserPlus,
   Smile,
   ChevronLeft,
   ChevronRight,
@@ -376,7 +374,8 @@ export function CommentsSection({
       glowColor="rgba(59, 130, 246, 0.4)"
       glowIntensity={14}
       shadowColor="rgba(15, 23, 42, 0.5)"
-      className="border border-slate-700/40 "
+      className="border border-slate-700/40 !overflow-visible"
+      style={{ overflow: 'visible' }}
     >
       <div className="mb-4 flex items-center gap-2">
         <MessageCircle className="h-5 w-5 text-cyan-300" />
@@ -408,12 +407,17 @@ export function CommentsSection({
           {showEmojiPicker && (
             <div
               ref={emojiPickerRef}
-              className="absolute top-full right-0 mb-2 z-50"
+              className="fixed z-[9999]"
+              style={{
+                top: 'auto',
+                bottom: '80px',
+                right: '20px',
+              }}
             >
               <EmojiPicker
                 onEmojiClick={handleEmojiClick}
                 width={320}
-                height={500}
+                height={400}
                 searchDisabled
                 skinTonesDisabled
                 previewConfig={{ showPreview: false }}

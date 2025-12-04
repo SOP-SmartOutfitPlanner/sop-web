@@ -43,10 +43,11 @@ interface FeedEmptyProps {
 
 export function FeedEmpty({ searchQuery }: FeedEmptyProps) {
   return (
-    <div className="flex flex-col items-center justify-center py-16 text-center">
-      <div className="text-muted-foreground mb-4">
+    <div className="flex flex-col items-center justify-center py-20 text-center">
+      {/* Icon */}
+      <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-6">
         <svg
-          className="w-16 h-16 mx-auto"
+          className="w-8 h-8 text-white/40"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -54,12 +55,17 @@ export function FeedEmpty({ searchQuery }: FeedEmptyProps) {
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
+            strokeWidth={1.5}
             d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
           />
         </svg>
       </div>
-      <h3 className="text-xl font-bricolage font-bold mb-2">No posts found</h3>
-      <p className="text-muted-foreground">
+      
+      {/* Title */}
+      <h3 className="text-xl font-semibold text-white mb-2">No posts found</h3>
+      
+      {/* Description */}
+      <p className="text-sm text-white/50">
         {searchQuery ? "Try adjusting your filters" : "Be the first to share something!"}
       </p>
     </div>

@@ -230,7 +230,8 @@ export function PostModal({
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent
-          className={`!p-0 !gap-0 backdrop-blur-2xl bg-slate-950/60 border border-cyan-400/15 shadow-[0_8px_32px_rgba(0,0,0,0.4)] rounded-3xl overflow-hidden flex flex-col ${
+          overlayClassName="z-[70]"
+          className={`z-[71] !p-0 !gap-0 backdrop-blur-2xl bg-slate-950/60 border border-cyan-400/15 shadow-[0_8px_32px_rgba(0,0,0,0.4)] rounded-3xl overflow-hidden flex flex-col ${
             hasMultipleImages || currentImage
               ? "!max-w-[1200px] !w-[90vw] !h-[85vh]"
               : "!max-w-[700px] !w-[90vw] !h-[85vh]"
@@ -398,9 +399,9 @@ export function PostModal({
                   </DropdownMenuTrigger>
                   <DropdownMenuContent
                     align="end"
-                    className="min-w-[180px] backdrop-blur-xl bg-gradient-to-br from-cyan-950/60 via-blue-950/50 to-indigo-950/60 border-2 border-cyan-400/25 shadow-2xl shadow-cyan-500/20 text-white/90"
+                    className="min-w-[180px] backdrop-blur-xl bg-gradient-to-br from-cyan-950/90 via-blue-950/85 to-indigo-950/90 border-2 border-cyan-400/25 shadow-2xl shadow-cyan-500/20 text-white/90 z-[9999]"
                   >
-                    {isOwnPost && (
+                    {isOwnPost ? (
                       <>
                         <DropdownMenuItem
                           onClick={() => setIsEditDialogOpen(true)}
@@ -417,10 +418,15 @@ export function PostModal({
                           Delete post
                         </DropdownMenuItem>
                       </>
-                    )}
-                    {!isOwnPost && (
+                    ) : (
                       <DropdownMenuItem
-                        onClick={() => setIsReportDialogOpen(true)}
+                        onClick={() => {
+                          if (!user) {
+                            toast.error("Please login to report post");
+                            return;
+                          }
+                          setIsReportDialogOpen(true);
+                        }}
                         className="focus:bg-cyan-500/20 focus:text-white cursor-pointer"
                       >
                         <Flag className="w-4 h-4 mr-2" />

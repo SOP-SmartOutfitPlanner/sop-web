@@ -2,17 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Loader2, Sparkles, AlertTriangle } from "lucide-react";
+import { AlertTriangle, Trash2 } from "lucide-react";
 import {
   useAdminAISettings,
   useCreateAISetting,
@@ -28,6 +18,7 @@ import { SelectionToolbar } from "./components/SelectionToolbar";
 import { SettingsTable } from "./components/SettingsTable";
 import { AISettingFormDialog } from "./components/AISettingFormDialog";
 import { ViewValueDialog } from "./components/ViewValueDialog";
+import { AdminModal } from "@/components/admin/AdminModal";
 
 const AI_SETTING_TYPES: AISettingType[] = [
   "API_ITEM_ANALYZING",
@@ -114,6 +105,7 @@ export default function AdminAISettingsPage() {
     setSelectedIds(new Set());
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const maskSensitiveValue = (value: string, id: number): string => {
     // Mask API keys and sensitive values
     // Check if it looks like an API key (starts with common prefixes)
@@ -234,9 +226,12 @@ export default function AdminAISettingsPage() {
   };
 
   const getTypeColor = (type: string) => {
-    if (type.includes("API")) return "bg-cyan-500/20 text-cyan-300 border-cyan-400/30";
-    if (type.includes("MODEL")) return "bg-purple-500/20 text-purple-300 border-purple-400/30";
-    if (type.includes("PROMPT")) return "bg-green-500/20 text-green-300 border-green-400/30";
+    if (type.includes("API"))
+      return "bg-cyan-500/20 text-cyan-300 border-cyan-400/30";
+    if (type.includes("MODEL"))
+      return "bg-purple-500/20 text-purple-300 border-purple-400/30";
+    if (type.includes("PROMPT"))
+      return "bg-green-500/20 text-green-300 border-green-400/30";
     return "bg-white/10 text-white/70 border-white/20";
   };
 
@@ -351,82 +346,56 @@ export default function AdminAISettingsPage() {
       />
 
       {/* Delete Confirmation */}
-      <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-red-100 text-red-600">
-                <AlertTriangle className="w-5 h-5" />
-              </div>
-              <AlertDialogTitle className="text-xl">
-                Confirm Deletion
-              </AlertDialogTitle>
-            </div>
-            <AlertDialogDescription className="text-base">
-              Are you sure you want to delete the setting{" "}
-              <strong className="text-gray-900">{selectedSetting?.name}</strong>
-              ? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel className="border-2">Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              className="bg-red-600 hover:bg-red-700 text-white shadow-md hover:shadow-lg transition-all"
-              disabled={deleteMutation.isPending}
-            >
-              {deleteMutation.isPending ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Deleting...
-                </>
-              ) : (
-                "Delete Setting"
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <AdminModal
+        open={isDeleteOpen}
+        onOpenChange={setIsDeleteOpen}
+        onConfirm={handleDelete}
+        title="Confirm Deletion"
+        subtitle="This action cannot be undone"
+        icon={<AlertTriangle className="w-5 h-5" />}
+        iconClassName="from-red-500 to-red-600"
+        maxWidth="480px"
+        confirmButtonText="Delete Setting"
+        confirmButtonIcon={<Trash2 className="w-4 h-4" />}
+        isLoading={deleteMutation.isPending}
+        loadingText="Deleting..."
+        variant="danger"
+      >
+        <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+          <p className="font-bricolage text-sm text-gray-200 leading-relaxed">
+            Are you sure you want to delete the setting{" "}
+            <strong className="text-white">{selectedSetting?.name}</strong>?
+            This action cannot be undone.
+          </p>
+        </div>
+      </AdminModal>
 
       {/* Bulk Delete Confirmation */}
-      <AlertDialog open={isBulkDeleteOpen} onOpenChange={setIsBulkDeleteOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-red-100 text-red-600">
-                <AlertTriangle className="w-5 h-5" />
-              </div>
-              <AlertDialogTitle className="text-xl">
-                Confirm Bulk Deletion
-              </AlertDialogTitle>
-            </div>
-            <AlertDialogDescription className="text-base">
-              Are you sure you want to delete{" "}
-              <strong className="text-gray-900">
-                {selectedIds.size} setting{selectedIds.size > 1 ? "s" : ""}
-              </strong>
-              ? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel className="border-2">Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleBulkDelete}
-              className="bg-red-600 hover:bg-red-700 text-white shadow-md hover:shadow-lg transition-all"
-              disabled={bulkDeleteMutation.isPending}
-            >
-              {bulkDeleteMutation.isPending ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Deleting...
-                </>
-              ) : (
-                `Delete ${selectedIds.size} Settings`
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <AdminModal
+        open={isBulkDeleteOpen}
+        onOpenChange={setIsBulkDeleteOpen}
+        onConfirm={handleBulkDelete}
+        title="Confirm Bulk Deletion"
+        subtitle="This action cannot be undone"
+        icon={<AlertTriangle className="w-5 h-5" />}
+        iconClassName="from-red-500 to-red-600"
+        maxWidth="480px"
+        confirmButtonText={`Delete ${selectedIds.size} Settings`}
+        confirmButtonIcon={<Trash2 className="w-4 h-4" />}
+        isLoading={bulkDeleteMutation.isPending}
+        loadingText="Deleting..."
+        variant="danger"
+      >
+        <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+          <p className="font-bricolage text-sm text-gray-200 leading-relaxed">
+            Are you sure you want to delete{" "}
+            <strong className="text-white">
+              {selectedIds.size} setting{selectedIds.size > 1 ? "s" : ""}
+            </strong>
+            ? This action cannot be undone.
+          </p>
+        </div>
+      </AdminModal>
     </div>
   );
 }

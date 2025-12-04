@@ -38,7 +38,7 @@ export function UserProfilePosts({ userId, userName }: UserProfilePostsProps) {
 
   const handleReportPost = async (postId: string, reason: string) => {
     if (!user?.id) {
-      const message = "Vui lòng đăng nhập";
+      const message = "Please log in to report posts";
       toast.error(message);
       throw new Error(message);
     }
@@ -46,7 +46,7 @@ export function UserProfilePosts({ userId, userName }: UserProfilePostsProps) {
     const parsedPostId = Number.parseInt(postId, 10);
 
     if (Number.isNaN(parsedPostId)) {
-      const message = "ID bài viết không hợp lệ";
+      const message = "Invalid post ID";
       toast.error(message);
       throw new Error(message);
     }
@@ -59,13 +59,13 @@ export function UserProfilePosts({ userId, userName }: UserProfilePostsProps) {
         description: reason,
       });
 
-      toast.success("Cảm ơn bạn đã báo cáo", {
+      toast.success("Thank you for reporting", {
         description: response?.message,
       });
     } catch (error) {
       console.error("Error reporting post:", error);
       const errorMessage =
-        error instanceof Error ? error.message : "Không thể gửi báo cáo";
+        error instanceof Error ? error.message : "Unable to send report";
       toast.error(errorMessage);
       throw error instanceof Error ? error : new Error(errorMessage);
     }
@@ -73,20 +73,20 @@ export function UserProfilePosts({ userId, userName }: UserProfilePostsProps) {
 
   const handleDeletePost = async (postId: number) => {
     if (!user?.id) {
-      toast.error("Vui lòng đăng nhập");
+      toast.error("Please log in");
       return;
     }
 
     try {
       await communityAPI.deletePost(postId);
-      toast.success("Bài viết đã được xóa");
+      toast.success("Post has been deleted");
       
       // Refetch posts to update the list
       await refetch();
     } catch (error) {
       console.error("Error deleting post:", error);
       const errorMessage =
-        error instanceof Error ? error.message : "Không thể xóa bài viết";
+        error instanceof Error ? error.message : "Unable to delete post";
       toast.error(errorMessage);
       throw error;
     }
@@ -118,7 +118,7 @@ export function UserProfilePosts({ userId, userName }: UserProfilePostsProps) {
         </div>
         <h3 className="text-xl font-semibold mb-2">No posts yet</h3>
         <p className="text-muted-foreground">
-          {userName} chưa chia sẻ bài viết nào
+          {userName} has not shared any posts yet
         </p>
       </div>
     );
@@ -126,7 +126,7 @@ export function UserProfilePosts({ userId, userName }: UserProfilePostsProps) {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bricolage font-bold">Bài viết</h2>
+      <h2 className="text-2xl font-bricolage font-bold">Posts</h2>
 
       {/* Posts Feed */}
       <div className="space-y-6">
@@ -169,7 +169,7 @@ export function UserProfilePosts({ userId, userName }: UserProfilePostsProps) {
       {/* End Message */}
       {!hasMore && posts.length > 0 && (
         <div className="text-center py-8 text-muted-foreground">
-          Đã hiển thị tất cả bài viết
+          All posts have been displayed
         </div>
       )}
     </div>

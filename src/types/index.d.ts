@@ -57,6 +57,13 @@ export type WardrobeItem = {
   category?: Category; // Mapped from type
   color?: string; // First color from colors array
   season?: Season; // First season from seasons array
+  // Saved from post info
+  savedFromPost?: {
+    postId: number;
+    postBody: string;
+    postUserId: number;
+    postUserDisplayName: string;
+  };
 };
 
 export interface Category {

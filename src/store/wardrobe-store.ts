@@ -7,6 +7,7 @@ import {
   type ApiWardrobeItem,
   type CreateWardrobeItemRequest,
 } from "@/lib/api/wardrobe-api";
+import { communityAPI } from "@/lib/api/community-api";
 
 interface WardrobeStore {
   items: WardrobeItem[];
@@ -56,6 +57,8 @@ interface WardrobeStore {
   analyzeItem: (id: string) => Promise<void>;
   analyzingItem: { id: string; imageUrl: string; name: string } | null;
   analysisProgress: number;
+  // Unsave item
+  unsaveItem: (itemId: string, postId: string) => Promise<void>;
   // Reset
   resetStore: () => void;
 }
@@ -251,7 +254,7 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
         // Transform saved items to WardrobeItem format
         const items = response.data.data.map((savedItem) => {
           const item = savedItem.item;
-          return apiItemToWardrobeItem({
+          const wardrobeItem = apiItemToWardrobeItem({
             id: item.id,
             userId: item.userId,
             name: item.name,
@@ -275,6 +278,16 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
             seasons: item.seasons,
             styles: item.styles,
           } as ApiWardrobeItem);
+
+          // Add saved from post info
+          wardrobeItem.savedFromPost = {
+            postId: savedItem.postId,
+            postBody: savedItem.postBody,
+            postUserId: savedItem.postUserId,
+            postUserDisplayName: savedItem.postUserDisplayName,
+          };
+
+          return wardrobeItem;
         });
 
         // No need for client-side filtering since API already filtered
@@ -674,6 +687,37 @@ export const useWardrobeStore = create<WardrobeStore>((set, get) => ({
       // Clear analyzing state on error
       set({ analyzingItem: null, analysisProgress: 0 });
       throw error;
+    }
+  },
+
+  // Unsave item from wardrobe and remove from saved posts
+  unsaveItem: async (itemId: string, postId: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      // Call API to unsave item
+      await communityAPI.unsaveItemFromPost(parseInt(itemId), parseInt(postId));
+
+      // Optimistically update state
+      set((state) => {
+        const newItems = state.items.filter((item) => item.id !== itemId);
+        const filtered = filterItems(
+          newItems,
+          state.filters,
+          state.searchQuery
+        );
+        const sorted = sortItems(filtered, state.sortBy);
+        return {
+          items: newItems,
+          filteredItems: sorted,
+          isLoading: false,
+        };
+      });
+    } catch (error) {
+      console.error("Failed to unsave item:", error);
+      set({
+        isLoading: false,
+        error: error instanceof Error ? error.message : "Failed to unsave item",
+      });
     }
   },
 

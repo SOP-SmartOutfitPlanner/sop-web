@@ -1,9 +1,10 @@
 "use client";
 
-import { Filter as FilterIcon, Search } from "lucide-react";
+import { Filter as FilterIcon, Search, Bookmark } from "lucide-react";
 import { TreeSelect, Select, Input } from "antd";
 import type { DataNode } from "antd/es/tree";
 import { Label } from "@/components/ui/label";
+import GlassButton from "@/components/ui/glass-button";
 
 interface WardrobeFiltersProps {
   filters: {
@@ -12,6 +13,7 @@ interface WardrobeFiltersProps {
     styleId?: number;
     occasionId?: number;
     searchQuery?: string;
+    isSaved?: boolean;
   };
   showFilters: boolean;
   categoryTreeData: DataNode[];
@@ -37,17 +39,46 @@ export function WardrobeFilters({
     filters.seasonId ||
     filters.styleId ||
     filters.occasionId ||
-    filters.searchQuery;
+    filters.searchQuery ||
+    filters.isSaved;
+
+  const handleToggleSaved = () => {
+    if (filters.isSaved) {
+      onFiltersChange({ ...filters, isSaved: undefined });
+    } else {
+      onFiltersChange({ ...filters, isSaved: true });
+    }
+  };
 
   return (
     <div className="space-y-2">
-      <button
-        onClick={onToggleFilters}
-        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-[#4A90E2]/20 to-[#5BA3F5]/20 hover:from-[#4A90E2]/30 hover:to-[#5BA3F5]/30 border border-white/20 text-white text-sm font-medium transition-all shadow-lg"
-      >
-        <FilterIcon className="w-4 h-4" />
-        <span>{showFilters ? "Hide Filters" : "Show Filters"}</span>
-      </button>
+      <div className="flex items-center justify-between">
+        <button
+          onClick={onToggleFilters}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-[#4A90E2]/20 to-[#5BA3F5]/20 hover:from-[#4A90E2]/30 hover:to-[#5BA3F5]/30 border border-white/20 text-white text-sm font-medium transition-all shadow-lg"
+        >
+          <FilterIcon className="w-4 h-4" />
+          <span>{showFilters ? "Hide Filters" : "Show Filters"}</span>
+        </button>
+
+        <button
+          onClick={handleToggleSaved}
+          className={`
+            px-4 py-2 rounded-full font-poppins text-sm font-medium
+            transition-all duration-200 flex items-center gap-2
+            ${
+              filters.isSaved
+                ? "bg-white/20 text-white shadow-md"
+                : "bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"
+            }
+          `}
+        >
+          <Bookmark
+            className={`w-4 h-4 ${filters.isSaved ? "fill-current" : ""}`}
+          />
+          Saved
+        </button>
+      </div>
 
       {showFilters && (
         <div className="space-y-3 p-4 rounded-xl bg-gradient-to-br from-white/10 to-white/5 border border-white/20 shadow-xl backdrop-blur-sm">

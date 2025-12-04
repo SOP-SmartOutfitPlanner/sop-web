@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -12,19 +13,16 @@ import {
   Share2,
   UserPlus,
   Send,
+  Lock,
 } from "lucide-react";
 import { toast } from "sonner";
 import GlassCard from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { collectionAPI } from "@/lib/api";
 import { useAuthStore } from "@/store/auth-store";
-import {
-  getWeatherSuitableFromCollection,
-  formatDate,
-} from "@/lib/collections/utils";
+import { formatDate } from "@/lib/collections/utils";
 import { COLLECTION_QUERY_KEYS } from "@/lib/collections/constants";
 import { OutfitCard } from "./OutfitCard";
 import { CommentsSection } from "./CommentsSection";
@@ -44,8 +42,16 @@ interface CollectionDetailProps {
 }
 
 export function CollectionDetail({ collectionId }: CollectionDetailProps) {
-  const { user } = useAuthStore();
+  const router = useRouter();
+  const { user, isInitialized } = useAuthStore();
   const userId = user?.id ? parseInt(user.id, 10) : null;
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (isInitialized && !user) {
+      router.replace("/login");
+    }
+  }, [isInitialized, user, router]);
 
   const query = useQuery({
     queryKey: COLLECTION_QUERY_KEYS.collection(collectionId),
@@ -55,13 +61,10 @@ export function CollectionDetail({ collectionId }: CollectionDetailProps) {
       });
       return response.data;
     },
+    enabled: !!userId, // Only fetch if user is logged in
   });
 
   const collection = query.data;
-  const weatherSuitable = useMemo(
-    () => (collection ? getWeatherSuitableFromCollection(collection) : []),
-    [collection]
-  );
 
   const likeMutation = useLikeCollection(
     collectionId,
@@ -91,18 +94,19 @@ export function CollectionDetail({ collectionId }: CollectionDetailProps) {
   const isOwner = userId !== null && userId === collection?.userId;
   const canPublish = isOwner && collection?.isPublished === false;
 
-  // Get comment count from API
-  const commentsCountQuery = useQuery({
-    queryKey: COLLECTION_QUERY_KEYS.collectionCommentsCount(collectionId),
-    queryFn: async () => {
-      const response = await collectionAPI.getCollectionComments(collectionId, {
-        pageSize: 1,
-        takeAll: true,
-      });
-      return response.data.metaData.totalCount;
-    },
-    enabled: !!collectionId,
-  });
+  // Show loading while checking auth
+  if (!isInitialized || (isInitialized && !user)) {
+    return (
+      <div className="max-w-5xl mx-auto px-6 py-24 space-y-8">
+        <Skeleton className="h-48 w-full rounded-3xl" />
+        <Skeleton className="h-40 w-full rounded-3xl" />
+        <div className="grid gap-6 sm:grid-cols-2">
+          <Skeleton className="h-64 rounded-3xl" />
+          <Skeleton className="h-64 rounded-3xl" />
+        </div>
+      </div>
+    );
+  }
 
   if (query.isLoading) {
     return (
@@ -117,32 +121,69 @@ export function CollectionDetail({ collectionId }: CollectionDetailProps) {
     );
   }
 
+  // Check permission - private collection and user is not owner
+  if (collection && !collection.isPublished && !isOwner) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center px-6 py-24">
+        <div className="text-center max-w-md">
+          {/* Icon */}
+          <div className="mx-auto w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-6">
+            <Lock className="w-8 h-8 text-white/40" />
+          </div>
+          
+          {/* Title */}
+          <h2 className="text-xl font-semibold text-white mb-2">
+            Private Collection
+          </h2>
+          
+          {/* Description */}
+          <p className="text-sm text-white/50 mb-8">
+            This collection is private and can only be viewed by its owner.
+          </p>
+          
+          {/* Action */}
+          <Link href="/collections">
+            <button
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white/90 text-sm font-medium hover:bg-white/20 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to collections
+            </button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   if (query.isError || !collection) {
     return (
-      <div className="max-w-3xl mx-auto px-6 py-24">
-        <GlassCard
-          padding="2rem"
-          blur="18px"
-          glowColor="rgba(248, 113, 113, 0.35)"
-          glowIntensity={16}
-          shadowColor="rgba(15, 23, 42, 0.5)"
-          className="border border-red-500/30  text-red-100"
-        >
-          <h2 className="text-xl font-semibold">Unable to load collection</h2>
-          <p className="mt-2 text-sm text-red-200/80">
-            Please refresh the page or return to the collections gallery.
-          </p>
-          <div className="mt-6">
-            <Link href="/collections">
-              <Button
-                variant="outline"
-                className="border-red-400/40 text-red-100 hover:bg-red-500/10"
-              >
-                Back to collections
-              </Button>
-            </Link>
+      <div className="min-h-[60vh] flex items-center justify-center px-6 py-24">
+        <div className="text-center max-w-md">
+          {/* Icon */}
+          <div className="mx-auto w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-6">
+            <Bookmark className="w-8 h-8 text-white/40" />
           </div>
-        </GlassCard>
+          
+          {/* Title */}
+          <h2 className="text-xl font-semibold text-white mb-2">
+            Collection not found
+          </h2>
+          
+          {/* Description */}
+          <p className="text-sm text-white/50 mb-8">
+            This collection may have been removed or you don&apos;t have permission to view it.
+          </p>
+          
+          {/* Action */}
+          <Link href="/collections">
+            <button
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white/90 text-sm font-medium hover:bg-white/20 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to collections
+            </button>
+          </Link>
+        </div>
       </div>
     );
   }
@@ -150,6 +191,16 @@ export function CollectionDetail({ collectionId }: CollectionDetailProps) {
   return (
     <div className="relative mx-auto w-full max-w-6xl px-6 pt-35 space-y-8">
       <div className="absolute inset-0 -z-10 bg-gradient-to-b  blur-3xl" />
+      
+      {/* Back Button */}
+      <Link
+        href="/collections"
+        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 border border-white/20 text-white/90 text-sm font-medium hover:bg-white/20 transition-colors"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Back
+      </Link>
+
       {/* Hero Section with Thumbnail and Collection Info */}
       <div className="grid gap-8 lg:grid-cols-[1fr_1fr]">
         {/* Left: Thumbnail Image */}
@@ -179,18 +230,6 @@ export function CollectionDetail({ collectionId }: CollectionDetailProps) {
             <p className="text-lg leading-relaxed text-slate-300">
               {collection.shortDescription || DEFAULT_DESCRIPTION}
             </p>
-          </div>
-
-          {/* Tags */}
-          <div className="flex flex-wrap gap-2">
-            {weatherSuitable.map((weather) => (
-              <Badge
-                key={weather}
-                className="border-cyan-300/20 bg-cyan-500/10 text-cyan-200 px-3 py-1"
-              >
-                {weather}
-              </Badge>
-            ))}
           </div>
 
           {/* Stylist Info */}
@@ -315,6 +354,11 @@ export function CollectionDetail({ collectionId }: CollectionDetailProps) {
               <span className="text-white/90">Save</span>
             </button>
             <button
+              onClick={() => {
+                const url = `${window.location.origin}/collections/${collectionId}`;
+                navigator.clipboard.writeText(url);
+                toast.success("Link copied to clipboard");
+              }}
               className={cn(
                 "group relative inline-flex items-center gap-2.5 rounded-xl border-2 px-5 py-2.5 text-sm font-medium text-white transition-all duration-200 shadow-lg",
                 "border-slate-400/60 bg-slate-500/25 backdrop-blur-sm",
@@ -390,10 +434,7 @@ export function CollectionDetail({ collectionId }: CollectionDetailProps) {
         </section>
 
         <aside className="space-y-6">
-          <CollectionInfoSidebar
-            collection={collection}
-            weatherSuitable={weatherSuitable}
-          />
+          <CollectionInfoSidebar collection={collection} />
         </aside>
       </div>
     </div>

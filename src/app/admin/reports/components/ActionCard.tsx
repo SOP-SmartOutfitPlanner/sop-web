@@ -13,11 +13,7 @@ interface ActionCardProps {
   onSelect: (action: ResolveReportAction) => void;
 }
 
-export function ActionCard({
-  action,
-  isSelected,
-  onSelect,
-}: ActionCardProps) {
+export function ActionCard({ action, isSelected, onSelect }: ActionCardProps) {
   const definition = actionDefinitions[action];
   const colors =
     ACTION_COLORS[action as keyof typeof ACTION_COLORS] ||
@@ -29,10 +25,8 @@ export function ActionCard({
       onClick={() => onSelect(action)}
       className={cn(
         "group relative flex flex-col items-start gap-4 rounded-2xl border-2 p-6 text-left transition-all duration-200",
-        "focus:outline-none focus:ring-2 focus:ring-offset-2",
-        isSelected
-          ? colors.selected
-          : cn(colors.default, "focus:ring-slate-400")
+        "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900",
+        isSelected ? colors.selected : cn(colors.default, "focus:ring-white/30")
       )}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
@@ -43,7 +37,7 @@ export function ActionCard({
     >
       {isSelected && (
         <div className="absolute top-3 right-3">
-          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-sm">
+          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-900/80 shadow-sm">
             <CheckCircle2 className={cn("h-4 w-4", colors.iconColor)} />
           </div>
         </div>
@@ -54,7 +48,7 @@ export function ActionCard({
           "flex items-center justify-center rounded-2xl p-4 transition-all duration-200",
           isSelected
             ? cn(colors.iconBg, colors.iconColor)
-            : "bg-slate-100 text-slate-600 group-hover:bg-slate-200"
+            : "bg-white/10 text-white/60 group-hover:bg-white/15"
         )}
       >
         <definition.icon className="h-8 w-8" />
@@ -65,7 +59,7 @@ export function ActionCard({
           <h3
             className={cn(
               "text-lg font-bold",
-              isSelected ? colors.titleColor : "text-slate-900"
+              isSelected ? colors.titleColor : "text-white"
             )}
           >
             {definition.title}
@@ -76,7 +70,7 @@ export function ActionCard({
               "text-xs font-semibold",
               isSelected
                 ? colors.badgeColor
-                : "bg-slate-100 text-slate-600 border-slate-300"
+                : "bg-white/10 text-white/70 border-white/20"
             )}
           >
             {action}
@@ -85,7 +79,7 @@ export function ActionCard({
         <p
           className={cn(
             "text-sm leading-relaxed",
-            isSelected ? "text-slate-700" : "text-slate-600"
+            isSelected ? "text-white/80" : "text-white/60"
           )}
         >
           {definition.description}
@@ -94,13 +88,13 @@ export function ActionCard({
           <Info
             className={cn(
               "h-4 w-4 mt-0.5 shrink-0",
-              isSelected ? colors.iconColor : "text-slate-400"
+              isSelected ? colors.iconColor : "text-white/40"
             )}
           />
           <p
             className={cn(
               "text-xs leading-relaxed",
-              isSelected ? "text-slate-600" : "text-slate-500"
+              isSelected ? "text-white/70" : "text-white/50"
             )}
           >
             {definition.consequence}
@@ -110,4 +104,3 @@ export function ActionCard({
     </button>
   );
 }
-

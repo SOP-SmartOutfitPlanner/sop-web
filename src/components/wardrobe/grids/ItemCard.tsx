@@ -11,6 +11,8 @@ import {
   Sun,
   Leaf,
   Snowflake,
+  ExternalLink,
+  BookmarkMinus,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -50,6 +52,8 @@ interface ItemCardProps {
   onDelete?: (id: string) => void;
   onAnalyze?: (id: string) => void;
   onView?: (item: WardrobeItem) => void;
+  onOpenPost?: (postId: number) => void;
+  onUnsave?: (itemId: string, postId: string) => void;
   showCheckbox?: boolean;
   isReadOnly?: boolean; // Disable edit/delete for saved items from posts
 }
@@ -61,6 +65,8 @@ export const ItemCard = memo(function ItemCard({
   onDelete,
   onAnalyze,
   onView,
+  onOpenPost,
+  onUnsave,
   isReadOnly = false,
 }: ItemCardProps) {
   const [isHovered, setIsHovered] = useState(false);
@@ -186,46 +192,78 @@ export const ItemCard = memo(function ItemCard({
           </div>
         )}
 
-        {/* Menu - Positioned outside the card (hide for read-only items) */}
-        {!isReadOnly && (
-          <div className="absolute top-2 right-2 z-20">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  className={cn(
-                    "p-2 rounded-lg",
-                    "bg-white/30 border border-white/30",
-                    "text-white hover:bg-white/40 hover:border-white/40",
-                    "shadow-lg shadow-white/10",
-                    "transition-all duration-200",
-                    isHovered ? "opacity-100" : "opacity-0"
-                  )}
-                >
-                  <MoreVertical className="w-4 h-4" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="end"
-                className="w-48 bg-white/90 backdrop-blur-xl border-white/50"
+        {/* Menu - Positioned outside the card */}
+        <div className="absolute top-2 right-2 z-20">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className={cn(
+                  "p-2 rounded-lg",
+                  "bg-white/30 border border-white/30",
+                  "text-white hover:bg-white/40 hover:border-white/40",
+                  "shadow-lg shadow-white/10",
+                  "transition-all duration-200",
+                  isHovered ? "opacity-100" : "opacity-0"
+                )}
               >
-                <DropdownMenuItem
-                  onClick={handleEdit}
-                  className="hover:bg-white/60"
-                >
-                  <Edit className="w-4 h-4 mr-2" />
-                  Edit Item
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={handleDeleteClick}
-                  className="text-red-600 focus:text-red-600 hover:bg-red-50/60"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        )}
+                <MoreVertical className="w-4 h-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              className="w-48 bg-white/90 backdrop-blur-xl border-white/50"
+            >
+              {!isReadOnly ? (
+                <>
+                  <DropdownMenuItem
+                    onClick={handleEdit}
+                    className="hover:bg-white/60"
+                  >
+                    <Edit className="w-4 h-4 mr-2" />
+                    Edit Item
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={handleDeleteClick}
+                    className="text-red-600 focus:text-red-600 hover:bg-red-50/60"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete
+                  </DropdownMenuItem>
+                </>
+              ) : (
+                <>
+                  {item.savedFromPost && (
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenPost?.(item.savedFromPost!.postId);
+                      }}
+                      className="hover:bg-white/60"
+                    >
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      View Original Post
+                    </DropdownMenuItem>
+                  )}
+                  {item.savedFromPost && (
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onUnsave?.(
+                          item.id,
+                          item.savedFromPost!.postId.toString()
+                        );
+                      }}
+                      className="text-red-600 focus:text-red-600 hover:bg-red-50/60"
+                    >
+                      <BookmarkMinus className="w-4 h-4 mr-2" />
+                      Unsave Item
+                    </DropdownMenuItem>
+                  )}
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
 
         <GlassCard
           padding="16px"
@@ -273,15 +311,6 @@ export const ItemCard = memo(function ItemCard({
                     {item.category?.name || "Uncategorized"}
                   </span>
                 </div>
-                {/* Last Worn - Prominent placement */}
-                {item.lastWornAt && (
-                  <div className="flex items-center gap-1.5 mt-1">
-                    <div className="w-1.5 h-1.5 rounded-full bg-cyan-400/60" />
-                    <span className="text-cyan-200/80 text-xs font-medium">
-                      Last worn: {formatRelativeDate(item.lastWornAt)}
-                    </span>
-                  </div>
-                )}
               </div>
 
               {/* No data display for unanalyzed item - center the button */}

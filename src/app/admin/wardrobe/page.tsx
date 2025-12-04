@@ -337,10 +337,21 @@ export default function AdminWardrobePage() {
   }, [handleDeleteItem]);
 
   const handleItemUpdated = useCallback(async () => {
+    // Store the editItemId before it gets cleared
+    const updatedItemId = editItemId;
+    
     // Reset to first page and refresh admin wardrobe items from API
     setCurrentPage(1);
     await queryClient.invalidateQueries({ queryKey: ["admin-wardrobe-system"] });
-  }, [queryClient]);
+
+    // After edit completed, show ViewItemDialog with updated data
+    if (updatedItemId) {
+      setTimeout(() => {
+        setViewItemId(updatedItemId);
+        setIsViewItemOpen(true);
+      }, 350);
+    }
+  }, [editItemId, queryClient]);
 
   const handleFiltersChange = useCallback((newFilters: WardrobeFilters) => {
     setFilters(newFilters);

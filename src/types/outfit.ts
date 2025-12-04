@@ -147,6 +147,7 @@ export interface Outfit {
     condition: string;
     pattern: string;
     fabric: string;
+    itemType?: string;
   }[];
 }
 
@@ -196,11 +197,6 @@ export interface GetSavedOutfitsResponse {
   message: string;
   data: {
     data: SavedOutfit[];
-    metaData: {
-      totalCount: number;
-      pageSize: number;
-      currentPage: number;
-      totalPages: number;
-    };
+    metaData: MetaData;
   };
 }
