@@ -209,20 +209,6 @@ export function SuggestionResultView({
 
           return (
             <div key={item.id} className="group relative w-full h-full flex flex-col">
-              {/* AI Badge */}
-              {item.isAnalyzed && item.aiConfidence && (
-                <div className="absolute -top-2 -left-2 z-20">
-                  <div className="relative">
-                    {/* Glow effect */}
-                    <div className="absolute inset-0 w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 blur-md opacity-75 animate-pulse" />
-                    {/* Main badge */}
-                    <div className="relative w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 via-cyan-500 to-blue-500 flex items-center justify-center shadow-xl border-2 border-white">
-                      <span className="text-xs font-black text-white drop-shadow-lg">AI</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
               {/* System Item Badge */}
               {item.itemType === "SYSTEM" && (
                 <div className="absolute -top-2 -right-2 z-20">

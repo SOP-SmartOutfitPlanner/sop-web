@@ -18,7 +18,7 @@ export function Sidebar() {
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
 
   return (
-    <div className="sticky top-4 space-y-6 max-h-[calc(100vh-32px)] overflow-y-auto">
+    <div className="sticky top-4 space-y-6 max-h-[calc(100vh-32px)] overflow-y-auto mt-10">
       {/* Top Contributors Card - Glassmorphism Style */}
       <div className="relative group">
         <div className="absolute inset-0 rounded-2xl blur-xl bg-cyan-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />

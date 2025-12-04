@@ -167,9 +167,21 @@ function WardrobePageContent() {
   };
 
   const handleItemUpdated = async () => {
+    // Store the editItemId before it gets cleared
+    const updatedItemId = editItemId;
+    
     // Refresh wardrobe items after successful edit
     const state = useWardrobeStore.getState();
     await state.fetchItems();
+
+    // After edit completed, show ViewItemDialog with updated data
+    if (updatedItemId) {
+      // Small delay to allow edit dialog to close
+      setTimeout(() => {
+        setViewItemId(updatedItemId);
+        setIsViewItemOpen(true);
+      }, 350);
+    }
   };
 
   const handleFiltersChange = useCallback(

@@ -180,20 +180,45 @@ export function UserProfile({ userId }: UserProfileProps) {
   };
 
   const handleFollowToggleWithUpdate = async () => {
-    await toggleFollow();
+    // Don't update UI if user is not logged in
+    if (!currentUser?.id) {
+      toast.error("Please log in to follow users.");
+      return;
+    }
 
-    // Update follower count optimistically
+    // Save current state for potential rollback
+    const wasFollowing = isFollowing;
+    
+    // Optimistic update follower count
     if (userProfile) {
       setUserProfile((prev) =>
         prev
           ? {
               ...prev,
-              followersCount: isFollowing
+              followersCount: wasFollowing
                 ? prev.followersCount - 1
                 : prev.followersCount + 1,
             }
           : prev
       );
+    }
+
+    try {
+      await toggleFollow();
+    } catch {
+      // Rollback on error
+      if (userProfile) {
+        setUserProfile((prev) =>
+          prev
+            ? {
+                ...prev,
+                followersCount: wasFollowing
+                  ? prev.followersCount + 1
+                  : prev.followersCount - 1,
+              }
+            : prev
+        );
+      }
     }
   };
 
@@ -237,10 +262,7 @@ export function UserProfile({ userId }: UserProfileProps) {
       <div className="min-h-screen relative z-0 pt-32">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
-          <ProfileHeader
-            userName={userProfile.name}
-            onBack={() => router.back()}
-          />
+          <ProfileHeader />
 
           {/* Profile Info */}
           <ProfileInfo
