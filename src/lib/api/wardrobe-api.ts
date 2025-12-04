@@ -76,6 +76,7 @@ export interface ApiWardrobeItem {
   aiConfidence?: number;
   isAnalyzed?: boolean;
   aiAnalyzeJson?: string; // JSON string containing AI analysis data
+  itemType?: string;
   // Relational arrays
   styles?: Array<{ id: number; name: string }>;
   occasions?: Array<{ id: number; name: string }>;
