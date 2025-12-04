@@ -147,6 +147,7 @@ export interface Outfit {
     condition: string;
     pattern: string;
     fabric: string;
+    itemType?: string;
   }[];
 }
 

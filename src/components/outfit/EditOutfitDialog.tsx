@@ -1,7 +1,14 @@
 "use client";
 
 import { useState, memo, useEffect, useCallback, useMemo } from "react";
-import { X, Sparkles, CheckCircle2, Loader2, Filter as FilterIcon } from "lucide-react";
+import {
+  X,
+  Sparkles,
+  CheckCircle2,
+  Loader2,
+  Filter as FilterIcon,
+  AlertTriangle,
+} from "lucide-react";
 import { Image } from "antd";
 import GlassButton from "@/components/ui/glass-button";
 import { useUpdateOutfit, useOutfit } from "@/hooks/useOutfits";
@@ -9,6 +16,7 @@ import { useOutfitStore } from "@/store/outfit-store";
 import { ApiWardrobeItem } from "@/lib/api/wardrobe-api";
 import { FilterModal } from "@/components/wardrobe/FilterModal";
 import { WardrobeFilters } from "@/types/wardrobe";
+import { CreateOutfitDialog } from "./CreateOutfitDialog";
 
 interface EditOutfitDialogProps {
   open: boolean;
@@ -24,77 +32,84 @@ interface ItemCardProps {
   onToggle: (id: number) => void;
 }
 
-const ItemCard = memo(({ item, isSelected, onToggle }: ItemCardProps) => {
-  const handleClick = () => {
-    if (item.id) onToggle(item.id);
-  };
+const ItemCard = memo(
+  ({ item, isSelected, onToggle }: ItemCardProps) => {
+    const handleClick = () => {
+      if (item.id) onToggle(item.id);
+    };
 
-  return (
-    <div
-      onClick={handleClick}
-      className="group relative w-full flex flex-col cursor-pointer p-1"
-    >
-      {/* GlassCard wrapper */}
+    return (
       <div
-        className={
-          isSelected
-            ? "relative flex flex-col p-2 rounded-2xl transition-all duration-100 bg-linear-to-br from-cyan-300/30 via-blue-200/10 to-indigo-300/30 backdrop-blur-md border-2 border-cyan-400/60 shadow-lg shadow-cyan-500/40 ring-2 ring-cyan-400/30 ring-offset-2 ring-offset-transparent"
-            : "relative flex flex-col p-2 rounded-2xl transition-all duration-100 bg-linear-to-br from-cyan-300/30 via-blue-200/10 to-indigo-300/30 backdrop-blur-md border-2 border-white/20 hover:border-cyan-400/40"
-        }
+        onClick={handleClick}
+        className="group relative w-full flex flex-col cursor-pointer p-1"
       >
-        {/* Selection Indicator */}
-        <div className={
-          isSelected
-            ? "absolute top-2 right-2 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 border-2 bg-cyan-500 border-white shadow-xl scale-100"
-            : "absolute top-2 right-2 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 border-2 bg-white/20 backdrop-blur-md border-white/40 scale-90 opacity-60 group-hover:opacity-100 group-hover:scale-100"
-        }>
-          {isSelected && <CheckCircle2 className="w-5 h-5 text-white" />}
-        </div>
+        {/* GlassCard wrapper */}
+        <div
+          className={
+            isSelected
+              ? "relative flex flex-col p-2 rounded-2xl transition-all duration-100 bg-linear-to-br from-cyan-300/30 via-blue-200/10 to-indigo-300/30 backdrop-blur-md border-2 border-cyan-400/60 shadow-lg shadow-cyan-500/40 ring-2 ring-cyan-400/30 ring-offset-2 ring-offset-transparent"
+              : "relative flex flex-col p-2 rounded-2xl transition-all duration-100 bg-linear-to-br from-cyan-300/30 via-blue-200/10 to-indigo-300/30 backdrop-blur-md border-2 border-white/20 hover:border-cyan-400/40"
+          }
+        >
+          {/* Selection Indicator */}
+          <div
+            className={
+              isSelected
+                ? "absolute top-2 right-2 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 border-2 bg-cyan-500 border-white shadow-xl scale-100"
+                : "absolute top-2 right-2 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 border-2 bg-white/20 backdrop-blur-md border-white/40 scale-90 opacity-60 group-hover:opacity-100 group-hover:scale-100"
+            }
+          >
+            {isSelected && <CheckCircle2 className="w-5 h-5 text-white" />}
+          </div>
 
-        {/* Image Container */}
-        <div className="bg-white/5 rounded-lg aspect-square overflow-hidden relative mb-2">
-          <Image
-            src={item.imgUrl}
-            alt={item.name}
-            width="100%"
-            height="100%"
-            className="object-cover rounded-lg"
-            preview={false}
-            loading="lazy"
-            placeholder={false}
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              display: 'block',
-              borderRadius: '0.5rem'
-            }}
-            wrapperClassName="w-full h-full"
-            rootClassName="w-full h-full !block"
-          />
-        </div>
+          {/* Image Container */}
+          <div className="bg-white/5 rounded-lg aspect-square overflow-hidden relative mb-2">
+            <Image
+              src={item.imgUrl}
+              alt={item.name}
+              width="100%"
+              height="100%"
+              className="object-cover rounded-lg"
+              preview={false}
+              loading="lazy"
+              placeholder={false}
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                display: "block",
+                borderRadius: "0.5rem",
+              }}
+              wrapperClassName="w-full h-full"
+              rootClassName="w-full h-full !block"
+            />
+          </div>
 
-        {/* Item Details */}
-        <div className="flex flex-col px-1">
-          {/* Name */}
-          <h3 className="text-white font-semibold text-base truncate mb-1.5">
-            {item.name}
-          </h3>
+          {/* Item Details */}
+          <div className="flex flex-col px-1">
+            {/* Name */}
+            <h3 className="text-white font-semibold text-base truncate mb-1.5">
+              {item.name}
+            </h3>
 
-          {/* Category */}
-          <span className="px-2 py-1 rounded-full bg-white/10 border border-white/20 text-white/70 text-xs font-medium truncate text-center">
-            {item.categoryName || item.category?.name || "Uncategorized"}
-          </span>
+            {/* Category */}
+            <span className="px-2 py-1 rounded-full bg-white/10 border border-white/20 text-white/70 text-xs font-medium truncate text-center">
+              {item.categoryName || item.category?.name || "Uncategorized"}
+            </span>
+          </div>
         </div>
       </div>
-    </div>
-  );
-}, (prevProps, nextProps) => {
-  return prevProps.isSelected === nextProps.isSelected &&
-         prevProps.item.id === nextProps.item.id;
-});
+    );
+  },
+  (prevProps, nextProps) => {
+    return (
+      prevProps.isSelected === nextProps.isSelected &&
+      prevProps.item.id === nextProps.item.id
+    );
+  }
+);
 
-ItemCard.displayName = 'ItemCard';
+ItemCard.displayName = "ItemCard";
 
 export function EditOutfitDialog({
   open,
@@ -104,14 +119,21 @@ export function EditOutfitDialog({
 }: EditOutfitDialogProps) {
   const { mutate: updateOutfit, isPending } = useUpdateOutfit();
   const { data: outfitData, isLoading: isLoadingOutfit } = useOutfit(outfitId);
-  const { selectedItemIds, setSelectedItems, toggleItemSelection, clearSelectedItems } = useOutfitStore();
-  
+  const {
+    selectedItemIds,
+    setSelectedItems,
+    toggleItemSelection,
+    clearSelectedItems,
+  } = useOutfitStore();
+
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [nameError, setNameError] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filters, setFilters] = useState<WardrobeFilters>({});
   const [currentPage, setCurrentPage] = useState(1);
+  const [showSuggestionModal, setShowSuggestionModal] = useState(false);
+  const [showCreateOutfitModal, setShowCreateOutfitModal] = useState(false);
   const itemsPerPage = 15;
 
   // Filter items based on selected filters
@@ -119,21 +141,21 @@ export function EditOutfitDialog({
     let items = wardrobeItems;
 
     if (filters.categoryId) {
-      items = items.filter(item => item.categoryId === filters.categoryId);
+      items = items.filter((item) => item.categoryId === filters.categoryId);
     }
     if (filters.seasonId) {
-      items = items.filter(item => 
-        item.seasons?.some(s => s.id === filters.seasonId)
+      items = items.filter((item) =>
+        item.seasons?.some((s) => s.id === filters.seasonId)
       );
     }
     if (filters.styleId) {
-      items = items.filter(item => 
-        item.styles?.some(s => s.id === filters.styleId)
+      items = items.filter((item) =>
+        item.styles?.some((s) => s.id === filters.styleId)
       );
     }
     if (filters.occasionId) {
-      items = items.filter(item => 
-        item.occasions?.some(o => o.id === filters.occasionId)
+      items = items.filter((item) =>
+        item.occasions?.some((o) => o.id === filters.occasionId)
       );
     }
 
@@ -159,7 +181,7 @@ export function EditOutfitDialog({
       setName(outfitData.name);
       setDescription(outfitData.description || "");
       // Set selected items from outfit
-      const itemIds = outfitData.items.map(item => item.itemId);
+      const itemIds = outfitData.items.map((item) => item.itemId);
       setSelectedItems(itemIds);
     }
   }, [outfitData, open, setSelectedItems]);
@@ -185,7 +207,7 @@ export function EditOutfitDialog({
     if (selectedItemIds.length === filteredWardrobeItems.length) {
       clearSelectedItems();
     } else {
-      filteredWardrobeItems.forEach(item => {
+      filteredWardrobeItems.forEach((item) => {
         if (item.id && !selectedItemIds.includes(item.id)) {
           toggleItemSelection(item.id);
         }
@@ -226,12 +248,26 @@ export function EditOutfitDialog({
         onSuccess: () => {
           handleClose();
         },
+        onError: (error: unknown) => {
+          // Check for specific error message about active occasion
+          const err = error as {
+            message?: string;
+            response?: { data?: { message?: string } };
+          };
+          const errorMessage = err.message || err.response?.data?.message || "";
+          if (errorMessage.includes("linked to an active occasion")) {
+            setShowSuggestionModal(true);
+          }
+        },
       }
     );
   }, [outfitId, name, description, selectedItemIds, updateOutfit, handleClose]);
 
   // Memoize selected set for O(1) lookup
-  const selectedSet = useMemo(() => new Set(selectedItemIds), [selectedItemIds]);
+  const selectedSet = useMemo(
+    () => new Set(selectedItemIds),
+    [selectedItemIds]
+  );
 
   // Prevent scrolling when dialog is open
   useEffect(() => {
@@ -267,6 +303,48 @@ export function EditOutfitDialog({
 
   if (!open) return null;
 
+  // If transitioning to create mode, show only the create dialog
+  if (showCreateOutfitModal) {
+    // Extract extra items from outfitData that might not be in wardrobeItems (e.g. SYSTEM items)
+    const extraItems: ApiWardrobeItem[] =
+      outfitData?.items
+        .filter(
+          (item) => !wardrobeItems.some((wItem) => wItem.id === item.itemId)
+        )
+        .map((item) => ({
+          id: item.itemId,
+          name: item.name,
+          imgUrl: item.imgUrl,
+          categoryName: item.categoryName || "Uncategorized",
+          categoryId: item.categoryId || 0,
+          color: item.color || "",
+          itemType: item.itemType || "SYSTEM",
+          userId: outfitData.userId,
+          userDisplayName: outfitData.userDisplayName,
+          createdAt: outfitData.createdDate,
+          // Add missing required properties with defaults
+          aiDescription: "",
+          weatherSuitable: item.weatherSuitable || "",
+          condition: item.condition || "",
+          pattern: item.pattern || "",
+          fabric: item.fabric || "",
+        })) || [];
+
+    return (
+      <CreateOutfitDialog
+        open={true}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) {
+            setShowCreateOutfitModal(false);
+            onOpenChange(false);
+          }
+        }}
+        wardrobeItems={wardrobeItems}
+        extraItems={extraItems}
+      />
+    );
+  }
+
   // Show loading state while fetching outfit data
   if (isLoadingOutfit) {
     return (
@@ -276,7 +354,9 @@ export function EditOutfitDialog({
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-2xl">
             <div className="flex flex-col items-center gap-4">
               <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-              <p className="text-gray-600 dark:text-gray-300 font-poppins">Loading outfit...</p>
+              <p className="text-gray-600 dark:text-gray-300 font-poppins">
+                Loading outfit...
+              </p>
             </div>
           </div>
         </div>
@@ -289,7 +369,6 @@ export function EditOutfitDialog({
       {/* Backdrop */}
       <div
         className="fixed h-full inset-0 bg-black/50 backdrop-blur-sm z-50 overflow-hidden overscroll-none"
-        style={{ position: 'fixed', inset: 0 }}
         onClick={() => {
           if (!isPending && !isLoadingOutfit) {
             handleClose();
@@ -325,6 +404,7 @@ export function EditOutfitDialog({
                 <button
                   onClick={handleClose}
                   disabled={isPending || isLoadingOutfit}
+                  aria-label="Close"
                   className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <X className="w-6 h-6 text-white" />
@@ -338,7 +418,9 @@ export function EditOutfitDialog({
                 <div className="flex-1 flex items-center justify-center">
                   <div className="text-center">
                     <Loader2 className="w-12 h-12 animate-spin text-cyan-400 mx-auto mb-4" />
-                    <p className="text-white/70 font-bricolage">Loading outfit...</p>
+                    <p className="text-white/70 font-bricolage">
+                      Loading outfit...
+                    </p>
                   </div>
                 </div>
               ) : (
@@ -347,7 +429,10 @@ export function EditOutfitDialog({
                   <div className="shrink-0 mb-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label htmlFor="outfit-name" className="block text-sm font-medium text-white mb-1.5">
+                        <label
+                          htmlFor="outfit-name"
+                          className="block text-sm font-medium text-white mb-1.5"
+                        >
                           Outfit Name *
                         </label>
                         <input
@@ -362,12 +447,17 @@ export function EditOutfitDialog({
                           className="w-full px-3 py-2.5 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-cyan-400/50 focus:border-cyan-400/50 transition-all text-sm"
                         />
                         {nameError && (
-                          <p className="text-xs text-red-400 mt-1">{nameError}</p>
+                          <p className="text-xs text-red-400 mt-1">
+                            {nameError}
+                          </p>
                         )}
                       </div>
 
                       <div>
-                        <label htmlFor="outfit-description" className="block text-sm font-medium text-white mb-1.5">
+                        <label
+                          htmlFor="outfit-description"
+                          className="block text-sm font-medium text-white mb-1.5"
+                        >
                           Description (Optional)
                         </label>
                         <input
@@ -403,7 +493,10 @@ export function EditOutfitDialog({
                         )}
                       </div>
 
-                      <div className="flex-1 overflow-y-auto min-h-0 hide-scrollbar" data-lenis-prevent>
+                      <div
+                        className="flex-1 overflow-y-auto min-h-0 hide-scrollbar"
+                        data-lenis-prevent
+                      >
                         {selectedItemIds.length === 0 ? (
                           <div className="flex items-center justify-center h-full">
                             <div className="text-center px-4">
@@ -422,16 +515,26 @@ export function EditOutfitDialog({
                           <div className="space-y-3">
                             {selectedItemIds.map((selectedId) => {
                               // Find item from wardrobeItems or outfitData
-                              const wardrobeItem = wardrobeItems.find(item => item.id === selectedId);
-                              const outfitItem = outfitData?.items.find(item => item.itemId === selectedId);
-                              
+                              const wardrobeItem = wardrobeItems.find(
+                                (item) => item.id === selectedId
+                              );
+                              const outfitItem = outfitData?.items.find(
+                                (item) => item.itemId === selectedId
+                              );
+
                               // Use wardrobe item if found, otherwise use outfit item data
-                              const displayItem = wardrobeItem || (outfitItem ? {
-                                id: outfitItem.itemId,
-                                name: outfitItem.name,
-                                imgUrl: outfitItem.imgUrl,
-                                categoryName: outfitItem.categoryName || "Uncategorized"
-                              } : null);
+                              const displayItem =
+                                wardrobeItem ||
+                                (outfitItem
+                                  ? {
+                                      id: outfitItem.itemId,
+                                      name: outfitItem.name,
+                                      imgUrl: outfitItem.imgUrl,
+                                      categoryName:
+                                        outfitItem.categoryName ||
+                                        "Uncategorized",
+                                    }
+                                  : null);
 
                               if (!displayItem) return null;
 
@@ -457,11 +560,15 @@ export function EditOutfitDialog({
                                         {displayItem.name}
                                       </h4>
                                       <p className="text-white/60 text-[10px] truncate mt-0.5">
-                                        {displayItem.categoryName || "Uncategorized"}
+                                        {displayItem.categoryName ||
+                                          "Uncategorized"}
                                       </p>
                                     </div>
                                     <button
-                                      onClick={() => toggleItemSelection(selectedId)}
+                                      onClick={() =>
+                                        toggleItemSelection(selectedId)
+                                      }
+                                      aria-label="Remove item"
                                       className="shrink-0 w-6 h-6 rounded-full bg-red-500/80 hover:bg-red-600 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
                                     >
                                       <X className="w-3.5 h-3.5 text-white" />
@@ -485,7 +592,9 @@ export function EditOutfitDialog({
                           </span>
                           {Object.keys(filters).length > 0 && (
                             <span className="px-2.5 py-1 rounded-full bg-cyan-500/20 border border-cyan-400/40 text-cyan-200 text-xs font-medium">
-                              {Object.keys(filters).length} filter{Object.keys(filters).length > 1 ? 's' : ''} active
+                              {Object.keys(filters).length} filter
+                              {Object.keys(filters).length > 1 ? "s" : ""}{" "}
+                              active
                             </span>
                           )}
                         </div>
@@ -509,13 +618,19 @@ export function EditOutfitDialog({
                             textColor="white"
                             size="sm"
                           >
-                            {selectedItemIds.length === filteredWardrobeItems.length ? "Deselect All" : "Select All"}
+                            {selectedItemIds.length ===
+                            filteredWardrobeItems.length
+                              ? "Deselect All"
+                              : "Select All"}
                           </GlassButton>
                         </div>
                       </div>
 
                       {/* Items Grid */}
-                      <div className="flex-1 overflow-y-auto min-h-0 hide-scrollbar" data-lenis-prevent>
+                      <div
+                        className="flex-1 overflow-y-auto min-h-0 hide-scrollbar"
+                        data-lenis-prevent
+                      >
                         {filteredWardrobeItems.length === 0 ? (
                           <div className="flex items-center justify-center h-full">
                             <div className="text-center">
@@ -523,10 +638,14 @@ export function EditOutfitDialog({
                                 <Sparkles className="w-8 h-8 text-white/50" />
                               </div>
                               <p className="text-white/70 font-bricolage text-lg">
-                                {Object.keys(filters).length > 0 ? "No items match your filters" : "No wardrobe items found"}
+                                {Object.keys(filters).length > 0
+                                  ? "No items match your filters"
+                                  : "No wardrobe items found"}
                               </p>
                               <p className="text-white/50 text-sm mt-1">
-                                {Object.keys(filters).length > 0 ? "Try adjusting your filters" : "Add items to your wardrobe first"}
+                                {Object.keys(filters).length > 0
+                                  ? "Try adjusting your filters"
+                                  : "Add items to your wardrobe first"}
                               </p>
                             </div>
                           </div>
@@ -547,7 +666,11 @@ export function EditOutfitDialog({
                             {totalPages > 1 && (
                               <div className="flex items-center justify-center gap-2 mt-6 pb-2">
                                 <button
-                                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                  onClick={() =>
+                                    setCurrentPage((prev) =>
+                                      Math.max(1, prev - 1)
+                                    )
+                                  }
                                   disabled={currentPage === 1}
                                   className="px-3 py-1.5 rounded-lg bg-white/10 border border-white/20 text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-all"
                                 >
@@ -555,20 +678,29 @@ export function EditOutfitDialog({
                                 </button>
 
                                 <div className="flex items-center gap-1">
-                                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => {
+                                  {Array.from(
+                                    { length: totalPages },
+                                    (_, i) => i + 1
+                                  ).map((page) => {
                                     // Show first page, last page, current page, and pages around current
-                                    const showPage = 
-                                      page === 1 || 
-                                      page === totalPages || 
-                                      (page >= currentPage - 1 && page <= currentPage + 1);
-                                    
-                                    const showEllipsis = 
-                                      (page === currentPage - 2 && currentPage > 3) ||
-                                      (page === currentPage + 2 && currentPage < totalPages - 2);
+                                    const showPage =
+                                      page === 1 ||
+                                      page === totalPages ||
+                                      (page >= currentPage - 1 &&
+                                        page <= currentPage + 1);
+
+                                    const showEllipsis =
+                                      (page === currentPage - 2 &&
+                                        currentPage > 3) ||
+                                      (page === currentPage + 2 &&
+                                        currentPage < totalPages - 2);
 
                                     if (showEllipsis) {
                                       return (
-                                        <span key={page} className="px-2 text-white/50">
+                                        <span
+                                          key={page}
+                                          className="px-2 text-white/50"
+                                        >
                                           ...
                                         </span>
                                       );
@@ -593,7 +725,11 @@ export function EditOutfitDialog({
                                 </div>
 
                                 <button
-                                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                  onClick={() =>
+                                    setCurrentPage((prev) =>
+                                      Math.min(totalPages, prev + 1)
+                                    )
+                                  }
                                   disabled={currentPage === totalPages}
                                   className="px-3 py-1.5 rounded-lg bg-white/10 border border-white/20 text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-all"
                                 >
@@ -633,7 +769,12 @@ export function EditOutfitDialog({
 
                   <GlassButton
                     onClick={handleSubmit}
-                    disabled={isPending || isLoadingOutfit || selectedItemIds.length === 0 || !name.trim()}
+                    disabled={
+                      isPending ||
+                      isLoadingOutfit ||
+                      selectedItemIds.length === 0 ||
+                      !name.trim()
+                    }
                     variant="custom"
                     backgroundColor="rgba(59, 130, 246, 0.6)"
                     borderColor="rgba(59, 130, 246, 0.8)"
@@ -666,6 +807,57 @@ export function EditOutfitDialog({
         filters={filters}
         onApplyFilters={setFilters}
       />
+
+      {/* Suggestion Modal */}
+      {showSuggestionModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowSuggestionModal(false)}
+          />
+          <div className="relative bg-slate-900 border border-white/10 rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <div className="flex flex-col items-center text-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-yellow-500/20 flex items-center justify-center">
+                <AlertTriangle className="w-6 h-6 text-yellow-500" />
+              </div>
+
+              <div>
+                <h3 className="text-xl font-bold text-white mb-2 font-bricolage">
+                  Cannot Update Outfit
+                </h3>
+                <p className="text-white/70 text-sm">
+                  This outfit is currently linked to an active occasion and
+                  cannot be modified. Would you like to create a new outfit with
+                  these items instead?
+                </p>
+              </div>
+
+              <div className="flex gap-3 w-full mt-2">
+                <GlassButton
+                  onClick={() => setShowSuggestionModal(false)}
+                  variant="custom"
+                  backgroundColor="rgba(255, 255, 255, 0.1)"
+                  borderColor="rgba(255, 255, 255, 0.2)"
+                  textColor="white"
+                  className="flex-1"
+                >
+                  Cancel
+                </GlassButton>
+                <GlassButton
+                  onClick={() => {
+                    setShowSuggestionModal(false);
+                    setShowCreateOutfitModal(true);
+                  }}
+                  variant="primary"
+                  className="flex-1"
+                >
+                  Create New Outfit
+                </GlassButton>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
