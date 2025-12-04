@@ -151,8 +151,9 @@ export function Navbar() {
   const [lastScrollY, setLastScrollY] = useState(0);
 
   // Fetch unread notification count (only for badge display)
+  // Count is updated via push notifications, no polling needed
   const { data: unreadCount } = useUnreadCount(user?.id, {
-    poll: !!user?.id && !isFirstTime,
+    enabled: !!user?.id && !isFirstTime,
   });
 
   useEffect(() => {
@@ -364,7 +365,7 @@ export function Navbar() {
                       <Tooltip key={item.path}>
                         <TooltipTrigger asChild>{tabButton}</TooltipTrigger>
                         <TooltipContent>
-                          <p>Đang hoàn thiện</p>
+                          <p>Coming soon</p>
                         </TooltipContent>
                       </Tooltip>
                     );
@@ -412,7 +413,7 @@ export function Navbar() {
                     <Tooltip key={item.path}>
                       <TooltipTrigger asChild>{navItem}</TooltipTrigger>
                       <TooltipContent>
-                        <p>Đang hoàn thiện</p>
+                        <p>Coming soon</p>
                       </TooltipContent>
                     </Tooltip>
                   );

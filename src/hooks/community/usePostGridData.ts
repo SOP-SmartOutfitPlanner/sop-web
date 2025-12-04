@@ -73,7 +73,7 @@ export function usePostGridData({ userId, pageSize = 12 }: UsePostGridDataProps)
     async (postId: string) => {
       try {
         if (!user?.id) {
-          toast.error("Vui lòng đăng nhập");
+          toast.error("Please log in to like posts.");
           return;
         }
 

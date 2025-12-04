@@ -40,7 +40,7 @@ export function OutfitConfigPanel({
   onGenerate,
   isGenerating,
 }: OutfitConfigPanelProps) {
-  const [totalOutfit, setTotalOutfit] = useState(3);
+  const [totalOutfit, setTotalOutfit] = useState(4);
   const [gapDay, setGapDay] = useState(() => {
     // Load from localStorage or use default value of 3
     if (typeof window !== 'undefined') {

@@ -334,9 +334,20 @@ export default function AdminWardrobePage() {
   }, [handleDeleteItem]);
 
   const handleItemUpdated = useCallback(async () => {
+    // Store the editItemId before it gets cleared
+    const updatedItemId = editItemId;
+    
     // Refresh items after edit
     setCurrentPage(1);
-  }, []);
+
+    // After edit completed, show ViewItemDialog with updated data
+    if (updatedItemId) {
+      setTimeout(() => {
+        setViewItemId(updatedItemId);
+        setIsViewItemOpen(true);
+      }, 350);
+    }
+  }, [editItemId]);
 
   const handleFiltersChange = useCallback((newFilters: WardrobeFilters) => {
     setFilters(newFilters);

@@ -14,7 +14,7 @@ export function useFollowUser(
 
   const toggleFollow = useCallback(async () => {
     if (!currentUserId) {
-      toast.error("Vui lòng đăng nhập để theo dõi");
+      toast.error("Please log in to follow users.");
       return;
     }
 
