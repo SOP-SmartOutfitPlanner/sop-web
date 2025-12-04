@@ -14,6 +14,7 @@ interface CreateOutfitDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   wardrobeItems: ApiWardrobeItem[];
+  extraItems?: ApiWardrobeItem[];
 }
 
 // Memoized item card component
@@ -106,6 +107,7 @@ export function CreateOutfitDialog({
   open,
   onOpenChange,
   wardrobeItems,
+  extraItems = [],
 }: CreateOutfitDialogProps) {
   const { mutate: createOutfit, isPending } = useCreateOutfit();
   const { selectedItemIds, toggleItemSelection, clearSelectedItems } =
@@ -256,7 +258,6 @@ export function CreateOutfitDialog({
       {/* Backdrop */}
       <div
         className="fixed h-full inset-0 bg-black/50 backdrop-blur-sm z-50 overflow-hidden overscroll-none"
-        style={{ position: "fixed", inset: 0 }}
         onClick={() => {
           if (!isPending) {
             handleClose();
@@ -292,6 +293,7 @@ export function CreateOutfitDialog({
                 <button
                   onClick={handleClose}
                   disabled={isPending}
+                  aria-label="Close"
                   className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <X className="w-6 h-6 text-white" />
@@ -367,7 +369,10 @@ export function CreateOutfitDialog({
                     )}
                   </div>
 
-                  <div className="flex-1 overflow-y-auto min-h-0 hide-scrollbar" data-lenis-prevent>
+                  <div
+                    className="flex-1 overflow-y-auto min-h-0 hide-scrollbar"
+                    data-lenis-prevent
+                  >
                     {selectedItemIds.length === 0 ? (
                       <div className="flex items-center justify-center h-full">
                         <div className="text-center px-4">
@@ -385,7 +390,11 @@ export function CreateOutfitDialog({
                     ) : (
                       <div className="space-y-3">
                         {selectedItemIds.map((selectedId) => {
-                          const displayItem = wardrobeItems.find(item => item.id === selectedId);
+                          const displayItem =
+                            wardrobeItems.find(
+                              (item) => item.id === selectedId
+                            ) ||
+                            extraItems.find((item) => item.id === selectedId);
                           if (!displayItem) return null;
 
                           return (
@@ -410,11 +419,15 @@ export function CreateOutfitDialog({
                                     {displayItem.name}
                                   </h4>
                                   <p className="text-white/60 text-[10px] truncate mt-0.5">
-                                    {displayItem.categoryName || "Uncategorized"}
+                                    {displayItem.categoryName ||
+                                      "Uncategorized"}
                                   </p>
                                 </div>
                                 <button
-                                  onClick={() => toggleItemSelection(selectedId)}
+                                  onClick={() =>
+                                    toggleItemSelection(selectedId)
+                                  }
+                                  aria-label="Remove item"
                                   className="shrink-0 w-6 h-6 rounded-full bg-red-500/80 hover:bg-red-600 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
                                 >
                                   <X className="w-3.5 h-3.5 text-white" />
@@ -438,7 +451,8 @@ export function CreateOutfitDialog({
                       </span>
                       {Object.keys(filters).length > 0 && (
                         <span className="px-2.5 py-1 rounded-full bg-cyan-500/20 border border-cyan-400/40 text-cyan-200 text-xs font-medium">
-                          {Object.keys(filters).length} filter{Object.keys(filters).length > 1 ? 's' : ''} active
+                          {Object.keys(filters).length} filter
+                          {Object.keys(filters).length > 1 ? "s" : ""} active
                         </span>
                       )}
                     </div>
@@ -473,7 +487,7 @@ export function CreateOutfitDialog({
                   <div
                     className="flex-1 overflow-y-auto min-h-0 hide-scrollbar"
                     data-lenis-prevent
-                      >
+                  >
                     {filteredWardrobeItems.length === 0 ? (
                       <div className="flex items-center justify-center h-full">
                         <div className="text-center">
@@ -519,46 +533,50 @@ export function CreateOutfitDialog({
                             </button>
 
                             <div className="flex items-center gap-1">
-                          {Array.from(
-                            { length: totalPages },
-                            (_, i) => i + 1
-                          ).map((page) => {
-                            // Show first page, last page, current page, and pages around current
-                            const showPage =
-                              page === 1 ||
-                              page === totalPages ||
-                              (page >= currentPage - 1 &&
-                                page <= currentPage + 1);
+                              {Array.from(
+                                { length: totalPages },
+                                (_, i) => i + 1
+                              ).map((page) => {
+                                // Show first page, last page, current page, and pages around current
+                                const showPage =
+                                  page === 1 ||
+                                  page === totalPages ||
+                                  (page >= currentPage - 1 &&
+                                    page <= currentPage + 1);
 
-                            const showEllipsis =
-                              (page === currentPage - 2 && currentPage > 3) ||
-                              (page === currentPage + 2 &&
-                                currentPage < totalPages - 2);
+                                const showEllipsis =
+                                  (page === currentPage - 2 &&
+                                    currentPage > 3) ||
+                                  (page === currentPage + 2 &&
+                                    currentPage < totalPages - 2);
 
-                            if (showEllipsis) {
-                              return (
-                                <span key={page} className="px-2 text-white/50">
-                                  ...
-                                </span>
-                              );
-                            }
-
-                            if (!showPage) return null;
-
-                            return (
-                              <button
-                                key={page}
-                                onClick={() => setCurrentPage(page)}
-                                className={
-                                  page === currentPage
-                                    ? "px-3 py-1.5 rounded-lg bg-cyan-500 border-2 border-cyan-400 text-white text-sm font-semibold shadow-lg shadow-cyan-500/30"
-                                    : "px-3 py-1.5 rounded-lg bg-white/10 border border-white/20 text-white text-sm font-medium hover:bg-white/20 transition-all"
+                                if (showEllipsis) {
+                                  return (
+                                    <span
+                                      key={page}
+                                      className="px-2 text-white/50"
+                                    >
+                                      ...
+                                    </span>
+                                  );
                                 }
-                              >
-                                {page}
-                              </button>
-                            );
-                          })}
+
+                                if (!showPage) return null;
+
+                                return (
+                                  <button
+                                    key={page}
+                                    onClick={() => setCurrentPage(page)}
+                                    className={
+                                      page === currentPage
+                                        ? "px-3 py-1.5 rounded-lg bg-cyan-500 border-2 border-cyan-400 text-white text-sm font-semibold shadow-lg shadow-cyan-500/30"
+                                        : "px-3 py-1.5 rounded-lg bg-white/10 border border-white/20 text-white text-sm font-medium hover:bg-white/20 transition-all"
+                                    }
+                                  >
+                                    {page}
+                                  </button>
+                                );
+                              })}
                             </div>
 
                             <button
