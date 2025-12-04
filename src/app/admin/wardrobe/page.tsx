@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import { Pagination, Input as AntInput, ConfigProvider, Badge, Tooltip } from "antd";
@@ -205,6 +206,8 @@ export default function AdminWardrobePage() {
   const [isViewItemOpen, setIsViewItemOpen] = useState(false);
   const [viewItemId, setViewItemId] = useState<number | null>(null);
 
+  const queryClient = useQueryClient();
+
   // Debounce search query
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -337,8 +340,9 @@ export default function AdminWardrobePage() {
     // Store the editItemId before it gets cleared
     const updatedItemId = editItemId;
     
-    // Refresh items after edit
+    // Reset to first page and refresh admin wardrobe items from API
     setCurrentPage(1);
+    await queryClient.invalidateQueries({ queryKey: ["admin-wardrobe-system"] });
 
     // After edit completed, show ViewItemDialog with updated data
     if (updatedItemId) {
@@ -347,7 +351,7 @@ export default function AdminWardrobePage() {
         setIsViewItemOpen(true);
       }, 350);
     }
-  }, [editItemId]);
+  }, [editItemId, queryClient]);
 
   const handleFiltersChange = useCallback((newFilters: WardrobeFilters) => {
     setFilters(newFilters);

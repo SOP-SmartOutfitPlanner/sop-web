@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Users, Shirt, TrendingUp, Activity, Bell, Send } from "lucide-react";
 import { usePushNotification } from "@/hooks/admin/usePushNotification";
 import {
@@ -145,13 +144,6 @@ export default function AdminDashboardPage() {
             System statistics and analytics at a glance
           </p>
         </div>
-        <Button
-          onClick={() => setIsPushDialogOpen(true)}
-          className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 shadow-lg shadow-cyan-500/40 transition-all duration-200"
-        >
-          <Bell className="w-4 h-4 mr-2" />
-          Push Notification
-        </Button>
       </div>
 
       {/* Stats Grid */}
