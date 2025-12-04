@@ -311,15 +311,6 @@ export const ItemCard = memo(function ItemCard({
                     {item.category?.name || "Uncategorized"}
                   </span>
                 </div>
-                {/* Last Worn - Prominent placement */}
-                {item.lastWornAt && (
-                  <div className="flex items-center gap-1.5 mt-1">
-                    <div className="w-1.5 h-1.5 rounded-full bg-cyan-400/60" />
-                    <span className="text-cyan-200/80 text-xs font-medium">
-                      Last worn: {formatRelativeDate(item.lastWornAt)}
-                    </span>
-                  </div>
-                )}
               </div>
 
               {/* No data display for unanalyzed item - center the button */}
