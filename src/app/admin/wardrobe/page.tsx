@@ -9,7 +9,7 @@ import { Plus, Filter, SortAsc, SortDesc } from "lucide-react";
 import { ItemCard } from "@/components/wardrobe/grids/ItemCard";
 import { FilterModal } from "@/components/wardrobe/FilterModal";
 import { useAdminWardrobeItems } from "@/hooks/admin/useAdminWardrobe";
-import { ApiWardrobeItem } from "@/lib/api/wardrobe-api";
+import { ApiWardrobeItem, wardrobeAPI } from "@/lib/api/wardrobe-api";
 import GlassButton from "@/components/ui/glass-button";
 import { cn } from "@/lib/utils";
 import { WardrobeItem, ColorInfo } from "@/types";
@@ -336,6 +336,23 @@ export default function AdminWardrobePage() {
     }
   }, [handleDeleteItem]);
 
+  const handleAnalyze = useCallback(async (id: string) => {
+    try {
+      const numericId = parseInt(id, 10);
+      if (isNaN(numericId)) {
+        console.error("Invalid item ID:", id);
+        return;
+      }
+      
+      await wardrobeAPI.analyzeItems([numericId]);
+      
+      // Refresh the data after analysis
+      await queryClient.invalidateQueries({ queryKey: ["admin-wardrobe-system"] });
+    } catch (error) {
+      console.error("Failed to analyze item:", error);
+    }
+  }, [queryClient]);
+
   const handleItemUpdated = useCallback(async () => {
     // Store the editItemId before it gets cleared
     const updatedItemId = editItemId;
@@ -646,6 +663,7 @@ export default function AdminWardrobePage() {
                   onView={handleViewItem}
                   onEdit={handleEditItem}
                   onDelete={handleDeleteItemWrapper}
+                  onAnalyze={handleAnalyze}
                   showCheckbox={false}
                 />
               </motion.div>
