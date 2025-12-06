@@ -55,11 +55,16 @@ export function CalendarDayModal({
     Record<number, number[]>
   >({});
 
+  // Outfit filter states
+  const [outfitSearchQuery, setOutfitSearchQuery] = useState("");
+  const [outfitShowFavoriteOnly, setOutfitShowFavoriteOnly] = useState(false);
+  const [outfitGapDay, setOutfitGapDay] = useState(2);
+
   const dateString = format(selectedDate, "yyyy-MM-dd");
   const selectedMonth = selectedDate.getMonth() + 1;
   const selectedYear = selectedDate.getFullYear();
 
-  const { data: occasionsData, isLoading: isLoadingOccasions } =
+  const { data: occasionsData, isLoading: isLoadingOccasions, refetch: refetchOccasions } =
     useUserOccasions({
       PageIndex: 1,
       PageSize: 100,
@@ -68,7 +73,7 @@ export function CalendarDayModal({
       Year: selectedYear,
     });
 
-  const { data: calendarData } = useCalendarEntries({
+  const { data: calendarData, refetch: refetchCalendar } = useCalendarEntries({
     PageIndex: 1,
     PageSize: 100,
     takeAll: true,
@@ -76,11 +81,18 @@ export function CalendarDayModal({
     Year: selectedYear,
   });
 
-  const { data: outfitsData, isLoading: isLoadingOutfits } = useOutfits({
+  // Prepare params for useOutfits - keep all values to ensure query key changes
+  const outfitParams = {
     pageIndex: 1,
     pageSize: 100,
     takeAll: false,
-  });
+    targetDate: dateString,
+    gapDay: outfitGapDay,
+    search: outfitSearchQuery.trim() || undefined,
+    isFavorite: outfitShowFavoriteOnly || undefined,
+  };
+
+  const { data: outfitsData, isLoading: isLoadingOutfits, refetch: refetchOutfits } = useOutfits(outfitParams);
 
   const { mutate: createCalendarEntry, isPending: isCreatingEntry } =
     useCreateCalendarEntry();
@@ -120,35 +132,19 @@ export function CalendarDayModal({
       setExpandedOccasionIds([]);
       setEditingOccasion(null);
       setSelectedOccasionOutfits({});
+      // Refetch data khi mở modal
+      refetchOccasions();
+      refetchCalendar();
+      refetchOutfits();
     }
-  }, [open]);
+  }, [open, refetchOccasions, refetchCalendar, refetchOutfits]);
 
   const handleAddOccasion = useCallback(() => {
-    // Check if selected date is in the past
-    const today = startOfDay(new Date());
-    const selectedDateOnly = startOfDay(selectedDate);
-
-    if (isBefore(selectedDateOnly, today)) {
-      setPastDateDialogMessage("You can only create occasions for today or future dates. Please select a valid date.");
-      setIsPastDateDialogOpen(true);
-      return;
-    }
-
     setEditingOccasion(null);
     setIsOccasionFormOpen(true);
-  }, [selectedDate, setPastDateDialogMessage, setIsPastDateDialogOpen, setEditingOccasion, setIsOccasionFormOpen]);
+  }, [setEditingOccasion, setIsOccasionFormOpen]);
 
   const handleAddDailyOutfit = () => {
-    // Check if selected date is in the past
-    const today = startOfDay(new Date());
-    const selectedDateOnly = startOfDay(selectedDate);
-
-    if (isBefore(selectedDateOnly, today)) {
-      setPastDateDialogMessage("You can only add outfits to calendar for today or future dates. Please select a valid date.");
-      setIsPastDateDialogOpen(true);
-      return;
-    }
-
     setIsAddDailyOutfitModalOpen(true);
   };
 
@@ -428,6 +424,12 @@ export function CalendarDayModal({
                   onDeleteEntry={handleDeleteCalendarEntry}
                   onEditEntry={handleEditCalendarEntry}
                   onDeleteOccasion={handleDeleteOccasion}
+                  searchQuery={outfitSearchQuery}
+                  onSearchChange={setOutfitSearchQuery}
+                  showFavoriteOnly={outfitShowFavoriteOnly}
+                  onFavoriteToggle={() => setOutfitShowFavoriteOnly(!outfitShowFavoriteOnly)}
+                  gapDay={outfitGapDay}
+                  onGapDayChange={setOutfitGapDay}
                 />
               </div>
             </div>

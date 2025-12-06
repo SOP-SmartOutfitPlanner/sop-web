@@ -1,26 +1,36 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { WeeklyCalendar } from "./WeeklyCalendar";
 import { MonthlyCalendar } from "./MonthlyCalendar";
 import { useCalendarEntries, useUserOccasions } from "@/hooks/useCalendar";
+import { CalendarFilterType } from "@/types/calendar";
+import { UserOccasionFilterType } from "@/types/userOccasion";
 
 export function OutfitCalendar() {
   const [viewMode, setViewMode] = useState<"week" | "month">("week");
 
-  // Fetch calendar entries
-  const { data: calendarData, isLoading } = useCalendarEntries({
+  // Fetch calendar entries với filter type dựa trên view mode
+  const { data: calendarData, isLoading, refetch: refetchCalendar } = useCalendarEntries({
     PageIndex: 1,
     PageSize: 100,
     takeAll: true,
+    FilterType: viewMode === "week" ? CalendarFilterType.THIS_WEEK : CalendarFilterType.THIS_MONTH,
   });
 
-  // Fetch user occasions
-  const { data: occasionsData } = useUserOccasions({
+  // Fetch user occasions với filter type dựa trên view mode
+  const { data: occasionsData, refetch: refetchOccasions } = useUserOccasions({
     PageIndex: 1,
     PageSize: 100,
     takeAll: true,
+    FilterType: viewMode === "week" ? UserOccasionFilterType.THIS_WEEK : UserOccasionFilterType.THIS_MONTH,
   });
+
+  // Refetch data khi component mount hoặc khi view mode thay đổi
+  useEffect(() => {
+    refetchCalendar();
+    refetchOccasions();
+  }, [viewMode, refetchCalendar, refetchOccasions]);
 
   const calendarEntries = calendarData?.data?.data || [];
   const allUserOccasions = occasionsData?.data?.data || [];

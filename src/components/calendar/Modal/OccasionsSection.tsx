@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { Calendar, Plus, Shirt } from "lucide-react";
 import GlassButton from "@/components/ui/glass-button";
 import { UserOccasion } from "@/types/userOccasion";
@@ -33,6 +34,12 @@ interface OccasionsSectionProps {
   onDeleteEntry: (entryId: number, e?: React.MouseEvent) => void;
   onEditEntry: (entry: Calender, e?: React.MouseEvent) => void;
   onDeleteOccasion: (occasionId: number, e?: React.MouseEvent) => void;
+  searchQuery: string;
+  onSearchChange: (value: string) => void;
+  showFavoriteOnly: boolean;
+  onFavoriteToggle: () => void;
+  gapDay: number;
+  onGapDayChange: (value: number) => void;
 }
 
 export function OccasionsSection({
@@ -57,6 +64,12 @@ export function OccasionsSection({
   onDeleteEntry,
   onEditEntry,
   onDeleteOccasion,
+  searchQuery,
+  onSearchChange,
+  showFavoriteOnly,
+  onFavoriteToggle,
+  gapDay,
+  onGapDayChange,
 }: OccasionsSectionProps) {
   return (
     <div>
@@ -143,6 +156,12 @@ export function OccasionsSection({
                 onEditEntry={onEditEntry}
                 onDeleteOccasion={onDeleteOccasion}
                 calendarEntries={calendarEntries}
+                searchQuery={searchQuery}
+                onSearchChange={onSearchChange}
+                showFavoriteOnly={showFavoriteOnly}
+                onFavoriteToggle={onFavoriteToggle}
+                gapDay={gapDay}
+                onGapDayChange={onGapDayChange}
               />
             );
           })

@@ -52,6 +52,14 @@ class OutfitAPI {
       params["end-date"] = data.endDate;
     }
 
+    if (data.targetDate) {
+      params["target-date"] = data.targetDate;
+    }
+
+    if (data.gapDay !== undefined) {
+      params["gap-day"] = data.gapDay;
+    }
+
     const response = await apiClient.get<GetOutfitsResponse>("/outfits/user", {
       params,
     });

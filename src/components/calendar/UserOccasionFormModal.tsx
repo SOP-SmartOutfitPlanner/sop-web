@@ -141,17 +141,7 @@ export function UserOccasionFormModal({
       return;
     }
 
-    // Check if date is in the past (only for new occasions, not editing)
-    if (!isEditing) {
-      const selectedDateObj = new Date(formData.dateOccasion);
-      const today = startOfDay(new Date());
-      const selectedDateOnly = startOfDay(selectedDateObj);
-
-      if (isBefore(selectedDateOnly, today)) {
-        setIsPastDateDialogOpen(true);
-        return;
-      }
-    }
+    // Removed past date check - allow creating occasions for today even if time has passed
 
     // Transform to API format: combine date + time to full datetime
     const payload = {
