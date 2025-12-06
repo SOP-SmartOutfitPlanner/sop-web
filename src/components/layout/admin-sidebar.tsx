@@ -12,6 +12,9 @@ import {
   Bot,
   Package,
   Bell,
+  FolderTree,
+  Calendar,
+  Palette,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -32,23 +35,18 @@ const menuItems = [
     href: "/admin/wardrobe",
   },
   {
-    title: "Manage Items",
-    icon: Shirt,
-    href: "/admin/items",
-  },
-  {
     title: "Categories",
-    icon: Tags,
+    icon: FolderTree,
     href: "/admin/categories",
   },
   {
     title: "Occasions",
-    icon: Tags,
+    icon: Calendar,
     href: "/admin/occasion",
   },
   {
     title: "Styles",
-    icon: Tags,
+    icon: Palette,
     href: "/admin/styles",
   },
   {
