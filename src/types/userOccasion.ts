@@ -1,9 +1,15 @@
+export enum UserOccasionFilterType {
+    THIS_WEEK = "THIS_WEEK",
+    THIS_MONTH = "THIS_MONTH",
+    THIS_YEAR = "THIS_YEAR",
+}
 
 export interface GetUserOccasionRequest{
     PageIndex : number;
     PageSize : number;
     Search? : string;
     takeAll? : boolean;
+    FilterType?: UserOccasionFilterType;
     StartDate? : string;
     EndDate? : string;
     Year? : number;

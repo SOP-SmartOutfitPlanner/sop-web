@@ -1,8 +1,15 @@
+export enum CalendarFilterType {
+    THIS_WEEK = "THIS_WEEK",
+    THIS_MONTH = "THIS_MONTH",
+    THIS_YEAR = "THIS_YEAR",
+}
+
 export interface GetCalenderRequest{
     PageIndex : number;
     PageSize : number;
     Search? : string;
     takeAll? : boolean;
+    FilterType?: CalendarFilterType;
     StartDate? : string;
     EndDate? : string;
     Year? : number;

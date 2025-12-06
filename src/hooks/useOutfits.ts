@@ -14,8 +14,24 @@ import {
  * Hook to fetch outfits with pagination
  */
 export function useOutfits(params: GetOutfitsRequest, enabled = true) {
+  // Create a serialized query key to ensure React Query properly detects changes
+  // Convert all values to strings to avoid undefined vs null vs false comparison issues
+  const queryKey = [
+    "outfits",
+    `page:${params.pageIndex}`,
+    `size:${params.pageSize}`,
+    `takeAll:${params.takeAll}`,
+    `search:${params.search || ""}`,
+    `favorite:${params.isFavorite || ""}`,
+    `saved:${params.isSaved || ""}`,
+    `start:${params.startDate || ""}`,
+    `end:${params.endDate || ""}`,
+    `target:${params.targetDate || ""}`,
+    `gap:${params.gapDay ?? ""}`,
+  ];
+
   return useQuery({
-    queryKey: ["outfits", params],
+    queryKey,
     queryFn: () => outfitAPI.getOutfits(params),
     enabled,
     staleTime: 0, // Always consider data stale, refetch on mount

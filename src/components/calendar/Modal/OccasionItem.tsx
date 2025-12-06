@@ -11,7 +11,7 @@ import {
   Clock,
   Plus,
 } from "lucide-react";
-import { format, isPast, parseISO } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { UserOccasion } from "@/types/userOccasion";
 import { Outfit } from "@/types/outfit";
 import { CalendarEntry, Calender } from "@/types/calendar";
@@ -39,6 +39,12 @@ interface OccasionItemProps {
   onEditEntry: (entry: Calender, e?: React.MouseEvent) => void;
   onDeleteOccasion: (occasionId: number, e?: React.MouseEvent) => void;
   calendarEntries: CalendarEntry[];
+  searchQuery: string;
+  onSearchChange: (value: string) => void;
+  showFavoriteOnly: boolean;
+  onFavoriteToggle: () => void;
+  gapDay: number;
+  onGapDayChange: (value: number) => void;
 }
 
 export function OccasionItem({
@@ -60,23 +66,38 @@ export function OccasionItem({
   onEditEntry,
   onDeleteOccasion,
   calendarEntries,
+  searchQuery,
+  onSearchChange,
+  showFavoriteOnly,
+  onFavoriteToggle,
+  gapDay,
+  onGapDayChange,
 }: OccasionItemProps) {
   const plannedCount = plannedOutfits.length;
   const [viewingOutfit, setViewingOutfit] = useState<Outfit | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isAvailableModalOpen, setIsAvailableModalOpen] = useState(false);
 
-  // Check if the occasion has ended based on its endTime
+  // Debug: Log when availableOutfits changes while modal is open
+  // useEffect(() => {
+  //   if (isAvailableModalOpen) {
+  //     console.log('[OccasionItem] availableOutfits changed:', availableOutfits.length);
+  //   }
+  // }, [availableOutfits, isAvailableModalOpen]);
+
+  // Check if the occasion has ended based on date only (not time)
   const isOccasionEnded = useMemo(() => {
-    if (!occasion.endTime) {
-      // If no endTime, check if dateOccasion is in the past (end of that day)
-      const occasionDate = parseISO(occasion.dateOccasion);
-      occasionDate.setHours(23, 59, 59, 999);
-      return isPast(occasionDate);
-    }
-    // Check if endTime is in the past
-    return isPast(parseISO(occasion.endTime));
-  }, [occasion.endTime, occasion.dateOccasion]);
+    // Check if dateOccasion is before today (not including today)
+    const occasionDate = parseISO(occasion.dateOccasion);
+    const today = new Date();
+    
+    // Set both to start of day for comparison
+    occasionDate.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+    
+    // Only disable if occasion is on a past date (not today)
+    return occasionDate < today;
+  }, [occasion.dateOccasion]);
 
   // Convert Calender to Outfit format
   const convertCalenderToOutfit = (calender: Calender): Outfit => {
@@ -235,10 +256,6 @@ export function OccasionItem({
                 <p className="font-bricolage text-base font-semibold text-white">
                   Add more outfits to this occasion
                 </p>
-                <p className="text-sm text-white/60">
-                  {availableOutfits.length} outfit
-                  {availableOutfits.length > 1 ? "s" : ""} ready to add
-                </p>
               </div>
               <GlassButton
                 variant="primary"
@@ -270,20 +287,25 @@ export function OccasionItem({
         outfit={viewingOutfit}
       />
 
-      {availableOutfits.length > 0 && (
-        <AvailableOutfitsGrid
-          open={isAvailableModalOpen}
-          onOpenChange={setIsAvailableModalOpen}
-          outfits={availableOutfits}
-          selectedOutfits={selectedOutfits}
-          isCreatingEntry={isCreatingEntry}
-          isLoadingOutfits={isLoadingOutfits}
-          onToggleSelection={onToggleSelection}
-          onToggleSelectAll={onToggleSelectAll}
-          onBatchAdd={onBatchAdd}
-          onAddSingle={onAddSingle}
-        />
-      )}
+      {/* Always render AvailableOutfitsGrid to preserve modal state */}
+      <AvailableOutfitsGrid
+        open={isAvailableModalOpen}
+        onOpenChange={setIsAvailableModalOpen}
+        outfits={availableOutfits}
+        selectedOutfits={selectedOutfits}
+        isCreatingEntry={isCreatingEntry}
+        isLoadingOutfits={isLoadingOutfits}
+        onToggleSelection={onToggleSelection}
+        onToggleSelectAll={onToggleSelectAll}
+        onBatchAdd={onBatchAdd}
+        onAddSingle={onAddSingle}
+        searchQuery={searchQuery}
+        onSearchChange={onSearchChange}
+        showFavoriteOnly={showFavoriteOnly}
+        onFavoriteToggle={onFavoriteToggle}
+        gapDay={gapDay}
+        onGapDayChange={onGapDayChange}
+      />
     </div>
   );
 }
