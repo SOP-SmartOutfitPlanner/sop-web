@@ -6,27 +6,25 @@ const withBundleAnalyzer = bundleAnalyzer({
 });
 
 const nextConfig: NextConfig = {
-  experimental: {
-    reactCompiler: true,
-  },
+  
+  reactCompiler: true,
+
   images: {
     remotePatterns: [
       {
-        protocol: 'https',
-        hostname: 'storage.wizlab.io.vn',
-        port: '',
-        pathname: '/sop/**',
+        protocol: "https",
+        hostname: "storage.wizlab.io.vn",
+        port: "",
+        pathname: "/sop/**",
       },
-      // Add other potential image domains
       {
-        protocol: 'https',
-        hostname: 'sop.wizlab.io.vn',
-        port: '',
-        pathname: '/**',
+        protocol: "https",
+        hostname: "sop.wizlab.io.vn",
+        port: "",
+        pathname: "/**",
       },
     ],
-    // Add unoptimized option for development
-    unoptimized: process.env.NODE_ENV === 'development',
+    unoptimized: process.env.NODE_ENV === "development",
   },
 };
 
