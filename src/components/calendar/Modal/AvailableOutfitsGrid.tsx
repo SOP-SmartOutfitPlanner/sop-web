@@ -2,7 +2,7 @@
 
 import type React from "react";
 import { useState, useEffect } from "react";
-import { Plus, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, X, Search, Filter } from "lucide-react";
 import { Outfit } from "@/types/outfit";
 import GlassButton from "@/components/ui/glass-button";
 import Image from "next/image";
@@ -19,6 +19,12 @@ interface AvailableOutfitsGridProps {
   onToggleSelectAll: (outfitIds: number[]) => void;
   onBatchAdd: (e?: React.MouseEvent) => void;
   onAddSingle: (outfit: Outfit, e?: React.MouseEvent) => void;
+  searchQuery: string;
+  onSearchChange: (value: string) => void;
+  showFavoriteOnly: boolean;
+  onFavoriteToggle: () => void;
+  gapDay: number;
+  onGapDayChange: (value: number) => void;
 }
 
 const ITEMS_PER_PAGE = 8;
@@ -34,6 +40,12 @@ export function AvailableOutfitsGrid({
   onToggleSelectAll,
   onBatchAdd,
   onAddSingle,
+  searchQuery,
+  onSearchChange,
+  showFavoriteOnly,
+  onFavoriteToggle,
+  gapDay,
+  onGapDayChange,
 }: AvailableOutfitsGridProps) {
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -48,13 +60,14 @@ export function AvailableOutfitsGrid({
   const endIndex = startIndex + ITEMS_PER_PAGE;
   const currentPageOutfits = outfits.slice(startIndex, endIndex);
 
-  // Reset to page 1 when outfits change or current page is invalid
+  // Reset to page 1 when current page exceeds total pages (e.g., after filtering)
   useEffect(() => {
     if (currentPage > totalPages && totalPages > 0) {
       setCurrentPage(1);
     }
-  }, [outfits.length, totalPages, currentPage]);
+  }, [currentPage, totalPages]);
 
+  // Reset to page 1 when modal closes
   useEffect(() => {
     if (!open) {
       setCurrentPage(1);
@@ -103,7 +116,7 @@ export function AvailableOutfitsGrid({
           onClick={(e) => e.stopPropagation()}
         >
           <div className="px-8 pt-6 pb-4 shrink-0 border-b border-white/10">
-            <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start justify-between gap-4 mb-4">
               <div>
                 <h2 className="font-dela-gothic text-2xl font-bold text-white flex items-center gap-3">
                   <Plus className="w-6 h-6 text-green-400" />
@@ -126,6 +139,58 @@ export function AvailableOutfitsGrid({
               >
                 <X className="w-5 h-5 text-white" />
               </button>
+            </div>
+
+            {/* Filter Section */}
+            <div className="space-y-3">
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+                <input
+                  type="text"
+                  placeholder="Search outfits..."
+                  value={searchQuery}
+                  onChange={(e) => onSearchChange(e.target.value)}
+                  className="w-full bg-white/10 border border-white/20 rounded-lg pl-10 pr-4 py-2 text-sm text-white placeholder:text-white/40 focus:outline-none focus:border-green-400/50 focus:ring-2 focus:ring-green-400/20 transition-all"
+                />
+              </div>
+
+              {/* Filter Options */}
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-2 text-xs text-white/70">
+                  <Filter className="w-4 h-4" />
+                  <span>Filters:</span>
+                </div>
+                
+                {/* Favorite Toggle */}
+                <button
+                  onClick={onFavoriteToggle}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    showFavoriteOnly
+                      ? "bg-pink-500/30 text-pink-300 border border-pink-400/50"
+                      : "bg-white/10 text-white/60 border border-white/20 hover:bg-white/15"
+                  }`}
+                >
+                  ⭐ Favorites Only
+                </button>
+
+                {/* Gap Day Selector */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-white/60">Gap Day:</span>
+                  <select
+                    value={gapDay}
+                    onChange={(e) => onGapDayChange(Number(e.target.value))}
+                    className="bg-white/10 border border-white/20 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-green-400/50 focus:ring-2 focus:ring-green-400/20 transition-all [&>option]:bg-slate-800 [&>option]:text-white"
+                  >
+                    <option value={0} className="bg-slate-800 text-white">No filter</option>
+                    <option value={1} className="bg-slate-800 text-white">1 day</option>
+                    <option value={2} className="bg-slate-800 text-white">2 days</option>
+                    <option value={3} className="bg-slate-800 text-white">3 days</option>
+                    <option value={5} className="bg-slate-800 text-white">5 days</option>
+                    <option value={7} className="bg-slate-800 text-white">7 days</option>
+                  </select>
+                </div>
+              </div>
             </div>
           </div>
           <div

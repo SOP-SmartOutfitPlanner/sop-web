@@ -45,6 +45,7 @@ export const CalenderAPI = {
     
     if (data.Search) params['search'] = data.Search;
     if (data.takeAll !== undefined) params['take-all'] = data.takeAll;
+    if (data.FilterType) params['filter-type'] = data.FilterType;
     if (data.StartDate) params['start-date'] = data.StartDate;
     if (data.EndDate) params['end-date'] = data.EndDate;
     if (data.Year !== undefined) params['year'] = data.Year;
@@ -80,6 +81,7 @@ export const CalenderAPI = {
     
     if (data.Search) params['search'] = data.Search;
     if (data.takeAll !== undefined) params['take-all'] = data.takeAll;
+    if (data.FilterType) params['filter-type'] = data.FilterType;
     if (data.StartDate) params['start-date'] = data.StartDate;
     if (data.EndDate) params['end-date'] = data.EndDate;
     if (data.Year !== undefined) params['year'] = data.Year;

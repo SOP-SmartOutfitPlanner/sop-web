@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { X, Shirt, Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, Shirt, Plus, ChevronLeft, ChevronRight, Search, Filter } from "lucide-react";
 import { format } from "date-fns";
 import { Outfit } from "@/types/outfit";
 import GlassButton from "@/components/ui/glass-button";
@@ -28,6 +28,9 @@ export function AddDailyOutfitModal({
 }: AddDailyOutfitModalProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedOutfits, setSelectedOutfits] = useState<number[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showFavoriteOnly, setShowFavoriteOnly] = useState(false);
+  const [gapDayValue, setGapDayValue] = useState(2);
   const pageSize = 8;
 
   // Enable mouse wheel scrolling in modal content area
@@ -36,10 +39,15 @@ export function AddDailyOutfitModal({
     sensitivity: 1.2, // Slightly faster than default
   });
 
+  const dateString = format(selectedDate, "yyyy-MM-dd");
   const { data: outfitsData, isLoading } = useOutfits({
     pageIndex: currentPage,
     pageSize,
     takeAll: false,
+    targetDate: dateString,
+    gapDay: gapDayValue,
+    search: searchQuery || undefined,
+    isFavorite: showFavoriteOnly || undefined,
   });
 
   const outfits = outfitsData?.data?.data || [];
@@ -96,6 +104,9 @@ export function AddDailyOutfitModal({
   const handleClose = useCallback(() => {
     setSelectedOutfits([]);
     setCurrentPage(1);
+    setSearchQuery("");
+    setShowFavoriteOnly(false);
+    setGapDayValue(2);
     onOpenChange(false);
   }, [onOpenChange]);
 
@@ -132,7 +143,7 @@ export function AddDailyOutfitModal({
         >
           {/* Header */}
           <div className="px-8 pt-6 pb-4 shrink-0 border-b border-white/10">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="font-dela-gothic text-2xl font-bold text-white flex items-center gap-3">
                   <Shirt className="w-7 h-7 text-cyan-400" />
@@ -152,6 +163,67 @@ export function AddDailyOutfitModal({
               >
                 <X className="w-5 h-5 text-white" />
               </button>
+            </div>
+
+            {/* Filter Section */}
+            <div className="space-y-3">
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+                <input
+                  type="text"
+                  placeholder="Search outfits..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full bg-white/10 border border-white/20 rounded-lg pl-10 pr-4 py-2 text-sm text-white placeholder:text-white/40 focus:outline-none focus:border-cyan-400/50 focus:ring-2 focus:ring-cyan-400/20 transition-all"
+                />
+              </div>
+
+              {/* Filter Options */}
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-2 text-xs text-white/70">
+                  <Filter className="w-4 h-4" />
+                  <span>Filters:</span>
+                </div>
+                
+                {/* Favorite Toggle */}
+                <button
+                  onClick={() => {
+                    setShowFavoriteOnly(!showFavoriteOnly);
+                    setCurrentPage(1);
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    showFavoriteOnly
+                      ? "bg-pink-500/30 text-pink-300 border border-pink-400/50"
+                      : "bg-white/10 text-white/60 border border-white/20 hover:bg-white/15"
+                  }`}
+                >
+                  ⭐ Favorites Only
+                </button>
+
+                {/* Gap Day Selector */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-white/60">Gap Day:</span>
+                  <select
+                    value={gapDayValue}
+                    onChange={(e) => {
+                      setGapDayValue(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="bg-white/10 border border-white/20 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-cyan-400/50 focus:ring-2 focus:ring-cyan-400/20 transition-all"
+                  >
+                    <option value={0}>No filter</option>
+                    <option value={1}>1 day</option>
+                    <option value={2}>2 days</option>
+                    <option value={3}>3 days</option>
+                    <option value={5}>5 days</option>
+                    <option value={7}>7 days</option>
+                  </select>
+                </div>
+              </div>
             </div>
           </div>
 

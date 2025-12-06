@@ -8,6 +8,8 @@ export interface GetOutfitsRequest {
   isSaved?: boolean;
   startDate?: string;
   endDate?: string;
+  targetDate?: string; // Reference date for gap day calculation (yyyy-MM-dd)
+  gapDay?: number; // Days to exclude items worn within this range
 }
 
 export interface CreateOutfitRequest {
