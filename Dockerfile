@@ -23,7 +23,7 @@ COPY tsconfig.json ./
 COPY postcss.config.mjs ./
 COPY next.config.ts ./
 COPY components.json ./
-COPY middleware.ts ./
+COPY proxy.ts ./
 
 # Source
 COPY src ./src

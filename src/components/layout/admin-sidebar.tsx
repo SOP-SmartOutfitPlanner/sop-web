@@ -5,8 +5,6 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
-  Shirt,
-  Tags,
   Shield,
   Flag,
   Bot,
