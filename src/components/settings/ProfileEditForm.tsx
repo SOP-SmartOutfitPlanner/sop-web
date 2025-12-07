@@ -32,6 +32,9 @@ import {
   FileText,
   Plus,
   Lock,
+  KeyRound,
+  ShieldCheck,
+  AlertCircle,
 } from "lucide-react";
 import { FaCrown, FaShieldAlt } from "react-icons/fa";
 import GlassButton from "@/components/ui/glass-button";
@@ -134,6 +137,19 @@ export function ProfileEditForm() {
   const [districts, setDistricts] = useState<District[]>([]);
   const [wards, setWards] = useState<Ward[]>([]);
   const [loadingProvinces, setLoadingProvinces] = useState(false);
+
+  // Password change state
+  const [passwordMethod, setPasswordMethod] = useState<"current" | "otp">("current");
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+    otp: "",
+  });
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpMaskedEmail, setOtpMaskedEmail] = useState("");
+  const [otpCountdown, setOtpCountdown] = useState(0);
   const [loadingDistricts, setLoadingDistricts] = useState(false);
   const [loadingWards, setLoadingWards] = useState(false);
 
@@ -146,16 +162,28 @@ export function ProfileEditForm() {
       const loadedProvinces: Province[] = data.data || [];
       setProvinces(loadedProvinces);
 
-      // Parse location if exists (format: "Ward, District, Province" or "District, Province" or "Province")
+      // Parse location if exists
+      // Format can be: "Province, District, Ward" OR "Ward, District, Province"
+      // We try to detect which format by checking if first or last part matches a province
       if (locationString) {
         const parts = locationString.split(", ").map(p => p.trim());
 
         if (parts.length >= 1) {
-          // Last part is always province
-          const provinceName = parts[parts.length - 1];
-          const matchedProvince = loadedProvinces.find(p =>
+          // Try to find province - check first part first (Province, District, Ward format)
+          let provinceName = parts[0];
+          let matchedProvince = loadedProvinces.find(p =>
             p.name.toLowerCase() === provinceName.toLowerCase()
           );
+
+          // If not found, try last part (Ward, District, Province format)
+          let formatIsProvinceFirst = true;
+          if (!matchedProvince && parts.length > 1) {
+            provinceName = parts[parts.length - 1];
+            matchedProvince = loadedProvinces.find(p =>
+              p.name.toLowerCase() === provinceName.toLowerCase()
+            );
+            formatIsProvinceFirst = false;
+          }
 
           if (matchedProvince) {
             // Load districts for this province
@@ -168,8 +196,11 @@ export function ProfileEditForm() {
             let matchedWard: Ward | undefined;
 
             if (parts.length >= 2) {
-              // Second to last part is district
-              const districtName = parts[parts.length - 2];
+              // Get district name based on format
+              const districtName = formatIsProvinceFirst
+                ? parts[1] // Province, District, Ward
+                : parts[parts.length - 2]; // Ward, District, Province
+
               matchedDistrict = loadedDistricts.find(d =>
                 d.name.toLowerCase() === districtName.toLowerCase()
               );
@@ -181,8 +212,11 @@ export function ProfileEditForm() {
                 const loadedWards: Ward[] = wardsData.data || [];
                 setWards(loadedWards);
 
-                // First part is ward
-                const wardName = parts[0];
+                // Get ward name based on format
+                const wardName = formatIsProvinceFirst
+                  ? parts[2] // Province, District, Ward
+                  : parts[0]; // Ward, District, Province
+
                 matchedWard = loadedWards.find(w =>
                   w.name.toLowerCase() === wardName.toLowerCase()
                 );
@@ -258,7 +292,7 @@ export function ProfileEditForm() {
       district: districtId,
       ward: '',
       location: selectedDistrict && selectedProvince
-        ? `${selectedDistrict.name}, ${selectedProvince.name}`
+        ? `${selectedProvince.name}, ${selectedDistrict.name}`
         : formData.location
     });
     setWards([]);
@@ -271,11 +305,12 @@ export function ProfileEditForm() {
     const selectedDistrict = districts.find(d => d.id === formData.district);
     const selectedProvince = provinces.find(p => p.id === formData.province);
 
+    // Build location string in format: "Province, District, Ward"
     let locationStr = '';
-    if (selectedWard && selectedDistrict && selectedProvince) {
-      locationStr = `${selectedWard.name}, ${selectedDistrict.name}, ${selectedProvince.name}`;
-    } else if (selectedDistrict && selectedProvince) {
-      locationStr = `${selectedDistrict.name}, ${selectedProvince.name}`;
+    if (selectedProvince && selectedDistrict && selectedWard) {
+      locationStr = `${selectedProvince.name}, ${selectedDistrict.name}, ${selectedWard.name}`;
+    } else if (selectedProvince && selectedDistrict) {
+      locationStr = `${selectedProvince.name}, ${selectedDistrict.name}`;
     } else if (selectedProvince) {
       locationStr = selectedProvince.name;
     }
@@ -459,6 +494,120 @@ export function ProfileEditForm() {
       avatarInputRef.current.value = "";
     }
     toast.info("Form reset to original values");
+  };
+
+  // OTP countdown timer
+  useEffect(() => {
+    if (otpCountdown > 0) {
+      const timer = setTimeout(() => setOtpCountdown(otpCountdown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [otpCountdown]);
+
+  // Password change handlers
+  const handleRequestOtp = async () => {
+    if (userData?.isLoginWithGoogle) {
+      toast.error("Password change is not available for Google login accounts");
+      return;
+    }
+
+    try {
+      setIsChangingPassword(true);
+      const response = await userAPI.initiatePasswordChangeOtp();
+      setOtpSent(true);
+      // Handle both string and object response formats
+      const maskedEmail = typeof response.data === 'string'
+        ? response.data
+        : (response.data as { email?: string })?.email || '';
+      setOtpMaskedEmail(maskedEmail);
+      setOtpCountdown(300); // 5 minutes
+      toast.success(response.message || "OTP sent to your email");
+    } catch (error) {
+      const message = (error as { message?: string })?.message || "Failed to send OTP";
+      toast.error(message);
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
+  const handleChangePasswordWithCurrent = async () => {
+    if (userData?.isLoginWithGoogle) {
+      toast.error("Password change is not available for Google login accounts");
+      return;
+    }
+
+    if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      toast.error("New password must be at least 6 characters");
+      return;
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast.error("New password and confirm password do not match");
+      return;
+    }
+
+    try {
+      setIsChangingPassword(true);
+      const response = await userAPI.changePassword({
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword,
+        confirmPassword: passwordData.confirmPassword,
+      });
+      toast.success(response.message || "Password changed successfully");
+      setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "", otp: "" });
+    } catch (error) {
+      const message = (error as { message?: string })?.message || "Failed to change password";
+      toast.error(message);
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
+  const handleChangePasswordWithOtp = async () => {
+    if (!passwordData.otp || !passwordData.newPassword || !passwordData.confirmPassword) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      toast.error("New password must be at least 6 characters");
+      return;
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast.error("New password and confirm password do not match");
+      return;
+    }
+
+    try {
+      setIsChangingPassword(true);
+      const response = await userAPI.changePasswordWithOtp({
+        otp: passwordData.otp,
+        newPassword: passwordData.newPassword,
+        confirmPassword: passwordData.confirmPassword,
+      });
+      toast.success(response.message || "Password changed successfully");
+      setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "", otp: "" });
+      setOtpSent(false);
+      setOtpCountdown(0);
+      setPasswordMethod("current");
+    } catch (error) {
+      const message = (error as { message?: string })?.message || "Failed to change password";
+      toast.error(message);
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
+  const formatCountdown = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
   const handleSubmit = async () => {
@@ -1444,57 +1593,239 @@ export function ProfileEditForm() {
                 </div>
               </div>
 
-              <div className="space-y-4 font-bricolage">
-                <div className="space-y-1.5">
-                  <Label className="text-sm font-semibold flex items-center gap-2 text-gray-200">
-                    <Lock className="w-4 h-4" />
-                    Current Password
-                  </Label>
-                  <AntInput.Password
-                    placeholder="Enter current password"
-                    size="large"
-                    style={{ backgroundColor: "rgba(255, 255, 255, 0.9)" }}
-                  />
+              {/* Google Login Warning */}
+              {userData?.isLoginWithGoogle && (
+                <div className="flex items-center gap-3 p-4 rounded-xl bg-amber-500/20 border border-amber-500/40">
+                  <AlertCircle className="w-5 h-5 text-amber-400 flex-shrink-0" />
+                  <p className="text-sm text-amber-200">
+                    Password change is not available for accounts signed in with Google.
+                  </p>
                 </div>
+              )}
 
-                <div className="space-y-1.5">
-                  <Label className="text-sm font-semibold flex items-center gap-2 text-gray-200">
-                    <Lock className="w-4 h-4" />
-                    New Password
-                  </Label>
-                  <AntInput.Password
-                    placeholder="Enter new password"
-                    size="large"
-                    style={{ backgroundColor: "rgba(255, 255, 255, 0.9)" }}
-                  />
-                </div>
+              {!userData?.isLoginWithGoogle && (
+                <>
+                  {/* Method 1: With Current Password (Default) */}
+                  {passwordMethod === "current" && (
+                    <div className="space-y-4 font-bricolage">
+                      <div className="space-y-1.5">
+                        <Label className="text-sm font-semibold flex items-center gap-2 text-gray-200">
+                          <Lock className="w-4 h-4" />
+                          Current Password
+                        </Label>
+                        <AntInput.Password
+                          value={passwordData.currentPassword}
+                          onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                          placeholder="Enter current password"
+                          size="large"
+                          style={{ backgroundColor: "rgba(255, 255, 255, 0.9)" }}
+                        />
+                      </div>
 
-                <div className="space-y-1.5">
-                  <Label className="text-sm font-semibold flex items-center gap-2 text-gray-200">
-                    <Lock className="w-4 h-4" />
-                    Confirm New Password
-                  </Label>
-                  <AntInput.Password
-                    placeholder="Confirm new password"
-                    size="large"
-                    style={{ backgroundColor: "rgba(255, 255, 255, 0.9)" }}
-                  />
-                </div>
-              </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-sm font-semibold flex items-center gap-2 text-gray-200">
+                          <KeyRound className="w-4 h-4" />
+                          New Password
+                        </Label>
+                        <AntInput.Password
+                          value={passwordData.newPassword}
+                          onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                          placeholder="Enter new password (min 6 characters)"
+                          size="large"
+                          style={{ backgroundColor: "rgba(255, 255, 255, 0.9)" }}
+                        />
+                      </div>
 
-              <div className="flex justify-end pt-4">
-                <GlassButton
-                  onClick={() => toast.info("Password change feature coming soon!")}
-                  variant="custom"
-                  backgroundColor="rgba(245, 158, 11, 0.6)"
-                  borderColor="rgba(245, 158, 11, 0.8)"
-                  textColor="white"
-                  size="lg"
-                >
-                  <Lock className="w-5 h-5" />
-                  Update Password
-                </GlassButton>
-              </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-sm font-semibold flex items-center gap-2 text-gray-200">
+                          <KeyRound className="w-4 h-4" />
+                          Confirm New Password
+                        </Label>
+                        <AntInput.Password
+                          value={passwordData.confirmPassword}
+                          onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                          placeholder="Confirm new password"
+                          size="large"
+                          style={{ backgroundColor: "rgba(255, 255, 255, 0.9)" }}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between pt-4">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPasswordMethod("otp");
+                            setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "", otp: "" });
+                          }}
+                          className="text-sm text-blue-400 hover:text-blue-300 hover:underline transition-colors"
+                        >
+                          Forgot your password? Try another way
+                        </button>
+                        <GlassButton
+                          onClick={handleChangePasswordWithCurrent}
+                          disabled={isChangingPassword}
+                          variant="custom"
+                          backgroundColor="rgba(245, 158, 11, 0.6)"
+                          borderColor="rgba(245, 158, 11, 0.8)"
+                          textColor="white"
+                          size="lg"
+                        >
+                          {isChangingPassword ? (
+                            <>
+                              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
+                              Updating...
+                            </>
+                          ) : (
+                            <>
+                              <Lock className="w-5 h-5" />
+                              Update Password
+                            </>
+                          )}
+                        </GlassButton>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Method 2: With OTP */}
+                  {passwordMethod === "otp" && (
+                    <div className="space-y-4 font-bricolage">
+                      {!otpSent ? (
+                        <>
+                          <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/30">
+                            <p className="text-sm text-blue-200">
+                              We&apos;ll send a verification code to your email address. The code will expire in 5 minutes.
+                            </p>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPasswordMethod("current");
+                                setOtpSent(false);
+                                setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "", otp: "" });
+                              }}
+                              className="text-sm text-blue-400 hover:text-blue-300 hover:underline transition-colors"
+                            >
+                              Back to password method
+                            </button>
+                            <GlassButton
+                              onClick={handleRequestOtp}
+                              disabled={isChangingPassword}
+                              variant="custom"
+                              backgroundColor="rgba(59, 130, 246, 0.6)"
+                              borderColor="rgba(59, 130, 246, 0.8)"
+                              textColor="white"
+                              size="lg"
+                            >
+                              {isChangingPassword ? (
+                                <>
+                                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
+                                  Sending...
+                                </>
+                              ) : (
+                                <>
+                                  <Mail className="w-5 h-5" />
+                                  Send OTP to Email
+                                </>
+                              )}
+                            </GlassButton>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/30">
+                            <div className="flex items-center justify-between">
+                              <p className="text-sm text-green-200">
+                                OTP sent to <span className="font-semibold">{otpMaskedEmail}</span>
+                              </p>
+                              {otpCountdown > 0 && (
+                                <span className="text-sm font-mono text-green-300 bg-green-500/20 px-2 py-1 rounded">
+                                  {formatCountdown(otpCountdown)}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <Label className="text-sm font-semibold flex items-center gap-2 text-gray-200">
+                              <ShieldCheck className="w-4 h-4" />
+                              OTP Code
+                            </Label>
+                            <AntInput
+                              value={passwordData.otp}
+                              onChange={(e) => setPasswordData({ ...passwordData, otp: e.target.value })}
+                              placeholder="Enter 6-digit OTP"
+                              size="large"
+                              maxLength={6}
+                              style={{ backgroundColor: "rgba(255, 255, 255, 0.9)" }}
+                            />
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <Label className="text-sm font-semibold flex items-center gap-2 text-gray-200">
+                              <KeyRound className="w-4 h-4" />
+                              New Password
+                            </Label>
+                            <AntInput.Password
+                              value={passwordData.newPassword}
+                              onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                              placeholder="Enter new password (min 6 characters)"
+                              size="large"
+                              style={{ backgroundColor: "rgba(255, 255, 255, 0.9)" }}
+                            />
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <Label className="text-sm font-semibold flex items-center gap-2 text-gray-200">
+                              <KeyRound className="w-4 h-4" />
+                              Confirm New Password
+                            </Label>
+                            <AntInput.Password
+                              value={passwordData.confirmPassword}
+                              onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                              placeholder="Confirm new password"
+                              size="large"
+                              style={{ backgroundColor: "rgba(255, 255, 255, 0.9)" }}
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between pt-4">
+                            <button
+                              type="button"
+                              onClick={handleRequestOtp}
+                              disabled={isChangingPassword || otpCountdown > 0}
+                              className="text-sm text-blue-400 hover:text-blue-300 disabled:text-gray-500 disabled:cursor-not-allowed"
+                            >
+                              {otpCountdown > 0 ? `Resend OTP in ${formatCountdown(otpCountdown)}` : "Resend OTP"}
+                            </button>
+                            <GlassButton
+                              onClick={handleChangePasswordWithOtp}
+                              disabled={isChangingPassword}
+                              variant="custom"
+                              backgroundColor="rgba(245, 158, 11, 0.6)"
+                              borderColor="rgba(245, 158, 11, 0.8)"
+                              textColor="white"
+                              size="lg"
+                            >
+                              {isChangingPassword ? (
+                                <>
+                                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
+                                  Updating...
+                                </>
+                              ) : (
+                                <>
+                                  <Lock className="w-5 h-5" />
+                                  Update Password
+                                </>
+                              )}
+                            </GlassButton>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           )}
         </div>

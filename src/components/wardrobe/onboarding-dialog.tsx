@@ -330,8 +330,9 @@ useScrollLock(open);
         avoidedColor: formData.avoidedColor,
         gender: formData.gender === "Female" ? 1 : 0,
         location: formData.location,
-        jobId: formData.jobId || 1,
-        otherJob: formData.otherJob,
+        // Only send jobId if it's a system job, otherwise send otherJob
+        jobId: formData.jobId || undefined,
+        otherJob: formData.otherJob || undefined,
         dob: formData.dob,
         bio: formData.bio,
         styleIds: formData.styleIds,
@@ -577,49 +578,69 @@ useScrollLock(open);
                           </div>
                         </div>
 
-                        {/* Occupation Row */}
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="job" className="text-md font-semibold flex items-center gap-2 text-white">
-                              <Briefcase className="w-4 h-4" />
-                              Occupation <span className="text-red-500">*</span> 
-                            </Label>
-                            <AntSelect
-                              id="job"
-                              value={formData.jobId || undefined}
-                              onChange={(value) => {
-                                setFormData({ ...formData, jobId: value });
-                                setJobSearchQuery(''); // Clear search after selection
-                              }}
-                              placeholder="Select your occupation"
-                              className="w-full [&_.ant-select-selector]:!bg-gray-100/90 [&_.ant-select-selector]:!border-gray-300"
-                              size="large"
-                              showSearch
-                              searchValue={jobSearchQuery}
-                              onSearch={(value) => setJobSearchQuery(value)}
-                              filterOption={false}
-                              allowClear
-                              options={jobs.map((job) => ({
-                                value: job.id,
-                                label: job.name,
-                              }))}
-                              styles={{ popup: { root: { backgroundColor: 'rgba(243, 244, 246, 0.95)' } } }}
-                            />
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label htmlFor="otherJob" className="text-md font-semibold text-white">
-                              Specify Other Occupation (If not listed)
-                            </Label>
-                            <AntInput
-                              id="otherJob"
-                              placeholder="e.g., Software Engineer"
-                              value={formData.otherJob}
-                              onChange={(e) => setFormData({ ...formData, otherJob: e.target.value })}
-                              size="large"
-                              style={{ backgroundColor: 'rgba(243, 244, 246, 0.9)' }}
-                            />
-                          </div>
+                        {/* Occupation */}
+                        <div className="space-y-2">
+                          <Label htmlFor="job" className="text-md font-semibold flex items-center gap-2 text-white">
+                            <Briefcase className="w-4 h-4" />
+                            Occupation <span className="text-red-500">*</span>
+                            <span className="text-xs text-gray-300 font-normal">(Select or type your own)</span>
+                          </Label>
+                          <AntSelect
+                            id="job"
+                            value={(() => {
+                              // If otherJob is set, always show it (custom job takes priority)
+                              if (formData.otherJob) {
+                                return `other:${formData.otherJob}`;
+                              }
+                              // If jobId is set and exists in system jobs, show it
+                              if (formData.jobId && jobs.some(j => j.id === formData.jobId)) {
+                                return formData.jobId;
+                              }
+                              // Otherwise show nothing
+                              return undefined;
+                            })()}
+                            onChange={(value: string | number | undefined) => {
+                              if (typeof value === 'string' && value.startsWith('other:')) {
+                                // Custom value entered
+                                const customJob = value.replace('other:', '');
+                                setFormData({ ...formData, jobId: null, otherJob: customJob });
+                              } else if (typeof value === 'number') {
+                                // Existing job selected
+                                setFormData({ ...formData, jobId: value, otherJob: '' });
+                              } else {
+                                // Cleared
+                                setFormData({ ...formData, jobId: null, otherJob: '' });
+                              }
+                              setJobSearchQuery('');
+                            }}
+                            placeholder="Select or type your occupation"
+                            className="w-full [&_.ant-select-selector]:!bg-gray-100/90 [&_.ant-select-selector]:!border-gray-300"
+                            size="large"
+                            showSearch
+                            searchValue={jobSearchQuery}
+                            onSearch={(value) => setJobSearchQuery(value)}
+                            filterOption={(input, option) =>
+                              (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
+                            }
+                            allowClear
+                            options={[
+                              ...jobs.map((job) => ({ value: job.id, label: job.name })),
+                              // Show custom job option if user is typing something not in the list
+                              ...(jobSearchQuery && !jobs.some(j => j.name.toLowerCase() === jobSearchQuery.toLowerCase())
+                                ? [{ value: `other:${jobSearchQuery}`, label: `"${jobSearchQuery}" (Custom)` }]
+                                : []),
+                              // Always show "Other" option if otherJob has a value (for display purposes)
+                              ...(formData.otherJob && !jobSearchQuery
+                                ? [{ value: `other:${formData.otherJob}`, label: formData.otherJob }]
+                                : [])
+                            ]}
+                            styles={{ popup: { root: { backgroundColor: 'rgba(243, 244, 246, 0.95)' } } }}
+                            notFoundContent={
+                              <div className="p-2 text-gray-500 text-sm">
+                                Type to add a custom occupation
+                              </div>
+                            }
+                          />
                         </div>
 
                         {/* Bio Row */}
