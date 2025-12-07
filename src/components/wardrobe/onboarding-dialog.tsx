@@ -103,7 +103,6 @@ useScrollLock(open);
       loadStyles();
       loadProvinces();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   // Debounced search for jobs - only triggers when jobSearchQuery changes
@@ -123,7 +122,6 @@ useScrollLock(open);
     }, 300); // 300ms debounce
 
     return () => clearTimeout(debounceTimer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jobSearchQuery]);
 
   // Debounced search for styles
@@ -140,7 +138,6 @@ useScrollLock(open);
     }, 300); // 300ms debounce
 
     return () => clearTimeout(debounceTimer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [styleSearchQuery]);
 
   // ===== API Functions =====
@@ -697,9 +694,11 @@ useScrollLock(open);
                                       toast.error(`Maximum ${MAX_COLORS} preferred colors allowed`);
                                       return;
                                     }
+                                    // Remove from avoided colors if it exists there
                                     setFormData({
                                       ...formData,
-                                      preferedColor: [...formData.preferedColor, preset.color]
+                                      preferedColor: [...formData.preferedColor, preset.color],
+                                      avoidedColor: formData.avoidedColor.filter((c) => c !== preset.color)
                                     });
                                   }
                                 }}
@@ -734,7 +733,12 @@ useScrollLock(open);
                                 }
                                 const colorName = color.toHexString();
                                 if (!formData.preferedColor.includes(colorName)) {
-                                  setFormData({ ...formData, preferedColor: [...formData.preferedColor, colorName] });
+                                  // Remove from avoided colors if it exists there
+                                  setFormData({
+                                    ...formData,
+                                    preferedColor: [...formData.preferedColor, colorName],
+                                    avoidedColor: formData.avoidedColor.filter((c) => c !== colorName)
+                                  });
                                 }
                               }}
                               size="large"
@@ -806,9 +810,11 @@ useScrollLock(open);
                                       toast.error(`Maximum ${MAX_COLORS} avoided colors allowed`);
                                       return;
                                     }
+                                    // Remove from preferred colors if it exists there
                                     setFormData({
                                       ...formData,
-                                      avoidedColor: [...formData.avoidedColor, preset.color]
+                                      avoidedColor: [...formData.avoidedColor, preset.color],
+                                      preferedColor: formData.preferedColor.filter((c) => c !== preset.color)
                                     });
                                   }
                                 }}
@@ -843,7 +849,12 @@ useScrollLock(open);
                                 }
                                 const colorName = color.toHexString();
                                 if (!formData.avoidedColor.includes(colorName)) {
-                                  setFormData({ ...formData, avoidedColor: [...formData.avoidedColor, colorName] });
+                                  // Remove from preferred colors if it exists there
+                                  setFormData({
+                                    ...formData,
+                                    avoidedColor: [...formData.avoidedColor, colorName],
+                                    preferedColor: formData.preferedColor.filter((c) => c !== colorName)
+                                  });
                                 }
                               }}
                               size="large"
