@@ -1,28 +1,51 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { useForm } from "react-hook-form";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuthStore } from "@/store/auth-store";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
-import { AvatarUpload } from "./AvatarUpload";
+import {
+  Input as AntInput,
+  Select as AntSelect,
+  DatePicker,
+  ConfigProvider,
+  ColorPicker,
+  Card,
+  Spin,
+  Empty,
+  Tag,
+} from "antd";
+import dayjs from "dayjs";
+import {
+  Check,
+  Briefcase,
+  MapPin,
+  Calendar,
+  User,
+  X,
+  Search,
+  Palette,
+  Heart,
+  Camera,
+  Save,
+  RotateCcw,
+  Mail,
+  FileText,
+  Plus,
+  Lock,
+} from "lucide-react";
+import { FaCrown, FaShieldAlt } from "react-icons/fa";
+import GlassButton from "@/components/ui/glass-button";
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { userAPI } from "@/lib/api/user-api";
+import { minioAPI } from "@/lib/api/minio-api";
 import type { UserProfileResponse, Job, StyleOption } from "@/types/user";
-import tinycolor from "tinycolor2";
 
-interface ProfileFormData {
-  displayName: string;
-  email: string;
-  bio: string;
-  location: string;
-  dob?: string;
-  gender?: string | number;
-  jobId?: number;
-}
+const { TextArea } = AntInput;
+
+const MAX_COLORS = 8;
+const MAX_STYLES = 5;
+const LOCATION_API_BASE = "https://open.oapi.vn/location";
 
 const COLOR_PRESETS = [
   { name: "Red", color: "#EF4444" },
@@ -43,570 +66,1344 @@ const COLOR_PRESETS = [
   { name: "Olive", color: "#84CC16" },
 ] as const;
 
-type ParsedColor = {
+const GENDER_OPTIONS = [
+  { value: 0, label: "Male" },
+  { value: 1, label: "Female" },
+  { value: 2, label: "Other" },
+];
+
+// Navigation tabs
+type ProfileTab = "basic" | "style" | "password";
+
+// Location types
+interface Province {
+  id: string;
   name: string;
-  hex: string;
-  isLight: boolean;
-  readableText: string;
-};
+}
 
-const parseColorName = (name: string): ParsedColor | null => {
-  const color = tinycolor(name);
-  if (!color.isValid()) {
-    return null;
-  }
+interface District {
+  id: string;
+  name: string;
+}
 
-  const hex = color.toHexString();
-  const readableText = tinycolor
-    .mostReadable(hex, ["#0f172a", "#ffffff"], {
-      includeFallbackColors: true,
-      level: "AA",
-      size: "small",
-    })
-    .toHexString();
-
-  return {
-    name,
-    hex,
-    isLight: color.isLight(),
-    readableText,
-  };
-};
+interface Ward {
+  id: string;
+  name: string;
+}
 
 export function ProfileEditForm() {
   const { user } = useAuthStore();
-  const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingData, setIsLoadingData] = useState(true);
-  const [selectedColors, setSelectedColors] = useState<Set<string>>(new Set());
-  const [selectedAvoidedColors, setSelectedAvoidedColors] = useState<
-    Set<string>
-  >(new Set());
-  const [selectedStyles, setSelectedStyles] = useState<Set<string>>(new Set());
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  const [activeTab, setActiveTab] = useState<ProfileTab>("basic");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [userData, setUserData] = useState<UserProfileResponse | null>(null);
 
-  // Available options from API
-  const [availableJobs, setAvailableJobs] = useState<Job[]>([]);
-  const [availableStyles, setAvailableStyles] = useState<StyleOption[]>([]);
-
-  const dynamicColorNames = useMemo(() => {
-    const presetColors = COLOR_PRESETS.map((preset) => preset.color);
-    const userColors = [
-      ...(userData?.preferedColor ?? []),
-      ...(userData?.avoidedColor ?? []),
-    ];
-
-    return Array.from(
-      new Set<string>([
-        ...presetColors,
-        ...userColors.map((color) => color ?? "").filter(Boolean),
-      ])
-    );
-  }, [userData?.preferedColor, userData?.avoidedColor]);
-
-  const availableColors = useMemo(() => {
-    return dynamicColorNames
-      .map(parseColorName)
-      .filter((color): color is ParsedColor => color !== null);
-  }, [dynamicColorNames]);
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    reset,
-  } = useForm<ProfileFormData>({
-    defaultValues: {
-      displayName: "",
-      email: "",
-      bio: "",
-      location: "",
-      dob: "",
-      gender: "Unknown",
-    },
+  // Form data
+  const [formData, setFormData] = useState({
+    displayName: "",
+    email: "",
+    bio: "",
+    location: "",
+    province: "",
+    district: "",
+    ward: "",
+    dob: "",
+    gender: 0,
+    jobId: null as number | null,
+    otherJob: "",
+    preferedColor: [] as string[],
+    avoidedColor: [] as string[],
+    styleIds: [] as number[],
+    otherStyles: [] as string[],
   });
 
-  const glassInputClasses =
-    "bg-white/90 text-black placeholder:text-slate-200/70 rounded-lg border border-white/10 py-3 px-4 focus:ring-2 focus:ring-cyan-300/50 focus:border-cyan-200/60 transition-colors shadow-inner shadow-cyan-500/10 disabled:bg-white/5 disabled:text-slate-300/70 disabled:border-white/10";
+  // Options from API
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [styles, setStyles] = useState<StyleOption[]>([]);
+  const [loadingStyles, setLoadingStyles] = useState(false);
+  const [styleSearchQuery, setStyleSearchQuery] = useState("");
+  const [otherStyleInput, setOtherStyleInput] = useState("");
 
-  const glassTextareaClasses =
-    "resize-none bg-white/90 text-black placeholder:text-slate-200/70 rounded-lg border border-white/10 py-3 px-4 focus:ring-2 focus:ring-cyan-300/50 focus:border-cyan-200/60 transition-colors shadow-inner shadow-cyan-500/10";
+  // Location data
+  const [provinces, setProvinces] = useState<Province[]>([]);
+  const [districts, setDistricts] = useState<District[]>([]);
+  const [wards, setWards] = useState<Ward[]>([]);
+  const [loadingProvinces, setLoadingProvinces] = useState(false);
+  const [loadingDistricts, setLoadingDistricts] = useState(false);
+  const [loadingWards, setLoadingWards] = useState(false);
 
-  // Load user data and available options from API
+  // Load provinces
+  const loadProvinces = async () => {
+    if (provinces.length > 0) return;
+    setLoadingProvinces(true);
+    try {
+      const response = await fetch(`${LOCATION_API_BASE}/provinces?page=0&size=100`);
+      const data = await response.json();
+      setProvinces(data.data || []);
+    } catch (error) {
+      console.error("Failed to load provinces:", error);
+    } finally {
+      setLoadingProvinces(false);
+    }
+  };
+
+  // Load districts
+  const loadDistricts = async (provinceId: string) => {
+    setLoadingDistricts(true);
+    try {
+      const response = await fetch(`${LOCATION_API_BASE}/districts/${provinceId}?page=0&size=100`);
+      const data = await response.json();
+      setDistricts(data.data || []);
+    } catch (error) {
+      console.error("Failed to load districts:", error);
+    } finally {
+      setLoadingDistricts(false);
+    }
+  };
+
+  // Load wards
+  const loadWards = async (districtId: string) => {
+    setLoadingWards(true);
+    try {
+      const response = await fetch(`${LOCATION_API_BASE}/wards/${districtId}?page=0&size=100`);
+      const data = await response.json();
+      setWards(data.data || []);
+    } catch (error) {
+      console.error("Failed to load wards:", error);
+    } finally {
+      setLoadingWards(false);
+    }
+  };
+
+  // Handle province change
+  const handleProvinceChange = (provinceId: string) => {
+    const selectedProvince = provinces.find(p => p.id === provinceId);
+    setFormData({
+      ...formData,
+      province: provinceId,
+      district: '',
+      ward: '',
+      location: selectedProvince?.name || ''
+    });
+    setDistricts([]);
+    setWards([]);
+    loadDistricts(provinceId);
+  };
+
+  // Handle district change
+  const handleDistrictChange = (districtId: string) => {
+    const selectedDistrict = districts.find(d => d.id === districtId);
+    const selectedProvince = provinces.find(p => p.id === formData.province);
+    setFormData({
+      ...formData,
+      district: districtId,
+      ward: '',
+      location: selectedDistrict && selectedProvince
+        ? `${selectedDistrict.name}, ${selectedProvince.name}`
+        : formData.location
+    });
+    setWards([]);
+    loadWards(districtId);
+  };
+
+  // Handle ward change
+  const handleWardChange = (wardId: string) => {
+    const selectedWard = wards.find(w => w.id === wardId);
+    const selectedDistrict = districts.find(d => d.id === formData.district);
+    const selectedProvince = provinces.find(p => p.id === formData.province);
+
+    let locationStr = '';
+    if (selectedWard && selectedDistrict && selectedProvince) {
+      locationStr = `${selectedWard.name}, ${selectedDistrict.name}, ${selectedProvince.name}`;
+    } else if (selectedDistrict && selectedProvince) {
+      locationStr = `${selectedDistrict.name}, ${selectedProvince.name}`;
+    } else if (selectedProvince) {
+      locationStr = selectedProvince.name;
+    }
+
+    setFormData({
+      ...formData,
+      ward: wardId,
+      location: locationStr
+    });
+  };
+
+  // Load data
   useEffect(() => {
-    const loadUserData = async () => {
+    const loadData = async () => {
       if (!user?.id) {
-        setIsLoadingData(false);
+        setIsLoading(false);
         return;
       }
 
       try {
-        setIsLoadingData(true);
-        const userId =
-          typeof user.id === "string" ? parseInt(user.id, 10) : user.id;
-
-        // Fetch user data and available options in parallel
-        const [userResponse, jobsResponse, stylesResponse] = await Promise.all([
-          userAPI.getUserById(userId),
+        setIsLoading(true);
+        const [profileResponse, jobsResponse, stylesResponse] = await Promise.all([
+          userAPI.getUserProfile(),
           userAPI.getJobs({ "take-all": true }),
           userAPI.getStyles({ "take-all": true }),
         ]);
 
-        // Extract user data (apiClient returns { statusCode, message, data: UserProfileResponse })
-        const userData = (userResponse as { data: UserProfileResponse }).data;
+        const profile = profileResponse.data;
+        setUserData(profile);
 
-        // Extract available options from API responses
-        // Handle different response structures (direct array, nested data.data, or wrapped in data)
-        let jobs: unknown[] = [];
-        let styles: unknown[] = [];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const allJobs = (jobsResponse as any).data?.data || (jobsResponse as any).data || [];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const allStyles = (stylesResponse as any).data?.data || (stylesResponse as any).data || [];
 
-        const jobsData = jobsResponse as {
-          data?: { data?: unknown[] } | unknown[];
-        };
-        const stylesData = stylesResponse as {
-          data?: { data?: unknown[] } | unknown[];
-        };
+        const systemJobs = allJobs.filter((job: Job) => job.createdBy === "SYSTEM");
+        const systemStyles = allStyles.filter((style: StyleOption) => style.createdBy === "SYSTEM");
 
-        if (Array.isArray(jobsResponse)) {
-          jobs = jobsResponse;
-        } else if (
-          jobsData.data &&
-          typeof jobsData.data === "object" &&
-          "data" in jobsData.data &&
-          Array.isArray(jobsData.data.data)
-        ) {
-          jobs = jobsData.data.data;
-        } else if (Array.isArray(jobsData.data)) {
-          jobs = jobsData.data;
-        }
+        setJobs(systemJobs);
+        setStyles(systemStyles);
 
-        if (Array.isArray(stylesResponse)) {
-          styles = stylesResponse;
-        } else if (
-          stylesData.data &&
-          typeof stylesData.data === "object" &&
-          "data" in stylesData.data &&
-          Array.isArray(stylesData.data.data)
-        ) {
-          styles = stylesData.data.data;
-        } else if (Array.isArray(stylesData.data)) {
-          styles = stylesData.data;
-        }
-
-        setAvailableJobs(Array.isArray(jobs) ? (jobs as Job[]) : []);
-        const typedStyles = Array.isArray(styles)
-          ? (styles as StyleOption[])
-          : [];
-        const systemStyles = typedStyles.filter(
-          (style) => style.createdBy?.toUpperCase() === "SYSTEM"
-        );
-        setAvailableStyles(systemStyles);
-
-        setUserData(userData);
-
-        // Initialize form with API data
-        reset({
-          displayName: userData.displayName || "",
-          email: userData.email || "",
-          bio: userData.bio || "",
-          location: userData.location || "",
-          dob: userData.dob || "",
-          gender: userData.gender || 0,
-          jobId: userData.jobId || 2,
+        // Set form data
+        setFormData({
+          displayName: profile.displayName || "",
+          email: profile.email || "",
+          bio: profile.bio || "",
+          location: profile.location || "",
+          province: "",
+          district: "",
+          ward: "",
+          dob: profile.dob || "",
+          gender: profile.gender ?? 0,
+          jobId: profile.jobId || null,
+          otherJob: profile.otherJob || "",
+          preferedColor: profile.preferedColor || [],
+          avoidedColor: profile.avoidedColor || [],
+          styleIds: profile.userStyles?.map((s) => s.styleId) || [],
+          otherStyles: profile.otherStyles || [],
         });
 
-        // Initialize color preferences
-        setSelectedColors(new Set(userData.preferedColor || []));
-        setSelectedAvoidedColors(new Set(userData.avoidedColor || []));
-
-        // Initialize style preferences
-        const styleNames =
-          (
-            userData as { userStyles?: Array<{ styleName: string }> }
-          ).userStyles?.map((s) => s.styleName) || [];
-        setSelectedStyles(new Set(styleNames));
+        // Load provinces
+        loadProvinces();
       } catch (error) {
-        console.error("Error loading user data:", error);
+        console.error("Failed to load profile:", error);
         toast.error("Failed to load profile data");
       } finally {
-        setIsLoadingData(false);
+        setIsLoading(false);
       }
     };
 
-    loadUserData();
-  }, [user?.id, reset]);
+    loadData();
+  }, [user?.id]);
 
-  const toggleColor = (color: string) => {
-    setSelectedColors((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(color)) {
-        newSet.delete(color);
-      } else {
-        newSet.add(color);
+  // Search styles
+  useEffect(() => {
+    if (!styleSearchQuery.trim()) return;
+
+    const searchStyles = async () => {
+      setLoadingStyles(true);
+      try {
+        const response = await userAPI.getStyles({ "take-all": true, search: styleSearchQuery });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const allStyles = (response as any).data?.data || (response as any).data || [];
+        const systemStyles = allStyles.filter((style: StyleOption) => style.createdBy === "SYSTEM");
+        setStyles(systemStyles);
+      } catch (error) {
+        console.error("Failed to search styles:", error);
+      } finally {
+        setLoadingStyles(false);
       }
-      return newSet;
+    };
+
+    const debounce = setTimeout(searchStyles, 300);
+    return () => clearTimeout(debounce);
+  }, [styleSearchQuery]);
+
+  const toggleStyle = useCallback((styleId: number) => {
+    setFormData((prev) => {
+      const isSelected = prev.styleIds.includes(styleId);
+      if (isSelected) {
+        return { ...prev, styleIds: prev.styleIds.filter((id) => id !== styleId) };
+      }
+      const totalSelected = prev.styleIds.length + prev.otherStyles.length;
+      if (totalSelected >= MAX_STYLES) {
+        toast.error(`Maximum ${MAX_STYLES} styles allowed`);
+        return prev;
+      }
+      return { ...prev, styleIds: [...prev.styleIds, styleId] };
     });
+  }, []);
+
+  const addOtherStyle = () => {
+    const trimmed = otherStyleInput.trim();
+    if (!trimmed) return;
+    if (formData.otherStyles.includes(trimmed)) {
+      toast.error("This style is already added");
+      return;
+    }
+    const totalSelected = formData.styleIds.length + formData.otherStyles.length;
+    if (totalSelected >= MAX_STYLES) {
+      toast.error(`Maximum ${MAX_STYLES} styles allowed`);
+      return;
+    }
+    setFormData({ ...formData, otherStyles: [...formData.otherStyles, trimmed] });
+    setOtherStyleInput("");
   };
 
-  const toggleAvoidedColor = (color: string) => {
-    setSelectedAvoidedColors((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(color)) {
-        newSet.delete(color);
-      } else {
-        newSet.add(color);
-      }
-      return newSet;
-    });
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif"];
+    if (!validTypes.includes(file.type)) {
+      toast.error("Only JPG, JPEG, PNG, and GIF files are allowed");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File size must be less than 5MB");
+      return;
+    }
+
+    setAvatarFile(file);
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setAvatarPreview(event.target?.result as string);
+    };
+    reader.readAsDataURL(file);
   };
 
-  const toggleStyle = (style: string) => {
-    setSelectedStyles((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(style)) {
-        newSet.delete(style);
-      } else {
-        newSet.add(style);
-      }
-      return newSet;
+  const handleReset = () => {
+    if (!userData) return;
+    setFormData({
+      displayName: userData.displayName || "",
+      email: userData.email || "",
+      bio: userData.bio || "",
+      location: userData.location || "",
+      province: "",
+      district: "",
+      ward: "",
+      dob: userData.dob || "",
+      gender: userData.gender ?? 0,
+      jobId: userData.jobId || null,
+      otherJob: userData.otherJob || "",
+      preferedColor: userData.preferedColor || [],
+      avoidedColor: userData.avoidedColor || [],
+      styleIds: userData.userStyles?.map((s) => s.styleId) || [],
+      otherStyles: userData.otherStyles || [],
     });
+    setAvatarPreview(null);
+    setAvatarFile(null);
+    if (avatarInputRef.current) {
+      avatarInputRef.current.value = "";
+    }
+    toast.info("Form reset to original values");
   };
 
-  const onSubmit = async (data: ProfileFormData) => {
+  const handleSubmit = async () => {
     if (!user?.id) return;
 
     try {
-      setIsLoading(true);
+      setIsSaving(true);
 
-      // TODO: Call API to update profile
-      // await userAPI.updateUserProfile({
-      //   ...data,
-      //   preferedColor: Array.from(selectedColors),
-      //   avoidedColor: Array.from(selectedAvoidedColors),
-      //   styleIds: Array.from(selectedStyles),
-      // });
+      let avatarUrl: string | undefined;
+      if (avatarFile) {
+        try {
+          avatarUrl = await minioAPI.uploadImage(avatarFile);
+        } catch (error) {
+          console.error("Failed to upload avatar:", error);
+          toast.error("Failed to upload avatar");
+          setIsSaving(false);
+          return;
+        }
+      }
 
-      toast.success("Profile updated successfully");
+      const updateData = {
+        displayName: formData.displayName !== userData?.displayName ? formData.displayName : undefined,
+        dob: formData.dob || undefined,
+        gender: formData.gender,
+        location: formData.location || undefined,
+        bio: formData.bio || undefined,
+        jobId: formData.jobId || undefined,
+        otherJob: formData.otherJob || undefined,
+        preferedColor: formData.preferedColor,
+        avoidedColor: formData.avoidedColor,
+        styleIds: formData.styleIds,
+        otherStyles: formData.otherStyles,
+        avtUrl: avatarUrl,
+      };
+
+      const response = await userAPI.updateProfile(updateData);
+      setUserData(response.data);
+
+      setAvatarPreview(null);
+      setAvatarFile(null);
+      if (avatarInputRef.current) {
+        avatarInputRef.current.value = "";
+      }
+
+      if (typeof window !== "undefined") {
+        const storedUser = localStorage.getItem("user");
+        if (storedUser) {
+          const parsedUser = JSON.parse(storedUser);
+          localStorage.setItem("user", JSON.stringify({
+            ...parsedUser,
+            displayName: response.data.displayName || parsedUser.displayName,
+            avatar: response.data.avtUrl || parsedUser.avatar,
+            location: response.data.location || parsedUser.location,
+          }));
+        }
+      }
+
+      toast.success("Profile updated successfully!");
     } catch (error) {
-      console.error("Error updating profile:", error);
+      console.error("Failed to update profile:", error);
       toast.error("Failed to update profile");
     } finally {
-      setIsLoading(false);
+      setIsSaving(false);
     }
   };
 
-  if (isLoadingData) {
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-8 h-8 animate-spin text-cyan-400" />
-          <p className="text-slate-300">Loading profile data...</p>
+      <div className="flex flex-col items-center justify-center py-32 gap-6">
+        <div className="relative">
+          <div className="w-20 h-20 rounded-full border-4 border-cyan-500/20 border-t-cyan-500 animate-spin" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <User className="w-8 h-8 text-cyan-400" />
+          </div>
         </div>
+        <p className="text-gray-200 text-lg font-medium font-bricolage">Loading your profile...</p>
       </div>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      {/* Avatar Section */}
-      <div className="backdrop-blur-xl bg-slate-950/40 border border-slate-700/30 rounded-2xl p-6 shadow-lg shadow-slate-900/20 transition-all duration-300 hover:border-slate-700/50 hover:shadow-slate-900/40">
-        <h2 className="text-lg font-bold mb-4 text-white">Profile Picture</h2>
-        <AvatarUpload
-          avatarUrl={userData?.avtUrl ?? undefined}
-          displayName={userData?.displayName ?? user?.displayName ?? null}
-        />
-      </div>
-
-      {/* Basic Information */}
-      <div className="backdrop-blur-xl bg-slate-950/40 border border-slate-700/30 rounded-2xl p-6 shadow-lg shadow-slate-900/20 transition-all duration-300 hover:border-slate-700/50 hover:shadow-slate-900/40">
-        <h2 className="text-lg font-bold mb-4 text-white">Basic Information</h2>
-        <div className="space-y-4">
-          {/* Display Name */}
-          <div>
-            <label className="block text-sm font-semibold mb-2 text-white">
-              Display Name
-            </label>
-            <Input
-              {...register("displayName", {
-                required: "Display name is required",
-              })}
-              placeholder="Your name"
-              disabled
-              className={glassInputClasses}
-            />
-            {errors.displayName && (
-              <p className="text-sm text-red-400 mt-1">
-                {errors.displayName.message}
-              </p>
-            )}
-          </div>
-
-          {/* Email */}
-          <div>
-            <label className="block text-sm font-semibold mb-2 text-white">
-              Email
-            </label>
-            <div className="flex items-center gap-2">
-              <Input
-                {...register("email")}
-                placeholder="your@email.com"
-                disabled
-                className={cn(glassInputClasses, "flex-1")}
+    <ConfigProvider
+      theme={{
+        components: {
+          Select: {
+            optionActiveBg: "rgba(229, 231, 235, 0.6)",
+            optionSelectedBg: "rgba(229, 231, 235, 0.8)",
+          },
+          Card: {
+            colorBgContainer: "rgba(255, 255, 255, 0.5)",
+            colorBorderSecondary: "rgba(255, 255, 255, 0.6)",
+          },
+          Spin: {
+            colorPrimary: "#3b82f6",
+          },
+          Tag: {
+            colorBorder: "rgba(255, 255, 255, 0.6)",
+          },
+          Input: {
+            colorBgContainer: "rgba(255, 255, 255, 0.9)",
+            colorBorder: "rgba(255, 255, 255, 0.6)",
+            colorPrimaryHover: "#3b82f6",
+            colorPrimary: "#3b82f6",
+          },
+        },
+      }}
+    >
+      <div className="flex gap-6">
+        {/* Left Column: Profile Card */}
+        <div className="w-80 flex-shrink-0 animate-in fade-in slide-in-from-left-4 duration-500">
+          <div className="p-6 rounded-3xl bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl space-y-6 sticky top-8">
+            {/* Avatar Section */}
+            <div className="flex flex-col items-center text-center">
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/jpeg,image/jpg,image/png,image/gif"
+                onChange={handleAvatarChange}
+                className="hidden"
               />
-              <span className="px-3 py-2 rounded-lg bg-emerald-500/20 text-emerald-200 text-sm font-semibold border border-emerald-400/30">
-                ✓ Verified
-              </span>
-            </div>
-          </div>
-
-          {/* Bio */}
-          <div>
-            <label className="block text-sm font-semibold mb-2 text-white">
-              Bio
-            </label>
-            <Textarea
-              {...register("bio")}
-              placeholder="Tell us about yourself..."
-              rows={4}
-              className={glassTextareaClasses}
-            />
-            <p className="text-xs text-slate-400 mt-1">Max 500 characters</p>
-          </div>
-
-          {/* Location */}
-          <div>
-            <label className="block text-sm font-semibold mb-2 text-white">
-              Location
-            </label>
-            <Input
-              {...register("location")}
-              placeholder="City, Country"
-              className={glassInputClasses}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Personal Information */}
-      <div className="backdrop-blur-xl bg-slate-950/40 border border-slate-700/30 rounded-2xl p-6 shadow-lg shadow-slate-900/20 transition-all duration-300 hover:border-slate-700/50 hover:shadow-slate-900/40">
-        <h2 className="text-lg font-bold mb-4 text-white">
-          Personal Information
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Date of Birth */}
-          <div>
-            <label className="block text-sm font-semibold mb-2 text-white">
-              Date of Birth
-            </label>
-            <Input
-              {...register("dob")}
-              type="date"
-              className={glassInputClasses}
-            />
-          </div>
-
-          {/* Gender */}
-          <div>
-            <label className="block text-sm font-semibold mb-2 text-white">
-              Gender
-            </label>
-            <select
-              {...register("gender")}
-              className={cn(glassInputClasses, "w-full appearance-none pr-8")}
-            >
-              <option value="Unknown" className="bg-slate-800">
-                Prefer not to say
-              </option>
-              <option value="Male" className="bg-slate-800">
-                Male
-              </option>
-              <option value="Female" className="bg-slate-800">
-                Female
-              </option>
-              <option value="Other" className="bg-slate-800">
-                Other
-              </option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Job Information */}
-      <div className="backdrop-blur-xl bg-slate-950/40 border border-slate-700/30 rounded-2xl p-6 shadow-lg shadow-slate-900/20 transition-all duration-300 hover:border-slate-700/50 hover:shadow-slate-900/40">
-        <h2 className="text-lg font-bold mb-4 text-white">Occupation</h2>
-        <div>
-          <label className="block text-sm font-semibold mb-2 text-white">
-            Job
-          </label>
-          <select
-            {...register("jobId", { valueAsNumber: true })}
-            className={cn(glassInputClasses, "w-full appearance-none pr-8")}
-          >
-            <option value="" className="bg-slate-800">
-              Select a job...
-            </option>
-            {availableJobs.map((job) => (
-              <option key={job.id} value={job.id} className="bg-slate-800">
-                {job.name}
-              </option>
-            ))}
-          </select>
-          <p className="text-xs text-slate-400 mt-2">
-            Tell others what you do to help them understand your style interests
-          </p>
-        </div>
-      </div>
-
-      {/* Color Preferences */}
-      <div className="backdrop-blur-xl bg-slate-950/40 border border-slate-700/30 rounded-2xl p-6 shadow-lg shadow-slate-900/20 transition-all duration-300 hover:border-slate-700/50 hover:shadow-slate-900/40">
-        <h2 className="text-lg font-bold mb-4 text-white">Color Preferences</h2>
-        <p className="text-sm text-slate-400 mb-4">
-          Help us personalize recommendations by selecting colors you prefer and
-          avoid
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Preferred Colors */}
-          <div>
-            <label className="block text-sm font-semibold mb-3 text-white">
-              Preferred Colors
-            </label>
-            <div className="space-y-2">
-              <div className="flex flex-wrap gap-2">
-                {availableColors.map((color) => {
-                  const isSelected = selectedColors.has(color.name);
-                  return (
-                    <button
-                      key={color.name}
-                      type="button"
-                      onClick={() => toggleColor(color.name)}
-                      className={cn(
-                        "relative h-12 w-12 rounded-full border-2 transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-cyan-300/60",
-                        isSelected
-                          ? "border-white/80 shadow-lg shadow-cyan-500/20"
-                          : "border-white/30 shadow shadow-slate-900/40"
-                      )}
-                      style={{ backgroundColor: color.hex }}
-                      aria-label={color.name}
-                      title={color.name}
-                    >
-                      <span
-                        className={cn(
-                          "absolute inset-0 rounded-full",
-                          color.isLight ? "ring-1 ring-slate-400/40" : ""
+              <div className="relative group mb-4">
+                {userData?.isPremium ? (
+                  <>
+                    <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 via-amber-400 to-orange-500 rounded-full blur-2xl opacity-60 animate-pulse" />
+                    <div
+                      className="absolute -inset-4 bg-gradient-to-r from-yellow-400 via-amber-400 to-orange-500 rounded-full opacity-50 animate-spin"
+                      style={{ animationDuration: '4s' }}
+                    />
+                    <div className="relative bg-gradient-to-r from-yellow-400 via-amber-400 to-orange-500 rounded-full p-[3px]">
+                      <div className="w-28 h-28 rounded-full overflow-hidden">
+                        {avatarPreview ? (
+                          <img src={avatarPreview} alt="Avatar Preview" className="w-full h-full object-cover" />
+                        ) : userData?.avtUrl ? (
+                          <img src={userData.avtUrl} alt="Avatar" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center">
+                            <span className="text-4xl font-bold text-white">
+                              {formData.displayName?.charAt(0)?.toUpperCase() || "U"}
+                            </span>
+                          </div>
                         )}
-                      />
-                      {isSelected && (
-                        <span
-                          className="absolute inset-1 rounded-full border-2"
-                          style={{ borderColor: color.readableText }}
-                        />
-                      )}
-                      <span className="sr-only">{color.name}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* Avoided Colors */}
-          <div>
-            <label className="block text-sm font-semibold mb-3 text-white">
-              Avoided Colors
-            </label>
-            <div className="space-y-2">
-              <div className="flex flex-wrap gap-2">
-                {availableColors.map((color) => {
-                  const isSelected = selectedAvoidedColors.has(color.name);
-                  return (
+                      </div>
+                    </div>
                     <button
-                      key={color.name}
                       type="button"
-                      onClick={() => toggleAvoidedColor(color.name)}
-                      className={cn(
-                        "relative h-12 w-12 rounded-full border-2 transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-rose-300/60",
-                        isSelected
-                          ? "border-white/80 shadow-lg shadow-rose-500/20"
-                          : "border-white/30 shadow shadow-slate-900/40"
-                      )}
-                      style={{ backgroundColor: color.hex }}
-                      aria-label={color.name}
-                      title={color.name}
+                      onClick={() => avatarInputRef.current?.click()}
+                      disabled={isSaving}
+                      className="absolute bottom-0 right-0 w-9 h-9 rounded-full border-2 flex items-center justify-center hover:scale-110 transition-transform shadow-lg disabled:opacity-50 disabled:cursor-not-allowed z-20 bg-gradient-to-br from-yellow-400 via-amber-400 to-orange-500 border-yellow-200"
                     >
-                      <span
-                        className={cn(
-                          "absolute inset-0 rounded-full",
-                          color.isLight ? "ring-1 ring-slate-400/40" : ""
-                        )}
-                      />
-                      {isSelected && (
-                        <span
-                          className="absolute inset-1 rounded-full border-2"
-                          style={{ borderColor: color.readableText }}
-                        />
-                      )}
-                      <span className="sr-only">{color.name}</span>
+                      <Camera className="w-4 h-4 text-white" />
                     </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Style Preferences */}
-      <div className="backdrop-blur-xl bg-slate-950/40 border border-slate-700/30 rounded-2xl p-6 shadow-lg shadow-slate-900/20 transition-all duration-300 hover:border-slate-700/50 hover:shadow-slate-900/40">
-        <h2 className="text-lg font-bold mb-4 text-white">My Styles</h2>
-        <p className="text-sm text-slate-400 mb-4">
-          Select styles that match your personal aesthetic
-        </p>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {availableStyles.map((style) => {
-            const isSelected = selectedStyles.has(style.name);
-            return (
-              <button
-                key={style.id}
-                type="button"
-                onClick={() => toggleStyle(style.name)}
-                className={cn(
-                  "px-4 py-2.5 rounded-lg border transition-all text-sm font-semibold",
-                  isSelected
-                    ? "border-cyan-400/60 bg-cyan-500/20 text-cyan-100 shadow-lg shadow-cyan-500/20"
-                    : "border-slate-600/40 text-slate-300 hover:border-cyan-400/50 hover:bg-cyan-500/10"
+                  </>
+                ) : (
+                  <>
+                    <div className="w-28 h-28 rounded-full bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center overflow-hidden shadow-xl ring-4 ring-white/30">
+                      {avatarPreview ? (
+                        <img src={avatarPreview} alt="Avatar Preview" className="w-full h-full object-cover" />
+                      ) : userData?.avtUrl ? (
+                        <img src={userData.avtUrl} alt="Avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-4xl font-bold text-white">
+                          {formData.displayName?.charAt(0)?.toUpperCase() || "U"}
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => avatarInputRef.current?.click()}
+                      disabled={isSaving}
+                      className="absolute bottom-0 right-0 w-9 h-9 rounded-full border-2 flex items-center justify-center hover:scale-110 transition-transform shadow-lg disabled:opacity-50 disabled:cursor-not-allowed z-20 bg-gradient-to-r from-blue-500 to-cyan-500 border-white/50"
+                    >
+                      <Camera className="w-4 h-4 text-white" />
+                    </button>
+                  </>
                 )}
-                title={style.description}
+              </div>
+
+              <h2 className="text-xl font-bold text-white font-bricolage">
+                {formData.displayName || "User"}
+              </h2>
+
+              <div className="flex items-center gap-1.5 mt-1 text-sm text-gray-300">
+                <Mail className="w-4 h-4" />
+                <span className="truncate max-w-[180px]">{formData.email}</span>
+              </div>
+
+              {/* Badges */}
+              <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
+                {userData?.isPremium && (
+                  <div className="flex items-center gap-1 px-2.5 py-1 bg-gradient-to-r from-yellow-500/20 to-amber-500/20 text-yellow-300 border border-yellow-400/30 rounded-full text-xs font-semibold">
+                    <FaCrown className="w-3 h-3" />
+                    Premium
+                  </div>
+                )}
+                {userData?.isVerifiedEmail && (
+                  <div className="flex items-center gap-1 px-2.5 py-1 bg-green-500/20 text-green-300 border border-green-400/30 rounded-full text-xs font-semibold">
+                    <FaShieldAlt className="w-3 h-3" />
+                    Email Verified
+                  </div>
+                )}
+                {userData?.isStylist && (
+                  <div className="flex items-center gap-1 px-2.5 py-1 bg-purple-500/20 text-purple-300 border border-purple-400/30 rounded-full text-xs font-semibold">
+                    <Palette className="w-3 h-3" />
+                    Stylist
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {formData.location && (
+              <>
+                <div className="border-t border-white/10" />
+                <div className="flex items-center gap-2 text-sm text-gray-300">
+                  <MapPin className="w-4 h-4 text-gray-400" />
+                  <span>{formData.location}</span>
+                </div>
+              </>
+            )}
+
+            {/* Navigation Buttons */}
+            <div className="border-t border-white/10 pt-4 space-y-2">
+              <button
+                onClick={() => setActiveTab("basic")}
+                className={cn(
+                  "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-left",
+                  activeTab === "basic"
+                    ? "bg-gradient-to-r from-blue-500/30 to-cyan-500/30 border border-blue-400/50 text-white"
+                    : "bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white"
+                )}
               >
-                {style.name}
+                <User className="w-5 h-5" />
+                <span className="font-semibold">Basic Information</span>
               </button>
-            );
-          })}
+              <button
+                onClick={() => setActiveTab("style")}
+                className={cn(
+                  "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-left",
+                  activeTab === "style"
+                    ? "bg-gradient-to-r from-purple-500/30 to-indigo-500/30 border border-purple-400/50 text-white"
+                    : "bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white"
+                )}
+              >
+                <Palette className="w-5 h-5" />
+                <span className="font-semibold">Style & Preference</span>
+              </button>
+              <button
+                onClick={() => setActiveTab("password")}
+                className={cn(
+                  "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-left",
+                  activeTab === "password"
+                    ? "bg-gradient-to-r from-amber-500/30 to-orange-500/30 border border-amber-400/50 text-white"
+                    : "bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white"
+                )}
+              >
+                <Lock className="w-5 h-5" />
+                <span className="font-semibold">Change Password</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column: Content based on active tab */}
+        <div className="flex-1 space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+          {/* Basic Information Tab */}
+          {activeTab === "basic" && (
+            <>
+              <div className="p-6 rounded-3xl bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl space-y-5">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-cyan-500 rounded-xl flex items-center justify-center shadow-md">
+                    <User className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-white font-bricolage">Basic Information</h2>
+                    <p className="text-sm text-gray-300">Edit your profile details</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 font-bricolage">
+                  {/* Display Name */}
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-semibold flex items-center gap-2 text-gray-200">
+                      <User className="w-4 h-4" />
+                      Display Name
+                    </Label>
+                    <AntInput
+                      value={formData.displayName}
+                      onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
+                      placeholder="Your display name"
+                      size="large"
+                      maxLength={100}
+                      style={{ backgroundColor: "rgba(255, 255, 255, 0.9)" }}
+                    />
+                  </div>
+
+                  {/* Gender */}
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-semibold flex items-center gap-2 text-gray-200">
+                      <User className="w-4 h-4" />
+                      Gender
+                    </Label>
+                    <AntSelect
+                      value={formData.gender}
+                      onChange={(value) => setFormData({ ...formData, gender: value })}
+                      placeholder="Select gender"
+                      className="w-full [&_.ant-select-selector]:!bg-white/90 [&_.ant-select-selector]:!border-white/50"
+                      size="large"
+                      options={GENDER_OPTIONS}
+                      styles={{ popup: { root: { backgroundColor: "rgba(255, 255, 255, 0.95)" } } }}
+                    />
+                  </div>
+
+                  {/* Date of Birth */}
+                  <div className="col-span-2 space-y-1.5">
+                    <Label className="text-sm font-semibold flex items-center gap-2 text-gray-200">
+                      <Calendar className="w-4 h-4" />
+                      Date of Birth
+                    </Label>
+                    <DatePicker
+                      value={formData.dob ? dayjs(formData.dob) : null}
+                      onChange={(date) => setFormData({ ...formData, dob: date ? date.format("YYYY-MM-DD") : "" })}
+                      placeholder="Select date"
+                      className="w-full"
+                      size="large"
+                      format="YYYY-MM-DD"
+                      style={{ backgroundColor: "rgba(255, 255, 255, 0.9)" }}
+                      disabledDate={(current) => current && current >= dayjs().startOf("day")}
+                    />
+                  </div>
+
+                  {/* Occupation */}
+                  <div className="col-span-2 space-y-1.5">
+                    <Label className="text-sm font-semibold flex items-center gap-2 text-gray-200">
+                      <Briefcase className="w-4 h-4" />
+                      Occupation <span className="text-xs text-gray-400">(Select or type your own)</span>
+                    </Label>
+                    <AntSelect
+                      value={formData.jobId || (formData.otherJob ? `other:${formData.otherJob}` : undefined)}
+                      onChange={(value: string | number | undefined) => {
+                        if (typeof value === 'string' && value.startsWith('other:')) {
+                          // Custom value entered
+                          const customJob = value.replace('other:', '');
+                          setFormData({ ...formData, jobId: null, otherJob: customJob });
+                        } else if (typeof value === 'number') {
+                          // Existing job selected
+                          setFormData({ ...formData, jobId: value, otherJob: '' });
+                        } else {
+                          // Cleared
+                          setFormData({ ...formData, jobId: null, otherJob: '' });
+                        }
+                      }}
+                      onSearch={(value) => {
+                        // When user types something not in the list, prepare it as other
+                        const matchingJob = jobs.find(job =>
+                          job.name.toLowerCase() === value.toLowerCase()
+                        );
+                        if (!matchingJob && value.trim()) {
+                          setFormData(prev => ({ ...prev, otherJob: value }));
+                        }
+                      }}
+                      placeholder="Select or type your occupation"
+                      className="w-full [&_.ant-select-selector]:!bg-white/90 [&_.ant-select-selector]:!border-white/50"
+                      size="large"
+                      showSearch
+                      filterOption={(input, option) =>
+                        (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
+                      }
+                      allowClear
+                      options={[
+                        ...jobs.map((job) => ({ value: job.id, label: job.name })),
+                        // Show "Other" option if user typed something custom
+                        ...(formData.otherJob && !jobs.some(j => j.name.toLowerCase() === formData.otherJob.toLowerCase())
+                          ? [{ value: `other:${formData.otherJob}`, label: `Other: "${formData.otherJob}"` }]
+                          : [])
+                      ]}
+                      styles={{ popup: { root: { backgroundColor: "rgba(255, 255, 255, 0.95)" } } }}
+                      notFoundContent={
+                        <div className="p-2 text-gray-500 text-sm">
+                          Type to add a custom occupation
+                        </div>
+                      }
+                    />
+                  </div>
+
+                  {/* Location - Province/District/Ward */}
+                  <div className="col-span-2 space-y-1.5">
+                    <Label className="text-sm font-semibold flex items-center gap-2 text-gray-200">
+                      <MapPin className="w-4 h-4" />
+                      Location <span className="text-xs text-gray-400">(Ward is optional)</span>
+                    </Label>
+                    <div className="grid grid-cols-3 gap-3">
+                      <AntSelect
+                        placeholder="Select Province"
+                        value={formData.province || undefined}
+                        onChange={handleProvinceChange}
+                        loading={loadingProvinces}
+                        showSearch
+                        filterOption={(input, option) =>
+                          (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                        }
+                        size="large"
+                        className="w-full [&_.ant-select-selector]:!bg-white/90 [&_.ant-select-selector]:!border-white/50"
+                        options={provinces.map((province) => ({
+                          value: province.id,
+                          label: province.name,
+                        }))}
+                        styles={{ popup: { root: { backgroundColor: "rgba(255, 255, 255, 0.95)" } } }}
+                      />
+                      <AntSelect
+                        placeholder="Select District"
+                        value={formData.district || undefined}
+                        onChange={handleDistrictChange}
+                        loading={loadingDistricts}
+                        disabled={!formData.province}
+                        showSearch
+                        filterOption={(input, option) =>
+                          (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                        }
+                        size="large"
+                        className="w-full [&_.ant-select-selector]:!bg-white/90 [&_.ant-select-selector]:!border-white/50"
+                        options={districts.map((district) => ({
+                          value: district.id,
+                          label: district.name,
+                        }))}
+                        styles={{ popup: { root: { backgroundColor: "rgba(255, 255, 255, 0.95)" } } }}
+                      />
+                      <AntSelect
+                        placeholder="Select Ward (Optional)"
+                        value={formData.ward || undefined}
+                        onChange={handleWardChange}
+                        loading={loadingWards}
+                        disabled={!formData.district}
+                        showSearch
+                        allowClear
+                        filterOption={(input, option) =>
+                          (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                        }
+                        size="large"
+                        className="w-full [&_.ant-select-selector]:!bg-white/90 [&_.ant-select-selector]:!border-white/50"
+                        options={wards.map((ward) => ({
+                          value: ward.id,
+                          label: ward.name,
+                        }))}
+                        styles={{ popup: { root: { backgroundColor: "rgba(255, 255, 255, 0.95)" } } }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Bio - Full Width */}
+                  <div className="col-span-2 space-y-1.5">
+                    <Label className="text-sm font-semibold flex items-center gap-2 text-gray-200">
+                      <FileText className="w-4 h-4" />
+                      About You
+                    </Label>
+                    <TextArea
+                      value={formData.bio}
+                      onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                      placeholder="Tell us about yourself..."
+                      rows={3}
+                      maxLength={500}
+                      showCount
+                      size="large"
+                      style={{
+                        backgroundColor: "rgba(255, 255, 255, 0.9)",
+                        resize: "none",
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-end gap-3">
+                <GlassButton
+                  onClick={handleReset}
+                  disabled={isSaving}
+                  variant="custom"
+                  backgroundColor="rgba(255, 255, 255, 0.3)"
+                  borderColor="rgba(255, 255, 255, 0.5)"
+                  textColor="#374151"
+                  size="lg"
+                >
+                  <RotateCcw className="w-5 h-5" />
+                  Reset
+                </GlassButton>
+
+                <GlassButton
+                  onClick={handleSubmit}
+                  disabled={isSaving}
+                  variant="custom"
+                  backgroundColor="rgba(59, 130, 246, 0.6)"
+                  borderColor="rgba(59, 130, 246, 0.8)"
+                  textColor="white"
+                  size="lg"
+                >
+                  {isSaving ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-5 h-5" />
+                      Save Changes
+                    </>
+                  )}
+                </GlassButton>
+              </div>
+            </>
+          )}
+
+          {/* Style & Preference Tab */}
+          {activeTab === "style" && (
+            <>
+              {/* Color Preferences */}
+              <div className="flex gap-4">
+                {/* Preferred Colors Card */}
+                <div className="flex-1 p-5 rounded-3xl bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl space-y-4 font-bricolage">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-emerald-500 rounded-xl flex items-center justify-center shadow-md">
+                      <Heart className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <Label className="text-base font-bold text-white">Preferred Colors</Label>
+                      <p className="text-sm text-gray-300">Colors you love ({formData.preferedColor.length}/{MAX_COLORS})</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-gray-200">Select colors:</p>
+                    <div className="grid grid-cols-8 gap-2">
+                      {COLOR_PRESETS.map((preset) => (
+                        <button
+                          key={preset.name}
+                          type="button"
+                          onClick={() => {
+                            if (formData.preferedColor.includes(preset.color)) {
+                              setFormData({
+                                ...formData,
+                                preferedColor: formData.preferedColor.filter((c) => c !== preset.color),
+                              });
+                            } else {
+                              if (formData.preferedColor.length >= MAX_COLORS) {
+                                toast.error(`Maximum ${MAX_COLORS} preferred colors allowed`);
+                                return;
+                              }
+                              setFormData({
+                                ...formData,
+                                preferedColor: [...formData.preferedColor, preset.color],
+                                avoidedColor: formData.avoidedColor.filter((c) => c !== preset.color),
+                              });
+                            }
+                          }}
+                          className={cn(
+                            "w-9 h-9 rounded-lg border-2 transition-all duration-200 hover:scale-110 shadow-sm",
+                            formData.preferedColor.includes(preset.color)
+                              ? "border-green-500 ring-2 ring-green-300"
+                              : "border-gray-300 hover:border-gray-400"
+                          )}
+                          style={{ backgroundColor: preset.color }}
+                          title={preset.name}
+                        >
+                          {formData.preferedColor.includes(preset.color) && (
+                            <Check className="w-5 h-5 text-white drop-shadow-lg mx-auto" strokeWidth={3} />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-gray-200">Or add custom color:</p>
+                    <div className="flex items-center gap-2">
+                      <ColorPicker
+                        disabledAlpha
+                        format="hex"
+                        onChangeComplete={(color) => {
+                          if (formData.preferedColor.length >= MAX_COLORS) {
+                            toast.error(`Maximum ${MAX_COLORS} preferred colors allowed`);
+                            return;
+                          }
+                          const colorHex = color.toHexString();
+                          if (!formData.preferedColor.includes(colorHex)) {
+                            setFormData({
+                              ...formData,
+                              preferedColor: [...formData.preferedColor, colorHex],
+                              avoidedColor: formData.avoidedColor.filter((c) => c !== colorHex),
+                            });
+                          }
+                        }}
+                        size="large"
+                      />
+                      {formData.preferedColor.length >= MAX_COLORS && (
+                        <p className="text-xs text-red-600 font-medium">Maximum limit reached</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {formData.preferedColor.some((c) => !COLOR_PRESETS.some((p) => p.color === c)) && (
+                    <div className="space-y-2">
+                      <p className="text-sm font-semibold text-gray-200">Custom colors:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {formData.preferedColor
+                          .filter((c) => !COLOR_PRESETS.some((p) => p.color === c))
+                          .map((colorHex) => (
+                            <button
+                              key={colorHex}
+                              type="button"
+                              onClick={() => {
+                                setFormData({
+                                  ...formData,
+                                  preferedColor: formData.preferedColor.filter((c) => c !== colorHex),
+                                });
+                              }}
+                              className="group relative w-9 h-9 rounded-lg border-2 border-green-500 ring-2 ring-green-300 shadow-sm hover:scale-110 transition-all duration-200"
+                              style={{ backgroundColor: colorHex }}
+                              title={`${colorHex} (click to remove)`}
+                            >
+                              <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-20 rounded-lg transition-opacity" />
+                              <X className="w-5 h-5 text-white drop-shadow-lg absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity" strokeWidth={3} />
+                            </button>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Avoided Colors Card */}
+                <div className="flex-1 p-5 rounded-3xl bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl space-y-4 font-bricolage">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-gradient-to-br from-red-400 to-rose-500 rounded-xl flex items-center justify-center shadow-md">
+                      <X className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <Label className="text-base font-bold text-white">Avoided Colors</Label>
+                      <p className="text-sm text-gray-300">Colors you avoid ({formData.avoidedColor.length}/{MAX_COLORS})</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-gray-200">Select colors:</p>
+                    <div className="grid grid-cols-8 gap-2">
+                      {COLOR_PRESETS.map((preset) => (
+                        <button
+                          key={preset.name}
+                          type="button"
+                          onClick={() => {
+                            if (formData.avoidedColor.includes(preset.color)) {
+                              setFormData({
+                                ...formData,
+                                avoidedColor: formData.avoidedColor.filter((c) => c !== preset.color),
+                              });
+                            } else {
+                              if (formData.avoidedColor.length >= MAX_COLORS) {
+                                toast.error(`Maximum ${MAX_COLORS} avoided colors allowed`);
+                                return;
+                              }
+                              setFormData({
+                                ...formData,
+                                avoidedColor: [...formData.avoidedColor, preset.color],
+                                preferedColor: formData.preferedColor.filter((c) => c !== preset.color),
+                              });
+                            }
+                          }}
+                          className={cn(
+                            "w-9 h-9 rounded-lg border-2 transition-all duration-200 hover:scale-110 shadow-sm",
+                            formData.avoidedColor.includes(preset.color)
+                              ? "border-red-500 ring-2 ring-red-300"
+                              : "border-gray-300 hover:border-gray-400"
+                          )}
+                          style={{ backgroundColor: preset.color }}
+                          title={preset.name}
+                        >
+                          {formData.avoidedColor.includes(preset.color) && (
+                            <X className="w-5 h-5 text-white drop-shadow-lg mx-auto" strokeWidth={3} />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-gray-200">Or add custom color:</p>
+                    <div className="flex items-center gap-2">
+                      <ColorPicker
+                        disabledAlpha
+                        format="hex"
+                        onChangeComplete={(color) => {
+                          if (formData.avoidedColor.length >= MAX_COLORS) {
+                            toast.error(`Maximum ${MAX_COLORS} avoided colors allowed`);
+                            return;
+                          }
+                          const colorHex = color.toHexString();
+                          if (!formData.avoidedColor.includes(colorHex)) {
+                            setFormData({
+                              ...formData,
+                              avoidedColor: [...formData.avoidedColor, colorHex],
+                              preferedColor: formData.preferedColor.filter((c) => c !== colorHex),
+                            });
+                          }
+                        }}
+                        size="large"
+                      />
+                      {formData.avoidedColor.length >= MAX_COLORS && (
+                        <p className="text-xs text-red-600 font-medium">Maximum limit reached</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {formData.avoidedColor.some((c) => !COLOR_PRESETS.some((p) => p.color === c)) && (
+                    <div className="space-y-2">
+                      <p className="text-sm font-semibold text-gray-200">Custom colors:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {formData.avoidedColor
+                          .filter((c) => !COLOR_PRESETS.some((p) => p.color === c))
+                          .map((colorHex) => (
+                            <button
+                              key={colorHex}
+                              type="button"
+                              onClick={() => {
+                                setFormData({
+                                  ...formData,
+                                  avoidedColor: formData.avoidedColor.filter((c) => c !== colorHex),
+                                });
+                              }}
+                              className="group relative w-9 h-9 rounded-lg border-2 border-red-500 ring-2 ring-red-300 shadow-sm hover:scale-110 transition-all duration-200"
+                              style={{ backgroundColor: colorHex }}
+                              title={`${colorHex} (click to remove)`}
+                            >
+                              <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-20 rounded-lg transition-opacity" />
+                              <X className="w-5 h-5 text-white drop-shadow-lg absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity" strokeWidth={3} />
+                            </button>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Style Preferences Card */}
+              <div className="p-6 rounded-3xl bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-indigo-500 rounded-xl flex items-center justify-center shadow-md">
+                      <Palette className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-bold text-white font-bricolage">Style Preferences</h2>
+                      <p className="text-sm text-gray-300">Select your aesthetic</p>
+                    </div>
+                  </div>
+                  {(formData.styleIds.length + formData.otherStyles.length) > 0 && (
+                    <div className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-500/30 to-cyan-500/30 border border-blue-400/50">
+                      <span className="text-sm font-semibold text-white">
+                        {formData.styleIds.length + formData.otherStyles.length}/{MAX_STYLES}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Search and Other Style Input */}
+                <div className="flex gap-3">
+                  <AntInput
+                    size="large"
+                    placeholder="Search styles..."
+                    prefix={<Search className="w-4 h-4 text-gray-400" />}
+                    value={styleSearchQuery}
+                    onChange={(e) => setStyleSearchQuery(e.target.value)}
+                    allowClear
+                    className="flex-1"
+                    style={{
+                      backgroundColor: "rgba(255, 255, 255, 0.9)",
+                      borderRadius: "12px",
+                    }}
+                  />
+                  <div className="flex-1 flex gap-2">
+                    <AntInput
+                      size="large"
+                      placeholder="Add other style..."
+                      prefix={<Palette className="w-4 h-4 text-gray-400" />}
+                      value={otherStyleInput}
+                      onChange={(e) => setOtherStyleInput(e.target.value)}
+                      onPressEnter={addOtherStyle}
+                      style={{
+                        backgroundColor: "rgba(255, 255, 255, 0.9)",
+                        borderRadius: "12px",
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={addOtherStyle}
+                      disabled={!otherStyleInput.trim()}
+                      className={cn(
+                        "px-4 py-2 rounded-lg transition-all duration-200",
+                        "bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600",
+                        "text-white font-semibold shadow-md hover:shadow-lg",
+                        "disabled:opacity-50 disabled:cursor-not-allowed",
+                        "flex items-center gap-2"
+                      )}
+                    >
+                      <Plus className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Other Styles Tags */}
+                {formData.otherStyles.length > 0 && (
+                  <div className="flex flex-wrap gap-2 p-3 rounded-xl bg-white/10 border border-white/20">
+                    {formData.otherStyles.map((style, index) => (
+                      <Tag
+                        key={index}
+                        closable
+                        onClose={() => {
+                          setFormData({
+                            ...formData,
+                            otherStyles: formData.otherStyles.filter((_, i) => i !== index)
+                          });
+                        }}
+                        style={{
+                          backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                          borderColor: '#60a5fa',
+                          color: '#fff',
+                          padding: '6px 14px',
+                          fontSize: '14px',
+                          borderRadius: '8px',
+                          fontWeight: 500,
+                        }}
+                        className="font-bricolage"
+                      >
+                        {style}
+                      </Tag>
+                    ))}
+                  </div>
+                )}
+
+                {/* Style Cards Grid */}
+                {loadingStyles ? (
+                  <div className="text-center py-8">
+                    <Spin size="large" />
+                  </div>
+                ) : styles.length === 0 ? (
+                  <Empty description="No styles found" />
+                ) : (
+                  <div
+                    ref={scrollContainerRef}
+                    data-lenis-prevent
+                    className="max-h-[300px] overflow-y-scroll hide-scrollbar"
+                  >
+                    <div className="grid grid-cols-2 gap-3">
+                      {styles.map((style) => (
+                        <Card
+                          key={style.id}
+                          hoverable
+                          onClick={() => toggleStyle(style.id)}
+                          className={cn(
+                            "cursor-pointer transition-all duration-300",
+                            formData.styleIds.includes(style.id) && "ring-3 ring-blue-400"
+                          )}
+                          style={{
+                            background: formData.styleIds.includes(style.id)
+                              ? "linear-gradient(135deg, rgba(96, 165, 250, 0.4) 0%, rgba(59, 130, 246, 0.35) 100%)"
+                              : "rgba(255, 255, 255, 0.7)",
+                            borderRadius: "12px",
+                            border: formData.styleIds.includes(style.id)
+                              ? "2px solid #3b82f6"
+                              : "1px solid rgba(255, 255, 255, 0.7)",
+                          }}
+                          styles={{
+                            body: { padding: "0.75rem", position: "relative" },
+                          }}
+                        >
+                          {formData.styleIds.includes(style.id) && (
+                            <div className="absolute top-1.5 right-1.5 w-6 h-6 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center shadow-lg ring-2 ring-white">
+                              <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />
+                            </div>
+                          )}
+                          <h3
+                            className={cn(
+                              "font-semibold text-sm pr-6",
+                              formData.styleIds.includes(style.id) ? "text-white" : "text-gray-800"
+                            )}
+                          >
+                            {style.name}
+                          </h3>
+                          <p
+                            className={cn(
+                              "text-xs line-clamp-2 mt-1",
+                              formData.styleIds.includes(style.id) ? "text-white/90" : "text-gray-500"
+                            )}
+                          >
+                            {style.description}
+                          </p>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-end gap-3">
+                <GlassButton
+                  onClick={handleReset}
+                  disabled={isSaving}
+                  variant="custom"
+                  backgroundColor="rgba(255, 255, 255, 0.3)"
+                  borderColor="rgba(255, 255, 255, 0.5)"
+                  textColor="#374151"
+                  size="lg"
+                >
+                  <RotateCcw className="w-5 h-5" />
+                  Reset
+                </GlassButton>
+
+                <GlassButton
+                  onClick={handleSubmit}
+                  disabled={isSaving}
+                  variant="custom"
+                  backgroundColor="rgba(59, 130, 246, 0.6)"
+                  borderColor="rgba(59, 130, 246, 0.8)"
+                  textColor="white"
+                  size="lg"
+                >
+                  {isSaving ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-5 h-5" />
+                      Save Changes
+                    </>
+                  )}
+                </GlassButton>
+              </div>
+            </>
+          )}
+
+          {/* Change Password Tab */}
+          {activeTab === "password" && (
+            <div className="p-6 rounded-3xl bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl space-y-5">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center shadow-md">
+                  <Lock className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-white font-bricolage">Change Password</h2>
+                  <p className="text-sm text-gray-300">Update your account password</p>
+                </div>
+              </div>
+
+              <div className="space-y-4 font-bricolage">
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-semibold flex items-center gap-2 text-gray-200">
+                    <Lock className="w-4 h-4" />
+                    Current Password
+                  </Label>
+                  <AntInput.Password
+                    placeholder="Enter current password"
+                    size="large"
+                    style={{ backgroundColor: "rgba(255, 255, 255, 0.9)" }}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-semibold flex items-center gap-2 text-gray-200">
+                    <Lock className="w-4 h-4" />
+                    New Password
+                  </Label>
+                  <AntInput.Password
+                    placeholder="Enter new password"
+                    size="large"
+                    style={{ backgroundColor: "rgba(255, 255, 255, 0.9)" }}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-semibold flex items-center gap-2 text-gray-200">
+                    <Lock className="w-4 h-4" />
+                    Confirm New Password
+                  </Label>
+                  <AntInput.Password
+                    placeholder="Confirm new password"
+                    size="large"
+                    style={{ backgroundColor: "rgba(255, 255, 255, 0.9)" }}
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-4">
+                <GlassButton
+                  onClick={() => toast.info("Password change feature coming soon!")}
+                  variant="custom"
+                  backgroundColor="rgba(245, 158, 11, 0.6)"
+                  borderColor="rgba(245, 158, 11, 0.8)"
+                  textColor="white"
+                  size="lg"
+                >
+                  <Lock className="w-5 h-5" />
+                  Update Password
+                </GlassButton>
+              </div>
+            </div>
+          )}
         </div>
       </div>
-
-      {/* Action Buttons */}
-      <div className="flex gap-3">
-        <Button
-          type="submit"
-          disabled={isLoading}
-          className="flex-1 md:flex-none bg-gradient-to-r from-cyan-600 to-blue-600 text-white hover:from-cyan-700 hover:to-blue-700 shadow-lg shadow-cyan-500/20 font-semibold transition-all"
-        >
-          {isLoading ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Saving...
-            </>
-          ) : (
-            "Save Changes"
-          )}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          className="flex-1 md:flex-none bg-transparent border border-white/20 text-slate-300 hover:bg-white/10 hover:text-white hover:border-white/40 font-semibold transition-all"
-        >
-          Cancel
-        </Button>
-      </div>
-    </form>
+    </ConfigProvider>
   );
 }

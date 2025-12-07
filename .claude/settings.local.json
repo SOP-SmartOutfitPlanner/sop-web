@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run build:*)",
+      "Bash(git --version:*)",
+      "Bash(npx husky init)",
+      "Bash(.husky/pre-commit:*)",
+      "Bash(.husky/commit-msg)",
+      "Bash(npm run dev:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill /PID 32576 /F)",
+      "Bash(cmd //c taskkill //PID 32576 //F)",
+      "Bash(move:*)",
+      "Bash(next build)",
+      "Bash(npx next build)",
+      "Bash(del nul)",
+      "Bash(mv:*)",
+      "Bash(git add:*)",
+      "Bash(cat:*)",
+      "Bash(npx lint-staged:*)",
+      "Bash(npx husky:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git reset:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npm install:*)",
+      "Bash(git pull:*)",
+      "Bash(rm:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
