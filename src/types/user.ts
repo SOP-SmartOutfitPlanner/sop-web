@@ -10,10 +10,27 @@ export interface OnboardingRequest {
   avoidedColor: string[];
   gender: number;
   location: string;
-  jobId: number;
+  jobId?: number;
+  otherJob?: string;
   dob: string;
   bio: string;
   styleIds: number[];
+  otherStyles?: string[];
+}
+
+export interface UpdateProfileRequest {
+  displayName?: string;
+  dob?: string;
+  gender?: number;
+  preferedColor?: string[];
+  avoidedColor?: string[];
+  location?: string;
+  bio?: string;
+  jobId?: number;
+  otherJob?: string;
+  styleIds?: number[];
+  otherStyles?: string[];
+  avtUrl?: string;
 }
 
 export interface UserResponse {
@@ -90,6 +107,8 @@ export interface UserProfileResponse {
   jobId: number;
   jobName: string;
   jobDescription: string;
+  otherJob?: string;
+  otherStyles?: string[];
   userStyles: {
     id: number;
     styleId: number;

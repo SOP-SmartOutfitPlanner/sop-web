@@ -155,6 +155,7 @@ export interface AuthStore extends AuthState {
   clearMessages: () => void;
   setLoading: (loading: boolean) => void;
   setIsFirstTime: (isFirstTime: boolean) => void;
+  updateUser: (updates: Partial<User>) => void;
 }
 
 // ============================================================================
