@@ -137,14 +137,68 @@ export function ProfileEditForm() {
   const [loadingDistricts, setLoadingDistricts] = useState(false);
   const [loadingWards, setLoadingWards] = useState(false);
 
-  // Load provinces
-  const loadProvinces = async () => {
-    if (provinces.length > 0) return;
+  // Load provinces and parse existing location string
+  const loadProvincesAndParseLocation = async (locationString?: string) => {
     setLoadingProvinces(true);
     try {
       const response = await fetch(`${LOCATION_API_BASE}/provinces?page=0&size=100`);
       const data = await response.json();
-      setProvinces(data.data || []);
+      const loadedProvinces: Province[] = data.data || [];
+      setProvinces(loadedProvinces);
+
+      // Parse location if exists (format: "Ward, District, Province" or "District, Province" or "Province")
+      if (locationString) {
+        const parts = locationString.split(", ").map(p => p.trim());
+
+        if (parts.length >= 1) {
+          // Last part is always province
+          const provinceName = parts[parts.length - 1];
+          const matchedProvince = loadedProvinces.find(p =>
+            p.name.toLowerCase() === provinceName.toLowerCase()
+          );
+
+          if (matchedProvince) {
+            // Load districts for this province
+            const districtsResponse = await fetch(`${LOCATION_API_BASE}/districts/${matchedProvince.id}?page=0&size=100`);
+            const districtsData = await districtsResponse.json();
+            const loadedDistricts: District[] = districtsData.data || [];
+            setDistricts(loadedDistricts);
+
+            let matchedDistrict: District | undefined;
+            let matchedWard: Ward | undefined;
+
+            if (parts.length >= 2) {
+              // Second to last part is district
+              const districtName = parts[parts.length - 2];
+              matchedDistrict = loadedDistricts.find(d =>
+                d.name.toLowerCase() === districtName.toLowerCase()
+              );
+
+              if (matchedDistrict && parts.length >= 3) {
+                // Load wards for this district
+                const wardsResponse = await fetch(`${LOCATION_API_BASE}/wards/${matchedDistrict.id}?page=0&size=100`);
+                const wardsData = await wardsResponse.json();
+                const loadedWards: Ward[] = wardsData.data || [];
+                setWards(loadedWards);
+
+                // First part is ward
+                const wardName = parts[0];
+                matchedWard = loadedWards.find(w =>
+                  w.name.toLowerCase() === wardName.toLowerCase()
+                );
+              }
+            }
+
+            // Update form data with parsed location IDs
+            setFormData(prev => ({
+              ...prev,
+              province: matchedProvince.id,
+              district: matchedDistrict?.id || "",
+              ward: matchedWard?.id || "",
+            }));
+          }
+        }
+      }
     } catch (error) {
       console.error("Failed to load provinces:", error);
     } finally {
@@ -289,8 +343,8 @@ export function ProfileEditForm() {
           otherStyles: profile.otherStyles || [],
         });
 
-        // Load provinces
-        loadProvinces();
+        // Load provinces and parse existing location
+        await loadProvincesAndParseLocation(profile.location);
       } catch (error) {
         console.error("Failed to load profile:", error);
         toast.error("Failed to load profile data");
@@ -1284,9 +1338,9 @@ export function ProfileEditForm() {
                   <div
                     ref={scrollContainerRef}
                     data-lenis-prevent
-                    className="max-h-[300px] overflow-y-scroll hide-scrollbar"
+                    className="max-h-[300px] overflow-y-scroll hide-scrollbar p-1"
                   >
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-3 p-0.5">
                       {styles.map((style) => (
                         <Card
                           key={style.id}
