@@ -1,5 +1,5 @@
 import { ApiResponse } from "@/types";
-import { OnboardingRequest, UserResponse, UserProfileResponse, Job, StyleOption } from "@/types/user";
+import { OnboardingRequest, UserResponse, UserProfileResponse, Job, StyleOption, UpdateProfileRequest } from "@/types/user";
 import { apiClient } from "./client";
 
 export interface GetJobsParams {
@@ -26,6 +26,30 @@ export interface CreateStyleRequest {
   description: string;
 }
 
+// Password Change Types
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+export interface ChangePasswordOtpRequest {
+  otp: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+export interface ChangePasswordResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface InitiateOtpResponse {
+  success: boolean;
+  message: string;
+  data: string; // Masked email
+}
+
 class UserAPI {
   private readonly BASE_PATH = "/user";
 
@@ -38,6 +62,24 @@ class UserAPI {
       return response;
     } catch (error) {
       console.error("Failed to fetch user profile:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update user profile
+   * API: PUT /api/v1/user/profile
+   */
+  async updateProfile(data: UpdateProfileRequest): Promise<ApiResponse<UserProfileResponse>> {
+    try {
+      const response = await apiClient.put<ApiResponse<UserProfileResponse>>(
+        `${this.BASE_PATH}/profile`,
+        data
+      );
+
+      return response;
+    } catch (error) {
+      console.error("Failed to update user profile:", error);
       throw error;
     }
   }
@@ -127,6 +169,60 @@ class UserAPI {
       return response;
     } catch (error) {
       console.error("Failed to fetch user by ID:", error);
+      throw error;
+    }
+  }
+
+  // ============================================================================
+  // Password Change Methods
+  // ============================================================================
+
+  /**
+   * Change password with current password (Method 1)
+   * API: PUT /api/user/password/change
+   */
+  async changePassword(data: ChangePasswordRequest): Promise<ChangePasswordResponse> {
+    try {
+      const response = await apiClient.put<ChangePasswordResponse>(
+        `${this.BASE_PATH}/password/change`,
+        data
+      );
+      return response;
+    } catch (error) {
+      console.error("Failed to change password:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Initiate OTP-based password change (Method 2 - Step 1)
+   * API: POST /api/user/password/change-otp/initiate
+   */
+  async initiatePasswordChangeOtp(): Promise<InitiateOtpResponse> {
+    try {
+      const response = await apiClient.post<InitiateOtpResponse>(
+        `${this.BASE_PATH}/password/change-otp/initiate`
+      );
+      return response;
+    } catch (error) {
+      console.error("Failed to initiate OTP for password change:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Complete OTP-based password change (Method 2 - Step 2)
+   * API: PUT /api/user/password/change-otp
+   */
+  async changePasswordWithOtp(data: ChangePasswordOtpRequest): Promise<ChangePasswordResponse> {
+    try {
+      const response = await apiClient.put<ChangePasswordResponse>(
+        `${this.BASE_PATH}/password/change-otp`,
+        data
+      );
+      return response;
+    } catch (error) {
+      console.error("Failed to change password with OTP:", error);
       throw error;
     }
   }

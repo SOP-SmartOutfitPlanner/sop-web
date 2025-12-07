@@ -598,4 +598,18 @@ export const useAuthStore = create<AuthStore>((set) => ({
       document.cookie = `isFirstTime=${isFirstTime}; path=/; max-age=86400; samesite=strict`;
     }
   },
+  updateUser: (updates: Partial<User>) => {
+    set((state) => {
+      if (!state.user) return state;
+
+      const updatedUser = { ...state.user, ...updates };
+
+      // Also update localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+      }
+
+      return { user: updatedUser };
+    });
+  },
 }));
