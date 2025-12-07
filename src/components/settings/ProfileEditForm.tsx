@@ -92,7 +92,7 @@ interface Ward {
 }
 
 export function ProfileEditForm() {
-  const { user } = useAuthStore();
+  const { user, updateUser } = useAuthStore();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
@@ -264,6 +264,13 @@ export function ProfileEditForm() {
         setStyles(systemStyles);
 
         // Set form data
+        // Check if jobId exists in system jobs list
+        const isSystemJob = profile.jobId && systemJobs.some((j: Job) => j.id === profile.jobId);
+        // If otherJob is set OR jobId is not a system job, treat as custom job
+        const hasCustomJob = !!profile.otherJob || (profile.jobId && !isSystemJob);
+        // For custom job display, use otherJob if set, otherwise use jobName from profile
+        const customJobName = profile.otherJob || (hasCustomJob && profile.jobName ? profile.jobName : "");
+
         setFormData({
           displayName: profile.displayName || "",
           email: profile.email || "",
@@ -274,8 +281,8 @@ export function ProfileEditForm() {
           ward: "",
           dob: profile.dob || "",
           gender: profile.gender ?? 0,
-          jobId: profile.jobId || null,
-          otherJob: profile.otherJob || "",
+          jobId: hasCustomJob ? null : (profile.jobId || null),
+          otherJob: customJobName,
           preferedColor: profile.preferedColor || [],
           avoidedColor: profile.avoidedColor || [],
           styleIds: profile.userStyles?.map((s) => s.styleId) || [],
@@ -359,8 +366,8 @@ export function ProfileEditForm() {
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("File size must be less than 5MB");
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("File size must be less than 10MB");
       return;
     }
 
@@ -406,10 +413,13 @@ export function ProfileEditForm() {
     try {
       setIsSaving(true);
 
-      let avatarUrl: string | undefined;
+      // Step 1: Upload avatar to MinIO if there's a new file
+      let uploadedAvatarUrl: string | undefined;
       if (avatarFile) {
         try {
-          avatarUrl = await minioAPI.uploadImage(avatarFile);
+          console.log("📤 Uploading avatar to MinIO...");
+          uploadedAvatarUrl = await minioAPI.uploadImage(avatarFile);
+          console.log("✅ Avatar uploaded successfully, downloadUrl:", uploadedAvatarUrl);
         } catch (error) {
           console.error("Failed to upload avatar:", error);
           toast.error("Failed to upload avatar");
@@ -418,6 +428,7 @@ export function ProfileEditForm() {
         }
       }
 
+      // Step 2: Prepare update data with the uploaded avatar URL
       const updateData = {
         displayName: formData.displayName !== userData?.displayName ? formData.displayName : undefined,
         dob: formData.dob || undefined,
@@ -430,30 +441,42 @@ export function ProfileEditForm() {
         avoidedColor: formData.avoidedColor,
         styleIds: formData.styleIds,
         otherStyles: formData.otherStyles,
-        avtUrl: avatarUrl,
+        // Only include avtUrl if we uploaded a new avatar
+        ...(uploadedAvatarUrl && { avtUrl: uploadedAvatarUrl }),
       };
 
-      const response = await userAPI.updateProfile(updateData);
-      setUserData(response.data);
+      console.log("📤 Sending profile update with data:", JSON.stringify(updateData, null, 2));
 
+      // Step 3: Update profile via API
+      const response = await userAPI.updateProfile(updateData);
+      console.log("✅ Profile updated, response:", JSON.stringify(response.data, null, 2));
+
+      // Step 4: Determine the final avatar URL to use
+      // Priority: uploaded URL > response URL > existing URL
+      const finalAvatarUrl = uploadedAvatarUrl || response.data?.avtUrl || userData?.avtUrl || null;
+      console.log("🖼️ Final avatar URL:", finalAvatarUrl);
+
+      // Step 5: Update local state with the new data
+      setUserData((prev) => ({
+        ...prev!,
+        ...response.data,
+        avtUrl: finalAvatarUrl,
+      }));
+
+      // Clear avatar upload state
       setAvatarPreview(null);
       setAvatarFile(null);
       if (avatarInputRef.current) {
         avatarInputRef.current.value = "";
       }
 
-      if (typeof window !== "undefined") {
-        const storedUser = localStorage.getItem("user");
-        if (storedUser) {
-          const parsedUser = JSON.parse(storedUser);
-          localStorage.setItem("user", JSON.stringify({
-            ...parsedUser,
-            displayName: response.data.displayName || parsedUser.displayName,
-            avatar: response.data.avtUrl || parsedUser.avatar,
-            location: response.data.location || parsedUser.location,
-          }));
-        }
-      }
+      // Step 6: Update auth store (this also updates localStorage)
+      updateUser({
+        displayName: response.data?.displayName || user?.displayName,
+        avatar: finalAvatarUrl || user?.avatar,
+        location: response.data?.location || user?.location,
+      });
+      console.log("💾 Updated auth store with avatar:", finalAvatarUrl);
 
       toast.success("Profile updated successfully!");
     } catch (error) {
@@ -540,6 +563,10 @@ export function ProfileEditForm() {
                           </div>
                         )}
                       </div>
+                    </div>
+                    {/* Crown badge at top right */}
+                    <div className="absolute -top-1 -right-1 w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 via-amber-400 to-orange-500 flex items-center justify-center shadow-lg z-20 border-2 border-yellow-200">
+                      <FaCrown className="w-4 h-4 text-white drop-shadow-sm" />
                     </div>
                     <button
                       type="button"
@@ -734,7 +761,18 @@ export function ProfileEditForm() {
                       Occupation <span className="text-xs text-gray-400">(Select or type your own)</span>
                     </Label>
                     <AntSelect
-                      value={formData.jobId || (formData.otherJob ? `other:${formData.otherJob}` : undefined)}
+                      value={(() => {
+                        // If otherJob is set, always show it (custom job takes priority)
+                        if (formData.otherJob) {
+                          return `other:${formData.otherJob}`;
+                        }
+                        // If jobId is set and exists in system jobs, show it
+                        if (formData.jobId && jobs.some(j => j.id === formData.jobId)) {
+                          return formData.jobId;
+                        }
+                        // Otherwise show nothing
+                        return undefined;
+                      })()}
                       onChange={(value: string | number | undefined) => {
                         if (typeof value === 'string' && value.startsWith('other:')) {
                           // Custom value entered
@@ -767,9 +805,9 @@ export function ProfileEditForm() {
                       allowClear
                       options={[
                         ...jobs.map((job) => ({ value: job.id, label: job.name })),
-                        // Show "Other" option if user typed something custom
-                        ...(formData.otherJob && !jobs.some(j => j.name.toLowerCase() === formData.otherJob.toLowerCase())
-                          ? [{ value: `other:${formData.otherJob}`, label: `Other: "${formData.otherJob}"` }]
+                        // Always show "Other" option if otherJob has a value (for display purposes)
+                        ...(formData.otherJob
+                          ? [{ value: `other:${formData.otherJob}`, label: formData.otherJob }]
                           : [])
                       ]}
                       styles={{ popup: { root: { backgroundColor: "rgba(255, 255, 255, 0.95)" } } }}
@@ -862,6 +900,9 @@ export function ProfileEditForm() {
                       style={{
                         backgroundColor: "rgba(255, 255, 255, 0.9)",
                         resize: "none",
+                      }}
+                      classNames={{
+                        count: "!text-white",
                       }}
                     />
                   </div>
