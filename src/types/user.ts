@@ -16,6 +16,21 @@ export interface OnboardingRequest {
   styleIds: number[];
 }
 
+export interface UpdateProfileRequest {
+  displayName?: string;
+  dob?: string;
+  gender?: number;
+  preferedColor?: string[];
+  avoidedColor?: string[];
+  location?: string;
+  bio?: string;
+  jobId?: number;
+  otherJob?: string;
+  styleIds?: number[];
+  otherStyles?: string[];
+  avtUrl?: string;
+}
+
 export interface UserResponse {
   email: string;
   passwordHash: string | null;
@@ -90,6 +105,8 @@ export interface UserProfileResponse {
   jobId: number;
   jobName: string;
   jobDescription: string;
+  otherJob?: string;
+  otherStyles?: string[];
   userStyles: {
     id: number;
     styleId: number;

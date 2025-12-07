@@ -1,5 +1,5 @@
 import { ApiResponse } from "@/types";
-import { OnboardingRequest, UserResponse, UserProfileResponse, Job, StyleOption } from "@/types/user";
+import { OnboardingRequest, UserResponse, UserProfileResponse, Job, StyleOption, UpdateProfileRequest } from "@/types/user";
 import { apiClient } from "./client";
 
 export interface GetJobsParams {
@@ -38,6 +38,24 @@ class UserAPI {
       return response;
     } catch (error) {
       console.error("Failed to fetch user profile:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update user profile
+   * API: PUT /api/v1/user/profile
+   */
+  async updateProfile(data: UpdateProfileRequest): Promise<ApiResponse<UserProfileResponse>> {
+    try {
+      const response = await apiClient.put<ApiResponse<UserProfileResponse>>(
+        `${this.BASE_PATH}/profile`,
+        data
+      );
+
+      return response;
+    } catch (error) {
+      console.error("Failed to update user profile:", error);
       throw error;
     }
   }
