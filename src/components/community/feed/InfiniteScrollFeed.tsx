@@ -19,6 +19,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Hashtag } from "@/lib/api/community-api";
 import { communityAPI } from "@/lib/api/community-api";
+import { PostModal } from "@/components/community/profile/PostModal";
 
 const EditPostDialog = dynamic(
   () =>
@@ -58,6 +59,13 @@ export function InfiniteScrollFeed({
   const [taggedPosts, setTaggedPosts] = useState<Post[]>([]);
   const [isTagLoading, setIsTagLoading] = useState(false);
   const [tagError, setTagError] = useState<string | null>(null);
+
+  // Post modal state for opening a specific post from URL (e.g., from notifications)
+  const [selectedPostFromUrl, setSelectedPostFromUrl] = useState<Post | null>(
+    null
+  );
+  const [isPostModalOpen, setIsPostModalOpen] = useState(false);
+  const [isLoadingPostFromUrl, setIsLoadingPostFromUrl] = useState(false);
 
   const {
     posts,
@@ -260,6 +268,48 @@ export function InfiniteScrollFeed({
       setTagError(null);
     }
   }, [initialHashtagId, activeHashtag, user?.id, searchParams]);
+
+  // Handle postId query param to open a specific post modal (e.g., from notifications)
+  useEffect(() => {
+    const urlPostId = searchParams.get("postId");
+
+    if (urlPostId) {
+      const postId = parseInt(urlPostId, 10);
+      if (!isNaN(postId)) {
+        // Fetch the specific post and open modal
+        const fetchAndOpenPost = async () => {
+          setIsLoadingPostFromUrl(true);
+          try {
+            const communityPost = await communityAPI.getPostById(postId);
+            const post = apiPostToPost(communityPost);
+            setSelectedPostFromUrl(post);
+            setIsPostModalOpen(true);
+          } catch (error) {
+            console.error("Failed to fetch post:", error);
+            toast.error("Failed to load post");
+          } finally {
+            setIsLoadingPostFromUrl(false);
+          }
+        };
+
+        fetchAndOpenPost();
+
+        // Clear the postId from URL to prevent re-opening on refresh
+        const params = new URLSearchParams(searchParams.toString());
+        params.delete("postId");
+        const newUrl = params.toString()
+          ? `/community?${params.toString()}`
+          : "/community";
+        router.replace(newUrl);
+      }
+    }
+  }, [searchParams, router]);
+
+  // Handle closing the post modal from URL
+  const handleClosePostModal = useCallback(() => {
+    setIsPostModalOpen(false);
+    setSelectedPostFromUrl(null);
+  }, []);
 
   const refreshActiveHashtag = useCallback(async () => {
     if (activeHashtag) {
@@ -470,6 +520,16 @@ export function InfiniteScrollFeed({
             />
           </DialogContent>
         </Dialog>
+      )}
+
+      {/* Post Modal from URL (e.g., from notifications) */}
+      {selectedPostFromUrl && (
+        <PostModal
+          post={selectedPostFromUrl}
+          isOpen={isPostModalOpen}
+          onClose={handleClosePostModal}
+          onLike={() => handleLikePost(selectedPostFromUrl.id)}
+        />
       )}
     </div>
   );

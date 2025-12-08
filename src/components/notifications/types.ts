@@ -9,6 +9,8 @@ export interface NotificationItem {
   read: boolean;
   icon: typeof Bell;
   href?: string;
+  imageUrl?: string | null;
+  actorUserId?: number | null;
   actorName?: string | null;
   actorAvatar?: string | null;
 }

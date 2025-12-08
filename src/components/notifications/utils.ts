@@ -1,4 +1,13 @@
-import { Bell, Sparkles, Users, Calendar } from "lucide-react";
+import {
+  Bell,
+  Heart,
+  MessageCircle,
+  FileText,
+  FolderOpen,
+  CreditCard,
+  UserPlus,
+  Users,
+} from "lucide-react";
 import type { NotificationType } from "@/lib/api";
 
 // Notification type mapping
@@ -18,6 +27,64 @@ export const getNotificationIcon = (type: string) => {
     default:
       return Bell;
   }
+};
+
+/**
+ * Get notification icon based on href and title context
+ * This provides more specific icons based on the notification content
+ *
+ * @param href - The notification href (e.g., /posts/123, /collections/456)
+ * @param type - The notification type (SYSTEM or USER)
+ * @param title - Optional title for additional context
+ */
+export const getNotificationIconFromHref = (
+  href?: string,
+  type?: string,
+  title?: string
+) => {
+  // System notifications
+  if (type?.toLowerCase() === "system") {
+    // Subscription notifications
+    if (title?.toLowerCase().includes("subscription")) {
+      return CreditCard;
+    }
+    return Bell;
+  }
+
+  // User notifications - determine by href pattern
+  if (href) {
+    // Post notifications
+    if (href.includes("/posts/")) {
+      // Could be like or comment - check title for more specific icon
+      if (title?.toLowerCase().includes("like")) {
+        return Heart;
+      }
+      if (title?.toLowerCase().includes("comment")) {
+        return MessageCircle;
+      }
+      // Default for new post notifications
+      return FileText;
+    }
+
+    // Collection notifications
+    if (href.includes("/collections/")) {
+      if (title?.toLowerCase().includes("like")) {
+        return Heart;
+      }
+      if (title?.toLowerCase().includes("comment")) {
+        return MessageCircle;
+      }
+      return FolderOpen;
+    }
+
+    // Follow notifications (if implemented in future)
+    if (href.includes("/profile/") || href.includes("/users/")) {
+      return UserPlus;
+    }
+  }
+
+  // Default based on type
+  return type?.toLowerCase() === "user" ? Users : Bell;
 };
 
 // Get notification type color classes

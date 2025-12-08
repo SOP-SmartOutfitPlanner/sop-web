@@ -1,17 +1,16 @@
 "use client";
 
 import Image from "next/image";
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Check, Trash2, Clock, ArrowUpRight } from "lucide-react";
+import { Check, Trash2, Clock } from "lucide-react";
 import GlassCard from "@/components/ui/glass-card";
 import type { NotificationItem } from "./types";
 import {
-  getNotificationIcon,
   getTypeColor,
   getTypeIconColor,
-  getLeftBorderColor,
   formatDate,
+  getNotificationIconFromHref,
 } from "./utils";
 
 interface NotificationCardProps {
@@ -36,16 +35,31 @@ const NotificationCard = memo<NotificationCardProps>(
     selected = false,
     onSelectChange,
   }) => {
-    const Icon = notification.icon;
+    // Get the appropriate icon based on href and title (posts, collections, likes, comments, etc.)
+    const Icon = useMemo(
+      () =>
+        getNotificationIconFromHref(
+          notification.href,
+          notification.type,
+          notification.title
+        ),
+      [notification.href, notification.type, notification.title]
+    );
+
+    // Determine the avatar to display: actor avatar or imageUrl
+    const avatarUrl = notification.actorAvatar || notification.imageUrl;
 
     const handleClick = () => {
       if (selectable) {
         onSelectChange?.(notification.id, !selected);
         return;
       }
+
+      // Open the notification detail dialog
       if (onViewDetail) {
         onViewDetail(notification.id);
       } else {
+        // Fallback: just mark as read if no detail view handler
         onMarkAsRead(notification.id);
       }
     };
@@ -134,14 +148,40 @@ const NotificationCard = memo<NotificationCardProps>(
                 transition={{ duration: 0.3 }}
                 className={`relative flex h-14 w-14 sm:h-16 sm:w-16 flex-shrink-0 items-center justify-center rounded-2xl border-2 ${getTypeColor(
                   notification.type
-                )} shadow-xl shadow-black/40`}
+                )} shadow-xl shadow-black/40 overflow-hidden`}
               >
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/15 via-transparent to-black/70" />
-                <Icon
-                  className={`relative z-10 h-6 w-6 sm:h-7 sm:w-7 ${getTypeIconColor(
-                    notification.type
-                  )} drop-shadow-sm`}
-                />
+                {avatarUrl ? (
+                  <>
+                    <Image
+                      src={avatarUrl}
+                      alt={notification.actorName || "Notification"}
+                      fill
+                      sizes="64px"
+                      className="object-cover"
+                    />
+                    {/* Icon badge for notification type */}
+                    <div
+                      className={`absolute -bottom-0.5 -right-0.5 flex h-6 w-6 items-center justify-center rounded-full border-2 border-slate-900 ${getTypeColor(
+                        notification.type
+                      )} shadow-md`}
+                    >
+                      <Icon
+                        className={`h-3 w-3 ${getTypeIconColor(
+                          notification.type
+                        )}`}
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/15 via-transparent to-black/70" />
+                    <Icon
+                      className={`relative z-10 h-6 w-6 sm:h-7 sm:w-7 ${getTypeIconColor(
+                        notification.type
+                      )} drop-shadow-sm`}
+                    />
+                  </>
+                )}
                 {!notification.read && (
                   <motion.span
                     initial={{ scale: 0 }}
@@ -197,15 +237,16 @@ const NotificationCard = memo<NotificationCardProps>(
                   </div>
                 </div>
 
-                {/* Description */}
+                {/* Description - supports HTML like <b>name</b> */}
                 {notification.description && (
                   <p
                     className={`font-poppins text-sm sm:text-base leading-relaxed line-clamp-2 ${
                       notification.read ? "text-slate-400" : "text-slate-300"
-                    }`}
-                  >
-                    {notification.description}
-                  </p>
+                    } [&>b]:font-semibold [&>b]:text-white [&>strong]:font-semibold [&>strong]:text-white`}
+                    dangerouslySetInnerHTML={{
+                      __html: notification.description,
+                    }}
+                  />
                 )}
 
                 {/* Footer: Timestamp & Actions */}
