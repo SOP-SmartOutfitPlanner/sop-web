@@ -9,9 +9,9 @@ import { useAuthStore } from "@/store/auth-store";
 import GlassCard from "@/components/ui/glass-card";
 import GlassButton from "@/components/ui/glass-button";
 
-import { DateSelectionModal } from "@/components/suggest/DateSelectionModal";
 import { UserOccasionList } from "@/components/suggest/UserOccasionList";
 import { OutfitConfigPanel, OutfitConfig } from "@/components/suggest/OutfitConfigPanel";
+import { WeatherSkeleton } from "@/components/suggest/WeatherSkeleton";
 import { SuggestionResultView } from "@/components/suggest/SuggestionResultView";
 import LocationMapModal from "@/components/suggest/LocationMapModal";
 import { useWeather } from "@/hooks/useWeather";
@@ -31,8 +31,7 @@ export default function SuggestPage() {
   const { user, isInitialized } = useAuthStore();
   
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [isDateModalOpen, setIsDateModalOpen] = useState(false);
+  const [selectedDate] = useState(new Date()); // Fixed to today, no longer changeable
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [selectedOccasionId, setSelectedOccasionId] = useState<number | null>(null);
   const [isSuggestingOutfit, setIsSuggestingOutfit] = useState(false);
@@ -63,6 +62,7 @@ export default function SuggestPage() {
     todayForecast: currentLocationForecast,
     cityName: currentCityName,
     coordinates: currentCoordinates,
+    isLoading: isLoadingCurrentWeather,
   } = useWeather();
 
   const [customWeather, setCustomWeather] = useState<{
@@ -192,14 +192,11 @@ export default function SuggestPage() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-bricolage font-semibold text-white">
-                    Selected Date
+                    Today
                   </h3>
-                  <button
-                    onClick={() => setIsDateModalOpen(true)}
-                    className="p-2 hover:bg-cyan-500/20 rounded-lg transition-colors"
-                  >
+                  <div className="p-2">
                     <Calendar className="w-5 h-5 text-cyan-300" />
-                  </button>
+                  </div>
                 </div>
 
                 <div className="text-center bg-gradient-to-br from-cyan-500/20 via-blue-500/15 to-indigo-500/20 backdrop-blur-sm rounded-xl p-4 border border-cyan-400/30 shadow-lg shadow-cyan-500/10">
@@ -230,15 +227,11 @@ export default function SuggestPage() {
                 </div>
 
                 {/* Weather Section */}
-                {displayWeather && (
-                  <div className="pt-4 border-cyan-400/20">
-                    {isLoadingCustomWeather ? (
-                      <div className="text-center py-4">
-                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-cyan-500/20 border-t-cyan-400" />
-                        <p className="mt-2 text-sm text-gray-300">Loading weather...</p>
-                      </div>
-                    ) : (
-                      <div className="relative overflow-hidden bg-gradient-to-br from-slate-800/60 via-slate-700/40 to-slate-800/60 backdrop-blur-md rounded-2xl p-5 border border-slate-600/30 shadow-xl">
+                <div className="pt-4 border-cyan-400/20">
+                  {(isLoadingCurrentWeather || isLoadingCustomWeather) ? (
+                    <WeatherSkeleton />
+                  ) : displayWeather ? (
+                    <div className="relative overflow-hidden bg-gradient-to-br from-slate-800/60 via-slate-700/40 to-slate-800/60 backdrop-blur-md rounded-2xl p-5 border border-slate-600/30 shadow-xl">
                         <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-blue-500/5" />
                         <div className="relative flex items-center justify-between">
                           <div className="flex-1">
@@ -269,9 +262,8 @@ export default function SuggestPage() {
                           </div>
                         </div>
                       </div>
-                    )}
-                  </div>
-                )}
+                  ) : null}
+                </div>
               </div>
             </GlassCard>
 
@@ -292,6 +284,7 @@ export default function SuggestPage() {
           <OutfitConfigPanel
             onGenerate={handleGenerateOutfit}
             isGenerating={isSuggestingOutfit}
+            isWeatherLoading={isLoadingCurrentWeather || isLoadingCustomWeather}
           />
 
           {/* Suggestions Results */}
@@ -351,15 +344,6 @@ export default function SuggestPage() {
       </div>
 
       {/* Modals */}
-      <DateSelectionModal
-        open={isDateModalOpen}
-        onOpenChange={setIsDateModalOpen}
-        onDateSelect={setSelectedDate}
-        selectedDate={selectedDate}
-        lat={displayLocation ? ("lat" in displayLocation ? displayLocation.lat : displayLocation.latitude) : undefined}
-        lng={displayLocation ? ("lng" in displayLocation ? displayLocation.lng : displayLocation.longitude) : undefined}
-      />
-
       <LocationMapModal
         open={isLocationModalOpen}
         onOpenChange={setIsLocationModalOpen}
