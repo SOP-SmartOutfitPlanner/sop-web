@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
@@ -10,10 +10,9 @@ import {
   Sparkles,
   CalendarDays,
   CreditCard,
-  Heart,
+  Home,
   Users,
   Image as ImgIcon,
-  MessageSquare,
   Bell,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -31,6 +30,7 @@ import { useUnreadCount } from "@/hooks/notifications/useUnreadCount";
 
 // -------------------- nav data --------------------
 const mainNavigationItems = [
+  { path: "/home", label: "Home", icon: Home, enabled: true },
   { path: "/wardrobe", label: "Wardrobe", icon: Shirt, enabled: true },
   { path: "/outfit", label: "Outfit", icon: Sparkles, enabled: true },
   { path: "/suggest", label: "Suggest", icon: Sparkles, enabled: true },
@@ -236,7 +236,7 @@ export function Navbar() {
             transition={{ duration: 0.5 }}
             className="flex items-center gap-1 cursor-pointer flex-shrink-0"
           >
-            <Link href="/wardrobe">
+            <Link href={user && !isFirstTime ? "/home" : "/wardrobe"}>
               <div
                 className="relative w-80 h-28 md:w-72 md:h-24"
                 style={{

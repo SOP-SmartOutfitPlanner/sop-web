@@ -82,9 +82,10 @@ export function PushNotificationToast({
             {title}
           </p>
           {message && (
-            <p className="text-[11px] text-white/50 leading-snug line-clamp-1 mt-0.5">
-              {message}
-            </p>
+            <p
+              className="text-[11px] text-white/50 leading-snug line-clamp-1 mt-0.5 [&>b]:font-semibold [&>b]:text-white/70 [&>strong]:font-semibold [&>strong]:text-white/70"
+              dangerouslySetInnerHTML={{ __html: message }}
+            />
           )}
         </div>
 
