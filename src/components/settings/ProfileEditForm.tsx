@@ -35,7 +35,10 @@ import {
   KeyRound,
   ShieldCheck,
   AlertCircle,
+  Sparkles,
+  ArrowRight,
 } from "lucide-react";
+import Link from "next/link";
 import { FaCrown, FaShieldAlt } from "react-icons/fa";
 import GlassButton from "@/components/ui/glass-button";
 import { Label } from "@/components/ui/label";
@@ -886,6 +889,35 @@ export function ProfileEditForm() {
                 <span className="font-semibold">Change Password</span>
               </button>
             </div>
+
+            {/* Become a Stylist Section */}
+            {!userData?.isStylist && (
+              <>
+                <div className="border-t border-white/10 pt-4">
+                  <div className="p-4 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-400/30">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg">
+                        <Sparkles className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-bold text-white">Become a Stylist</h3>
+                        <p className="text-xs text-gray-300">Share your fashion expertise</p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-300 mb-3">
+                      Verify your identity to become a certified stylist and help others with their fashion choices.
+                    </p>
+                    <Link href="/settings/stylist-verification">
+                      <button className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold text-sm transition-all shadow-lg hover:shadow-purple-500/30">
+                        <Sparkles className="w-4 h-4" />
+                        Register Now
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+                    </Link>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
 

@@ -100,6 +100,8 @@ export function useNotifications(userId: string | undefined, filter: FilterType)
         read: notif.isRead,
         icon: getNotificationIcon(notif.type),
         href: notif.href || undefined,
+        imageUrl: notif.imageUrl,
+        actorUserId: notif.actorUserId,
         actorName: notif.actorDisplayName,
         actorAvatar: notif.actorAvatarUrl,
       })

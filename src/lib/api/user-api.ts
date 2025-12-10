@@ -228,6 +228,22 @@ class UserAPI {
   }
 
   /**
+   * Become a stylist after eKYC verification
+   * API: POST /user/become-stylist
+   */
+  async becomeStylist(): Promise<ApiResponse<{ isStylist: boolean }>> {
+    try {
+      const response = await apiClient.post<ApiResponse<{ isStylist: boolean }>>(
+        `${this.BASE_PATH}/become-stylist`
+      );
+      return response;
+    } catch (error) {
+      console.error("Failed to become stylist:", error);
+      throw error;
+    }
+  }
+
+  /**
    * Get stylist profile by ID
    * API: GET /user/stylist/{userId}
    */
