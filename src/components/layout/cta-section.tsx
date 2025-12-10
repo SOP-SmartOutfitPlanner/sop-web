@@ -163,18 +163,6 @@ export default function CTASection() {
             transition={{ delay: 0.6, duration: 0.6 }}
             className="flex items-center justify-center gap-8 flex-wrap text-white/80"
           >
-            <div className="flex items-center gap-2">
-              <Check className="text-green-400" size={20} />
-              <span className="font-bricolage text-sm">No credit card required</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Check className="text-green-400" size={20} />
-              <span className="font-bricolage text-sm">14-day free trial</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Check className="text-green-400" size={20} />
-              <span className="font-bricolage text-sm">Cancel anytime</span>
-            </div>
           </motion.div>
 
           {/* Stats Section */}
