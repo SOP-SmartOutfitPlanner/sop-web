@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { memo, useMemo } from "react";
+import { memo, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Check, Trash2, Clock } from "lucide-react";
 import GlassCard from "@/components/ui/glass-card";
@@ -47,8 +47,13 @@ const NotificationCard = memo<NotificationCardProps>(
     );
 
     // Determine the avatar to display: actor avatar or imageUrl
-    const avatarUrl = notification.actorAvatar || notification.imageUrl;
-
+    // Validate URL: must be non-empty string and start with http/https
+    const rawAvatarUrl = notification.actorAvatar || notification.imageUrl;
+    const avatarUrl = rawAvatarUrl && typeof rawAvatarUrl === 'string' && rawAvatarUrl.trim() !== '' && (rawAvatarUrl.startsWith('http://') || rawAvatarUrl.startsWith('https://'))
+      ? rawAvatarUrl
+      : null;
+    const [imageError, setImageError] = useState(false);
+    
     const handleClick = () => {
       if (selectable) {
         onSelectChange?.(notification.id, !selected);
@@ -150,7 +155,7 @@ const NotificationCard = memo<NotificationCardProps>(
                   notification.type
                 )} shadow-xl shadow-black/40 overflow-hidden`}
               >
-                {avatarUrl ? (
+                {avatarUrl && !imageError ? (
                   <>
                     <Image
                       src={avatarUrl}
@@ -158,6 +163,7 @@ const NotificationCard = memo<NotificationCardProps>(
                       fill
                       sizes="64px"
                       className="object-cover"
+                      onError={() => setImageError(true)}
                     />
                     {/* Icon badge for notification type */}
                     <div
