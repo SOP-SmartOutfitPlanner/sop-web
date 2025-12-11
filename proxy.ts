@@ -21,20 +21,21 @@ function decodeJWT(token: string) {
 export default function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Protect community routes - require authentication
+  // Protect community and wardrobe routes - require authentication
   if (pathname.startsWith("/community") || pathname.startsWith("/wardrobe")) {
     const accessToken = request.cookies.get("accessToken")?.value;
 
     if (!accessToken) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
+  }
 
-    // Check if user is first-time user (needs onboarding)
-    // First-time users should only access wardrobe page
-    const isFirstTime = request.cookies.get("isFirstTime")?.value === "true";
+  // Protect home route - require authentication
+  if (pathname.startsWith("/home")) {
+    const accessToken = request.cookies.get("accessToken")?.value;
 
-    if (isFirstTime && !pathname.startsWith("/wardrobe")) {
-      return NextResponse.redirect(new URL("/wardrobe", request.url));
+    if (!accessToken) {
+      return NextResponse.redirect(new URL("/login", request.url));
     }
   }
 
@@ -88,6 +89,7 @@ export const config = {
     "/admin/:path*",
     "/community/:path*",
     "/wardrobe/:path*",
+    "/home/:path*",
   ],
 };
 
