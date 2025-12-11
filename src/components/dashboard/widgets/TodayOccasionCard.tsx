@@ -144,9 +144,8 @@ export function TodayOccasionCard({
                 Enjoy your free day! You can add new occasions from the calendar.
               </p>
               <Button
-                variant="outline"
                 size="sm"
-                className="mt-4 border-white/20 text-white/70 hover:bg-white/10 hover:text-white rounded-xl"
+                className="mt-4 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-xl shadow-lg shadow-blue-500/30"
                 onClick={() => setIsModalOpen(true)}
               >
                 <Plus className="h-4 w-4 mr-2" />

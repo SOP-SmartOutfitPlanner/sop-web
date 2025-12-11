@@ -38,8 +38,8 @@ export function GoogleLoginButton() {
           // Existing user - login success
           toast.success("Login successful!");
 
-          // Always redirect to wardrobe - onboarding dialog will show if needed
-          router.push("/wardrobe");
+          // Always redirect to home - onboarding dialog will show if needed
+          router.push("/home");
         }
       } else {
         // Handle error from result
