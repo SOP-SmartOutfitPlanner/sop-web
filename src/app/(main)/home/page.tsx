@@ -6,22 +6,19 @@ import { useEffect } from "react";
 import { UserDashboardScreen } from "@/components/dashboard/UserDashboardScreen";
 
 export default function HomePage() {
-  const { user, isInitialized, isFirstTime } = useAuthStore();
+  const { user, isInitialized } = useAuthStore();
 
   useEffect(() => {
     if (isInitialized && !user) {
       redirect("/");
     }
-    if (isInitialized && isFirstTime) {
-      redirect("/wardrobe");
-    }
-  }, [isInitialized, user, isFirstTime]);
+  }, [isInitialized, user]);
 
   if (!isInitialized) {
     return null;
   }
 
-  if (!user || isFirstTime) {
+  if (!user) {
     return null;
   }
 

@@ -20,5 +20,5 @@ export type UserRole = typeof USER_ROLES[keyof typeof USER_ROLES];
 export const AUTH_ROUTES = {
   LOGIN: "/login",
   REGISTER: "/register",
-  DASHBOARD: "/wardrobe",
+  DASHBOARD: "/home",
 } as const;

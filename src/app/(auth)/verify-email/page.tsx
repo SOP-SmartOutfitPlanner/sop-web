@@ -64,7 +64,7 @@ export default function VerifyEmailPage() {
 
             if (result.success && !result.requiresVerification) {
               toast.success("Login successful!");
-              router.push("/wardrobe");
+              router.push("/home");
             } else {
               router.push("/login?verified=true");
             }

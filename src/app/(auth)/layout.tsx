@@ -18,7 +18,7 @@ export default function AuthLayout({
       if (user.role === "ADMIN" || user.role === "SuperAdmin") {
         router.replace("/admin/dashboard");
       } else {
-        router.replace("/wardrobe");
+        router.replace("/home");
       }
     }
   }, [isAuthenticated, user, router]);
