@@ -145,13 +145,11 @@ export function SuggestionResultView({
       const endTime = `${year}-${month}-${day}T17:00:00`;
 
       if (selectedOccasionId) {
-        // Add to the selected occasion
+        // Add to the selected occasion (time comes from the occasion itself)
         await CalenderAPI.createCalendarEntry({
           outfitIds: [outfitId],
           isDaily: false,
           userOccasionId: selectedOccasionId,
-          time: startTime,
-          endTime: endTime,
         });
         toast.success("Outfit added to the occasion!", { id: loadingToast });
         onOutfitUsed?.();
