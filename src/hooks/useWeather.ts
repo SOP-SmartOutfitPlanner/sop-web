@@ -125,24 +125,7 @@ export const useWeather = (options: UseWeatherOptions = {}) => {
       setIsRequestingLocation(true);
       setLocationError(null);
 
-      // Strategy 1: Try profile location FIRST
-      console.log("📍 Trying profile location:", user?.location);
-      try {
-        const profileCoords = await getUserCoordinatesFromProfile();
-        if (profileCoords) {
-          console.log("✅ Profile location found:", profileCoords);
-          setCoordinates(profileCoords);
-          setLocationError(null);
-          setIsRequestingLocation(false);
-          return;
-        } else {
-          console.warn("⚠️ Profile location not found or invalid, trying browser location...");
-        }
-      } catch (profileError) {
-        console.error("❌ Profile location error:", profileError);
-      }
-
-      // Strategy 2: Request browser geolocation
+      // Strategy 1: Try browser geolocation
       if (navigator.geolocation) {
         try {
           console.log("🌍 Requesting browser location permission...");
@@ -157,7 +140,7 @@ export const useWeather = (options: UseWeatherOptions = {}) => {
         }
       }
 
-      // Strategy 3: Fallback to Ho Chi Minh City hardcoded
+      // Strategy 2: Fallback to Ho Chi Minh City hardcoded
       console.log("🏛️ Using default location: Ho Chi Minh City");
       const hoChiMinhCoords: Coordinates = {
         latitude: 10.8231,
@@ -168,12 +151,11 @@ export const useWeather = (options: UseWeatherOptions = {}) => {
       setIsRequestingLocation(false);
     };
 
-    // Only run if we don't have coordinates AND user is loaded
-    if (enabled && !coordinates && user !== null) {
+    // Only run if we don't have coordinates
+    if (enabled && !coordinates) {
       initializeLocation();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, user?.location, user]);
+  }, [enabled, coordinates]);
 
   // Fetch weather data
   const {
