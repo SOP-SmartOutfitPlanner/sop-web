@@ -9,7 +9,6 @@ import { TodayOccasionCard } from "./widgets/TodayOccasionCard";
 import { UpcomingOccasionsTimeline } from "./widgets/UpcomingOccasionsTimeline";
 import { MonthlyOccasionCalendar } from "./widgets/MonthlyOccasionCalendar";
 import { QuickAddOccasion } from "./widgets/QuickAddOccasion";
-import { OccasionStatsWidget } from "./widgets/OccasionStatsWidget";
 
 export function UserDashboardScreen() {
   const { user } = useAuthStore();
@@ -66,14 +65,6 @@ export function UserDashboardScreen() {
       <div className="relative mx-auto max-w-7xl space-y-8 mt-10">
         {/* Welcome Header */}
         <WelcomeHeader user={user} />
-
-        {/* Stats Overview */}
-        <OccasionStatsWidget
-          todayCount={todayEvents.length}
-          weekCount={weekEvents.length}
-          monthCount={monthEvents.length}
-          isLoading={isLoadingToday || isLoadingWeek || isLoadingMonth}
-        />
 
         {/* Main Grid Layout */}
         <div className="grid gap-6 lg:grid-cols-3">

@@ -63,16 +63,25 @@ export function UpcomingOccasionsTimeline({
   occasions,
   isLoading,
 }: UpcomingOccasionsTimelineProps) {
-  // Group occasions by date - include ALL occasions (today + future)
+  // Group occasions by date - include only from today onwards
   const groupedOccasions = useMemo(() => {
     if (!occasions || occasions.length === 0) return [];
 
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Start of today
+
     const groups: Record<string, UserOccasion[]> = {};
 
-    // Sort by dateOccasion
-    const sortedOccasions = [...occasions].sort(
-      (a, b) => new Date(a.dateOccasion).getTime() - new Date(b.dateOccasion).getTime()
-    );
+    // Filter to only include today and future dates, then sort
+    const sortedOccasions = [...occasions]
+      .filter((occasion) => {
+        const occasionDate = new Date(occasion.dateOccasion);
+        occasionDate.setHours(0, 0, 0, 0);
+        return occasionDate >= today; // Only today and future
+      })
+      .sort(
+        (a, b) => new Date(a.dateOccasion).getTime() - new Date(b.dateOccasion).getTime()
+      );
 
     sortedOccasions.forEach((occasion) => {
       // Extract date part only

@@ -526,6 +526,91 @@ class OutfitAPI {
       }
     );
 
+    if (response.statusCode !== 200) {
+      throw new Error(
+        response.message || "Failed to generate batch virtual try-on"
+      );
+    }
+
+    return response;
+  }
+
+  /**
+   * Check if an outfit is within gap day range and get affected items
+   * @param outfitId - The outfit ID being checked
+   * @param targetDate - The reference date for gap day calculation (optional, defaults to today)
+   * @param gapDay - Number of days to check for recently worn items (required)
+   * @returns Promise with gap day check result
+   */
+  async checkGapDay(
+    outfitId: number,
+    targetDate?: string,
+    gapDay?: number
+  ): Promise<{
+    statusCode: number;
+    message: string;
+    data: {
+      outfitId: number;
+      isWithinGapDay: boolean;
+      gapDayRange: {
+        startDate: string;
+        endDate: string;
+        targetDate: string;
+        gapDays: number;
+      };
+      affectedItems: Array<{
+        itemId: number;
+        itemName: string;
+        itemImageUrl: string;
+        categoryName: string;
+        lastWornAt: string;
+        wornDatesInRange: string[];
+        timesWornInRange: number;
+      }>;
+      totalAffectedItems: number;
+    };
+  }> {
+    const params: Record<string, string | number> = {};
+
+    if (targetDate) {
+      params["target-date"] = targetDate;
+    }
+
+    if (gapDay !== undefined) {
+      params["gap-day"] = gapDay;
+    }
+
+    const response = await apiClient.get<{
+      statusCode: number;
+      message: string;
+      data: {
+        outfitId: number;
+        isWithinGapDay: boolean;
+        gapDayRange: {
+          startDate: string;
+          endDate: string;
+          targetDate: string;
+          gapDays: number;
+        };
+        affectedItems: Array<{
+          itemId: number;
+          itemName: string;
+          itemImageUrl: string;
+          categoryName: string;
+          lastWornAt: string;
+          wornDatesInRange: string[];
+          timesWornInRange: number;
+        }>;
+        totalAffectedItems: number;
+      };
+    }>(`/outfits/${outfitId}/check-gap-day`, {
+      params,
+    });
+
+    if (response.statusCode !== 200) {
+      throw new Error(response.message || "Failed to check gap day");
+    }
+
     return response;
   }
 }

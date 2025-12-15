@@ -23,8 +23,6 @@ interface AvailableOutfitsGridProps {
   onSearchChange: (value: string) => void;
   showFavoriteOnly: boolean;
   onFavoriteToggle: () => void;
-  gapDay: number;
-  onGapDayChange: (value: number) => void;
 }
 
 const ITEMS_PER_PAGE = 8;
@@ -44,8 +42,6 @@ export function AvailableOutfitsGrid({
   onSearchChange,
   showFavoriteOnly,
   onFavoriteToggle,
-  gapDay,
-  onGapDayChange,
 }: AvailableOutfitsGridProps) {
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -173,23 +169,6 @@ export function AvailableOutfitsGrid({
                 >
                   ⭐ Favorites Only
                 </button>
-
-                {/* Gap Day Selector */}
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-white/60">Gap Day:</span>
-                  <select
-                    value={gapDay}
-                    onChange={(e) => onGapDayChange(Number(e.target.value))}
-                    className="bg-white/10 border border-white/20 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-green-400/50 focus:ring-2 focus:ring-green-400/20 transition-all [&>option]:bg-slate-800 [&>option]:text-white"
-                  >
-                    <option value={0} className="bg-slate-800 text-white">No filter</option>
-                    <option value={1} className="bg-slate-800 text-white">1 day</option>
-                    <option value={2} className="bg-slate-800 text-white">2 days</option>
-                    <option value={3} className="bg-slate-800 text-white">3 days</option>
-                    <option value={5} className="bg-slate-800 text-white">5 days</option>
-                    <option value={7} className="bg-slate-800 text-white">7 days</option>
-                  </select>
-                </div>
               </div>
             </div>
           </div>
