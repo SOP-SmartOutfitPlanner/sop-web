@@ -481,6 +481,61 @@ class OutfitAPI {
   }
 
   /**
+   * Batch Virtual Try-On: Generate try-on images for multiple outfits
+   * @param items - Array of try-on items with uuid, human_image_url, and clothing_urls
+   * @returns Promise with batch processing results
+   */
+  async batchVirtualTryOn(
+    items: {
+      uuid: number;
+      human_image_url: string;
+      clothing_urls: string[];
+    }[]
+  ): Promise<{
+    statusCode: number;
+    message: string;
+    data: {
+      totalTime: string;
+      results: {
+        uuid: number;
+        success: boolean;
+        url: string | null;
+        error: string | null;
+        time: string;
+      }[];
+    };
+  }> {
+    const response = await apiClient.post<{
+      statusCode: number;
+      message: string;
+      data: {
+        totalTime: string;
+        results: {
+          uuid: number;
+          success: boolean;
+          url: string | null;
+          error: string | null;
+          time: string;
+        }[];
+      };
+    }>(
+      "/outfits/batch-virtual-try-on",
+      { items },
+      {
+        timeout: 300000, // 5 minutes timeout for batch processing
+      }
+    );
+
+    if (response.statusCode !== 200) {
+      throw new Error(
+        response.message || "Failed to generate batch virtual try-on"
+      );
+    }
+
+    return response;
+  }
+
+  /**
    * Check if an outfit is within gap day range and get affected items
    * @param outfitId - The outfit ID being checked
    * @param targetDate - The reference date for gap day calculation (optional, defaults to today)
