@@ -12,6 +12,8 @@ export interface OnboardingData {
   bio: string;
   styleIds: number[];
   otherStyles: string[];
+  tryOnImageUrl: string; // Full body image URL for virtual try-on
+  tryOnImageFile: File | null; // Temporary file before upload
 }
 
 export interface Province {

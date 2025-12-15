@@ -26,6 +26,16 @@ export interface CreateStyleRequest {
   description: string;
 }
 
+// Full Body Image Validation Types
+export interface ValidateFullBodyImageRequest {
+  imageUrl: string;
+}
+
+export interface ValidateFullBodyImageResponse {
+  isValid: boolean;
+  message: string;
+}
+
 // Password Change Types
 export interface ChangePasswordRequest {
   currentPassword: string;
@@ -239,6 +249,23 @@ class UserAPI {
       return response;
     } catch (error) {
       console.error("Failed to become stylist:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Validate full body image for virtual try-on
+   * API: POST /user/validate-fullbody-image
+   */
+  async validateFullBodyImage(imageUrl: string): Promise<ApiResponse<ValidateFullBodyImageResponse>> {
+    try {
+      const response = await apiClient.post<ApiResponse<ValidateFullBodyImageResponse>>(
+        `${this.BASE_PATH}/validate-fullbody-image`,
+        { imageUrl }
+      );
+      return response;
+    } catch (error) {
+      console.error("Failed to validate full body image:", error);
       throw error;
     }
   }

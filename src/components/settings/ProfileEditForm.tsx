@@ -13,6 +13,7 @@ import {
   Spin,
   Empty,
   Tag,
+  Image as AntImage,
 } from "antd";
 import dayjs from "dayjs";
 import {
@@ -37,6 +38,10 @@ import {
   AlertCircle,
   Sparkles,
   ArrowRight,
+  Upload,
+  Edit2,
+  UserCircle,
+  Trash2,
 } from "lucide-react";
 import Link from "next/link";
 import { FaCrown, FaShieldAlt } from "react-icons/fa";
@@ -108,6 +113,11 @@ export function ProfileEditForm() {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [userData, setUserData] = useState<UserProfileResponse | null>(null);
+
+  // Full body image state
+  const fullBodyInputRef = useRef<HTMLInputElement>(null);
+  const [fullBodyPreview, setFullBodyPreview] = useState<string | null>(null);
+  const [fullBodyFile, setFullBodyFile] = useState<File | null>(null);
 
   // Form data
   const [formData, setFormData] = useState({
@@ -472,6 +482,40 @@ export function ProfileEditForm() {
     reader.readAsDataURL(file);
   };
 
+  // Full body image handlers
+  const handleFullBodyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+    if (!validTypes.includes(file.type)) {
+      toast.error("Only JPG, PNG, and WEBP files are allowed");
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("File size must be less than 10MB");
+      return;
+    }
+
+    setFullBodyFile(file);
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setFullBodyPreview(event.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+    toast.success("Full body image selected");
+  };
+
+  const handleRemoveFullBody = () => {
+    setFullBodyPreview(null);
+    setFullBodyFile(null);
+    if (fullBodyInputRef.current) {
+      fullBodyInputRef.current.value = "";
+    }
+  };
+
   const handleReset = () => {
     if (!userData) return;
     setFormData({
@@ -495,6 +539,12 @@ export function ProfileEditForm() {
     setAvatarFile(null);
     if (avatarInputRef.current) {
       avatarInputRef.current.value = "";
+    }
+    // Reset full body image
+    setFullBodyPreview(null);
+    setFullBodyFile(null);
+    if (fullBodyInputRef.current) {
+      fullBodyInputRef.current.value = "";
     }
     toast.info("Form reset to original values");
   };
@@ -634,7 +684,42 @@ export function ProfileEditForm() {
         }
       }
 
-      // Step 2: Prepare update data with the uploaded avatar URL
+      // Step 1.5: Upload and validate full body image if there's a new file
+      let uploadedFullBodyUrl: string | undefined;
+      if (fullBodyFile) {
+        // Step 1.5a: Upload to MinIO
+        try {
+          console.log("📤 Uploading full body image to MinIO...");
+          uploadedFullBodyUrl = await minioAPI.uploadImage(fullBodyFile);
+          console.log("✅ Full body image uploaded successfully, downloadUrl:", uploadedFullBodyUrl);
+        } catch (error) {
+          console.error("Failed to upload full body image:", error);
+          toast.error("Failed to upload full body image. Please try again.");
+          setIsSaving(false);
+          return;
+        }
+
+        // Step 1.5b: Validate the image
+        try {
+          console.log("🔍 Validating full body image...");
+          const validationResponse = await userAPI.validateFullBodyImage(uploadedFullBodyUrl);
+
+          if (!validationResponse.data.isValid) {
+            console.warn("❌ Full body image validation failed:", validationResponse.data.message);
+            toast.error(validationResponse.data.message || "Invalid full body image. Please upload a clear full body photo from head to toe.");
+            setIsSaving(false);
+            return;
+          }
+          console.log("✅ Full body image validated successfully");
+        } catch (error) {
+          console.error("Failed to validate full body image:", error);
+          toast.error("Failed to validate full body image. Please try again.");
+          setIsSaving(false);
+          return;
+        }
+      }
+
+      // Step 2: Prepare update data with the uploaded URLs
       const updateData = {
         displayName: formData.displayName !== userData?.displayName ? formData.displayName : undefined,
         dob: formData.dob || undefined,
@@ -649,6 +734,8 @@ export function ProfileEditForm() {
         otherStyles: formData.otherStyles,
         // Only include avtUrl if we uploaded a new avatar
         ...(uploadedAvatarUrl && { avtUrl: uploadedAvatarUrl }),
+        // Only include tryOnImageUrl if we uploaded a new full body image
+        ...(uploadedFullBodyUrl && { tryOnImageUrl: uploadedFullBodyUrl }),
       };
 
       console.log("📤 Sending profile update with data:", JSON.stringify(updateData, null, 2));
@@ -657,16 +744,19 @@ export function ProfileEditForm() {
       const response = await userAPI.updateProfile(updateData);
       console.log("✅ Profile updated, response:", JSON.stringify(response.data, null, 2));
 
-      // Step 4: Determine the final avatar URL to use
+      // Step 4: Determine the final URLs to use
       // Priority: uploaded URL > response URL > existing URL
       const finalAvatarUrl = uploadedAvatarUrl || response.data?.avtUrl || userData?.avtUrl || null;
+      const finalFullBodyUrl = uploadedFullBodyUrl || response.data?.tryOnImageUrl || userData?.tryOnImageUrl || null;
       console.log("🖼️ Final avatar URL:", finalAvatarUrl);
+      console.log("🧍 Final full body URL:", finalFullBodyUrl);
 
       // Step 5: Update local state with the new data
       setUserData((prev) => ({
         ...prev!,
         ...response.data,
         avtUrl: finalAvatarUrl,
+        tryOnImageUrl: finalFullBodyUrl,
       }));
 
       // Clear avatar upload state
@@ -676,13 +766,21 @@ export function ProfileEditForm() {
         avatarInputRef.current.value = "";
       }
 
+      // Clear full body upload state
+      setFullBodyPreview(null);
+      setFullBodyFile(null);
+      if (fullBodyInputRef.current) {
+        fullBodyInputRef.current.value = "";
+      }
+
       // Step 6: Update auth store (this also updates localStorage)
       updateUser({
         displayName: response.data?.displayName || user?.displayName,
         avatar: finalAvatarUrl || user?.avatar,
         location: response.data?.location || user?.location,
+        tryOnImageUrl: finalFullBodyUrl || user?.tryOnImageUrl,
       });
-      console.log("💾 Updated auth store with avatar:", finalAvatarUrl);
+      console.log("💾 Updated auth store with avatar:", finalAvatarUrl, "and full body:", finalFullBodyUrl);
 
       toast.success("Profile updated successfully!");
     } catch (error) {
@@ -1140,6 +1238,133 @@ export function ProfileEditForm() {
                         count: "!text-white",
                       }}
                     />
+                  </div>
+                </div>
+              </div>
+
+              {/* Full Body Image Section */}
+              <div className="p-6 rounded-3xl bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl space-y-5">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-pink-500 rounded-xl flex items-center justify-center shadow-md">
+                    <UserCircle className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-white font-bricolage">Full Body Photo</h2>
+                    <p className="text-sm text-gray-300">For virtual try-on features</p>
+                  </div>
+                </div>
+
+                {/* Hidden file input */}
+                <input
+                  ref={fullBodyInputRef}
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/webp"
+                  onChange={handleFullBodyChange}
+                  className="hidden"
+                />
+
+                <div className="flex gap-6">
+                  {/* Current/Preview Image */}
+                  <div className="flex-shrink-0">
+                    {(fullBodyPreview || userData?.tryOnImageUrl) ? (
+                      <div className="relative rounded-2xl overflow-hidden bg-white/10 border border-white/20 shadow-lg w-[200px] h-[280px]">
+                        <AntImage.PreviewGroup>
+                          <AntImage
+                            src={fullBodyPreview || userData?.tryOnImageUrl || ""}
+                            alt="Full Body"
+                            style={{
+                              width: '200px',
+                              height: '280px',
+                              objectFit: 'cover',
+                              display: 'block',
+                            }}
+                            preview={{
+                              mask: (
+                                <div className="flex items-center justify-center">
+                                  <span className="text-white font-bricolage font-medium">
+                                    Preview
+                                  </span>
+                                </div>
+                              ),
+                            }}
+                          />
+                        </AntImage.PreviewGroup>
+
+                        {/* Action buttons */}
+                        <div className="absolute top-2 right-2 flex flex-col gap-2">
+                          <button
+                            type="button"
+                            onClick={() => fullBodyInputRef.current?.click()}
+                            disabled={isSaving}
+                            className="w-8 h-8 rounded-lg bg-blue-500/90 hover:bg-blue-600 flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-110 backdrop-blur-sm disabled:opacity-50"
+                            title="Change image"
+                          >
+                            <Edit2 className="w-4 h-4 text-white" />
+                          </button>
+                          {(fullBodyPreview || userData?.tryOnImageUrl) && (
+                            <button
+                              type="button"
+                              onClick={handleRemoveFullBody}
+                              disabled={isSaving}
+                              className="w-8 h-8 rounded-lg bg-red-500/90 hover:bg-red-600 flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-110 backdrop-blur-sm disabled:opacity-50"
+                              title="Remove image"
+                            >
+                              <Trash2 className="w-4 h-4 text-white" />
+                            </button>
+                          )}
+                        </div>
+
+                        {/* File info overlay */}
+                        {fullBodyFile && (
+                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent px-3 py-2">
+                            <p className="text-xs text-white font-bricolage truncate">
+                              {fullBodyFile.name}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      /* Upload Area */
+                      <div
+                        onClick={() => fullBodyInputRef.current?.click()}
+                        className="w-[200px] h-[280px] border-2 border-dashed rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 border-gray-400 bg-white/5 hover:border-blue-400 hover:bg-white/10"
+                      >
+                        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg mb-3">
+                          <Upload className="w-7 h-7 text-white" />
+                        </div>
+                        <p className="text-sm font-semibold text-white font-bricolage">Upload Photo</p>
+                        <p className="text-xs text-gray-400 mt-1 font-bricolage">PNG, JPG, WEBP</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Tips */}
+                  <div className="flex-1 space-y-3">
+                    <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                      <p className="text-sm font-semibold text-white mb-2 font-bricolage">Tips for best results:</p>
+                      <ul className="text-xs text-gray-300 space-y-1.5 font-bricolage">
+                        <li className="flex items-start gap-2">
+                          <span className="text-blue-400 mt-0.5">•</span>
+                          Stand in front of a plain background
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-blue-400 mt-0.5">•</span>
+                          Ensure your full body is visible from head to toe
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-blue-400 mt-0.5">•</span>
+                          Good lighting helps with accurate try-on results
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-blue-400 mt-0.5">•</span>
+                          Wear fitted clothing for best virtual try-on
+                        </li>
+                      </ul>
+                    </div>
+                    <p className="text-xs text-gray-400 font-bricolage">
+                      This image is used for virtual try-on features to preview how clothes look on you.
+                      Max file size: 10MB
+                    </p>
                   </div>
                 </div>
               </div>

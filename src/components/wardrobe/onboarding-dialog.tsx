@@ -26,6 +26,9 @@ import {
   Plus,
   Palette,
   Heart,
+  Upload,
+  Edit2,
+  UserCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -33,8 +36,11 @@ import GlassButton from "@/components/ui/glass-button";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { userAPI } from "@/lib/api/user-api";
+import { minioAPI } from "@/lib/api/minio-api";
 import { cn } from "@/lib/utils";
 import { useScrollLock } from "@/hooks/useScrollLock";
+import { Image as AntImage } from "antd";
+import { useAuthStore } from "@/store/auth-store";
 
 // Import from extracted modules
 import { STEPS, TOTAL_STEPS, MAX_COLORS, MAX_STYLES, LOCATION_API_BASE, COLOR_PRESETS } from "./onboarding-dialog/constants";
@@ -52,6 +58,9 @@ interface OnboardingDialogProps {
 
 // ========== Main Component ==========
 export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) {
+  // ===== Auth Store =====
+  const { updateUser, setIsFirstTime } = useAuthStore();
+
   // ===== State Management =====
   const [currentStep, setCurrentStep] = useState<number>(STEPS.WELCOME);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -76,6 +85,10 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
   // Refs
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
+  // Full body image state
+  const [fullBodyImagePreview, setFullBodyImagePreview] = useState<string | null>(null);
+  const fullBodyInputRef = useRef<HTMLInputElement>(null);
+
   // Form data state
   const [formData, setFormData] = useState<OnboardingData>({
     preferedColor: [],
@@ -91,6 +104,8 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
     bio: "",
     styleIds: [],
     otherStyles: [],
+    tryOnImageUrl: "",
+    tryOnImageFile: null,
   });
 
   // ===== Effects =====
@@ -324,6 +339,41 @@ useScrollLock(open);
         return;
       }
 
+      // Upload and validate full body image if provided
+      let uploadedTryOnImageUrl: string | undefined;
+      if (formData.tryOnImageFile) {
+        // Step 1: Upload to MinIO
+        try {
+          console.log("📤 Uploading full body image to MinIO...");
+          uploadedTryOnImageUrl = await minioAPI.uploadImage(formData.tryOnImageFile);
+          console.log("✅ Full body image uploaded successfully:", uploadedTryOnImageUrl);
+        } catch (error) {
+          console.error("Failed to upload full body image:", error);
+          toast.error("Failed to upload full body image. Please try again.");
+          setIsSubmitting(false);
+          return;
+        }
+
+        // Step 2: Validate the image
+        try {
+          console.log("🔍 Validating full body image...");
+          const validationResponse = await userAPI.validateFullBodyImage(uploadedTryOnImageUrl);
+
+          if (!validationResponse.data.isValid) {
+            console.warn("❌ Full body image validation failed:", validationResponse.data.message);
+            toast.error(validationResponse.data.message || "Invalid full body image. Please upload a clear full body photo from head to toe.");
+            setIsSubmitting(false);
+            return;
+          }
+          console.log("✅ Full body image validated successfully");
+        } catch (error) {
+          console.error("Failed to validate full body image:", error);
+          toast.error("Failed to validate full body image. Please try again.");
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
       // Prepare payload
       const payload = {
         preferedColor: formData.preferedColor,
@@ -337,9 +387,19 @@ useScrollLock(open);
         bio: formData.bio,
         styleIds: formData.styleIds,
         otherStyles: formData.otherStyles,
+        tryOnImageUrl: uploadedTryOnImageUrl,
       };
 
       await userAPI.submitOnboarding(payload);
+
+      // Update auth store with tryOnImageUrl if uploaded
+      if (uploadedTryOnImageUrl) {
+        updateUser({ tryOnImageUrl: uploadedTryOnImageUrl });
+      }
+
+      // Mark user as no longer first time
+      setIsFirstTime(false);
+
       toast.success("Welcome to SOP! Your profile has been set up successfully.");
       onOpenChange(false);
     } catch (error) {
@@ -382,6 +442,52 @@ useScrollLock(open);
         styleIds: [...prev.styleIds, styleId]
       };
     });
+  };
+
+  // Full body image handlers
+  const handleFullBodyImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+    if (!validTypes.includes(file.type)) {
+      toast.error("Only JPG, PNG, and WEBP files are allowed");
+      return;
+    }
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("File size must be less than 10MB");
+      return;
+    }
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setFullBodyImagePreview(event.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+
+    // Store file in form data
+    setFormData((prev) => ({
+      ...prev,
+      tryOnImageFile: file,
+    }));
+
+    toast.success("Image selected successfully");
+  };
+
+  const handleRemoveFullBodyImage = () => {
+    setFullBodyImagePreview(null);
+    setFormData((prev) => ({
+      ...prev,
+      tryOnImageFile: null,
+      tryOnImageUrl: "",
+    }));
+    if (fullBodyInputRef.current) {
+      fullBodyInputRef.current.value = "";
+    }
   };
 
   const progress = ((currentStep + 1) / TOTAL_STEPS) * 100;
@@ -1150,6 +1256,187 @@ useScrollLock(open);
                   </div>
                 </div>
               )}
+
+              {/* Step 5: Full Body Image */}
+              {currentStep === STEPS.FULL_BODY_IMAGE && (
+                <div className="h-full flex flex-col justify-center animate-in fade-in slide-in-from-right-4 duration-500">
+                  <div className="space-y-6 max-w-5xl mx-auto w-full">
+                    <div className="text-center space-y-3">
+                      <h2 className="font-dela-gothic text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-cyan-200">
+                        Add Your Full Body Photo
+                      </h2>
+                      <p className="font-bricolage text-lg text-gray-200">
+                        Upload a full body photo for virtual try-on features <span className="text-gray-400">(Optional)</span>
+                      </p>
+                    </div>
+
+                    {/* 2-Column Layout: Left = Upload, Right = Instructions */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      {/* Left Column: Upload Image */}
+                      <div className="flex flex-col items-center">
+                        {/* Hidden file input */}
+                        <input
+                          ref={fullBodyInputRef}
+                          type="file"
+                          accept="image/jpeg,image/jpg,image/png,image/webp"
+                          onChange={handleFullBodyImageSelect}
+                          className="hidden"
+                        />
+
+                        {fullBodyImagePreview ? (
+                          /* Image Preview */
+                          <div className="relative rounded-2xl overflow-hidden bg-white/10 backdrop-blur-md border border-white/20 shadow-2xl w-[280px] h-[380px]">
+                            <AntImage.PreviewGroup>
+                              <AntImage
+                                src={fullBodyImagePreview}
+                                alt="Full Body Preview"
+                                style={{
+                                  width: '280px',
+                                  height: '380px',
+                                  objectFit: 'cover',
+                                  display: 'block',
+                                }}
+                                preview={{
+                                  mask: (
+                                    <div className="flex items-center justify-center">
+                                      <span className="text-white font-bricolage font-medium">
+                                        Preview
+                                      </span>
+                                    </div>
+                                  ),
+                                }}
+                              />
+                            </AntImage.PreviewGroup>
+
+                            {/* Action buttons */}
+                            <div className="absolute top-3 right-3 flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => fullBodyInputRef.current?.click()}
+                                className="w-10 h-10 rounded-lg bg-blue-500/90 hover:bg-blue-600 flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-110 backdrop-blur-sm"
+                                title="Change image"
+                              >
+                                <Edit2 className="w-5 h-5 text-white" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleRemoveFullBodyImage}
+                                className="w-10 h-10 rounded-lg bg-red-500/90 hover:bg-red-600 flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-110 backdrop-blur-sm"
+                                title="Remove image"
+                              >
+                                <X className="w-5 h-5 text-white" />
+                              </button>
+                            </div>
+
+                            {/* File info */}
+                            {formData.tryOnImageFile && (
+                              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent px-4 py-3">
+                                <p className="text-sm text-white font-bricolage font-medium truncate">
+                                  {formData.tryOnImageFile.name}
+                                </p>
+                                <p className="text-xs text-gray-300 font-bricolage mt-1">
+                                  {(formData.tryOnImageFile.size / 1024 / 1024).toFixed(2)} MB
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          /* Upload Area */
+                          <div
+                            onClick={() => fullBodyInputRef.current?.click()}
+                            className="relative border-2 border-dashed rounded-2xl text-center transition-all duration-300 cursor-pointer border-gray-300 bg-white/10 hover:border-blue-400 hover:bg-white/20 backdrop-blur-sm shadow-lg p-8 w-[280px] h-[380px] flex flex-col items-center justify-center"
+                          >
+                            <div className="space-y-4">
+                              <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg">
+                                <UserCircle className="w-10 h-10 text-white" />
+                              </div>
+
+                              <div>
+                                <p className="font-bricolage font-bold text-lg text-white">
+                                  Upload Full Body Photo
+                                </p>
+                                <p className="font-bricolage text-sm text-gray-300 mt-2">
+                                  Click to select or drag and drop
+                                </p>
+                                <p className="font-bricolage text-xs text-gray-400 mt-2">
+                                  PNG, JPG, WEBP • Max 10MB
+                                </p>
+                              </div>
+
+                              <button
+                                type="button"
+                                className="px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-xl font-bricolage font-semibold shadow-md transition-all duration-200"
+                              >
+                                <Upload className="w-5 h-5 inline mr-2" />
+                                Select Image
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Right Column: Instructions */}
+                      <div className="flex flex-col justify-center space-y-6">
+                        {/* Tips Card */}
+                        <div className="p-6 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 shadow-lg">
+                          <div className="flex items-center gap-3 mb-4">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-md">
+                              <Check className="w-5 h-5 text-white" />
+                            </div>
+                            <h3 className="text-lg font-bold text-white font-bricolage">Tips for best results</h3>
+                          </div>
+                          <ul className="space-y-3 font-bricolage">
+                            <li className="flex items-start gap-3">
+                              <span className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <span className="text-blue-400 text-sm font-bold">1</span>
+                              </span>
+                              <span className="text-gray-200 text-sm">Stand in front of a <strong className="text-white">plain background</strong></span>
+                            </li>
+                            <li className="flex items-start gap-3">
+                              <span className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <span className="text-blue-400 text-sm font-bold">2</span>
+                              </span>
+                              <span className="text-gray-200 text-sm">Ensure your <strong className="text-white">full body is visible</strong> from head to toe</span>
+                            </li>
+                            <li className="flex items-start gap-3">
+                              <span className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <span className="text-blue-400 text-sm font-bold">3</span>
+                              </span>
+                              <span className="text-gray-200 text-sm"><strong className="text-white">Good lighting</strong> helps with accurate try-on results</span>
+                            </li>
+                            <li className="flex items-start gap-3">
+                              <span className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <span className="text-blue-400 text-sm font-bold">4</span>
+                              </span>
+                              <span className="text-gray-200 text-sm">Wear <strong className="text-white">fitted clothing</strong> for best virtual try-on</span>
+                            </li>
+                          </ul>
+                        </div>
+
+                        {/* Info Card */}
+                        <div className="p-5 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 backdrop-blur-sm border border-purple-400/30 shadow-lg">
+                          <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-md flex-shrink-0">
+                              <UserCircle className="w-5 h-5 text-white" />
+                            </div>
+                            <div>
+                              <h4 className="text-white font-bold font-bricolage mb-1">Why do we need this?</h4>
+                              <p className="text-gray-300 text-sm font-bricolage leading-relaxed">
+                                This image is used for <strong className="text-white">virtual try-on</strong> features to preview how clothes look on you before making outfit decisions.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* File format info */}
+                        <p className="text-xs text-gray-400 font-bricolage text-center md:text-left">
+                          Supported formats: PNG, JPG, WEBP • Maximum file size: 10MB
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Footer Actions - Glass Card with Buttons at Bottom Right */}
@@ -1173,7 +1460,7 @@ useScrollLock(open);
                     </GlassButton>
                   )}
 
-                  {currentStep === STEPS.STYLES ? (
+                  {currentStep === STEPS.FULL_BODY_IMAGE ? (
                     <GlassButton
                       onClick={handleSubmit}
                       disabled={isSubmitting}
