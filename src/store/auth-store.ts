@@ -81,6 +81,9 @@ export const useAuthStore = create<AuthStore>((set) => ({
             if (profileResponse.data.location) {
               updatedUser.location = profileResponse.data.location;
             }
+            if (profileResponse.data.tryOnImageUrl) {
+              updatedUser.tryOnImageUrl = profileResponse.data.tryOnImageUrl;
+            }
 
             console.log("🔄 Init - Updated user:", updatedUser);
             set({ user: updatedUser });
@@ -157,7 +160,11 @@ export const useAuthStore = create<AuthStore>((set) => ({
         if (profileResponse.data.location) {
           user.location = profileResponse.data.location;
         }
-        
+        // Update tryOnImageUrl from profile
+        if (profileResponse.data.tryOnImageUrl) {
+          user.tryOnImageUrl = profileResponse.data.tryOnImageUrl;
+        }
+
         console.log("📝 User after update:", user);
       } catch (profileError) {
         console.error("Failed to fetch user profile:", profileError);
@@ -367,7 +374,11 @@ export const useAuthStore = create<AuthStore>((set) => ({
         if (profileResponse.data.location) {
           user.location = profileResponse.data.location;
         }
-        
+        // Update tryOnImageUrl from profile
+        if (profileResponse.data.tryOnImageUrl) {
+          user.tryOnImageUrl = profileResponse.data.tryOnImageUrl;
+        }
+
         console.log("📝 Google Login - User after update:", user);
       } catch (profileError) {
         console.error("Failed to fetch user profile:", profileError);

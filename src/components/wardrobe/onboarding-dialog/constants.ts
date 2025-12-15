@@ -4,6 +4,7 @@ export const STEPS = {
   PERSONAL_INFO: 2,
   COLORS: 3,
   STYLES: 4,
+  FULL_BODY_IMAGE: 5,
 } as const;
 
 export const TOTAL_STEPS = Object.keys(STEPS).length;
