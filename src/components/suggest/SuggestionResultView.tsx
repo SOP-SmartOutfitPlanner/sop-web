@@ -1,8 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import Image from "next/image";
-import { Sparkles, Star, Flower2, Sun, Leaf, Snowflake } from "lucide-react";
+import {
+  Sparkles,
+  Star,
+  Flower2,
+  Sun,
+  Leaf,
+  Snowflake,
+  CheckCircle2,
+} from "lucide-react";
 import GlassButton from "@/components/ui/glass-button";
 import GlassCard from "@/components/ui/glass-card";
 import { SuggestedItem } from "@/types/outfit";
@@ -20,6 +28,14 @@ interface SuggestionResultViewProps {
   selectedOccasionId?: number | null;
   onOutfitUsed?: () => void;
   onClose?: () => void;
+  bodyImageUrl?: string | null;
+  outfitIndex?: number;
+  tryOnResult?: {
+    success: boolean;
+    url: string | null;
+    error: string | null;
+  };
+  onTryOn?: (outfitIndex: number) => Promise<void>;
 }
 
 export function SuggestionResultView({
@@ -29,15 +45,33 @@ export function SuggestionResultView({
   selectedOccasionId,
   onOutfitUsed,
   onClose,
+  bodyImageUrl,
+  outfitIndex = 0,
+  tryOnResult,
+  onTryOn,
 }: SuggestionResultViewProps) {
   const [isAddingToWardrobe, setIsAddingToWardrobe] = useState(false);
   const [isUsingOutfit, setIsUsingOutfit] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [createdOutfitId, setCreatedOutfitId] = useState<number | null>(null);
+  const [isTryingOn, setIsTryingOn] = useState(false);
 
   // Lock scroll when dialog is open
   useScrollLock(isViewDialogOpen);
+
+  // Handle individual try-on
+  const handleTryOn = useCallback(async () => {
+    if (!onTryOn) return;
+    setIsTryingOn(true);
+    try {
+      await onTryOn(outfitIndex);
+    } catch (error) {
+      console.error("Try-on error:", error);
+    } finally {
+      setIsTryingOn(false);
+    }
+  }, [onTryOn, outfitIndex]);
 
   const handleItemClick = (itemId: number) => {
     setSelectedItemId(itemId);
@@ -60,11 +94,45 @@ export function SuggestionResultView({
   // Get season data for badges
   const getSeasonData = (seasonName: string) => {
     const name = seasonName.toLowerCase();
-    if (name === 'spring') return { icon: Flower2, color: 'text-pink-200', bg: 'bg-pink-500/50', border: 'border-pink-300/70', circleBg: 'bg-pink-500' };
-    if (name === 'summer') return { icon: Sun, color: 'text-yellow-200', bg: 'bg-yellow-500/50', border: 'border-yellow-300/70', circleBg: 'bg-yellow-500' };
-    if (name === 'fall' || name === 'autumn') return { icon: Leaf, color: 'text-orange-200', bg: 'bg-orange-500/50', border: 'border-orange-300/70', circleBg: 'bg-orange-500' };
-    if (name === 'winter') return { icon: Snowflake, color: 'text-cyan-200', bg: 'bg-cyan-500/50', border: 'border-cyan-300/70', circleBg: 'bg-cyan-500' };
-    return { icon: null, color: 'text-gray-200', bg: 'bg-gray-500/50', border: 'border-gray-300/70', circleBg: 'bg-gray-500' };
+    if (name === "spring")
+      return {
+        icon: Flower2,
+        color: "text-pink-200",
+        bg: "bg-pink-500/50",
+        border: "border-pink-300/70",
+        circleBg: "bg-pink-500",
+      };
+    if (name === "summer")
+      return {
+        icon: Sun,
+        color: "text-yellow-200",
+        bg: "bg-yellow-500/50",
+        border: "border-yellow-300/70",
+        circleBg: "bg-yellow-500",
+      };
+    if (name === "fall" || name === "autumn")
+      return {
+        icon: Leaf,
+        color: "text-orange-200",
+        bg: "bg-orange-500/50",
+        border: "border-orange-300/70",
+        circleBg: "bg-orange-500",
+      };
+    if (name === "winter")
+      return {
+        icon: Snowflake,
+        color: "text-cyan-200",
+        bg: "bg-cyan-500/50",
+        border: "border-cyan-300/70",
+        circleBg: "bg-cyan-500",
+      };
+    return {
+      icon: null,
+      color: "text-gray-200",
+      bg: "bg-gray-500/50",
+      border: "border-gray-300/70",
+      circleBg: "bg-gray-500",
+    };
   };
 
   // Handle Add to Wardrobe - Create outfit only
@@ -99,7 +167,9 @@ export function SuggestionResultView({
     } catch (error) {
       console.error("Error adding outfit to wardrobe:", error);
       toast.error(
-        error instanceof Error ? error.message : "Failed to add outfit to wardrobe",
+        error instanceof Error
+          ? error.message
+          : "Failed to add outfit to wardrobe",
         { id: loadingToast }
       );
     } finally {
@@ -115,13 +185,17 @@ export function SuggestionResultView({
     }
 
     setIsUsingOutfit(true);
-    const loadingToast = toast.loading(selectedOccasionId ? "Adding outfit to occasion..." : "Setting up outfit...");
+    const loadingToast = toast.loading(
+      selectedOccasionId
+        ? "Adding outfit to occasion..."
+        : "Setting up outfit..."
+    );
 
     try {
       // Step 1: Create the outfit (or reuse existing one)
       let outfitId: number;
       const targetDate = selectedDate || new Date();
-      
+
       if (createdOutfitId) {
         // Reuse existing outfit ID
         outfitId = createdOutfitId;
@@ -139,8 +213,8 @@ export function SuggestionResultView({
 
       // Step 2: Add to calendar - either to occasion or to selected date
       const year = targetDate.getFullYear();
-      const month = String(targetDate.getMonth() + 1).padStart(2, '0');
-      const day = String(targetDate.getDate()).padStart(2, '0');
+      const month = String(targetDate.getMonth() + 1).padStart(2, "0");
+      const day = String(targetDate.getDate()).padStart(2, "0");
       const startTime = `${year}-${month}-${day}T05:00:00`;
       const endTime = `${year}-${month}-${day}T17:00:00`;
 
@@ -178,6 +252,69 @@ export function SuggestionResultView({
 
   return (
     <div className="space-y-4">
+      {/* Try-On Result Card */}
+      {tryOnResult && (
+        <GlassCard
+          padding="20px"
+          borderRadius="16px"
+          blur="8px"
+          brightness={1.05}
+          glowColor={
+            tryOnResult.success
+              ? "rgba(34, 197, 94, 0.3)"
+              : "rgba(239, 68, 68, 0.3)"
+          }
+          borderColor={
+            tryOnResult.success
+              ? "rgba(34, 197, 94, 0.3)"
+              : "rgba(239, 68, 68, 0.3)"
+          }
+          className={cn(
+            "bg-gradient-to-br",
+            tryOnResult.success
+              ? "from-green-500/20 via-emerald-500/10 to-green-500/20"
+              : "from-red-500/20 via-orange-500/10 to-red-500/20"
+          )}
+        >
+          {tryOnResult.success && tryOnResult.url ? (
+            <div className="flex items-start gap-4">
+              <div className="relative w-32 h-40 rounded-xl overflow-hidden bg-white/5 border border-white/10 flex-shrink-0">
+                <Image
+                  src={tryOnResult.url}
+                  alt="Virtual try-on result"
+                  fill
+                  className="object-cover"
+                  unoptimized
+                />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <CheckCircle2 className="w-5 h-5 text-green-400" />
+                  <h3 className="font-semibold text-white">
+                    Virtual Try-On Complete
+                  </h3>
+                </div>
+                <p className="text-white/80 text-sm">
+                  Here's how this outfit looks on you!
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
+                <Star className="w-5 h-5 text-red-300" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-white mb-2">Try-On Failed</h3>
+                <p className="text-white/80 text-sm leading-relaxed">
+                  {tryOnResult.error || "Failed to generate virtual try-on"}
+                </p>
+              </div>
+            </div>
+          )}
+        </GlassCard>
+      )}
+
       {/* AI Reason Card */}
       <GlassCard
         padding="20px"
@@ -203,10 +340,15 @@ export function SuggestionResultView({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {items.map((item) => {
           const colors = parseColor(item.color);
-          const seasonItems = item.seasons?.map(s => typeof s === 'string' ? s : s.name) || [];
+          const seasonItems =
+            item.seasons?.map((s) => (typeof s === "string" ? s : s.name)) ||
+            [];
 
           return (
-            <div key={item.id} className="group relative w-full h-full flex flex-col">
+            <div
+              key={item.id}
+              className="group relative w-full h-full flex flex-col"
+            >
               {/* System Item Badge */}
               {item.itemType === "SYSTEM" && (
                 <div className="absolute -top-2 -right-2 z-20">
@@ -264,14 +406,21 @@ export function SuggestionResultView({
                       {colors && colors.length > 0 && (
                         <div className="flex items-center gap-2 overflow-hidden">
                           <div className="flex items-center gap-1 flex-shrink-0">
-                            {colors.slice(0, 6).map((color: { hex: string; name: string }, index: number) => (
-                              <div
-                                key={index}
-                                className="w-4 h-4 rounded-full border border-white/30 shadow-sm flex-shrink-0"
-                                style={{ backgroundColor: color.hex }}
-                                title={color.name}
-                              />
-                            ))}
+                            {colors
+                              .slice(0, 6)
+                              .map(
+                                (
+                                  color: { hex: string; name: string },
+                                  index: number
+                                ) => (
+                                  <div
+                                    key={index}
+                                    className="w-4 h-4 rounded-full border border-white/30 shadow-sm flex-shrink-0"
+                                    style={{ backgroundColor: color.hex }}
+                                    title={color.name}
+                                  />
+                                )
+                              )}
                             {colors.length > 6 && (
                               <span className="text-white/50 text-[10px] ml-0.5">
                                 +{colors.length - 6}
@@ -284,13 +433,17 @@ export function SuggestionResultView({
                       {/* Fabric */}
                       {item.fabric && (
                         <div className="flex items-center gap-2">
-                          <span className="text-white/70 truncate">{item.fabric}</span>
+                          <span className="text-white/70 truncate">
+                            {item.fabric}
+                          </span>
                         </div>
                       )}
 
                       {/* Weather */}
                       <div className="flex items-center gap-2">
-                        <span className="text-white/70 truncate">{item.weatherSuitable || "N/A"}</span>
+                        <span className="text-white/70 truncate">
+                          {item.weatherSuitable || "N/A"}
+                        </span>
                       </div>
 
                       {/* Seasons */}
@@ -312,7 +465,12 @@ export function SuggestionResultView({
                                     seasonData.border
                                   )}
                                 >
-                                  <span className={cn("font-xs truncate", seasonData.color)}>
+                                  <span
+                                    className={cn(
+                                      "font-xs truncate",
+                                      seasonData.color
+                                    )}
+                                  >
                                     {season}
                                   </span>
                                 </div>
@@ -324,14 +482,21 @@ export function SuggestionResultView({
                                       seasonData.circleBg
                                     )}
                                   >
-                                    <Icon className={cn("w-3.5 h-3.5", seasonData.color)} />
+                                    <Icon
+                                      className={cn(
+                                        "w-3.5 h-3.5",
+                                        seasonData.color
+                                      )}
+                                    />
                                   </div>
                                 )}
                               </div>
                             );
                           })
                         ) : (
-                          <span className="text-white/50 text-xs col-span-2">N/A</span>
+                          <span className="text-white/50 text-xs col-span-2">
+                            N/A
+                          </span>
                         )}
                       </div>
 
@@ -339,7 +504,9 @@ export function SuggestionResultView({
                       {item.styles && item.styles.length > 0 && (
                         <div className="flex items-center gap-2">
                           <span className="text-white/70 truncate">
-                            {item.styles.map(s => typeof s === 'string' ? s : s.name).join(", ")}
+                            {item.styles
+                              .map((s) => (typeof s === "string" ? s : s.name))
+                              .join(", ")}
                           </span>
                         </div>
                       )}
@@ -354,73 +521,91 @@ export function SuggestionResultView({
 
       {/* Action Buttons */}
       <div className="space-y-3 pt-6 mt-6 border-t border-white/10">
-        {/* Bottom Row: Add to Wardrobe & Use Outfit Today */}
-        <div className="flex justify-center gap-4">
-            {/* Add to Wardrobe Button */}
-            <div className=" group/btn">
-              <div className="relative">
-                <GlassButton
-                  variant="custom"
-                  borderRadius="18px"
-                  blur="20px"
-                  brightness={1.2}
-                  glowColor="rgba(200, 214, 238, 0.5)"
-                  glowIntensity={8}
-                  borderColor="rgba(255, 255, 255, 0.35)"
-                  borderWidth="2px"
-                  textColor="#ffffff"
-                  backgroundColor="rgba(0, 98, 255, 0.9)"
-                  onClick={handleAddToWardrobe}
-                  disabled={isAddingToWardrobe || isUsingOutfit}
-                  className={cn(
-                    "relative w-full h-16 font-bold text-base tracking-wide",
-                    "transition-all duration-300",
-                    "disabled:opacity-50 disabled:cursor-not-allowed",
-                    !isAddingToWardrobe && !isUsingOutfit && "hover:scale-[1.02] active:scale-[0.98]"
-                  )}
-                >
-                  <span className="relative z-10 flex items-center justify-center gap-2">
-                    {isAddingToWardrobe && (
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    )}
-                    {isAddingToWardrobe ? "Adding to My Outfit..." : "Add to My Outfit"}
-                  </span>
-                </GlassButton>
-              </div>
-            </div>
+        {/* Button Row: Always 3 columns layout */}
+        <div className="flex justify-center gap-3">
+          {/* Add to My Outfit Button */}
+          <GlassButton
+            variant="custom"
+            size="lg"
+            onClick={handleAddToWardrobe}
+            disabled={isAddingToWardrobe || isUsingOutfit || isTryingOn}
+            fullWidth
+            backgroundColor="rgba(59, 130, 246, 0.25)"
+            borderColor="rgba(96, 165, 250, 0.5)"
+            borderWidth="2px"
+            glowColor="rgba(59, 130, 246, 0.4)"
+            glowIntensity={12}
+            className="font-poppins font-semibold h-14 hover:bg-blue-500/30 transition-all"
+          >
+            {isAddingToWardrobe && (
+              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+            )}
+            {isAddingToWardrobe ? "Adding..." : "Add to My Outfit"}
+          </GlassButton>
 
-            {/* Use This Outfit Button */}
-            <div className=" group/btn">
-              <div className="relative">
-                <GlassButton
-                  variant="custom"
-                  borderRadius="18px"
-                  blur="16px"
-                  brightness={1.2}
-                  glowColor="rgba(200, 238, 200, 0.5)"
-                  glowIntensity={8}
-                  borderColor="rgba(255, 255, 255, 0.35)"
-                  borderWidth="2px"
-                  textColor="#ffffff"
-                  backgroundColor="rgba(9, 133, 28, 0.91)"
-                  onClick={handleUseThisOutfit}
-                  disabled={isAddingToWardrobe || isUsingOutfit}
+          {/* Use This Outfit Button */}
+          <GlassButton
+            variant="custom"
+            size="lg"
+            onClick={handleUseThisOutfit}
+            disabled={isAddingToWardrobe || isUsingOutfit || isTryingOn}
+            fullWidth
+            backgroundColor="rgba(34, 197, 94, 0.25)"
+            borderColor="rgba(74, 222, 128, 0.5)"
+            borderWidth="2px"
+            glowColor="rgba(34, 197, 94, 0.4)"
+            glowIntensity={12}
+            className="font-poppins font-semibold h-14 hover:bg-green-500/30 transition-all"
+          >
+            {isUsingOutfit && (
+              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+            )}
+            {isUsingOutfit ? "Setting up..." : "Use This Outfit"}
+          </GlassButton>
+
+          {/* Virtual Try-On / Regenerate Button */}
+          {bodyImageUrl && onTryOn && (
+            <GlassButton
+              variant="custom"
+              size="lg"
+              onClick={handleTryOn}
+              disabled={isTryingOn || isAddingToWardrobe || isUsingOutfit}
+              fullWidth
+              backgroundColor={
+                tryOnResult
+                  ? "rgba(168, 85, 247, 0.2)"
+                  : "rgba(236, 72, 153, 0.25)"
+              }
+              borderColor={
+                tryOnResult
+                  ? "rgba(192, 132, 252, 0.5)"
+                  : "rgba(244, 114, 182, 0.5)"
+              }
+              borderWidth="2px"
+              glowColor={
+                tryOnResult
+                  ? "rgba(168, 85, 247, 0.4)"
+                  : "rgba(236, 72, 153, 0.4)"
+              }
+              glowIntensity={12}
+              className="font-poppins font-semibold h-14 hover:bg-pink-500/30 transition-all"
+            >
+              {isTryingOn && (
+                <div
                   className={cn(
-                    "relative w-full h-16 font-bold text-base tracking-wide",
-                    "transition-all duration-300",
-                    "disabled:opacity-50 disabled:cursor-not-allowed",
-                    !isAddingToWardrobe && !isUsingOutfit && "hover:scale-[1.02] active:scale-[0.98]"
+                    "w-5 h-5 border-2 rounded-full animate-spin mr-2",
+                    "border-white/30 border-t-white"
                   )}
-                >
-                  <span className="relative z-10 flex items-center justify-center gap-2">
-                    {isUsingOutfit && (
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    )}
-                    {isUsingOutfit ? "Setting up..." : "Use This Outfit"}
-                  </span>
-                </GlassButton>
-              </div>
-            </div>
+                />
+              )}
+              <Sparkles className="w-5 h-5 mr-2" />
+              {isTryingOn
+                ? "Generating..."
+                : tryOnResult
+                ? "Regenerate Try-On"
+                : "Virtual Try-On"}
+            </GlassButton>
+          )}
         </div>
       </div>
 
