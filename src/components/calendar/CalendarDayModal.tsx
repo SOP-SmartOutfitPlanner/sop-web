@@ -22,6 +22,7 @@ import { AddDailyOutfitModal } from "./Modal/AddDailyOutfitModal";
 import { ModalHeader } from "./Modal/ModalHeader";
 import { ModalFooter } from "./Modal/ModalFooter";
 import { OccasionsSection } from "./Modal/OccasionsSection";
+import { GapDayWarningDialog } from "./Modal/GapDayWarningDialog";
 
 interface CalendarDayModalProps {
   open: boolean;
@@ -48,6 +49,27 @@ export function CalendarDayModal({
   const [deletingOccasionId, setDeletingOccasionId] = useState<number | null>(null);
   const [isPastDateDialogOpen, setIsPastDateDialogOpen] = useState(false);
   const [pastDateDialogMessage, setPastDateDialogMessage] = useState("");
+  const [isGapDayWarning, setIsGapDayWarning] = useState(false);
+  const [gapDayWarningData, setGapDayWarningData] = useState<{
+    affectedItems: Array<{
+      itemId: number;
+      itemName: string;
+      itemImageUrl: string;
+      categoryName: string;
+      lastWornAt: string;
+      wornDatesInRange: string[];
+      timesWornInRange: number;
+    }>;
+    gapDays: number;
+  } | null>(null);
+  const [pendingOutfitAdd, setPendingOutfitAdd] = useState<{
+    occasionId: number;
+    outfit: Outfit;
+  } | null>(null);
+  const [pendingBatchAdd, setPendingBatchAdd] = useState<{
+    occasionId: number;
+    outfitIds: number[];
+  } | null>(null);
   const [isAddDailyOutfitModalOpen, setIsAddDailyOutfitModalOpen] = useState(false);
 
   // Multi-select states
@@ -58,7 +80,6 @@ export function CalendarDayModal({
   // Outfit filter states
   const [outfitSearchQuery, setOutfitSearchQuery] = useState("");
   const [outfitShowFavoriteOnly, setOutfitShowFavoriteOnly] = useState(false);
-  const [outfitGapDay, setOutfitGapDay] = useState(2);
 
   const dateString = format(selectedDate, "yyyy-MM-dd");
   const selectedMonth = selectedDate.getMonth() + 1;
@@ -81,13 +102,11 @@ export function CalendarDayModal({
     Year: selectedYear,
   });
 
-  // Prepare params for useOutfits - keep all values to ensure query key changes
+  // Prepare params for useOutfits - remove gap day filter
   const outfitParams = {
     pageIndex: 1,
     pageSize: 100,
     takeAll: false,
-    targetDate: dateString,
-    gapDay: outfitGapDay,
     search: outfitSearchQuery.trim() || undefined,
     isFavorite: outfitShowFavoriteOnly || undefined,
   };
@@ -241,7 +260,7 @@ export function CalendarDayModal({
     }));
   };
 
-  const handleAddOutfitToOccasion = (
+  const handleAddOutfitToOccasion = async (
     occasionId: number,
     outfit: Outfit,
     e?: React.MouseEvent
@@ -260,6 +279,30 @@ export function CalendarDayModal({
       return;
     }
 
+    // Check gap day with default 2 days
+    try {
+      const { outfitAPI } = await import("@/lib/api/outfit-api");
+      const gapDayResult = await outfitAPI.checkGapDay(
+        outfit.id,
+        dateString,
+        2 // Default gap day = 2
+      );
+
+      // If outfit has items worn within gap day range, show warning
+      if (gapDayResult.data.isWithinGapDay && gapDayResult.data.totalAffectedItems > 0) {
+        setGapDayWarningData({
+          affectedItems: gapDayResult.data.affectedItems,
+          gapDays: gapDayResult.data.gapDayRange.gapDays,
+        });
+        setIsGapDayWarning(true);
+        setPendingOutfitAdd({ occasionId, outfit });
+        return;
+      }
+    } catch (error) {
+      console.warn("Gap day check failed, proceeding with add:", error);
+      // Continue with adding if check fails
+    }
+
     const formattedDate = format(selectedDate, "yyyy-MM-dd'T'HH:mm:ss");
 
     createCalendarEntry({
@@ -270,7 +313,7 @@ export function CalendarDayModal({
     });
   };
 
-  const handleBatchAddOutfits = (
+  const handleBatchAddOutfits = async (
     occasionId: number,
     e?: React.MouseEvent
   ) => {
@@ -291,6 +334,41 @@ export function CalendarDayModal({
     const outfitIds = selectedOccasionOutfits[occasionId] || [];
 
     if (outfitIds.length === 0) return;
+
+    // Check gap day for all selected outfits
+    try {
+      const { outfitAPI } = await import("@/lib/api/outfit-api");
+      const gapDayChecks = await Promise.all(
+        outfitIds.map((id) => outfitAPI.checkGapDay(id, dateString, 2))
+      );
+
+      const affectedOutfits = gapDayChecks.filter(
+        (result) => result.data.isWithinGapDay && result.data.totalAffectedItems > 0
+      );
+
+      if (affectedOutfits.length > 0) {
+        // Collect all affected items from all outfits
+        const allAffectedItems = affectedOutfits.flatMap(
+          (result) => result.data.affectedItems
+        );
+        // Remove duplicates based on itemId
+        const uniqueAffectedItems = allAffectedItems.filter(
+          (item, index, self) =>
+            index === self.findIndex((t) => t.itemId === item.itemId)
+        );
+
+        setGapDayWarningData({
+          affectedItems: uniqueAffectedItems,
+          gapDays: 2,
+        });
+        setIsGapDayWarning(true);
+        setPendingBatchAdd({ occasionId, outfitIds });
+        return;
+      }
+    } catch (error) {
+      console.warn("Gap day check failed, proceeding with batch add:", error);
+      // Continue if check fails
+    }
 
     const formattedDate = format(selectedDate, "yyyy-MM-dd'T'HH:mm:ss");
 
@@ -352,6 +430,43 @@ export function CalendarDayModal({
     }
     setEditingCalendarEntry(entry);
     setIsEditCalendarOpen(true);
+  };
+
+  const handleConfirmGapDayWarning = () => {
+    const formattedDate = format(selectedDate, "yyyy-MM-dd'T'HH:mm:ss");
+
+    if (pendingOutfitAdd) {
+      // Add single outfit
+      createCalendarEntry({
+        outfitIds: [pendingOutfitAdd.outfit.id],
+        isDaily: false,
+        userOccasionId: pendingOutfitAdd.occasionId,
+        endTime: formattedDate,
+      });
+      setPendingOutfitAdd(null);
+    } else if (pendingBatchAdd) {
+      // Add batch outfits
+      createCalendarEntry(
+        {
+          outfitIds: pendingBatchAdd.outfitIds,
+          isDaily: false,
+          userOccasionId: pendingBatchAdd.occasionId,
+          endTime: formattedDate,
+        },
+        {
+          onSuccess: () => {
+            setSelectedOccasionOutfits((prev) => ({
+              ...prev,
+              [pendingBatchAdd.occasionId]: [],
+            }));
+          },
+        }
+      );
+      setPendingBatchAdd(null);
+    }
+
+    setIsGapDayWarning(false);
+    setGapDayWarningData(null);
   };
 
   if (!open) return null;
@@ -428,8 +543,6 @@ export function CalendarDayModal({
                   onSearchChange={setOutfitSearchQuery}
                   showFavoriteOnly={outfitShowFavoriteOnly}
                   onFavoriteToggle={() => setOutfitShowFavoriteOnly(!outfitShowFavoriteOnly)}
-                  gapDay={outfitGapDay}
-                  onGapDayChange={setOutfitGapDay}
                 />
               </div>
             </div>
@@ -477,6 +590,25 @@ export function CalendarDayModal({
         variant="danger"
         isLoading={isDeletingOccasion}
       />
+
+      {/* Gap Day Warning Dialog */}
+      {isGapDayWarning && gapDayWarningData && (
+        <GapDayWarningDialog
+          open={isGapDayWarning}
+          onOpenChange={(open) => {
+            setIsGapDayWarning(open);
+            if (!open) {
+              setGapDayWarningData(null);
+              setPendingOutfitAdd(null);
+              setPendingBatchAdd(null);
+            }
+          }}
+          onConfirm={handleConfirmGapDayWarning}
+          affectedItems={gapDayWarningData.affectedItems}
+          gapDays={gapDayWarningData.gapDays}
+          isLoading={isCreatingEntry}
+        />
+      )}
 
       {/* Past Date Warning Dialog */}
       <ConfirmDialog

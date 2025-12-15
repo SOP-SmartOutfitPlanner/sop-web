@@ -8,6 +8,7 @@ import GlassButton from "@/components/ui/glass-button";
 import Image from "next/image";
 import { useOutfits } from "@/hooks/useOutfits";
 import { useModalScroll } from "@/hooks/useModalScroll";
+import { GapDayWarningDialog } from "./GapDayWarningDialog";
 
 interface AddDailyOutfitModalProps {
   open: boolean;
@@ -30,7 +31,20 @@ export function AddDailyOutfitModal({
   const [selectedOutfits, setSelectedOutfits] = useState<number[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [showFavoriteOnly, setShowFavoriteOnly] = useState(false);
-  const [gapDayValue, setGapDayValue] = useState(2);
+  const [isCheckingGapDay, setIsCheckingGapDay] = useState(false);
+  const [gapDayWarningData, setGapDayWarningData] = useState<{
+    affectedItems: Array<{
+      itemId: number;
+      itemName: string;
+      itemImageUrl: string;
+      categoryName: string;
+      lastWornAt: string;
+      wornDatesInRange: string[];
+      timesWornInRange: number;
+    }>;
+    gapDays: number;
+  } | null>(null);
+  const [pendingOutfitIds, setPendingOutfitIds] = useState<number[]>([]);
   const pageSize = 8;
 
   // Enable mouse wheel scrolling in modal content area
@@ -44,8 +58,6 @@ export function AddDailyOutfitModal({
     pageIndex: currentPage,
     pageSize,
     takeAll: false,
-    targetDate: dateString,
-    gapDay: gapDayValue,
     search: searchQuery || undefined,
     isFavorite: showFavoriteOnly || undefined,
   });
@@ -86,18 +98,74 @@ export function AddDailyOutfitModal({
     }
   }, [availableOutfits, selectedOutfits]);
 
-  const handleAdd = useCallback(() => {
-    if (selectedOutfits.length > 0) {
-      onAddOutfit(selectedOutfits);
-      setSelectedOutfits([]);
+  const handleAdd = useCallback(async () => {
+    if (selectedOutfits.length === 0) return;
+
+    setIsCheckingGapDay(true);
+    try {
+      const { outfitAPI } = await import("@/lib/api/outfit-api");
+      const gapDayChecks = await Promise.all(
+        selectedOutfits.map((id) => outfitAPI.checkGapDay(id, dateString, 2))
+      );
+
+      const affectedOutfits = gapDayChecks.filter(
+        (result) => result.data.isWithinGapDay && result.data.totalAffectedItems > 0
+      );
+
+      if (affectedOutfits.length > 0) {
+        const allAffectedItems = affectedOutfits.flatMap(
+          (result) => result.data.affectedItems
+        );
+        const uniqueAffectedItems = allAffectedItems.filter(
+          (item, index, self) =>
+            index === self.findIndex((t) => t.itemId === item.itemId)
+        );
+
+        setGapDayWarningData({
+          affectedItems: uniqueAffectedItems,
+          gapDays: 2,
+        });
+        setPendingOutfitIds(selectedOutfits);
+        setIsCheckingGapDay(false);
+        return;
+      }
+    } catch (error) {
+      console.warn("Gap day check failed, proceeding with add:", error);
     }
-  }, [selectedOutfits, onAddOutfit]);
+
+    setIsCheckingGapDay(false);
+    onAddOutfit(selectedOutfits);
+    setSelectedOutfits([]);
+  }, [selectedOutfits, onAddOutfit, dateString]);
 
   const handleAddSingle = useCallback(
-    (outfit: Outfit) => {
+    async (outfit: Outfit) => {
+      setIsCheckingGapDay(true);
+      try {
+        const { outfitAPI } = await import("@/lib/api/outfit-api");
+        const gapDayResult = await outfitAPI.checkGapDay(
+          outfit.id,
+          dateString,
+          2
+        );
+
+        if (gapDayResult.data.isWithinGapDay && gapDayResult.data.totalAffectedItems > 0) {
+          setGapDayWarningData({
+            affectedItems: gapDayResult.data.affectedItems,
+            gapDays: gapDayResult.data.gapDayRange.gapDays,
+          });
+          setPendingOutfitIds([outfit.id]);
+          setIsCheckingGapDay(false);
+          return;
+        }
+      } catch (error) {
+        console.warn("Gap day check failed, proceeding with add:", error);
+      }
+
+      setIsCheckingGapDay(false);
       onAddOutfit([outfit.id]);
     },
-    [onAddOutfit]
+    [onAddOutfit, dateString]
   );
 
   // Reset when modal closes
@@ -106,7 +174,6 @@ export function AddDailyOutfitModal({
     setCurrentPage(1);
     setSearchQuery("");
     setShowFavoriteOnly(false);
-    setGapDayValue(2);
     onOpenChange(false);
   }, [onOpenChange]);
 
@@ -203,26 +270,6 @@ export function AddDailyOutfitModal({
                 >
                   ⭐ Favorites Only
                 </button>
-
-                {/* Gap Day Selector */}
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-white/60">Gap Day:</span>
-                  <select
-                    value={gapDayValue}
-                    onChange={(e) => {
-                      setGapDayValue(Number(e.target.value));
-                      setCurrentPage(1);
-                    }}
-                    className="bg-white/10 border border-white/20 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-cyan-400/50 focus:ring-2 focus:ring-cyan-400/20 transition-all"
-                  >
-                    <option value={0}>No filter</option>
-                    <option value={1}>1 day</option>
-                    <option value={2}>2 days</option>
-                    <option value={3}>3 days</option>
-                    <option value={5}>5 days</option>
-                    <option value={7}>7 days</option>
-                  </select>
-                </div>
               </div>
             </div>
           </div>
@@ -459,9 +506,9 @@ export function AddDailyOutfitModal({
                   textColor="white"
                   size="md"
                   onClick={handleAdd}
-                  disabled={isCreatingEntry || selectedOutfits.length === 0}
+                  disabled={isCreatingEntry || isCheckingGapDay || selectedOutfits.length === 0}
                 >
-                  {isCreatingEntry ? (
+                  {isCreatingEntry || isCheckingGapDay ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                       Adding...
@@ -469,8 +516,9 @@ export function AddDailyOutfitModal({
                   ) : (
                     <>
                       <Plus className="w-5 h-5" />
-                      Add {selectedOutfits.length > 0 ? `${selectedOutfits.length} ` : ""}
-                      Outfit{selectedOutfits.length > 1 ? "s" : ""}
+                      {isCheckingGapDay
+                        ? "Checking..."
+                        : `Add ${selectedOutfits.length > 0 ? `${selectedOutfits.length} ` : ""}Outfit${selectedOutfits.length > 1 ? "s" : ""}`}
                     </>
                   )}
                 </GlassButton>
@@ -479,6 +527,30 @@ export function AddDailyOutfitModal({
           </div>
         </div>
       </div>
+
+      {/* Gap Day Warning Dialog */}
+      {gapDayWarningData && (
+        <GapDayWarningDialog
+          open={!!gapDayWarningData}
+          onOpenChange={(open) => {
+            if (!open) {
+              setGapDayWarningData(null);
+              setPendingOutfitIds([]);
+            }
+          }}
+          onConfirm={() => {
+            if (pendingOutfitIds.length > 0) {
+              onAddOutfit(pendingOutfitIds);
+              setSelectedOutfits([]);
+              setPendingOutfitIds([]);
+            }
+            setGapDayWarningData(null);
+          }}
+          affectedItems={gapDayWarningData.affectedItems}
+          gapDays={gapDayWarningData.gapDays}
+          isLoading={isCreatingEntry}
+        />
+      )}
     </>
   );
 }

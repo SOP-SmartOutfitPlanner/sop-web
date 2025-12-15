@@ -43,8 +43,6 @@ interface OccasionItemProps {
   onSearchChange: (value: string) => void;
   showFavoriteOnly: boolean;
   onFavoriteToggle: () => void;
-  gapDay: number;
-  onGapDayChange: (value: number) => void;
 }
 
 export function OccasionItem({
@@ -70,8 +68,6 @@ export function OccasionItem({
   onSearchChange,
   showFavoriteOnly,
   onFavoriteToggle,
-  gapDay,
-  onGapDayChange,
 }: OccasionItemProps) {
   const plannedCount = plannedOutfits.length;
   const [viewingOutfit, setViewingOutfit] = useState<Outfit | null>(null);
@@ -303,8 +299,6 @@ export function OccasionItem({
         onSearchChange={onSearchChange}
         showFavoriteOnly={showFavoriteOnly}
         onFavoriteToggle={onFavoriteToggle}
-        gapDay={gapDay}
-        onGapDayChange={onGapDayChange}
       />
     </div>
   );

@@ -38,8 +38,6 @@ interface OccasionsSectionProps {
   onSearchChange: (value: string) => void;
   showFavoriteOnly: boolean;
   onFavoriteToggle: () => void;
-  gapDay: number;
-  onGapDayChange: (value: number) => void;
 }
 
 export function OccasionsSection({
@@ -68,8 +66,6 @@ export function OccasionsSection({
   onSearchChange,
   showFavoriteOnly,
   onFavoriteToggle,
-  gapDay,
-  onGapDayChange,
 }: OccasionsSectionProps) {
   return (
     <div>
@@ -160,8 +156,6 @@ export function OccasionsSection({
                 onSearchChange={onSearchChange}
                 showFavoriteOnly={showFavoriteOnly}
                 onFavoriteToggle={onFavoriteToggle}
-                gapDay={gapDay}
-                onGapDayChange={onGapDayChange}
               />
             );
           })
