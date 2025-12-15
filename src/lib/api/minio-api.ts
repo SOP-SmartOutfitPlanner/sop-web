@@ -6,17 +6,17 @@ import { apiClient } from "./client";
 class MinioAPI {
   /**
    * Upload image to MinIO storage
-   * @param file - Image file to upload (JPG, JPEG, PNG only, max 10MB)
+   * @param file - Image file to upload (JPG, JPEG, PNG, GIF, WEBP, max 10MB)
    * @returns Image URL string
    */
   async uploadImage(file: File): Promise<string> {
     console.log(`🔍 [DEBUG] Uploading file: ${file.name}, Size: ${(file.size / 1024).toFixed(2)}KB (${(file.size / 1024 / 1024).toFixed(2)}MB), Type: ${file.type}`);
 
     // Validate file type
-    const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif"];
+    const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
     if (!validTypes.includes(file.type)) {
       console.error(`❌ [DEBUG] Invalid file type: ${file.type}`);
-      throw new Error("Only JPG, JPEG, PNG, and GIF files are allowed");
+      throw new Error("Only JPG, JPEG, PNG, GIF, and WEBP files are allowed");
     }
 
     // Validate file size (10MB max)
@@ -105,7 +105,7 @@ class MinioAPI {
 
   /**
    * Upload multiple images in parallel using bulk upload endpoint
-   * @param files - Array of image files (JPG, JPEG, PNG only, max 10MB each)
+   * @param files - Array of image files (JPG, JPEG, PNG, GIF, WEBP, max 10MB each)
    * @returns Object containing successful and failed uploads
    */
   async uploadImagesBulk(files: File[]): Promise<{
@@ -117,7 +117,7 @@ class MinioAPI {
     console.log(`🔍 [DEBUG] Bulk uploading ${files.length} files`);
 
     // Validate file types and sizes
-    const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif"];
+    const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
     const maxSize = 10 * 1024 * 1024; // 10MB
 
     for (const file of files) {

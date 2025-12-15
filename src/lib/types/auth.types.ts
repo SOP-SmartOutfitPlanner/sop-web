@@ -14,6 +14,7 @@ export interface User {
   role: string; // "User" | "Admin" | "SuperAdmin"
   avatar?: string;
   location?: string;
+  tryOnImageUrl?: string; // Full body image URL for virtual try-on
   createdAt?: string;
   updatedAt?: string;
 }

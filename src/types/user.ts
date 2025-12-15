@@ -16,6 +16,7 @@ export interface OnboardingRequest {
   bio: string;
   styleIds: number[];
   otherStyles?: string[];
+  tryOnImageUrl?: string; // Full body image URL for virtual try-on
 }
 
 export interface UpdateProfileRequest {
@@ -31,6 +32,7 @@ export interface UpdateProfileRequest {
   styleIds?: number[];
   otherStyles?: string[];
   avtUrl?: string;
+  tryOnImageUrl?: string; // Full body image URL for virtual try-on
 }
 
 export interface UserResponse {
@@ -44,6 +46,7 @@ export interface UserResponse {
   isLoginWithGoogle: boolean;
   isFirstTime: boolean;
   avtUrl: string;
+  tryOnImageUrl: string | null; // Full body image URL for virtual try-on
   dob: string;
   gender: number;
   preferedColor: string;
@@ -92,6 +95,7 @@ export interface UserProfileResponse {
   email: string;
   displayName: string;
   avtUrl: string | null;
+  tryOnImageUrl: string | null; // Full body image URL for virtual try-on
   dob: string;
   gender: number;
   preferedColor: string[];
