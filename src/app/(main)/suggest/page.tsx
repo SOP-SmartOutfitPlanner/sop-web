@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Calendar, MapPin, Sparkles } from "lucide-react";
+import { Calendar, MapPin, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import Image from "next/image";
 import { useAuthStore } from "@/store/auth-store";
@@ -55,6 +55,9 @@ export default function SuggestPage() {
   const [bodyImageUrl, setBodyImageUrl] = useState<string | null>(null);
   const [tryOnResults, setTryOnResults] = useState<(TryOnResult | null)[]>([]);
   const [isBatchProcessing, setIsBatchProcessing] = useState(false);
+
+  // Carousel state
+  const [currentOutfitIndex, setCurrentOutfitIndex] = useState(0);
 
   // Store refetch function from UserOccasionList
   const refetchOccasionsRef = useRef<(() => void) | null>(null);
@@ -144,6 +147,7 @@ export default function SuggestPage() {
 
     setIsSuggestingOutfit(true);
     setSuggestionResults([]);
+    setCurrentOutfitIndex(0);
 
     try {
       // Format weather string
@@ -506,17 +510,39 @@ export default function SuggestPage() {
               }
             />
 
-            {/* Suggestions Results */}
+            {/* Suggestions Results - Carousel */}
             {suggestionResults.length > 0 && (
               <div className="space-y-4">
+                {/* Header with Navigation */}
                 <div className="flex items-center justify-between">
-                  <h3 className="text-2xl font-bricolage font-bold bg-gradient-to-r from-cyan-200 via-blue-200 to-indigo-200 bg-clip-text text-transparent">
-                    Your Suggestions
-                    <span className="ml-3 text-base font-normal text-gray-300">
-                      {suggestionResults.length}{" "}
-                      {suggestionResults.length === 1 ? "outfit" : "outfits"}
-                    </span>
-                  </h3>
+                  <div className="flex items-center gap-4">
+                    <h3 className="text-2xl font-bricolage font-bold bg-gradient-to-r from-cyan-200 via-blue-200 to-indigo-200 bg-clip-text text-transparent">
+                      Your Suggestions
+                    </h3>
+
+                    {/* Carousel Navigation */}
+                    {suggestionResults.length > 1 && (
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setCurrentOutfitIndex((prev) => Math.max(0, prev - 1))}
+                          disabled={currentOutfitIndex === 0}
+                          className="p-2 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed transition-all border border-white/20"
+                        >
+                          <ChevronLeft className="w-5 h-5 text-white" />
+                        </button>
+                        <span className="text-white font-medium px-3 py-1 rounded-full bg-white/10 border border-white/20 min-w-[80px] text-center">
+                          {currentOutfitIndex + 1} / {suggestionResults.length}
+                        </span>
+                        <button
+                          onClick={() => setCurrentOutfitIndex((prev) => Math.min(suggestionResults.length - 1, prev + 1))}
+                          disabled={currentOutfitIndex === suggestionResults.length - 1}
+                          className="p-2 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed transition-all border border-white/20"
+                        >
+                          <ChevronRight className="w-5 h-5 text-white" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
 
                   {/* Batch Virtual Try-On Button */}
                   {bodyImageUrl && suggestionResults.length > 0 && (
@@ -543,25 +569,48 @@ export default function SuggestPage() {
                   )}
                 </div>
 
-                <div className="space-y-6">
-                  {suggestionResults.map((suggestion, index) => (
-                    <div key={index}>
-                      <h4 className="text-xl font-bricolage font-bold text-white mb-4">
-                        Outfit {index + 1}
-                      </h4>
-                      <SuggestionResultView
-                        items={suggestion.suggestedItems}
-                        reason={suggestion.reason}
-                        selectedDate={selectedDate}
-                        selectedOccasionId={selectedOccasionId}
-                        onOutfitUsed={handleOutfitUsed}
-                        bodyImageUrl={bodyImageUrl}
-                        outfitIndex={index}
-                        tryOnResult={tryOnResults[index] || undefined}
-                        onTryOn={handleIndividualTryOn}
+                {/* Dot Indicators */}
+                {suggestionResults.length > 1 && (
+                  <div className="flex justify-center gap-2">
+                    {suggestionResults.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setCurrentOutfitIndex(index)}
+                        className={`w-2.5 h-2.5 rounded-full transition-all ${
+                          index === currentOutfitIndex
+                            ? "bg-cyan-400 w-8"
+                            : "bg-white/30 hover:bg-white/50"
+                        }`}
                       />
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+                )}
+
+                {/* Carousel Content */}
+                <div className="relative overflow-hidden">
+                  <div
+                    className="flex transition-transform duration-500 ease-in-out"
+                    style={{ transform: `translateX(-${currentOutfitIndex * 100}%)` }}
+                  >
+                    {suggestionResults.map((suggestion, index) => (
+                      <div key={index} className="w-full flex-shrink-0 px-1">
+                        <h4 className="text-xl font-bricolage font-bold text-white mb-4">
+                          Outfit {index + 1}
+                        </h4>
+                        <SuggestionResultView
+                          items={suggestion.suggestedItems}
+                          reason={suggestion.reason}
+                          selectedDate={selectedDate}
+                          selectedOccasionId={selectedOccasionId}
+                          onOutfitUsed={handleOutfitUsed}
+                          bodyImageUrl={bodyImageUrl}
+                          outfitIndex={index}
+                          tryOnResult={tryOnResults[index] || undefined}
+                          onTryOn={handleIndividualTryOn}
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}

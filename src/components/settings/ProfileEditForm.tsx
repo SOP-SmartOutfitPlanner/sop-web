@@ -684,36 +684,16 @@ export function ProfileEditForm() {
         }
       }
 
-      // Step 1.5: Upload and validate full body image if there's a new file
+      // Step 1.5: Upload full body image to MinIO if there's a new file
       let uploadedFullBodyUrl: string | undefined;
       if (fullBodyFile) {
-        // Step 1.5a: Upload to MinIO
         try {
           console.log("📤 Uploading full body image to MinIO...");
           uploadedFullBodyUrl = await minioAPI.uploadImage(fullBodyFile);
           console.log("✅ Full body image uploaded successfully, downloadUrl:", uploadedFullBodyUrl);
         } catch (error) {
           console.error("Failed to upload full body image:", error);
-          toast.error("Failed to upload full body image. Please try again.");
-          setIsSaving(false);
-          return;
-        }
-
-        // Step 1.5b: Validate the image
-        try {
-          console.log("🔍 Validating full body image...");
-          const validationResponse = await userAPI.validateFullBodyImage(uploadedFullBodyUrl);
-
-          if (!validationResponse.data.isValid) {
-            console.warn("❌ Full body image validation failed:", validationResponse.data.message);
-            toast.error(validationResponse.data.message || "Invalid full body image. Please upload a clear full body photo from head to toe.");
-            setIsSaving(false);
-            return;
-          }
-          console.log("✅ Full body image validated successfully");
-        } catch (error) {
-          console.error("Failed to validate full body image:", error);
-          toast.error("Failed to validate full body image. Please try again.");
+          toast.error("Failed to upload full body image");
           setIsSaving(false);
           return;
         }
@@ -1267,7 +1247,7 @@ export function ProfileEditForm() {
                   {/* Current/Preview Image */}
                   <div className="flex-shrink-0">
                     {(fullBodyPreview || userData?.tryOnImageUrl) ? (
-                      <div className="relative rounded-2xl overflow-hidden bg-white/10 border border-white/20 shadow-lg w-[200px] h-[280px]">
+                      <div className="relative rounded-2xl overflow-hidden bg-white/10 border border-white/20 shadow-lg">
                         <AntImage.PreviewGroup>
                           <AntImage
                             src={fullBodyPreview || userData?.tryOnImageUrl || ""}
@@ -1276,7 +1256,6 @@ export function ProfileEditForm() {
                               width: '200px',
                               height: '280px',
                               objectFit: 'cover',
-                              display: 'block',
                             }}
                             preview={{
                               mask: (
