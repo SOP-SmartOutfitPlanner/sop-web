@@ -250,94 +250,213 @@ export function SuggestionResultView({
     }
   };
 
+  // Check if we have a successful try-on result
+  const hasTryOnSuccess = tryOnResult?.success && tryOnResult?.url;
+
   return (
     <div className="space-y-4">
-      {/* Try-On Result Card */}
-      {tryOnResult && (
+      {/* Try-On Failed Card - Show at top if failed */}
+      {tryOnResult && !tryOnResult.success && (
         <GlassCard
           padding="20px"
           borderRadius="16px"
           blur="8px"
           brightness={1.05}
-          glowColor={
-            tryOnResult.success
-              ? "rgba(34, 197, 94, 0.3)"
-              : "rgba(239, 68, 68, 0.3)"
-          }
-          borderColor={
-            tryOnResult.success
-              ? "rgba(34, 197, 94, 0.3)"
-              : "rgba(239, 68, 68, 0.3)"
-          }
-          className={cn(
-            "bg-gradient-to-br",
-            tryOnResult.success
-              ? "from-green-500/20 via-emerald-500/10 to-green-500/20"
-              : "from-red-500/20 via-orange-500/10 to-red-500/20"
-          )}
+          glowColor="rgba(239, 68, 68, 0.3)"
+          borderColor="rgba(239, 68, 68, 0.3)"
+          className="bg-gradient-to-br from-red-500/20 via-orange-500/10 to-red-500/20"
         >
-          {tryOnResult.success && tryOnResult.url ? (
-            <div className="flex items-start gap-4">
-              <div className="relative w-32 h-40 rounded-xl overflow-hidden bg-white/5 border border-white/10 flex-shrink-0">
-                <Image
-                  src={tryOnResult.url}
-                  alt="Virtual try-on result"
-                  fill
-                  className="object-cover"
-                  unoptimized
-                />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <CheckCircle2 className="w-5 h-5 text-green-400" />
-                  <h3 className="font-semibold text-white">
-                    Virtual Try-On Complete
-                  </h3>
-                </div>
-                <p className="text-white/80 text-sm">
-                  Here's how this outfit looks on you!
-                </p>
-              </div>
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
+              <Star className="w-5 h-5 text-red-300" />
             </div>
-          ) : (
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
-                <Star className="w-5 h-5 text-red-300" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-white mb-2">Try-On Failed</h3>
-                <p className="text-white/80 text-sm leading-relaxed">
-                  {tryOnResult.error || "Failed to generate virtual try-on"}
-                </p>
-              </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-white mb-2">Try-On Failed</h3>
+              <p className="text-white/80 text-sm leading-relaxed">
+                {tryOnResult.error || "Failed to generate virtual try-on"}
+              </p>
             </div>
-          )}
+          </div>
         </GlassCard>
       )}
 
-      {/* AI Reason Card */}
-      <GlassCard
-        padding="20px"
-        borderRadius="16px"
-        blur="8px"
-        brightness={1.05}
-        glowColor="rgba(139, 92, 246, 0.3)"
-        borderColor="rgba(255, 255, 255, 0.2)"
-        className="bg-gradient-to-br from-purple-500/20 via-violet-500/10 to-purple-500/20"
-      >
-        <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center flex-shrink-0">
-            <Sparkles className="w-5 h-5 text-purple-300" />
+      {/* Main Content - Side by Side Layout when Try-On Success */}
+      {hasTryOnSuccess ? (
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Left Side: Vertical Items List - 2 columns */}
+          <div className="flex-1 min-w-0 overflow-y-auto max-h-[600px] pr-2 custom-scrollbar">
+            <div className="grid grid-cols-2 gap-4 pt-3">
+              {items.map((item) => {
+                const colors = parseColor(item.color);
+
+                return (
+                  <div
+                    key={item.id}
+                    className="group relative pt-2 pr-2"
+                  >
+                    {/* System Item Badge */}
+                    {item.itemType === "SYSTEM" && (
+                      <div className="absolute top-0 right-0 z-20">
+                        <span className="flex items-center gap-1 px-2 py-1 text-[10px] font-semibold rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg border-2 border-white">
+                          <Star className="w-3 h-3" />
+                          AI Suggest
+                        </span>
+                      </div>
+                    )}
+
+                    <GlassCard
+                      padding="10px"
+                      borderRadius="14px"
+                      blur="4px"
+                      brightness={1.02}
+                      glowColor="rgba(34, 211, 238, 0.2)"
+                      borderColor="rgba(255, 255, 255, 0.2)"
+                      borderWidth="2px"
+                      onClick={() => handleItemClick(item.id)}
+                      className={cn(
+                        "relative h-full flex flex-col cursor-pointer transition-all duration-200",
+                        "bg-gradient-to-br from-cyan-300/20 via-blue-200/10 to-indigo-300/20",
+                        "hover:shadow-lg hover:scale-[1.02]"
+                      )}
+                    >
+                      <div className="w-full flex flex-col relative z-10">
+                        {/* Image Container */}
+                        <div className="bg-white/5 rounded-lg aspect-square flex items-center justify-center overflow-hidden relative">
+                          <Image
+                            src={item.imgUrl}
+                            alt={item.name}
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 768px) 50vw, 150px"
+                          />
+                        </div>
+
+                        {/* Item Details - Compact */}
+                        <div className="flex flex-col mt-2">
+                          {/* Name */}
+                          <h3 className="text-white font-semibold text-xs line-clamp-1">
+                            {item.name}
+                          </h3>
+                          <span className="text-white/60 text-[10px]">
+                            {item.categoryName || "Uncategorized"}
+                          </span>
+
+                          {/* Colors */}
+                          {colors && colors.length > 0 && (
+                            <div className="flex items-center gap-0.5 mt-1">
+                              {colors
+                                .slice(0, 3)
+                                .map(
+                                  (
+                                    color: { hex: string; name: string },
+                                    index: number
+                                  ) => (
+                                    <div
+                                      key={index}
+                                      className="w-2.5 h-2.5 rounded-full border border-white/30 shadow-sm"
+                                      style={{ backgroundColor: color.hex }}
+                                      title={color.name}
+                                    />
+                                  )
+                                )}
+                              {colors.length > 3 && (
+                                <span className="text-white/50 text-[9px]">
+                                  +{colors.length - 3}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </GlassCard>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-          <div className="flex-1">
-            <h3 className="font-semibold text-white mb-2">AI Recommendation</h3>
-            <p className="text-white/80 text-sm leading-relaxed">{reason}</p>
+
+          {/* Right Side: Virtual Try-On Result + AI Recommendation */}
+          <div className="lg:w-[320px] xl:w-[380px] flex-shrink-0 space-y-4">
+            {/* Try-On Image Card */}
+            <GlassCard
+              padding="16px"
+              borderRadius="20px"
+              blur="8px"
+              brightness={1.05}
+              glowColor="rgba(34, 197, 94, 0.3)"
+              borderColor="rgba(34, 197, 94, 0.3)"
+              className="bg-gradient-to-br from-green-500/20 via-emerald-500/10 to-green-500/20"
+            >
+              <div className="flex flex-col">
+                {/* Header */}
+                <div className="flex items-center gap-2 mb-3">
+                  <CheckCircle2 className="w-4 h-4 text-green-400" />
+                  <h3 className="font-semibold text-white text-sm">
+                    Virtual Try-On
+                  </h3>
+                </div>
+
+                {/* Try-On Image */}
+                <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-white/5 border border-white/10">
+                  <Image
+                    src={tryOnResult.url!}
+                    alt="Virtual try-on result"
+                    fill
+                    className="object-cover"
+                    unoptimized
+                  />
+                </div>
+              </div>
+            </GlassCard>
+
+            {/* AI Recommendation Card */}
+            <GlassCard
+              padding="16px"
+              borderRadius="16px"
+              blur="8px"
+              brightness={1.05}
+              glowColor="rgba(139, 92, 246, 0.3)"
+              borderColor="rgba(255, 255, 255, 0.2)"
+              className="bg-gradient-to-br from-purple-500/20 via-violet-500/10 to-purple-500/20"
+            >
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center flex-shrink-0">
+                  <Sparkles className="w-4 h-4 text-purple-300" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-white text-sm mb-1">AI Recommendation</h3>
+                  <p className="text-white/80 text-xs leading-relaxed">{reason}</p>
+                </div>
+              </div>
+            </GlassCard>
           </div>
         </div>
-      </GlassCard>
+      ) : (
+        /* Default Layout - No Try-On or Failed */
+        <>
+          {/* AI Reason Card */}
+          <GlassCard
+            padding="20px"
+            borderRadius="16px"
+            blur="8px"
+            brightness={1.05}
+            glowColor="rgba(139, 92, 246, 0.3)"
+            borderColor="rgba(255, 255, 255, 0.2)"
+            className="bg-gradient-to-br from-purple-500/20 via-violet-500/10 to-purple-500/20"
+          >
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center flex-shrink-0">
+                <Sparkles className="w-5 h-5 text-purple-300" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-white mb-2">AI Recommendation</h3>
+                <p className="text-white/80 text-sm leading-relaxed">{reason}</p>
+              </div>
+            </div>
+          </GlassCard>
 
-      {/* Items Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {/* Items Grid - Original Layout */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {items.map((item) => {
           const colors = parseColor(item.color);
           const seasonItems =
@@ -518,8 +637,10 @@ export function SuggestionResultView({
           );
         })}
       </div>
+        </>
+      )}
 
-      {/* Action Buttons */}
+      {/* Action Buttons - Show for both layouts */}
       <div className="space-y-3 pt-6 mt-6 border-t border-white/10">
         {/* Button Row: Always 3 columns layout */}
         <div className="flex justify-center gap-3">
@@ -630,6 +751,24 @@ export function SuggestionResultView({
           itemId={selectedItemId}
         />
       )}
+
+      {/* Custom scrollbar styles */}
+      <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.3);
+          border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.5);
+        }
+      `}</style>
     </div>
   );
 }

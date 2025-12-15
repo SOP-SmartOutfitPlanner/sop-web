@@ -5,3 +5,4 @@ export { WardrobeFilters } from "./WardrobeFilters";
 export { OutfitFilters } from "./OutfitFilters";
 export { OutfitSelectionGrid } from "./OutfitSelectionGrid";
 export { ItemSelectionGrid } from "./ItemSelectionGrid";
+export { OutfitSidePanelLayout } from "./OutfitSidePanelLayout";

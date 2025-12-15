@@ -20,6 +20,7 @@ import {
   OutfitFilters,
   OutfitSelectionGrid,
   ItemSelectionGrid,
+  OutfitSidePanelLayout,
 } from "./virtual-try-on";
 
 interface VirtualTryOnDialogProps {
@@ -717,55 +718,123 @@ export function VirtualTryOnDialog({
 
             {/* Content - No overflow here */}
             <div className="flex-1 p-4 overflow-hidden">
-              <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 h-full">
-                {/* Left Column: Human Image Upload + Selected Items */}
-                <div className="space-y-3 xl:col-span-1 overflow-y-auto custom-scrollbar pr-2">
-                  <HumanImageUpload
-                    humanImage={humanImage}
-                    humanImagePreview={humanImagePreview}
-                    isProcessing={isProcessing}
-                    onImageChange={handleHumanImageChange}
-                  />
-
-                  <SelectedItemsPreview
-                    selectedItems={selectedItems}
-                    onRemoveItem={handleToggleItem}
-                  />
-                </div>
-
-                {/* Right Column: Item Selection */}
-                <div className="flex flex-col space-y-3 xl:col-span-2 h-full overflow-hidden">
-                  <div className="flex-shrink-0 flex items-center justify-between">
-                    <h3 className="text-base font-semibold text-white font-bricolage">
-                      2. Select Items (Max 5)
-                    </h3>
-                    <span className="px-3 py-1 rounded-full bg-white/10 text-white text-sm font-medium">
-                      {selectedItemIds.length}/5
-                    </span>
+              {view === "outfit" ? (
+                /* Outfit View - Side Panel Layout */
+                <div className="flex flex-col h-full gap-3">
+                  {/* View Toggle + Filters */}
+                  <div className="flex-shrink-0 flex items-center gap-4">
+                    <ViewToggle
+                      view={view}
+                      totalOutfits={totalOutfits}
+                      totalWardrobeItems={totalWardrobeItems}
+                      isProcessing={isProcessing}
+                      onViewChange={(newView) => {
+                        setView(newView);
+                        setSelectedItemIds([]);
+                        if (newView === "outfit") {
+                          setWardrobeFilters({});
+                          setShowWardrobeFilters(false);
+                          setSelectedOutfitId(null);
+                        } else {
+                          setSelectedOutfitId(null);
+                        }
+                      }}
+                    />
+                    <div className="flex-1">
+                      <OutfitFilters
+                        filters={outfitFilters}
+                        showFilters={true}
+                        onFiltersChange={setOutfitFilters}
+                        onToggleFilters={() => {}}
+                      />
+                    </div>
                   </div>
 
-                  {/* View Toggle */}
-                  <ViewToggle
-                    view={view}
-                    totalOutfits={totalOutfits}
-                    totalWardrobeItems={totalWardrobeItems}
-                    isProcessing={isProcessing}
-                    onViewChange={(newView) => {
-                      setView(newView);
-                      // Reset selected items when switching tabs
-                      setSelectedItemIds([]);
-                      if (newView === "outfit") {
-                        setWardrobeFilters({});
-                        setShowWardrobeFilters(false);
-                        setSelectedOutfitId(null);
-                      } else {
-                        setSelectedOutfitId(null);
-                      }
-                    }}
-                  />
+                  {/* Human Image Upload (compact for outfit view) */}
+                  <div className="flex-shrink-0">
+                    <HumanImageUpload
+                      humanImage={humanImage}
+                      humanImagePreview={humanImagePreview}
+                      isProcessing={isProcessing}
+                      onImageChange={handleHumanImageChange}
+                      compact={true}
+                    />
+                  </div>
 
-                  {/* Filters for Wardrobe */}
-                  {view === "wardrobe" && (
+                  {/* Side Panel Layout */}
+                  <div
+                    ref={scrollContainerRef}
+                    className="flex-1 overflow-hidden"
+                  >
+                    <OutfitSidePanelLayout
+                      outfits={outfits}
+                      selectedOutfitId={selectedOutfitId}
+                      isLoading={isLoadingOutfits}
+                      hasMore={hasMoreOutfits}
+                      loadMoreRef={loadMoreRef}
+                      onSelectOutfit={handleSelectOutfit}
+                      humanImagePreview={humanImagePreview}
+                      selectedItemIds={selectedItemIds}
+                      onToggleItem={handleToggleItem}
+                      onGenerateTryOn={handleGenerate}
+                      isProcessing={isProcessing}
+                      canGenerate={
+                        !!humanImage &&
+                        selectedItemIds.length > 0 &&
+                        selectedItemIds.length <= 5
+                      }
+                    />
+                  </div>
+                </div>
+              ) : (
+                /* Wardrobe View - Original 3-column Layout */
+                <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 h-full">
+                  {/* Left Column: Human Image Upload + Selected Items */}
+                  <div className="space-y-3 xl:col-span-1 overflow-y-auto custom-scrollbar pr-2">
+                    <HumanImageUpload
+                      humanImage={humanImage}
+                      humanImagePreview={humanImagePreview}
+                      isProcessing={isProcessing}
+                      onImageChange={handleHumanImageChange}
+                    />
+
+                    <SelectedItemsPreview
+                      selectedItems={selectedItems}
+                      onRemoveItem={handleToggleItem}
+                    />
+                  </div>
+
+                  {/* Right Column: Item Selection */}
+                  <div className="flex flex-col space-y-3 xl:col-span-2 h-full overflow-hidden">
+                    <div className="flex-shrink-0 flex items-center justify-between">
+                      <h3 className="text-base font-semibold text-white font-bricolage">
+                        2. Select Items (Max 5)
+                      </h3>
+                      <span className="px-3 py-1 rounded-full bg-white/10 text-white text-sm font-medium">
+                        {selectedItemIds.length}/5
+                      </span>
+                    </div>
+
+                    {/* View Toggle */}
+                    <ViewToggle
+                      view={view}
+                      totalOutfits={totalOutfits}
+                      totalWardrobeItems={totalWardrobeItems}
+                      isProcessing={isProcessing}
+                      onViewChange={(newView) => {
+                        setView(newView);
+                        setSelectedItemIds([]);
+                        if (newView === "outfit") {
+                          setWardrobeFilters({});
+                          setShowWardrobeFilters(false);
+                          setSelectedOutfitId(null);
+                        } else {
+                          setSelectedOutfitId(null);
+                        }
+                      }}
+                    />
+
+                    {/* Filters for Wardrobe */}
                     <WardrobeFilters
                       filters={wardrobeFilters}
                       showFilters={showWardrobeFilters}
@@ -778,43 +847,12 @@ export function VirtualTryOnDialog({
                         setShowWardrobeFilters(!showWardrobeFilters)
                       }
                     />
-                  )}
 
-                  {/* Filters for Outfits */}
-                  {view === "outfit" && (
-                    <OutfitFilters
-                      filters={outfitFilters}
-                      showFilters={true}
-                      onFiltersChange={setOutfitFilters}
-                      onToggleFilters={() => {}}
-                    />
-                  )}
-
-                  {/* Content Area - Outfits Grid or Items Grid */}
-                  <div
-                    ref={scrollContainerRef}
-                    className="flex-1 overflow-y-auto pr-2 custom-scrollbar"
-                  >
-                    {view === "outfit" ? (
-                      <div className="space-y-3">
-                        {/* Outfit Selection Grid */}
-                        <OutfitSelectionGrid
-                          outfits={outfits}
-                          selectedOutfitId={selectedOutfitId}
-                          isLoading={isLoadingOutfits}
-                          hasMore={hasMoreOutfits}
-                          loadMoreRef={loadMoreRef}
-                          onSelectOutfit={handleSelectOutfit}
-                        />
-
-                        {/* Items from Selected Outfit */}
-                        {selectedOutfitId !== null &&
-                          availableItems.length > 0 && (
-                            <div className="space-y-3 pt-4"></div>
-                          )}
-                      </div>
-                    ) : (
-                      /* Wardrobe Items Grid */
+                    {/* Content Area - Items Grid */}
+                    <div
+                      ref={scrollContainerRef}
+                      className="flex-1 overflow-y-auto pr-2 custom-scrollbar"
+                    >
                       <ItemSelectionGrid
                         items={availableItems}
                         selectedItemIds={selectedItemIds}
@@ -826,86 +864,88 @@ export function VirtualTryOnDialog({
                         totalItems={totalWardrobeItems}
                         onToggleItem={handleToggleItem}
                       />
-                    )}
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
 
-            {/* Footer */}
-            <div className="flex-shrink-0 flex items-center justify-between gap-4 p-4 border-t border-white/10 bg-gradient-to-br from-white/5 via-white/5 to-white/5 backdrop-blur-xl">
-              <div className="flex-1">
-                {selectedItems.length > 0 && (
-                  <div
-                    className={`flex items-center gap-2 text-xs ${
-                      selectedItems.length > 5
-                        ? "text-red-300"
-                        : "text-white/70"
-                    }`}
-                  >
-                    <CheckCircle2
-                      className={`w-4 h-4 ${
+            {/* Footer - Only show for wardrobe view (outfit view has button in side panel) */}
+            {view === "wardrobe" && (
+              <div className="flex-shrink-0 flex items-center justify-between gap-4 p-4 border-t border-white/10 bg-gradient-to-br from-white/5 via-white/5 to-white/5 backdrop-blur-xl">
+                <div className="flex-1">
+                  {selectedItems.length > 0 && (
+                    <div
+                      className={`flex items-center gap-2 text-xs ${
                         selectedItems.length > 5
-                          ? "text-red-400"
-                          : "text-green-400"
+                          ? "text-red-300"
+                          : "text-white/70"
                       }`}
-                    />
-                    <span className="font-medium">
-                      {selectedItems.length} / 5 items selected
-                      {selectedItems.length > 5 && (
-                        <span className="ml-2 text-red-400">
-                          (Remove {selectedItems.length - 5})
-                        </span>
-                      )}
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex gap-2">
-                <GlassButton
-                  variant="secondary"
-                  size="sm"
-                  onClick={handleClose}
-                  disabled={isProcessing}
-                >
-                  Cancel
-                </GlassButton>
-                <GlassButton
-                  variant="primary"
-                  size="sm"
-                  onClick={handleGenerate}
-                  disabled={
-                    !humanImage ||
-                    selectedItemIds.length === 0 ||
-                    selectedItemIds.length > 5 ||
-                    isProcessing
-                  }
-                  className={
-                    selectedItemIds.length > 5
-                      ? "opacity-50 cursor-not-allowed"
-                      : ""
-                  }
-                >
-                  {isProcessing ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span>Generating...</span>
-                    </>
-                  ) : selectedItemIds.length > 5 ? (
-                    <>
-                      <Sparkles className="w-4 h-4" />
-                      <span>Too Many Items ({selectedItemIds.length}/5)</span>
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-4 h-4" />
-                      <span>Generate Try-On</span>
-                    </>
+                    >
+                      <CheckCircle2
+                        className={`w-4 h-4 ${
+                          selectedItems.length > 5
+                            ? "text-red-400"
+                            : "text-green-400"
+                        }`}
+                      />
+                      <span className="font-medium">
+                        {selectedItems.length} / 5 items selected
+                        {selectedItems.length > 5 && (
+                          <span className="ml-2 text-red-400">
+                            (Remove {selectedItems.length - 5})
+                          </span>
+                        )}
+                      </span>
+                    </div>
                   )}
-                </GlassButton>
+                </div>
+
+                <div className="flex gap-2">
+                  <GlassButton
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleClose}
+                    disabled={isProcessing}
+                  >
+                    Cancel
+                  </GlassButton>
+                  <GlassButton
+                    variant="primary"
+                    size="sm"
+                    onClick={handleGenerate}
+                    disabled={
+                      !humanImage ||
+                      selectedItemIds.length === 0 ||
+                      selectedItemIds.length > 5 ||
+                      isProcessing
+                    }
+                    className={
+                      selectedItemIds.length > 5
+                        ? "opacity-50 cursor-not-allowed"
+                        : ""
+                    }
+                  >
+                    {isProcessing ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <span>Generating...</span>
+                      </>
+                    ) : selectedItemIds.length > 5 ? (
+                      <>
+                        <Sparkles className="w-4 h-4" />
+                        <span>Too Many Items ({selectedItemIds.length}/5)</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4" />
+                        <span>Generate Try-On</span>
+                      </>
+                    )}
+                  </GlassButton>
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Custom scrollbar styles */}
