@@ -607,6 +607,7 @@ export default function SuggestPage() {
                           outfitIndex={index}
                           tryOnResult={tryOnResults[index] || undefined}
                           onTryOn={handleIndividualTryOn}
+                          isBatchProcessing={isBatchProcessing}
                         />
                       </div>
                     ))}
