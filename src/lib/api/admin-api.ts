@@ -14,6 +14,7 @@ import {
   UpdateOccasionRequest,
   UpdateOccasionResponse,
 } from "@/types/occasion";
+import type { RevenueStatistics, GetRevenueParams } from "@/types/revenue";
 
 // ============================================================================
 // Types
@@ -655,6 +656,34 @@ export const adminAPI = {
   deleteAISetting: async (id: number): Promise<ApiResponse<void>> => {
     return apiClient.delete<ApiResponse<void>>(`/ai-settings/${id}`);
   },
+  // ============================================================================
+  // Revenue Management
+  // ============================================================================
+
+  /**
+   * Get revenue statistics from user subscriptions
+   * @param params - Query parameters for filtering
+   */
+  getRevenue: async (
+    params: GetRevenueParams = {}
+  ): Promise<ApiResponse<RevenueStatistics>> => {
+    const queryParams = new URLSearchParams();
+
+    if (params.year) queryParams.append("Year", params.year.toString());
+    if (params.month) queryParams.append("Month", params.month.toString());
+    if (params.startDate) queryParams.append("StartDate", params.startDate);
+    if (params.endDate) queryParams.append("EndDate", params.endDate);
+    if (params.subscriptionPlanId)
+      queryParams.append("SubscriptionPlanId", params.subscriptionPlanId.toString());
+    if (params.recentTransactionLimit)
+      queryParams.append("RecentTransactionLimit", params.recentTransactionLimit.toString());
+
+    const url = `/admin-dashboard/revenue${
+      queryParams.toString() ? `?${queryParams.toString()}` : ""
+    }`;
+    return apiClient.get<ApiResponse<RevenueStatistics>>(url);
+  },
+
   // ============================================================================
   // Notifications Management
   // ============================================================================

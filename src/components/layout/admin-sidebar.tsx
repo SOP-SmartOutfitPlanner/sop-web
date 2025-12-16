@@ -13,6 +13,7 @@ import {
   FolderTree,
   Calendar,
   Palette,
+  DollarSign,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +27,11 @@ const menuItems = [
     title: "Manage Users",
     icon: Users,
     href: "/admin/users",
+  },
+  {
+    title:"Revenues",
+    icon: DollarSign,
+    href:"/admin/revenues",
   },
   {
     title: "Wardrobe System",
