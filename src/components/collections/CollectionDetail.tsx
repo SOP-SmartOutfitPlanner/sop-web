@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import GlassCard from "@/components/ui/glass-card";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -90,6 +91,18 @@ export function CollectionDetail({ collectionId }: CollectionDetailProps) {
     collection?.isPublished
   );
 
+  const getInitials = (name?: string) => {
+    if (!name) return "U";
+    return (
+      name
+        .split(" ")
+        .map((word) => word[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2) || "U"
+    );
+  };
+
   // Check if current user is the owner of this collection
   const isOwner = userId !== null && userId === collection?.userId;
   const canPublish = isOwner && collection?.isPublished === false;
@@ -130,22 +143,20 @@ export function CollectionDetail({ collectionId }: CollectionDetailProps) {
           <div className="mx-auto w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-6">
             <Lock className="w-8 h-8 text-white/40" />
           </div>
-          
+
           {/* Title */}
           <h2 className="text-xl font-semibold text-white mb-2">
             Private Collection
           </h2>
-          
+
           {/* Description */}
           <p className="text-sm text-white/50 mb-8">
             This collection is private and can only be viewed by its owner.
           </p>
-          
+
           {/* Action */}
           <Link href="/collections">
-            <button
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white/90 text-sm font-medium hover:bg-white/20 transition-colors"
-            >
+            <button className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white/90 text-sm font-medium hover:bg-white/20 transition-colors">
               <ArrowLeft className="w-4 h-4" />
               Back to collections
             </button>
@@ -163,22 +174,21 @@ export function CollectionDetail({ collectionId }: CollectionDetailProps) {
           <div className="mx-auto w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-6">
             <Bookmark className="w-8 h-8 text-white/40" />
           </div>
-          
+
           {/* Title */}
           <h2 className="text-xl font-semibold text-white mb-2">
             Collection not found
           </h2>
-          
+
           {/* Description */}
           <p className="text-sm text-white/50 mb-8">
-            This collection may have been removed or you don&apos;t have permission to view it.
+            This collection may have been removed or you don&apos;t have
+            permission to view it.
           </p>
-          
+
           {/* Action */}
           <Link href="/collections">
-            <button
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white/90 text-sm font-medium hover:bg-white/20 transition-colors"
-            >
+            <button className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white/90 text-sm font-medium hover:bg-white/20 transition-colors">
               <ArrowLeft className="w-4 h-4" />
               Back to collections
             </button>
@@ -191,7 +201,7 @@ export function CollectionDetail({ collectionId }: CollectionDetailProps) {
   return (
     <div className="relative mx-auto w-full max-w-6xl px-6 pt-35 space-y-8">
       <div className="absolute inset-0 -z-10 bg-gradient-to-b  blur-3xl" />
-      
+
       {/* Back Button */}
       <Link
         href="/collections"
@@ -236,21 +246,17 @@ export function CollectionDetail({ collectionId }: CollectionDetailProps) {
           <div className="flex items-center gap-3">
             <Link
               href={`/community/profile/${collection.userId}`}
-              className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full border border-white/20 bg-white/10 hover:border-cyan-400/50 transition-colors cursor-pointer"
+              className="shrink-0 cursor-pointer"
             >
-              {collection.avtUrl ? (
-                <Image
-                  src={collection.avtUrl}
-                  alt={collection.userDisplayName}
-                  fill
-                  className="object-cover"
-                  sizes="40px"
+              <Avatar className="w-10 h-10 border-2 border-white/20 bg-white/10 hover:border-cyan-400/50 transition-colors">
+                <AvatarImage
+                  src={collection.avtUrl || ""}
+                  alt={collection.userDisplayName || "User"}
                 />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center">
-                  <UserPlus className="h-5 w-5 text-cyan-300" />
-                </div>
-              )}
+                <AvatarFallback className="bg-linear-to-br from-blue-500 to-cyan-500 text-white text-sm font-semibold">
+                  {getInitials(collection.userDisplayName)}
+                </AvatarFallback>
+              </Avatar>
             </Link>
             <div className="flex-1">
               <div className="flex items-center gap-3">
@@ -421,6 +427,7 @@ export function CollectionDetail({ collectionId }: CollectionDetailProps) {
                   entry={entry}
                   items={items}
                   collectionId={collectionId}
+                  isOwner={isOwner}
                 />
               );
             })}

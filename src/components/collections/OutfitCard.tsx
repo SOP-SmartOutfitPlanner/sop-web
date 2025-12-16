@@ -64,6 +64,7 @@ interface OutfitCardProps {
   entry: CollectionOutfit;
   items: CollectionItemDetail[];
   collectionId: number;
+  isOwner?: boolean;
 }
 
 export function OutfitCard({
@@ -71,6 +72,7 @@ export function OutfitCard({
   entry,
   items,
   collectionId,
+  isOwner = false,
 }: OutfitCardProps) {
   const { user } = useAuthStore();
   const [showDescription, setShowDescription] = useState(true);
@@ -140,8 +142,8 @@ export function OutfitCard({
             {outfit?.name || "Outfit from Collection"}
           </h3>
           <div className="flex items-center gap-2">
-            {/* Save/Unsave Outfit Button */}
-            {outfit && (
+            {/* Save/Unsave Outfit Button - Hide if user owns the collection */}
+            {outfit && !isOwner && (
               <button
                 onClick={handleSaveOutfit}
                 disabled={saveOutfitMutation.isPending}
