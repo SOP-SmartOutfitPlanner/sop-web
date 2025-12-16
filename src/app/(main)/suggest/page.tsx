@@ -487,10 +487,10 @@ export default function SuggestPage() {
               padding="1.5rem"
               blur="16px"
               brightness={0.95}
-              glowColor="rgba(236, 72, 153, 0.4)"
-              borderColor="rgba(236, 72, 153, 0.3)"
+              glowColor="rgba(6, 182, 212, 0.4)"
+              borderColor="rgba(34, 211, 238, 0.3)"
               borderWidth="1px"
-              className="bg-gradient-to-br from-pink-950/40 via-rose-900/30 to-pink-950/40"
+              className="bg-gradient-to-br from-cyan-950/40 via-blue-900/30 to-indigo-950/40"
             >
               <BodyImageUpload
                 imageUrl={bodyImageUrl}
