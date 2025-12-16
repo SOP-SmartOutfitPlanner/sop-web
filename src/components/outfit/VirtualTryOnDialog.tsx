@@ -20,7 +20,6 @@ import {
   OutfitFilters,
   OutfitSelectionGrid,
   ItemSelectionGrid,
-  OutfitSidePanelLayout,
 } from "./virtual-try-on";
 
 interface VirtualTryOnDialogProps {
@@ -718,123 +717,54 @@ export function VirtualTryOnDialog({
 
             {/* Content - No overflow here */}
             <div className="flex-1 p-4 overflow-hidden">
-              {view === "outfit" ? (
-                /* Outfit View - Side Panel Layout */
-                <div className="flex flex-col h-full gap-3">
-                  {/* View Toggle + Filters */}
-                  <div className="flex-shrink-0 flex items-center gap-4">
-                    <ViewToggle
-                      view={view}
-                      totalOutfits={totalOutfits}
-                      totalWardrobeItems={totalWardrobeItems}
-                      isProcessing={isProcessing}
-                      onViewChange={(newView) => {
-                        setView(newView);
-                        setSelectedItemIds([]);
-                        if (newView === "outfit") {
-                          setWardrobeFilters({});
-                          setShowWardrobeFilters(false);
-                          setSelectedOutfitId(null);
-                        } else {
-                          setSelectedOutfitId(null);
-                        }
-                      }}
-                    />
-                    <div className="flex-1">
-                      <OutfitFilters
-                        filters={outfitFilters}
-                        showFilters={true}
-                        onFiltersChange={setOutfitFilters}
-                        onToggleFilters={() => {}}
-                      />
-                    </div>
-                  </div>
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 h-full">
+                {/* Left Column: Human Image Upload + Selected Items */}
+                <div className="space-y-3 xl:col-span-1 overflow-y-auto custom-scrollbar pr-2">
+                  <HumanImageUpload
+                    humanImage={humanImage}
+                    humanImagePreview={humanImagePreview}
+                    isProcessing={isProcessing}
+                    onImageChange={handleHumanImageChange}
+                  />
 
-                  {/* Human Image Upload (compact for outfit view) */}
-                  <div className="flex-shrink-0">
-                    <HumanImageUpload
-                      humanImage={humanImage}
-                      humanImagePreview={humanImagePreview}
-                      isProcessing={isProcessing}
-                      onImageChange={handleHumanImageChange}
-                      compact={true}
-                    />
-                  </div>
-
-                  {/* Side Panel Layout */}
-                  <div
-                    ref={scrollContainerRef}
-                    className="flex-1 overflow-hidden"
-                  >
-                    <OutfitSidePanelLayout
-                      outfits={outfits}
-                      selectedOutfitId={selectedOutfitId}
-                      isLoading={isLoadingOutfits}
-                      hasMore={hasMoreOutfits}
-                      loadMoreRef={loadMoreRef}
-                      onSelectOutfit={handleSelectOutfit}
-                      humanImagePreview={humanImagePreview}
-                      selectedItemIds={selectedItemIds}
-                      onToggleItem={handleToggleItem}
-                      onGenerateTryOn={handleGenerate}
-                      isProcessing={isProcessing}
-                      canGenerate={
-                        !!humanImage &&
-                        selectedItemIds.length > 0 &&
-                        selectedItemIds.length <= 5
-                      }
-                    />
-                  </div>
+                  <SelectedItemsPreview
+                    selectedItems={selectedItems}
+                    onRemoveItem={handleToggleItem}
+                  />
                 </div>
-              ) : (
-                /* Wardrobe View - Original 3-column Layout */
-                <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 h-full">
-                  {/* Left Column: Human Image Upload + Selected Items */}
-                  <div className="space-y-3 xl:col-span-1 overflow-y-auto custom-scrollbar pr-2">
-                    <HumanImageUpload
-                      humanImage={humanImage}
-                      humanImagePreview={humanImagePreview}
-                      isProcessing={isProcessing}
-                      onImageChange={handleHumanImageChange}
-                    />
 
-                    <SelectedItemsPreview
-                      selectedItems={selectedItems}
-                      onRemoveItem={handleToggleItem}
-                    />
+                {/* Right Column: Item Selection */}
+                <div className="flex flex-col space-y-3 xl:col-span-2 h-full overflow-hidden">
+                  <div className="flex-shrink-0 flex items-center justify-between">
+                    <h3 className="text-base font-semibold text-white font-bricolage">
+                      2. Select Items (Max 5)
+                    </h3>
+                    <span className="px-3 py-1 rounded-full bg-white/10 text-white text-sm font-medium">
+                      {selectedItemIds.length}/5
+                    </span>
                   </div>
 
-                  {/* Right Column: Item Selection */}
-                  <div className="flex flex-col space-y-3 xl:col-span-2 h-full overflow-hidden">
-                    <div className="flex-shrink-0 flex items-center justify-between">
-                      <h3 className="text-base font-semibold text-white font-bricolage">
-                        2. Select Items (Max 5)
-                      </h3>
-                      <span className="px-3 py-1 rounded-full bg-white/10 text-white text-sm font-medium">
-                        {selectedItemIds.length}/5
-                      </span>
-                    </div>
+                  {/* View Toggle */}
+                  <ViewToggle
+                    view={view}
+                    totalOutfits={totalOutfits}
+                    totalWardrobeItems={totalWardrobeItems}
+                    isProcessing={isProcessing}
+                    onViewChange={(newView) => {
+                      setView(newView);
+                      setSelectedItemIds([]);
+                      if (newView === "outfit") {
+                        setWardrobeFilters({});
+                        setShowWardrobeFilters(false);
+                        setSelectedOutfitId(null);
+                      } else {
+                        setSelectedOutfitId(null);
+                      }
+                    }}
+                  />
 
-                    {/* View Toggle */}
-                    <ViewToggle
-                      view={view}
-                      totalOutfits={totalOutfits}
-                      totalWardrobeItems={totalWardrobeItems}
-                      isProcessing={isProcessing}
-                      onViewChange={(newView) => {
-                        setView(newView);
-                        setSelectedItemIds([]);
-                        if (newView === "outfit") {
-                          setWardrobeFilters({});
-                          setShowWardrobeFilters(false);
-                          setSelectedOutfitId(null);
-                        } else {
-                          setSelectedOutfitId(null);
-                        }
-                      }}
-                    />
-
-                    {/* Filters for Wardrobe */}
+                  {/* Filters for Wardrobe */}
+                  {view === "wardrobe" && (
                     <WardrobeFilters
                       filters={wardrobeFilters}
                       showFilters={showWardrobeFilters}
@@ -847,12 +777,33 @@ export function VirtualTryOnDialog({
                         setShowWardrobeFilters(!showWardrobeFilters)
                       }
                     />
+                  )}
 
-                    {/* Content Area - Items Grid */}
-                    <div
-                      ref={scrollContainerRef}
-                      className="flex-1 overflow-y-auto pr-2 custom-scrollbar"
-                    >
+                  {/* Filters for Outfits */}
+                  {view === "outfit" && (
+                    <OutfitFilters
+                      filters={outfitFilters}
+                      showFilters={true}
+                      onFiltersChange={setOutfitFilters}
+                      onToggleFilters={() => {}}
+                    />
+                  )}
+
+                  {/* Content Area - Outfits Grid or Items Grid */}
+                  <div
+                    ref={scrollContainerRef}
+                    className="flex-1 overflow-y-auto pr-2 custom-scrollbar"
+                  >
+                    {view === "outfit" ? (
+                      <OutfitSelectionGrid
+                        outfits={outfits}
+                        selectedOutfitId={selectedOutfitId}
+                        isLoading={isLoadingOutfits}
+                        hasMore={hasMoreOutfits}
+                        loadMoreRef={loadMoreRef}
+                        onSelectOutfit={handleSelectOutfit}
+                      />
+                    ) : (
                       <ItemSelectionGrid
                         items={availableItems}
                         selectedItemIds={selectedItemIds}
@@ -864,15 +815,14 @@ export function VirtualTryOnDialog({
                         totalItems={totalWardrobeItems}
                         onToggleItem={handleToggleItem}
                       />
-                    </div>
+                    )}
                   </div>
                 </div>
-              )}
+              </div>
             </div>
 
-            {/* Footer - Only show for wardrobe view (outfit view has button in side panel) */}
-            {view === "wardrobe" && (
-              <div className="flex-shrink-0 flex items-center justify-between gap-4 p-4 border-t border-white/10 bg-gradient-to-br from-white/5 via-white/5 to-white/5 backdrop-blur-xl">
+            {/* Footer */}
+            <div className="flex-shrink-0 flex items-center justify-between gap-4 p-4 border-t border-white/10 bg-gradient-to-br from-white/5 via-white/5 to-white/5 backdrop-blur-xl">
                 <div className="flex-1">
                   {selectedItems.length > 0 && (
                     <div
@@ -945,7 +895,6 @@ export function VirtualTryOnDialog({
                   </GlassButton>
                 </div>
               </div>
-            )}
           </div>
 
           {/* Custom scrollbar styles */}
