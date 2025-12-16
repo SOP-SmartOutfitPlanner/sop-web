@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { X, Edit, Sparkles, ArrowLeft, ExternalLink } from "lucide-react";
 import { Image } from "antd";
 import GlassButton from "@/components/ui/glass-button";
@@ -186,16 +187,18 @@ export function ViewItemDialog({
     );
   };
 
-  if (!open) return null;
+  // Don't render on server or if not open
+  if (!open || typeof document === "undefined") return null;
 
-  return (
+  const backdropZIndex = zIndex ?? 9998;
+  const modalZIndex = (zIndex ?? 9998) + 1;
+
+  const modalContent = (
     <>
       {/* Backdrop */}
       <div
-        className={`fixed h-full inset-0 bg-black/50 backdrop-blur-sm ${
-          zIndex ? `z-[${zIndex}]` : "z-[60]"
-        }`}
-        style={zIndex ? { zIndex } : undefined}
+        className="fixed h-full inset-0 bg-black/50 backdrop-blur-sm"
+        style={{ zIndex: backdropZIndex }}
         onClick={(e) => {
           e.stopPropagation();
           onOpenChange(false);
@@ -204,10 +207,8 @@ export function ViewItemDialog({
 
       {/* Modal Container */}
       <div
-        className={`fixed inset-0 ${
-          zIndex ? `z-[${zIndex + 1}]` : "z-[61]"
-        } flex items-center justify-center p-4 pointer-events-none`}
-        style={zIndex ? { zIndex: zIndex + 1 } : undefined}
+        className="fixed inset-0 flex items-center justify-center p-4 pointer-events-none"
+        style={{ zIndex: modalZIndex }}
       >
         <ItemHistoryDialog
           open={showHistory}
@@ -729,4 +730,7 @@ export function ViewItemDialog({
       </div>
     </>
   );
+
+  // Use portal to render modal at document body level
+  return createPortal(modalContent, document.body);
 }
