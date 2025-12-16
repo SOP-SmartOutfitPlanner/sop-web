@@ -36,6 +36,7 @@ interface SuggestionResultViewProps {
     error: string | null;
   };
   onTryOn?: (outfitIndex: number) => Promise<void>;
+  isBatchProcessing?: boolean;
 }
 
 export function SuggestionResultView({
@@ -49,6 +50,7 @@ export function SuggestionResultView({
   outfitIndex = 0,
   tryOnResult,
   onTryOn,
+  isBatchProcessing = false,
 }: SuggestionResultViewProps) {
   const [isAddingToWardrobe, setIsAddingToWardrobe] = useState(false);
   const [isUsingOutfit, setIsUsingOutfit] = useState(false);
@@ -56,6 +58,9 @@ export function SuggestionResultView({
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [createdOutfitId, setCreatedOutfitId] = useState<number | null>(null);
   const [isTryingOn, setIsTryingOn] = useState(false);
+
+  // Combined loading state - either individual try-on or batch processing
+  const isProcessingTryOn = isTryingOn || isBatchProcessing;
 
   // Lock scroll when dialog is open
   useScrollLock(isViewDialogOpen);
@@ -253,10 +258,13 @@ export function SuggestionResultView({
   // Check if we have a successful try-on result
   const hasTryOnSuccess = tryOnResult?.success && tryOnResult?.url;
 
+  // Show side-by-side layout when body image is available (for try-on feature)
+  const showSideBySideLayout = !!bodyImageUrl;
+
   return (
     <div className="space-y-4">
       {/* Try-On Failed Card - Show at top if failed */}
-      {tryOnResult && !tryOnResult.success && (
+      {tryOnResult && !tryOnResult.success && !isTryingOn && (
         <GlassCard
           padding="20px"
           borderRadius="16px"
@@ -280,8 +288,8 @@ export function SuggestionResultView({
         </GlassCard>
       )}
 
-      {/* Main Content - Side by Side Layout when Try-On Success */}
-      {hasTryOnSuccess ? (
+      {/* Main Content - Side by Side Layout when Try-On Success or Loading */}
+      {showSideBySideLayout ? (
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Left Side: Vertical Items List - 2 columns */}
           <div className="flex-1 min-w-0 overflow-y-auto max-h-[600px] pr-2 custom-scrollbar">
@@ -377,37 +385,160 @@ export function SuggestionResultView({
 
           {/* Right Side: Virtual Try-On Result + AI Recommendation */}
           <div className="lg:w-[320px] xl:w-[380px] flex-shrink-0 space-y-4">
-            {/* Try-On Image Card */}
-            <GlassCard
-              padding="16px"
-              borderRadius="20px"
-              blur="8px"
-              brightness={1.05}
-              glowColor="rgba(34, 197, 94, 0.3)"
-              borderColor="rgba(34, 197, 94, 0.3)"
-              className="bg-gradient-to-br from-green-500/20 via-emerald-500/10 to-green-500/20"
-            >
-              <div className="flex flex-col">
-                {/* Header */}
-                <div className="flex items-center gap-2 mb-3">
-                  <CheckCircle2 className="w-4 h-4 text-green-400" />
-                  <h3 className="font-semibold text-white text-sm">
-                    Virtual Try-On
-                  </h3>
-                </div>
+            {/* Try-On Image Card - Placeholder, Loading Skeleton, or Result */}
+            {isProcessingTryOn ? (
+              /* Loading Skeleton - While generating */
+              <GlassCard
+                padding="16px"
+                borderRadius="20px"
+                blur="8px"
+                brightness={1.05}
+                glowColor="rgba(236, 72, 153, 0.3)"
+                borderColor="rgba(236, 72, 153, 0.3)"
+                className="bg-gradient-to-br from-pink-500/20 via-purple-500/10 to-pink-500/20"
+              >
+                <div className="flex flex-col">
+                  {/* Header */}
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-4 h-4 border-2 border-pink-300/30 border-t-pink-300 rounded-full animate-spin" />
+                    <h3 className="font-semibold text-white text-sm">
+                      Generating Try-On...
+                    </h3>
+                  </div>
 
-                {/* Try-On Image */}
-                <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-white/5 border border-white/10">
-                  <Image
-                    src={tryOnResult.url!}
-                    alt="Virtual try-on result"
-                    fill
-                    className="object-cover"
-                    unoptimized
-                  />
+                  {/* Skeleton Image */}
+                  <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-white/5 border border-white/10">
+                    {/* Animated skeleton */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-pink-500/10 via-purple-500/5 to-pink-500/10">
+                      {/* Shimmer effect */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer" />
+
+                      {/* Center loading indicator */}
+                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+                        <div className="relative">
+                          {/* Outer ring */}
+                          <div className="w-16 h-16 rounded-full border-4 border-pink-500/20" />
+                          {/* Spinning ring */}
+                          <div className="absolute inset-0 w-16 h-16 rounded-full border-4 border-transparent border-t-pink-400 animate-spin" />
+                          {/* Inner icon */}
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <Sparkles className="w-6 h-6 text-pink-300 animate-pulse" />
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-white/80 text-sm font-medium">AI Processing</p>
+                          <p className="text-white/50 text-xs mt-1">This may take a moment...</p>
+                        </div>
+                      </div>
+
+                      {/* Decorative elements */}
+                      <div className="absolute top-4 left-4 w-8 h-8 rounded-full bg-pink-500/20 animate-pulse" />
+                      <div className="absolute top-8 right-6 w-4 h-4 rounded-full bg-purple-500/20 animate-pulse delay-150" />
+                      <div className="absolute bottom-12 left-8 w-6 h-6 rounded-full bg-pink-500/15 animate-pulse delay-300" />
+                      <div className="absolute bottom-6 right-4 w-5 h-5 rounded-full bg-purple-500/15 animate-pulse delay-500" />
+                    </div>
+                  </div>
+
+                  {/* Progress indicator */}
+                  <div className="mt-3 space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-white/60">Processing outfit...</span>
+                      <span className="text-pink-300">Please wait</span>
+                    </div>
+                    <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-pink-500 to-purple-500 rounded-full animate-progress" />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </GlassCard>
+              </GlassCard>
+            ) : hasTryOnSuccess ? (
+              /* Actual Result - After successful generation */
+              <GlassCard
+                padding="16px"
+                borderRadius="20px"
+                blur="8px"
+                brightness={1.05}
+                glowColor="rgba(34, 197, 94, 0.3)"
+                borderColor="rgba(34, 197, 94, 0.3)"
+                className="bg-gradient-to-br from-green-500/20 via-emerald-500/10 to-green-500/20"
+              >
+                <div className="flex flex-col">
+                  {/* Header */}
+                  <div className="flex items-center gap-2 mb-3">
+                    <CheckCircle2 className="w-4 h-4 text-green-400" />
+                    <h3 className="font-semibold text-white text-sm">
+                      Virtual Try-On
+                    </h3>
+                  </div>
+
+                  {/* Try-On Image */}
+                  <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-white/5 border border-white/10">
+                    <Image
+                      src={tryOnResult?.url || ""}
+                      alt="Virtual try-on result"
+                      fill
+                      className="object-cover"
+                      unoptimized
+                    />
+                  </div>
+                </div>
+              </GlassCard>
+            ) : (
+              /* Placeholder - Before clicking Virtual Try-On */
+              <GlassCard
+                padding="16px"
+                borderRadius="20px"
+                blur="8px"
+                brightness={1.05}
+                glowColor="rgba(148, 163, 184, 0.2)"
+                borderColor="rgba(148, 163, 184, 0.3)"
+                className="bg-gradient-to-br from-slate-500/10 via-gray-500/5 to-slate-500/10"
+              >
+                <div className="flex flex-col">
+                  {/* Header */}
+                  <div className="flex items-center gap-2 mb-3">
+                    <Sparkles className="w-4 h-4 text-slate-400" />
+                    <h3 className="font-semibold text-white/70 text-sm">
+                      Virtual Try-On
+                    </h3>
+                  </div>
+
+                  {/* Placeholder Image Area */}
+                  <div
+                    className="relative aspect-[3/4] rounded-xl overflow-hidden bg-white/5 border-2 border-dashed border-white/20 cursor-pointer hover:border-pink-400/50 hover:bg-pink-500/5 transition-all duration-300 group"
+                    onClick={handleTryOn}
+                  >
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-4">
+                      {/* Icon */}
+                      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-pink-500/20 to-purple-500/20 flex items-center justify-center group-hover:from-pink-500/30 group-hover:to-purple-500/30 transition-all">
+                        <Sparkles className="w-8 h-8 text-pink-300/70 group-hover:text-pink-300 transition-colors" />
+                      </div>
+
+                      {/* Text */}
+                      <div className="text-center">
+                        <p className="text-white/60 text-sm font-medium group-hover:text-white/80 transition-colors">
+                          Click to Generate
+                        </p>
+                        <p className="text-white/40 text-xs mt-1">
+                          See how this outfit looks on you
+                        </p>
+                      </div>
+
+                      {/* Decorative skeleton lines */}
+                      <div className="w-full space-y-2 mt-2 opacity-30">
+                        <div className="h-2 bg-white/20 rounded-full w-3/4 mx-auto" />
+                        <div className="h-2 bg-white/15 rounded-full w-1/2 mx-auto" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Helper text */}
+                  <p className="text-white/40 text-xs text-center mt-3">
+                    Or use the button below
+                  </p>
+                </div>
+              </GlassCard>
+            )}
 
             {/* AI Recommendation Card */}
             <GlassCard
@@ -753,7 +884,7 @@ export function SuggestionResultView({
         />
       )}
 
-      {/* Custom scrollbar styles */}
+      {/* Custom scrollbar and animation styles */}
       <style jsx>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 6px;
@@ -768,6 +899,40 @@ export function SuggestionResultView({
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
           background: rgba(255, 255, 255, 0.5);
+        }
+        @keyframes shimmer {
+          0% {
+            transform: translateX(-100%);
+          }
+          100% {
+            transform: translateX(100%);
+          }
+        }
+        .animate-shimmer {
+          animation: shimmer 2s infinite;
+        }
+        @keyframes progress {
+          0% {
+            width: 0%;
+          }
+          50% {
+            width: 70%;
+          }
+          100% {
+            width: 100%;
+          }
+        }
+        .animate-progress {
+          animation: progress 3s ease-in-out infinite;
+        }
+        .delay-150 {
+          animation-delay: 150ms;
+        }
+        .delay-300 {
+          animation-delay: 300ms;
+        }
+        .delay-500 {
+          animation-delay: 500ms;
         }
       `}</style>
     </div>
