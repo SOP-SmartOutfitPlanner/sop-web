@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Upload, X, User, CheckCircle2, AlertCircle } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
 import { minioAPI } from "@/lib/api/minio-api";
+import { userAPI } from "@/lib/api/user-api";
 
 interface BodyImageUploadProps {
   onImageUrlChange: (url: string | null) => void;
@@ -19,6 +20,23 @@ export function BodyImageUpload({
 }: BodyImageUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [localPreview, setLocalPreview] = useState<string | null>(null);
+
+  // Load user.tryOnImageUrl from localStorage on mount
+  useEffect(() => {
+    if (!imageUrl) {
+      try {
+        const userStr = localStorage.getItem("user");
+        if (userStr) {
+          const user = JSON.parse(userStr);
+          if (user.tryOnImageUrl) {
+            onImageUrlChange(user.tryOnImageUrl);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load tryOnImageUrl from localStorage:", error);
+      }
+    }
+  }, [imageUrl, onImageUrlChange]);
 
   const handleFileSelect = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -49,11 +67,40 @@ export function BodyImageUpload({
       const uploadToast = toast.loading("Uploading your photo...");
 
       try {
+        // Step 1: Upload to MinIO
         const url = await minioAPI.uploadImage(file);
-        onImageUrlChange(url);
-        toast.success("Photo uploaded successfully!", { id: uploadToast });
+        
+        // Step 2: Validate full body image
+        toast.loading("Validating your photo...", { id: uploadToast });
+        const validationResponse = await userAPI.validateFullBodyImage(url);
+        
+        if (validationResponse.statusCode === 200 && validationResponse.data?.isValid) {
+          // Step 3: Update user profile with tryOnImageUrl
+          toast.loading("Saving to your profile...", { id: uploadToast });
+          await userAPI.updateProfile({ tryOnImageUrl: url });
+          
+          // Step 4: Update localStorage
+          try {
+            const userStr = localStorage.getItem("user");
+            if (userStr) {
+              const user = JSON.parse(userStr);
+              user.tryOnImageUrl = url;
+              localStorage.setItem("user", JSON.stringify(user));
+            }
+          } catch (error) {
+            console.error("Failed to update localStorage:", error);
+          }
+          
+          onImageUrlChange(url);
+          toast.success("Photo uploaded and validated successfully!", { id: uploadToast });
+        } else {
+          // Validation failed - show error message
+          const errorMessage = validationResponse.data?.message || "Image validation failed";
+          toast.error(errorMessage, { id: uploadToast });
+          setLocalPreview(null);
+        }
       } catch (error) {
-        console.error("Failed to upload image:", error);
+        console.error("Failed to upload/validate image:", error);
         toast.error(
           error instanceof Error ? error.message : "Failed to upload photo",
           { id: uploadToast }
