@@ -69,16 +69,19 @@ export function BodyImageUpload({
       try {
         // Step 1: Upload to MinIO
         const url = await minioAPI.uploadImage(file);
-        
+
         // Step 2: Validate full body image
         toast.loading("Validating your photo...", { id: uploadToast });
         const validationResponse = await userAPI.validateFullBodyImage(url);
-        
-        if (validationResponse.statusCode === 200 && validationResponse.data?.isValid) {
+
+        if (
+          validationResponse.statusCode === 200 &&
+          validationResponse.data?.isValid
+        ) {
           // Step 3: Update user profile with tryOnImageUrl
           toast.loading("Saving to your profile...", { id: uploadToast });
           await userAPI.updateProfile({ tryOnImageUrl: url });
-          
+
           // Step 4: Update localStorage
           try {
             const userStr = localStorage.getItem("user");
@@ -90,12 +93,15 @@ export function BodyImageUpload({
           } catch (error) {
             console.error("Failed to update localStorage:", error);
           }
-          
+
           onImageUrlChange(url);
-          toast.success("Photo uploaded and validated successfully!", { id: uploadToast });
+          toast.success("Photo uploaded and validated successfully!", {
+            id: uploadToast,
+          });
         } else {
           // Validation failed - show error message
-          const errorMessage = validationResponse.data?.message || "Image validation failed";
+          const errorMessage =
+            validationResponse.data?.message || "Image validation failed";
           toast.error(errorMessage, { id: uploadToast });
           setLocalPreview(null);
         }
@@ -142,20 +148,12 @@ export function BodyImageUpload({
             className="object-contain"
             unoptimized
           />
-          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
             <label htmlFor="body-image-change" className="cursor-pointer">
               <div className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 transition-colors text-sm font-medium text-white">
                 Change Photo
               </div>
             </label>
-            <button
-              onClick={handleRemove}
-              disabled={isUploading}
-              className="p-2 rounded-lg bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Remove photo"
-            >
-              <X className="w-4 h-4 text-white" />
-            </button>
           </div>
           <input
             id="body-image-change"

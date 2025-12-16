@@ -377,7 +377,6 @@ export default function OutfitPage() {
               size="md"
               onClick={() => setIsVirtualTryOnDialogOpen(true)}
               className="gap-1.5"
-              disabled={isReadOnly}
             >
               <Sparkles className="w-4 h-4" />
               Virtual Try-On
