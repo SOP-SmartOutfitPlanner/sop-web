@@ -382,6 +382,7 @@ export function ViewItemDialog({
                             mask: (
                               <div className="text-white">Click to preview</div>
                             ),
+                            zIndex: 10010,
                           }}
                         />
                         {itemData.isAnalyzed &&
