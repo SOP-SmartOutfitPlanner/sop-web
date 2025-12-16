@@ -749,6 +749,7 @@ export function SuggestionResultView({
           open={isViewDialogOpen}
           onOpenChange={setIsViewDialogOpen}
           itemId={selectedItemId}
+          zIndex={10000}
         />
       )}
 
