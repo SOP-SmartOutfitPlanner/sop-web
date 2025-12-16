@@ -1,9 +1,11 @@
 "use client";
 
-import { useCallback } from "react";
-import { Upload, CheckCircle2, AlertCircle, Camera } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Upload, CheckCircle2, AlertCircle, Camera, X } from "lucide-react";
 import NextImage from "next/image";
 import { toast } from "sonner";
+import { minioAPI } from "@/lib/api/minio-api";
+import { userAPI } from "@/lib/api/user-api";
 
 interface HumanImageUploadProps {
   humanImage: File | null;
@@ -20,8 +22,30 @@ export function HumanImageUpload({
   onImageChange,
   compact = false,
 }: HumanImageUploadProps) {
+  const [isUploading, setIsUploading] = useState(false);
+  const [savedImageUrl, setSavedImageUrl] = useState<string | null>(null);
+
+  // Load user.tryOnImageUrl from localStorage on mount
+  useEffect(() => {
+    if (!humanImagePreview && !savedImageUrl) {
+      try {
+        const userStr = localStorage.getItem("user");
+        if (userStr) {
+          const user = JSON.parse(userStr);
+          if (user.tryOnImageUrl) {
+            setSavedImageUrl(user.tryOnImageUrl);
+            // Set the preview to the saved URL
+            onImageChange(null, user.tryOnImageUrl);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load tryOnImageUrl from localStorage:", error);
+      }
+    }
+  }, [humanImagePreview, savedImageUrl, onImageChange]);
+
   const handleImageChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
 
@@ -37,15 +61,76 @@ export function HumanImageUpload({
         return;
       }
 
-      // Create preview URL
+      // Create local preview
       const reader = new FileReader();
       reader.onloadend = () => {
         onImageChange(file, reader.result as string);
       };
       reader.readAsDataURL(file);
+
+      // Upload to MinIO, validate, and save to profile
+      setIsUploading(true);
+      const uploadToast = toast.loading("Uploading your photo...");
+
+      try {
+        // Step 1: Upload to MinIO
+        const url = await minioAPI.uploadImage(file);
+
+        // Step 2: Validate full body image
+        toast.loading("Validating your photo...", { id: uploadToast });
+        const validationResponse = await userAPI.validateFullBodyImage(url);
+
+        if (
+          validationResponse.statusCode === 200 &&
+          validationResponse.data?.isValid
+        ) {
+          // Step 3: Update user profile with tryOnImageUrl
+          toast.loading("Saving to your profile...", { id: uploadToast });
+          await userAPI.updateProfile({ tryOnImageUrl: url });
+
+          // Step 4: Update localStorage
+          try {
+            const userStr = localStorage.getItem("user");
+            if (userStr) {
+              const user = JSON.parse(userStr);
+              user.tryOnImageUrl = url;
+              localStorage.setItem("user", JSON.stringify(user));
+            }
+          } catch (error) {
+            console.error("Failed to update localStorage:", error);
+          }
+
+          setSavedImageUrl(url);
+          toast.success("Photo uploaded and validated successfully!", {
+            id: uploadToast,
+          });
+        } else {
+          // Validation failed - show error message
+          const errorMessage =
+            validationResponse.data?.message || "Image validation failed";
+          toast.error(errorMessage, { id: uploadToast });
+          // Revert the preview
+          onImageChange(null, savedImageUrl || "");
+        }
+      } catch (error) {
+        console.error("Failed to upload/validate image:", error);
+        toast.error(
+          error instanceof Error ? error.message : "Failed to upload photo",
+          { id: uploadToast }
+        );
+        // Revert the preview
+        onImageChange(null, savedImageUrl || "");
+      } finally {
+        setIsUploading(false);
+      }
     },
-    [onImageChange]
+    [onImageChange, savedImageUrl]
   );
+
+  const handleRemove = useCallback(() => {
+    onImageChange(null, "");
+    setSavedImageUrl(null);
+  }, [onImageChange]);
 
   // Compact mode for side panel layout
   if (compact) {
@@ -74,18 +159,24 @@ export function HumanImageUpload({
             accept="image/*"
             onChange={handleImageChange}
             className="hidden"
-            disabled={isProcessing}
+            disabled={isProcessing || isUploading}
           />
         </label>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <p className="text-sm font-semibold text-white truncate">
-              {humanImage ? "Photo uploaded" : "Upload your photo"}
+              {humanImage || savedImageUrl
+                ? "Photo uploaded"
+                : "Upload your photo"}
             </p>
-            {humanImage && <CheckCircle2 className="w-4 h-4 text-green-400 flex-shrink-0" />}
+            {(humanImage || savedImageUrl) && (
+              <CheckCircle2 className="w-4 h-4 text-green-400 flex-shrink-0" />
+            )}
           </div>
           <p className="text-xs text-white/60 mt-0.5">
-            {humanImage ? "Click to change" : "Required for virtual try-on"}
+            {humanImage || savedImageUrl
+              ? "Click to change"
+              : "Required for virtual try-on"}
           </p>
         </div>
       </div>
@@ -99,14 +190,14 @@ export function HumanImageUpload({
         <h3 className="text-base font-semibold text-white font-bricolage">
           1. Upload Your Photo
         </h3>
-        {humanImage && <CheckCircle2 className="w-4 h-4 text-green-400" />}
+        {(humanImage || savedImageUrl) && (
+          <CheckCircle2 className="w-4 h-4 text-green-400" />
+        )}
       </div>
 
-      <label
-        htmlFor="human-image-upload"
-        className="block relative w-full h-100 rounded-xl border-2 border-dashed border-white/30 hover:border-white/50 bg-white/5 hover:bg-white/10 transition-all cursor-pointer overflow-hidden group"
-      >
-        {humanImagePreview ? (
+      {humanImagePreview ? (
+        // Uploaded Image Preview with Change/Remove buttons
+        <div className="relative w-full h-100 rounded-xl overflow-hidden border-2 border-cyan-400/30 bg-white/5 group">
           <NextImage
             src={humanImagePreview}
             alt="Your photo"
@@ -114,7 +205,28 @@ export function HumanImageUpload({
             className="object-contain"
             unoptimized
           />
-        ) : (
+          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <label htmlFor="human-image-change" className="cursor-pointer">
+              <div className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 transition-colors text-sm font-medium text-white">
+                Change Photo
+              </div>
+            </label>
+          </div>
+          <input
+            id="human-image-change"
+            type="file"
+            accept="image/*"
+            onChange={handleImageChange}
+            className="hidden"
+            disabled={isProcessing || isUploading}
+          />
+        </div>
+      ) : (
+        // Upload Area
+        <label
+          htmlFor="human-image-upload"
+          className="block relative w-full h-100 rounded-xl border-2 border-dashed border-white/30 hover:border-white/50 bg-white/5 hover:bg-white/10 transition-all cursor-pointer overflow-hidden group"
+        >
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-white/60 group-hover:text-white/80 transition-colors">
             <div className="p-4 rounded-full bg-white/10 group-hover:bg-white/20 transition-colors">
               <Upload className="w-8 h-8" />
@@ -124,18 +236,18 @@ export function HumanImageUpload({
               <p className="text-sm mt-1">PNG, JPG up to 10MB</p>
             </div>
           </div>
-        )}
-        <input
-          id="human-image-upload"
-          type="file"
-          accept="image/*"
-          onChange={handleImageChange}
-          className="hidden"
-          disabled={isProcessing}
-        />
-      </label>
+          <input
+            id="human-image-upload"
+            type="file"
+            accept="image/*"
+            onChange={handleImageChange}
+            className="hidden"
+            disabled={isProcessing || isUploading}
+          />
+        </label>
+      )}
 
-      {humanImage && (
+      {(humanImage || savedImageUrl) && (
         <div className="flex items-start gap-2 p-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
           <AlertCircle className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
           <p className="text-xs text-blue-300">

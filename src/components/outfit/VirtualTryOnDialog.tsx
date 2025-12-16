@@ -435,6 +435,13 @@ export function VirtualTryOnDialog({
     []
   );
 
+  // Helper function to convert URL to File
+  const urlToFile = async (url: string, filename: string): Promise<File> => {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    return new File([blob], filename, { type: blob.type });
+  };
+
   // Toggle item selection
   const handleToggleItem = useCallback((itemId: number) => {
     setSelectedItemIds((prev) => {
@@ -504,7 +511,7 @@ export function VirtualTryOnDialog({
 
   // Handle regenerate - call API again with same data
   const handleRegenerate = useCallback(async () => {
-    if (!humanImage || selectedItemIds.length === 0) {
+    if (!humanImagePreview || selectedItemIds.length === 0) {
       toast.error("Cannot regenerate without image and items");
       return;
     }
@@ -523,12 +530,16 @@ export function VirtualTryOnDialog({
         throw new Error("No valid item images found");
       }
 
+      // Convert URL to File if humanImage is not available (loaded from localStorage)
+      const humanImageFile =
+        humanImage || (await urlToFile(humanImagePreview, "body-image.jpg"));
+
       console.log("🔄 Regenerating virtual try-on...");
-      console.log("Human image:", humanImage.name);
+      console.log("Human image:", humanImageFile.name);
       console.log("Item URLs:", itemUrls);
 
       // Call virtual try-on API
-      const response = await outfitAPI.virtualTryOn(humanImage, itemUrls);
+      const response = await outfitAPI.virtualTryOn(humanImageFile, itemUrls);
 
       console.log("✅ Regeneration response:", response);
 
@@ -550,11 +561,17 @@ export function VirtualTryOnDialog({
     } finally {
       setIsProcessing(false);
     }
-  }, [humanImage, selectedItemIds, selectedItems, onSuccess]);
+  }, [
+    humanImage,
+    humanImagePreview,
+    selectedItemIds,
+    selectedItems,
+    onSuccess,
+  ]);
 
   // Handle generate try-on
   const handleGenerate = useCallback(async () => {
-    if (!humanImage) {
+    if (!humanImagePreview) {
       toast.error("Please upload your photo");
       return;
     }
@@ -593,12 +610,21 @@ export function VirtualTryOnDialog({
         throw new Error("No valid item images found");
       }
 
+      // Convert URL to File if humanImage is not available (loaded from localStorage)
+      const humanImageFile =
+        humanImage || (await urlToFile(humanImagePreview, "body-image.jpg"));
+
       console.log("🚀 Starting virtual try-on...");
-      console.log("Human image:", humanImage.name, humanImage.size, "bytes");
+      console.log(
+        "Human image:",
+        humanImageFile.name,
+        humanImageFile.size,
+        "bytes"
+      );
       console.log("Item URLs:", itemUrls);
 
       // Call virtual try-on API
-      const response = await outfitAPI.virtualTryOn(humanImage, itemUrls);
+      const response = await outfitAPI.virtualTryOn(humanImageFile, itemUrls);
 
       console.log("✅ Virtual try-on response:", response);
 
@@ -623,7 +649,14 @@ export function VirtualTryOnDialog({
     } finally {
       setIsProcessing(false);
     }
-  }, [humanImage, selectedItemIds, selectedItems, onSuccess, onOpenChange]);
+  }, [
+    humanImage,
+    humanImagePreview,
+    selectedItemIds,
+    selectedItems,
+    onSuccess,
+    onOpenChange,
+  ]);
 
   // Lock body scroll ONLY for selection dialog (result modal handles its own lock)
   useEffect(() => {
@@ -823,78 +856,78 @@ export function VirtualTryOnDialog({
 
             {/* Footer */}
             <div className="flex-shrink-0 flex items-center justify-between gap-4 p-4 border-t border-white/10 bg-gradient-to-br from-white/5 via-white/5 to-white/5 backdrop-blur-xl">
-                <div className="flex-1">
-                  {selectedItems.length > 0 && (
-                    <div
-                      className={`flex items-center gap-2 text-xs ${
+              <div className="flex-1">
+                {selectedItems.length > 0 && (
+                  <div
+                    className={`flex items-center gap-2 text-xs ${
+                      selectedItems.length > 5
+                        ? "text-red-300"
+                        : "text-white/70"
+                    }`}
+                  >
+                    <CheckCircle2
+                      className={`w-4 h-4 ${
                         selectedItems.length > 5
-                          ? "text-red-300"
-                          : "text-white/70"
+                          ? "text-red-400"
+                          : "text-green-400"
                       }`}
-                    >
-                      <CheckCircle2
-                        className={`w-4 h-4 ${
-                          selectedItems.length > 5
-                            ? "text-red-400"
-                            : "text-green-400"
-                        }`}
-                      />
-                      <span className="font-medium">
-                        {selectedItems.length} / 5 items selected
-                        {selectedItems.length > 5 && (
-                          <span className="ml-2 text-red-400">
-                            (Remove {selectedItems.length - 5})
-                          </span>
-                        )}
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex gap-2">
-                  <GlassButton
-                    variant="secondary"
-                    size="sm"
-                    onClick={handleClose}
-                    disabled={isProcessing}
-                  >
-                    Cancel
-                  </GlassButton>
-                  <GlassButton
-                    variant="primary"
-                    size="sm"
-                    onClick={handleGenerate}
-                    disabled={
-                      !humanImage ||
-                      selectedItemIds.length === 0 ||
-                      selectedItemIds.length > 5 ||
-                      isProcessing
-                    }
-                    className={
-                      selectedItemIds.length > 5
-                        ? "opacity-50 cursor-not-allowed"
-                        : ""
-                    }
-                  >
-                    {isProcessing ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        <span>Generating...</span>
-                      </>
-                    ) : selectedItemIds.length > 5 ? (
-                      <>
-                        <Sparkles className="w-4 h-4" />
-                        <span>Too Many Items ({selectedItemIds.length}/5)</span>
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="w-4 h-4" />
-                        <span>Generate Try-On</span>
-                      </>
-                    )}
-                  </GlassButton>
-                </div>
+                    />
+                    <span className="font-medium">
+                      {selectedItems.length} / 5 items selected
+                      {selectedItems.length > 5 && (
+                        <span className="ml-2 text-red-400">
+                          (Remove {selectedItems.length - 5})
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                )}
               </div>
+
+              <div className="flex gap-2">
+                <GlassButton
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleClose}
+                  disabled={isProcessing}
+                >
+                  Cancel
+                </GlassButton>
+                <GlassButton
+                  variant="primary"
+                  size="sm"
+                  onClick={handleGenerate}
+                  disabled={
+                    !humanImagePreview ||
+                    selectedItemIds.length === 0 ||
+                    selectedItemIds.length > 5 ||
+                    isProcessing
+                  }
+                  className={
+                    selectedItemIds.length > 5
+                      ? "opacity-50 cursor-not-allowed"
+                      : ""
+                  }
+                >
+                  {isProcessing ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span>Generating...</span>
+                    </>
+                  ) : selectedItemIds.length > 5 ? (
+                    <>
+                      <Sparkles className="w-4 h-4" />
+                      <span>Too Many Items ({selectedItemIds.length}/5)</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4" />
+                      <span>Generate Try-On</span>
+                    </>
+                  )}
+                </GlassButton>
+              </div>
+            </div>
           </div>
 
           {/* Custom scrollbar styles */}
