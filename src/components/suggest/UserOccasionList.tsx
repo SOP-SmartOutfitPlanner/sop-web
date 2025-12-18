@@ -23,9 +23,17 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+export interface SelectedOccasionData {
+  id: number;
+  name: string;
+  dateOccasion: string;
+  startTime: string;
+  endTime: string;
+}
+
 interface UserOccasionListProps {
   selectedDate: Date;
-  onOccasionSelect?: (occasionId: number | null) => void;
+  onOccasionSelect?: (occasionId: number | null, occasionData?: SelectedOccasionData) => void;
   selectedOccasionId?: number | null;
   onRefetchReady?: (refetchFn: () => void) => void;
 }
@@ -105,7 +113,13 @@ export function UserOccasionList({
       if (selectedOccasionId === occasion.id) {
         onOccasionSelect(null);
       } else {
-        onOccasionSelect(occasion.id);
+        onOccasionSelect(occasion.id, {
+          id: occasion.id,
+          name: occasion.name,
+          dateOccasion: occasion.dateOccasion,
+          startTime: occasion.startTime,
+          endTime: occasion.endTime,
+        });
       }
     }
   };

@@ -399,7 +399,7 @@ class OutfitAPI {
       headers: {
         "Content-Type": "multipart/form-data",
       },
-      timeout: 120000, // 2 minutes timeout for AI processing
+      timeout: 180000, // 3 minutes timeout for AI processing
     });
 
     if (response.statusCode !== 200) {
