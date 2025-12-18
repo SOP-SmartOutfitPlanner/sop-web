@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   Download,
   Share2,
+  RefreshCw,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import GlassButton from "@/components/ui/glass-button";
@@ -533,6 +534,18 @@ export function SuggestionResultView({
                     </div>
                     {/* Action Buttons */}
                     <div className="flex items-center gap-2">
+                      <button
+                        onClick={handleTryOn}
+                        disabled={isProcessingTryOn}
+                        className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all disabled:opacity-50"
+                        title="Regenerate try-on"
+                      >
+                        {isProcessingTryOn ? (
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : (
+                          <RefreshCw className="w-4 h-4 text-white" />
+                        )}
+                      </button>
                       <button
                         onClick={handleDownload}
                         disabled={isDownloading}

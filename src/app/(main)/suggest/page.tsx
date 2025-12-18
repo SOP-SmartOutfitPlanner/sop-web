@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Calendar, MapPin, Sparkles, ChevronLeft, ChevronRight, Clock } from "lucide-react";
-import { TimePicker } from "antd";
+import { TimePicker, ConfigProvider } from "antd";
 import dayjs, { Dayjs } from "dayjs";
 import { format } from "date-fns";
 import Image from "next/image";
@@ -128,6 +128,23 @@ export default function SuggestPage() {
     return `${today}T${time.format("HH:mm:ss")}`;
   };
 
+  // Helper to extract time string (HH:mm:ss) from various formats
+  const extractTimeString = (timeStr: string): string => {
+    if (!timeStr) return "00:00:00";
+    // If it's a full datetime string like "2024-12-18T20:05:00", extract time part
+    if (timeStr.includes("T")) {
+      return timeStr.split("T")[1];
+    }
+    // Already in HH:mm:ss format
+    return timeStr;
+  };
+
+  // Helper to parse time string to dayjs object
+  const parseTimeToDayjs = (timeStr: string): Dayjs => {
+    const timeOnly = extractTimeString(timeStr);
+    return dayjs(timeOnly, "HH:mm:ss");
+  };
+
   // Helper to build ISO datetime from occasion date and time
   const buildOccasionDateTime = (dateOccasion: string, startTime: string): string => {
     // dateOccasion format: "yyyy-MM-dd" or "yyyy-MM-ddT00:00:00"
@@ -139,9 +156,7 @@ export default function SuggestPage() {
       : dateOccasion;
 
     // Extract time part
-    const timePart = startTime.includes("T")
-      ? startTime.split("T")[1]
-      : startTime;
+    const timePart = extractTimeString(startTime);
 
     return `${datePart}T${timePart}`;
   };
@@ -276,7 +291,7 @@ export default function SuggestPage() {
     }
 
     // Update selected time to occasion start time
-    setSelectedTime(dayjs(occasionData.startTime, "HH:mm:ss"));
+    setSelectedTime(parseTimeToDayjs(occasionData.startTime));
 
     // Get coordinates to use (custom location or current)
     const coords = customLocation
@@ -589,19 +604,35 @@ export default function SuggestPage() {
                       <Clock className="w-5 h-5 text-cyan-300" />
                       <span className="font-medium">Weather Time</span>
                     </div>
-                    <TimePicker
-                      value={selectedOccasionData ? dayjs(selectedOccasionData.startTime, "HH:mm:ss") : selectedTime}
-                      onChange={handleTimeChange}
-                      format="HH:mm"
-                      placeholder="Select time"
-                      className="w-28"
-                      disabled={isLoadingOccasionWeather || !!selectedOccasionData}
-                      allowClear={!selectedOccasionData}
-                    />
+                    <ConfigProvider
+                      theme={{
+                        components: {
+                          DatePicker: {
+                            colorBgContainer: "#1e293b",
+                            colorBgElevated: "#1e293b",
+                            colorText: "#fff",
+                            colorTextPlaceholder: "#94a3b8",
+                            colorBorder: "#475569",
+                            colorPrimary: "#22d3ee",
+                            colorTextDisabled: "#94a3b8",
+                            colorBgContainerDisabled: "#334155",
+                          },
+                        },
+                      }}
+                    >
+                      <TimePicker
+                        value={selectedOccasionData ? parseTimeToDayjs(selectedOccasionData.startTime) : selectedTime}
+                        onChange={handleTimeChange}
+                        format="HH:mm"
+                        placeholder={selectedOccasionData ? parseTimeToDayjs(selectedOccasionData.startTime).format("HH:mm") : "Select time"}
+                        disabled={isLoadingOccasionWeather || !!selectedOccasionData}
+                        allowClear={!selectedOccasionData}
+                      />
+                    </ConfigProvider>
                   </div>
                   <p className="text-xs text-gray-400 mt-1.5">
                     {selectedOccasionData
-                      ? `${selectedOccasionData.name} - ${dayjs(selectedOccasionData.dateOccasion).format("MMM D")} at ${dayjs(selectedOccasionData.startTime, "HH:mm:ss").format("HH:mm")}`
+                      ? `${selectedOccasionData.name} - ${dayjs(selectedOccasionData.dateOccasion).format("MMM D")} at ${parseTimeToDayjs(selectedOccasionData.startTime).format("HH:mm")}`
                       : "Pick a time to see weather forecast (max 5 days ahead)"
                     }
                   </p>

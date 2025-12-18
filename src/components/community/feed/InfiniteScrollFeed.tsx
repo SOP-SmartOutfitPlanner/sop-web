@@ -345,9 +345,25 @@ export function InfiniteScrollFeed({
         );
       }
 
+      // Update selectedPostFromUrl if it's the post being liked
+      if (
+        selectedPostFromUrl &&
+        selectedPostFromUrl.id === numericId.toString()
+      ) {
+        setSelectedPostFromUrl((prev) =>
+          prev
+            ? {
+                ...prev,
+                isLiked: !prev.isLiked,
+                likes: prev.isLiked ? prev.likes - 1 : prev.likes + 1,
+              }
+            : prev
+        );
+      }
+
       toggleLike(numericId);
     },
-    [activeHashtag, toggleLike]
+    [activeHashtag, toggleLike, selectedPostFromUrl]
   );
 
   const handleDeletePost = useCallback(
@@ -529,6 +545,15 @@ export function InfiniteScrollFeed({
           isOpen={isPostModalOpen}
           onClose={handleClosePostModal}
           onLike={() => handleLikePost(selectedPostFromUrl.id)}
+          onPostUpdated={async () => {
+            await refetch();
+            await refreshActiveHashtag();
+          }}
+          onPostDeleted={async () => {
+            handleClosePostModal();
+            await refetch();
+            await refreshActiveHashtag();
+          }}
         />
       )}
     </div>
