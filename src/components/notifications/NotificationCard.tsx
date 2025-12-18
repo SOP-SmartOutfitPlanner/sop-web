@@ -49,11 +49,16 @@ const NotificationCard = memo<NotificationCardProps>(
     // Determine the avatar to display: actor avatar or imageUrl
     // Validate URL: must be non-empty string and start with http/https
     const rawAvatarUrl = notification.actorAvatar || notification.imageUrl;
-    const avatarUrl = rawAvatarUrl && typeof rawAvatarUrl === 'string' && rawAvatarUrl.trim() !== '' && (rawAvatarUrl.startsWith('http://') || rawAvatarUrl.startsWith('https://'))
-      ? rawAvatarUrl
-      : null;
+    const avatarUrl =
+      rawAvatarUrl &&
+      typeof rawAvatarUrl === "string" &&
+      rawAvatarUrl.trim() !== "" &&
+      (rawAvatarUrl.startsWith("http://") ||
+        rawAvatarUrl.startsWith("https://"))
+        ? rawAvatarUrl
+        : null;
     const [imageError, setImageError] = useState(false);
-    
+
     const handleClick = () => {
       if (selectable) {
         onSelectChange?.(notification.id, !selected);
@@ -148,57 +153,59 @@ const NotificationCard = memo<NotificationCardProps>(
                 selectable ? "pl-12 sm:pl-14" : ""
               }`}
             >
-              <motion.div
-                whileHover={{ scale: 1.05, rotate: [0, -3, 3, 0] }}
-                transition={{ duration: 0.3 }}
-                className={`relative flex h-14 w-14 sm:h-16 sm:w-16 flex-shrink-0 items-center justify-center rounded-2xl border-2 ${getTypeColor(
-                  notification.type
-                )} shadow-xl shadow-black/40 overflow-hidden`}
-              >
-                {avatarUrl && !imageError ? (
-                  <>
-                    <Image
-                      src={avatarUrl}
-                      alt={notification.actorName || "Notification"}
-                      fill
-                      sizes="64px"
-                      className="object-cover"
-                      onError={() => setImageError(true)}
-                    />
-                    {/* Icon badge for notification type */}
-                    <div
-                      className={`absolute -bottom-0.5 -right-0.5 flex h-6 w-6 items-center justify-center rounded-full border-2 border-slate-900 ${getTypeColor(
-                        notification.type
-                      )} shadow-md`}
-                    >
-                      <Icon
-                        className={`h-3 w-3 ${getTypeIconColor(
-                          notification.type
-                        )}`}
+              <div className="relative">
+                <motion.div
+                  whileHover={{ scale: 1.05, rotate: [0, -3, 3, 0] }}
+                  transition={{ duration: 0.3 }}
+                  className={`relative flex h-14 w-14 sm:h-16 sm:w-16 flex-shrink-0 items-center justify-center rounded-2xl border-2 ${getTypeColor(
+                    notification.type
+                  )} shadow-xl shadow-black/40 overflow-hidden`}
+                >
+                  {avatarUrl && !imageError ? (
+                    <>
+                      <Image
+                        src={avatarUrl}
+                        alt={notification.actorName || "Notification"}
+                        fill
+                        sizes="64px"
+                        className="object-cover"
+                        onError={() => setImageError(true)}
                       />
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/15 via-transparent to-black/70" />
-                    <Icon
-                      className={`relative z-10 h-6 w-6 sm:h-7 sm:w-7 ${getTypeIconColor(
-                        notification.type
-                      )} drop-shadow-sm`}
-                    />
-                  </>
-                )}
+                      {/* Icon badge for notification type */}
+                      <div
+                        className={`absolute -bottom-0.5 -right-0.5 flex h-6 w-6 items-center justify-center rounded-full border-2 border-slate-900 ${getTypeColor(
+                          notification.type
+                        )} shadow-md`}
+                      >
+                        <Icon
+                          className={`h-3 w-3 ${getTypeIconColor(
+                            notification.type
+                          )}`}
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/15 via-transparent to-black/70" />
+                      <Icon
+                        className={`relative z-10 h-6 w-6 sm:h-7 sm:w-7 ${getTypeIconColor(
+                          notification.type
+                        )} drop-shadow-sm`}
+                      />
+                    </>
+                  )}
+                </motion.div>
                 {!notification.read && (
                   <motion.span
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ type: "spring", stiffness: 500, damping: 20 }}
-                    className="absolute -top-1.5 -right-1.5 rounded-full bg-gradient-to-r from-cyan-400 to-cyan-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white shadow-lg shadow-cyan-500/50 ring-2 ring-slate-900/50"
+                    className="absolute -top-1.5 -right-1.5 rounded-full bg-gradient-to-r from-cyan-400 to-cyan-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white shadow-lg shadow-cyan-500/50 ring-2 ring-slate-900/50 z-10"
                   >
                     New
                   </motion.span>
                 )}
-              </motion.div>
+              </div>
 
               <div className="flex-1 space-y-3.5">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
