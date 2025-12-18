@@ -110,9 +110,10 @@ export function ReportDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
+        overlayClassName="z-[80]"
         showCloseButton={false}
         className={cn(
-          "max-w-md backdrop-blur-xl bg-gradient-to-br from-cyan-950/70 via-blue-950/60 to-indigo-950/60 border border-cyan-400/20 shadow-2xl shadow-cyan-500/20 text-white",
+          "z-[81] max-w-md backdrop-blur-xl bg-gradient-to-br from-cyan-950/70 via-blue-950/60 to-indigo-950/60 border border-cyan-400/20 shadow-2xl shadow-cyan-500/20 text-white",
           className
         )}
       >
@@ -184,4 +185,3 @@ export function ReportDialog({
     </Dialog>
   );
 }
-
