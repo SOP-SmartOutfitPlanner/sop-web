@@ -2,14 +2,16 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Calendar, MapPin, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar, MapPin, Sparkles, ChevronLeft, ChevronRight, Clock } from "lucide-react";
+import { TimePicker } from "antd";
+import dayjs, { Dayjs } from "dayjs";
 import { format } from "date-fns";
 import Image from "next/image";
 import { useAuthStore } from "@/store/auth-store";
 import GlassCard from "@/components/ui/glass-card";
 import GlassButton from "@/components/ui/glass-button";
 
-import { UserOccasionList } from "@/components/suggest/UserOccasionList";
+import { UserOccasionList, SelectedOccasionData } from "@/components/suggest/UserOccasionList";
 import {
   OutfitConfigPanel,
   OutfitConfig,
@@ -21,7 +23,7 @@ import { BodyImageUpload } from "@/components/suggest/BodyImageUpload";
 import { useWeather } from "@/hooks/useWeather";
 import { weatherAPI } from "@/lib/api/weather-api";
 import { outfitAPI } from "@/lib/api/outfit-api";
-import { DailyForecast } from "@/types/weather";
+import { DailyForecast, HourlyForecast } from "@/types/weather";
 import { SuggestedItem } from "@/types/outfit";
 import { toast } from "sonner";
 
@@ -46,6 +48,8 @@ export default function SuggestPage() {
   const [selectedOccasionId, setSelectedOccasionId] = useState<number | null>(
     null
   );
+  const [selectedOccasionData, setSelectedOccasionData] = useState<SelectedOccasionData | null>(null);
+  const [selectedTime, setSelectedTime] = useState<Dayjs | null>(dayjs()); // Default to current time
   const [isSuggestingOutfit, setIsSuggestingOutfit] = useState(false);
   const [suggestionResults, setSuggestionResults] = useState<
     OutfitSuggestion[]
@@ -93,10 +97,16 @@ export default function SuggestPage() {
   } | null>(null);
   const [isLoadingCustomWeather, setIsLoadingCustomWeather] = useState(false);
 
-  // Determine which location and weather to display
-  const displayLocation = customLocation || currentCoordinates;
-  const displayWeather = customWeather?.forecast || currentLocationForecast;
-  const displayCityName = customWeather?.cityName || currentCityName;
+  // Occasion-based weather (using time-specific API)
+  const [occasionWeather, setOccasionWeather] = useState<{
+    forecast: HourlyForecast;
+    cityName: string;
+  } | null>(null);
+  const [isLoadingOccasionWeather, setIsLoadingOccasionWeather] = useState(false);
+
+  // Determine which weather to display (priority: occasion > custom > current)
+  const displayWeather = occasionWeather?.forecast || customWeather?.forecast || currentLocationForecast;
+  const displayCityName = occasionWeather?.cityName || customWeather?.cityName || currentCityName;
 
   // Check authentication
   useEffect(() => {
@@ -109,6 +119,85 @@ export default function SuggestPage() {
     }
   }, [user, isInitialized, router]);
 
+  // Helper to build ISO datetime from time
+  const buildDateTimeFromTime = (time: Dayjs | null): string => {
+    const today = format(selectedDate, "yyyy-MM-dd");
+    if (!time) {
+      return `${today}T${format(new Date(), "HH:mm:ss")}`;
+    }
+    return `${today}T${time.format("HH:mm:ss")}`;
+  };
+
+  // Helper to build ISO datetime from occasion date and time
+  const buildOccasionDateTime = (dateOccasion: string, startTime: string): string => {
+    // dateOccasion format: "yyyy-MM-dd" or "yyyy-MM-ddT00:00:00"
+    // startTime format: "HH:mm:ss" or "yyyy-MM-ddTHH:mm:ss"
+
+    // Extract date part
+    const datePart = dateOccasion.includes("T")
+      ? dateOccasion.split("T")[0]
+      : dateOccasion;
+
+    // Extract time part
+    const timePart = startTime.includes("T")
+      ? startTime.split("T")[1]
+      : startTime;
+
+    return `${datePart}T${timePart}`;
+  };
+
+  // Handle time selection - fetch weather for selected time
+  const handleTimeChange = async (time: Dayjs | null) => {
+    setSelectedTime(time);
+
+    // Clear occasion selection when manually picking time
+    if (selectedOccasionId) {
+      setSelectedOccasionId(null);
+      setSelectedOccasionData(null);
+    }
+
+    if (!time) {
+      setOccasionWeather(null);
+      return;
+    }
+
+    // Get coordinates to use (custom location or current)
+    const coords = customLocation
+      ? { latitude: customLocation.lat, longitude: customLocation.lng }
+      : currentCoordinates;
+
+    if (!coords) {
+      return;
+    }
+
+    setIsLoadingOccasionWeather(true);
+
+    try {
+      const targetTime = buildDateTimeFromTime(time);
+      const response = await weatherAPI.getWeatherDetailsByCoordinates(
+        coords.latitude,
+        coords.longitude,
+        targetTime
+      );
+
+      if (response.statusCode === 200 && response.data) {
+        const hourlyForecast = response.data.hourlyForecasts?.[0];
+        if (hourlyForecast) {
+          setOccasionWeather({
+            forecast: hourlyForecast,
+            cityName: response.data.cityName || displayCityName || "Current Location",
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Failed to load weather for selected time:", error);
+      toast.error("Failed to load weather for selected time. Time must be within 5 days.");
+      setOccasionWeather(null);
+    } finally {
+      setIsLoadingOccasionWeather(false);
+    }
+  };
+
   // Load weather for custom location
   const handleLocationSelect = async (
     lat: number,
@@ -117,20 +206,53 @@ export default function SuggestPage() {
   ) => {
     setCustomLocation({ lat, lng, address });
     setIsLoadingCustomWeather(true);
+    // Clear occasion weather when location changes
+    setOccasionWeather(null);
 
     try {
-      const response = await weatherAPI.getWeatherByCoordinates(lat, lng, 1);
+      // If we have a selected occasion or selected time, fetch weather for that specific time
+      if (selectedOccasionData) {
+        const occasionTime = buildOccasionDateTime(selectedOccasionData.dateOccasion, selectedOccasionData.startTime);
+        const response = await weatherAPI.getWeatherDetailsByCoordinates(lat, lng, occasionTime);
 
-      if (response.statusCode === 200 && response.data) {
-        const todayForecast = response.data.dailyForecasts?.[0] as
-          | DailyForecast
-          | undefined;
+        if (response.statusCode === 200 && response.data) {
+          const hourlyForecast = response.data.hourlyForecasts?.[0];
+          if (hourlyForecast) {
+            setOccasionWeather({
+              forecast: hourlyForecast,
+              cityName: response.data.cityName || address.split(",")[0] || "Selected Location",
+            });
+          }
+        }
+      } else if (selectedTime) {
+        // Use selected time for weather fetch
+        const targetTime = buildDateTimeFromTime(selectedTime);
+        const response = await weatherAPI.getWeatherDetailsByCoordinates(lat, lng, targetTime);
 
-        if (todayForecast) {
-          setCustomWeather({
-            forecast: todayForecast,
-            cityName: address.split(",")[0] || "Selected Location",
-          });
+        if (response.statusCode === 200 && response.data) {
+          const hourlyForecast = response.data.hourlyForecasts?.[0];
+          if (hourlyForecast) {
+            setOccasionWeather({
+              forecast: hourlyForecast,
+              cityName: response.data.cityName || address.split(",")[0] || "Selected Location",
+            });
+          }
+        }
+      } else {
+        // No time selected, use regular weather API
+        const response = await weatherAPI.getWeatherByCoordinates(lat, lng, 1);
+
+        if (response.statusCode === 200 && response.data) {
+          const todayForecast = response.data.dailyForecasts?.[0] as
+            | DailyForecast
+            | undefined;
+
+          if (todayForecast) {
+            setCustomWeather({
+              forecast: todayForecast,
+              cityName: address.split(",")[0] || "Selected Location",
+            });
+          }
         }
       }
     } catch (error) {
@@ -138,6 +260,57 @@ export default function SuggestPage() {
       toast.error("Failed to load weather for selected location");
     } finally {
       setIsLoadingCustomWeather(false);
+    }
+  };
+
+  // Handle occasion selection - fetch weather for occasion time
+  const handleOccasionSelect = async (occasionId: number | null, occasionData?: SelectedOccasionData) => {
+    setSelectedOccasionId(occasionId);
+    setSelectedOccasionData(occasionData || null);
+
+    if (!occasionId || !occasionData) {
+      // Occasion deselected, clear occasion weather and reset time
+      setOccasionWeather(null);
+      setSelectedTime(dayjs()); // Reset to current time
+      return;
+    }
+
+    // Update selected time to occasion start time
+    setSelectedTime(dayjs(occasionData.startTime, "HH:mm:ss"));
+
+    // Get coordinates to use (custom location or current)
+    const coords = customLocation
+      ? { latitude: customLocation.lat, longitude: customLocation.lng }
+      : currentCoordinates;
+
+    if (!coords) {
+      return;
+    }
+
+    setIsLoadingOccasionWeather(true);
+
+    try {
+      const occasionTime = buildOccasionDateTime(occasionData.dateOccasion, occasionData.startTime);
+      const response = await weatherAPI.getWeatherDetailsByCoordinates(
+        coords.latitude,
+        coords.longitude,
+        occasionTime
+      );
+
+      if (response.statusCode === 200 && response.data) {
+        const hourlyForecast = response.data.hourlyForecasts?.[0];
+        if (hourlyForecast) {
+          setOccasionWeather({
+            forecast: hourlyForecast,
+            cityName: response.data.cityName || displayCityName || "Current Location",
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Failed to load weather for occasion time:", error);
+      // Don't show error toast, just use existing weather
+    } finally {
+      setIsLoadingOccasionWeather(false);
     }
   };
 
@@ -409,9 +582,34 @@ export default function SuggestPage() {
                   </GlassButton>
                 </div>
 
+                {/* Time Picker for Weather */}
+                <div className="pt-3 border-t border-cyan-400/20 mt-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-sm text-gray-200">
+                      <Clock className="w-5 h-5 text-cyan-300" />
+                      <span className="font-medium">Weather Time</span>
+                    </div>
+                    <TimePicker
+                      value={selectedOccasionData ? dayjs(selectedOccasionData.startTime, "HH:mm:ss") : selectedTime}
+                      onChange={handleTimeChange}
+                      format="HH:mm"
+                      placeholder="Select time"
+                      className="w-28"
+                      disabled={isLoadingOccasionWeather || !!selectedOccasionData}
+                      allowClear={!selectedOccasionData}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1.5">
+                    {selectedOccasionData
+                      ? `${selectedOccasionData.name} - ${dayjs(selectedOccasionData.dateOccasion).format("MMM D")} at ${dayjs(selectedOccasionData.startTime, "HH:mm:ss").format("HH:mm")}`
+                      : "Pick a time to see weather forecast (max 5 days ahead)"
+                    }
+                  </p>
+                </div>
+
                 {/* Weather Section */}
                 <div className="pt-4 border-cyan-400/20">
-                  {isLoadingCurrentWeather || isLoadingCustomWeather ? (
+                  {isLoadingCurrentWeather || isLoadingCustomWeather || isLoadingOccasionWeather ? (
                     <WeatherSkeleton />
                   ) : displayWeather ? (
                     <div className="relative overflow-hidden bg-gradient-to-br from-slate-800/60 via-slate-700/40 to-slate-800/60 backdrop-blur-md rounded-2xl p-5 border border-slate-600/30 shadow-xl">
@@ -476,7 +674,7 @@ export default function SuggestPage() {
             <div>
               <UserOccasionList
                 selectedDate={selectedDate}
-                onOccasionSelect={setSelectedOccasionId}
+                onOccasionSelect={handleOccasionSelect}
                 selectedOccasionId={selectedOccasionId}
                 onRefetchReady={handleRefetchReady}
               />
@@ -506,7 +704,7 @@ export default function SuggestPage() {
               onGenerate={handleGenerateOutfit}
               isGenerating={isSuggestingOutfit}
               isWeatherLoading={
-                isLoadingCurrentWeather || isLoadingCustomWeather
+                isLoadingCurrentWeather || isLoadingCustomWeather || isLoadingOccasionWeather
               }
             />
 

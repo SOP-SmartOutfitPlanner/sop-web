@@ -1,6 +1,7 @@
 import { apiClient } from "./client";
 import {
   WeatherResponse,
+  WeatherDetailResponse,
   SearchCitiesResponse,
   Coordinates,
 } from "@/types/weather";
@@ -32,6 +33,37 @@ class WeatherAPI {
       return response;
     } catch (error) {
       console.error("Failed to fetch weather by coordinates:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get detailed weather by coordinates with specific time
+   * @param latitude - Latitude coordinate
+   * @param longitude - Longitude coordinate
+   * @param time - Target time for weather data (ISO 8601 format)
+   * @returns Weather detail with hourly forecasts closest to requested time
+   */
+  async getWeatherDetailsByCoordinates(
+    latitude: number,
+    longitude: number,
+    time: string
+  ): Promise<WeatherDetailResponse> {
+    try {
+      const response = await apiClient.get<WeatherDetailResponse>(
+        `/weathers/details-by-coordinates`,
+        {
+          params: {
+            latitude,
+            longitude,
+            time,
+          },
+        }
+      );
+
+      return response;
+    } catch (error) {
+      console.error("Failed to fetch weather details by coordinates:", error);
       throw error;
     }
   }

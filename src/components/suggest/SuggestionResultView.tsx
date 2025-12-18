@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import Image from "next/image";
+import NextImage from "next/image";
+import { Image } from "antd";
 import {
   Sparkles,
   Star,
@@ -10,7 +11,10 @@ import {
   Leaf,
   Snowflake,
   CheckCircle2,
+  Download,
+  Share2,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import GlassButton from "@/components/ui/glass-button";
 import GlassCard from "@/components/ui/glass-card";
 import { SuggestedItem } from "@/types/outfit";
@@ -20,6 +24,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ViewItemDialog } from "@/components/wardrobe/ViewItemDialog";
 import { useScrollLock } from "@/hooks/useScrollLock";
+import { useSharePostStore } from "@/store/share-post-store";
 
 interface SuggestionResultViewProps {
   items: SuggestedItem[];
@@ -52,18 +57,73 @@ export function SuggestionResultView({
   onTryOn,
   isBatchProcessing = false,
 }: SuggestionResultViewProps) {
+  const router = useRouter();
+  const { setShareData } = useSharePostStore();
   const [isAddingToWardrobe, setIsAddingToWardrobe] = useState(false);
   const [isUsingOutfit, setIsUsingOutfit] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [createdOutfitId, setCreatedOutfitId] = useState<number | null>(null);
   const [isTryingOn, setIsTryingOn] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
 
   // Combined loading state - either individual try-on or batch processing
   const isProcessingTryOn = isTryingOn || isBatchProcessing;
 
   // Lock scroll when dialog is open
   useScrollLock(isViewDialogOpen);
+
+  // Handle download try-on image
+  const handleDownload = useCallback(async () => {
+    if (!tryOnResult?.url) return;
+
+    setIsDownloading(true);
+    try {
+      const response = await fetch(tryOnResult.url);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `virtual-tryon-outfit-${outfitIndex + 1}-${Date.now()}.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success("Image downloaded successfully!");
+    } catch (error) {
+      console.error("Download error:", error);
+      toast.error("Failed to download image");
+    } finally {
+      setIsDownloading(false);
+    }
+  }, [tryOnResult?.url, outfitIndex]);
+
+  // Handle share try-on image to community
+  const handleShare = useCallback(async () => {
+    if (!tryOnResult?.url) return;
+
+    setIsSharing(true);
+    try {
+      // Set share data in store with outfit items
+      setShareData({
+        imageUrl: tryOnResult.url,
+        caption: "Experience with Virtual Try On on Smart Outfit Planner #VirtualTryOn #AIFashion",
+        itemIds: items.map((item) => item.id),
+      });
+
+      // Navigate to community page with post creation modal
+      router.push("/community?openPost=true");
+
+      toast.success("Opening post creation...");
+    } catch (error) {
+      console.error("Share error:", error);
+      toast.error("Failed to open post creation");
+    } finally {
+      setIsSharing(false);
+    }
+  }, [tryOnResult?.url, items, setShareData, router]);
 
   // Handle individual try-on
   const handleTryOn = useCallback(async () => {
@@ -330,7 +390,7 @@ export function SuggestionResultView({
                       <div className="w-full flex flex-col relative z-10">
                         {/* Image Container */}
                         <div className="bg-white/5 rounded-lg aspect-square flex items-center justify-center overflow-hidden relative">
-                          <Image
+                          <NextImage
                             src={item.imgUrl}
                             alt={item.name}
                             fill
@@ -464,23 +524,65 @@ export function SuggestionResultView({
               >
                 <div className="flex flex-col">
                   {/* Header */}
-                  <div className="flex items-center gap-2 mb-3">
-                    <CheckCircle2 className="w-4 h-4 text-green-400" />
-                    <h3 className="font-semibold text-white text-sm">
-                      Virtual Try-On
-                    </h3>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-green-400" />
+                      <h3 className="font-semibold text-white text-sm">
+                        Virtual Try-On
+                      </h3>
+                    </div>
+                    {/* Action Buttons */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={handleDownload}
+                        disabled={isDownloading}
+                        className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all disabled:opacity-50"
+                        title="Download image"
+                      >
+                        {isDownloading ? (
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : (
+                          <Download className="w-4 h-4 text-white" />
+                        )}
+                      </button>
+                      <button
+                        onClick={handleShare}
+                        disabled={isSharing}
+                        className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all disabled:opacity-50"
+                        title="Share to community"
+                      >
+                        {isSharing ? (
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : (
+                          <Share2 className="w-4 h-4 text-white" />
+                        )}
+                      </button>
+                    </div>
                   </div>
 
-                  {/* Try-On Image */}
+                  {/* Try-On Image with antd Image Preview */}
                   <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-white/5 border border-white/10">
                     <Image
                       src={tryOnResult?.url || ""}
                       alt="Virtual try-on result"
-                      fill
-                      className="object-cover"
-                      unoptimized
+                      className="w-full h-full object-cover"
+                      style={{ maxHeight: "100%", objectFit: "cover" }}
+                      preview={{
+                        mask: (
+                          <div className="flex flex-col items-center gap-2">
+                            <Sparkles className="w-6 h-6" />
+                            <span className="text-sm">Click to view full size</span>
+                          </div>
+                        ),
+                        zIndex: 10001,
+                      }}
                     />
                   </div>
+
+                  {/* Helper text */}
+                  <p className="text-white/50 text-xs text-center mt-3">
+                    Click image to preview • Use buttons above to download or share
+                  </p>
                 </div>
               </GlassCard>
             ) : (
@@ -627,7 +729,7 @@ export function SuggestionResultView({
                 <div className="w-full flex flex-col flex-1 relative z-10">
                   {/* Image Container */}
                   <div className="bg-white/5 rounded-xl aspect-square flex items-center justify-center overflow-hidden relative">
-                    <Image
+                    <NextImage
                       src={item.imgUrl}
                       alt={item.name}
                       fill
@@ -773,7 +875,7 @@ export function SuggestionResultView({
 
       {/* Action Buttons - Show for both layouts */}
       <div className="space-y-3 pt-6 mt-6 border-t border-white/10">
-        {/* Button Row: Always 3 columns layout */}
+        {/* Button Row */}
         <div className="flex justify-center gap-3">
           {/* Add to My Outfit Button */}
           <GlassButton
@@ -814,50 +916,6 @@ export function SuggestionResultView({
             )}
             {isUsingOutfit ? "Setting up..." : "Use This Outfit"}
           </GlassButton>
-
-          {/* Virtual Try-On / Regenerate Button */}
-          {bodyImageUrl && onTryOn && (
-            <GlassButton
-              variant="custom"
-              size="lg"
-              onClick={handleTryOn}
-              disabled={isTryingOn || isAddingToWardrobe || isUsingOutfit}
-              fullWidth
-              backgroundColor={
-                tryOnResult
-                  ? "rgba(168, 85, 247, 0.2)"
-                  : "rgba(236, 72, 153, 0.25)"
-              }
-              borderColor={
-                tryOnResult
-                  ? "rgba(192, 132, 252, 0.5)"
-                  : "rgba(244, 114, 182, 0.5)"
-              }
-              borderWidth="2px"
-              glowColor={
-                tryOnResult
-                  ? "rgba(168, 85, 247, 0.4)"
-                  : "rgba(236, 72, 153, 0.4)"
-              }
-              glowIntensity={12}
-              className="font-poppins font-semibold h-14 hover:bg-pink-500/30 transition-all"
-            >
-              {isTryingOn && (
-                <div
-                  className={cn(
-                    "w-5 h-5 border-2 rounded-full animate-spin mr-2",
-                    "border-white/30 border-t-white"
-                  )}
-                />
-              )}
-              <Sparkles className="w-5 h-5 mr-2" />
-              {isTryingOn
-                ? "Generating..."
-                : tryOnResult
-                ? "Regenerate Try-On"
-                : "Virtual Try-On"}
-            </GlassButton>
-          )}
         </div>
       </div>
 
