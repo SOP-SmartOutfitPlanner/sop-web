@@ -44,7 +44,7 @@ export function WhySopStep({ selectedBenefits, onToggleBenefit }: WhySopStepProp
       <div className="space-y-8 max-w-6xl mx-auto w-full">
         <div className="text-center space-y-3">
           <h2 className="font-dela-gothic text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-cyan-200">
-            What You Use SOP For?
+            What Do You Use SOP For?
           </h2>
           <p className="font-bricolage text-lg text-gray-200">Select what matters most to you (optional)</p>
         </div>
