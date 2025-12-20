@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Shirt, TrendingUp, Activity, Bell, Send } from "lucide-react";
+import { Users, Shirt, TrendingUp, Activity, Bell, Send, MessageSquare, DollarSign, ArrowUp, ArrowDown } from "lucide-react";
 import { usePushNotification } from "@/hooks/admin/usePushNotification";
+import { useDashboard, useUserGrowth } from "@/hooks/admin/useDashboard";
 import {
   LineChart,
   Line,
@@ -22,51 +23,132 @@ import {
 import { AdminModal } from "@/components/admin/AdminModal";
 import { AdminInput, AdminTextarea } from "@/components/admin/AdminFormInputs";
 
-// Mock data - replace with real API
-const userGrowthData = [
-  { month: "Jan", users: 400, active: 240 },
-  { month: "Feb", users: 300, active: 139 },
-  { month: "Mar", users: 200, active: 200 },
-  { month: "Apr", users: 278, active: 190 },
-  { month: "May", users: 189, active: 180 },
-  { month: "Jun", users: 239, active: 200 },
-  { month: "Jul", users: 349, active: 280 },
-  { month: "Aug", users: 400, active: 320 },
-  { month: "Sep", users: 450, active: 350 },
-  { month: "Oct", users: 500, active: 400 },
-];
+const COLORS = ["#3B82F6", "#8B5CF6", "#10B981", "#F59E0B", "#EF4444", "#EC4899", "#06B6D4"];
 
-const itemsData = [
-  { category: "Tops", count: 3245 },
-  { category: "Bottoms", count: 2876 },
-  { category: "Footwear", count: 1543 },
-  { category: "Accessories", count: 1257 },
-];
+// Helper functions outside component to avoid re-creation
+const formatChange = (percentageChange: number, changeDirection: string) => {
+  const sign = changeDirection === "up" ? "+" : changeDirection === "down" ? "-" : "";
+  return `${sign}${Math.abs(percentageChange).toFixed(1)}%`;
+};
 
-const activityData = [
-  { day: "Mon", logins: 120, uploads: 45 },
-  { day: "Tue", logins: 150, uploads: 60 },
-  { day: "Wed", logins: 180, uploads: 75 },
-  { day: "Thu", logins: 160, uploads: 55 },
-  { day: "Fri", logins: 200, uploads: 90 },
-  { day: "Sat", logins: 90, uploads: 30 },
-  { day: "Sun", logins: 70, uploads: 20 },
-];
+const formatValue = (value: number) => {
+  if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
+  if (value >= 1000) return `${(value / 1000).toFixed(1)}K`;
+  return value.toLocaleString();
+};
 
-const COLORS = ["#3B82F6", "#8B5CF6", "#10B981", "#F59E0B"];
+// Generate year options once
+const YEAR_OPTIONS = (() => {
+  const currentYear = new Date().getFullYear();
+  return Array.from({ length: 5 }, (_, i) => (currentYear - i).toString());
+})();
+
+// Loading skeleton component
+const StatCardSkeleton = () => (
+  <Card className="border border-white/10 shadow-xl bg-white/5 backdrop-blur-xl overflow-hidden">
+    <CardHeader className="flex flex-row items-center justify-between pb-2">
+      <div className="h-4 w-20 bg-white/10 rounded animate-pulse" />
+      <div className="h-11 w-11 bg-white/10 rounded-xl animate-pulse" />
+    </CardHeader>
+    <CardContent>
+      <div className="h-8 w-24 bg-white/10 rounded animate-pulse mb-2" />
+      <div className="h-4 w-32 bg-white/10 rounded animate-pulse" />
+    </CardContent>
+  </Card>
+);
+
+const ChartSkeleton = () => (
+  <div className="h-[300px] bg-white/5 rounded-xl animate-pulse flex items-center justify-center">
+    <div className="text-white/30">Loading chart...</div>
+  </div>
+);
 
 export default function AdminDashboardPage() {
   const [isPushDialogOpen, setIsPushDialogOpen] = useState(false);
-  const [notificationType, setNotificationType] = useState<"all" | "user">(
-    "all"
-  );
+  const [notificationType, setNotificationType] = useState<"all" | "user">("all");
   const [formTitle, setFormTitle] = useState("");
   const [formMessage, setFormMessage] = useState("");
   const [formHref, setFormHref] = useState("");
   const [formImageUrl, setFormImageUrl] = useState("");
   const [formUserId, setFormUserId] = useState("");
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
 
   const pushNotificationMutation = usePushNotification();
+  
+  // Fetch dashboard data from API
+  const { overview, itemsByCategory, weeklyActivity, isLoading } = useDashboard();
+  const userGrowth = useUserGrowth(selectedYear);
+
+  // Transform user growth data for chart
+  const userGrowthData = useMemo(() => {
+    if (!userGrowth.data) return [];
+    return userGrowth.data.map((item) => ({
+      month: item.monthName?.substring(0, 3) || item.month,
+      users: item.newUsers,
+      active: item.activeUsers,
+    }));
+  }, [userGrowth.data]);
+
+  // Transform items by category data for pie chart
+  const itemsData = useMemo(() => {
+    if (!itemsByCategory.data) return [];
+    return itemsByCategory.data.map((item) => ({
+      category: item.categoryName,
+      count: item.itemCount,
+      percentage: item.percentage,
+    }));
+  }, [itemsByCategory.data]);
+
+  // Transform weekly activity data for bar chart
+  const activityData = useMemo(() => {
+    if (!weeklyActivity.data) return [];
+    return weeklyActivity.data.map((item) => ({
+      day: item.dayOfWeek.substring(0, 3),
+      newUsers: item.newUsers,
+      newItems: item.newItems,
+    }));
+  }, [weeklyActivity.data]);
+
+  // Build stats from overview data
+  const stats = useMemo(() => {
+    const data = overview.data;
+    if (!data) return [];
+
+    return [
+      {
+        title: "Total Users",
+        value: formatValue(data.totalUsers.value),
+        change: formatChange(data.totalUsers.percentageChange, data.totalUsers.changeDirection),
+        changeDirection: data.totalUsers.changeDirection,
+        icon: Users,
+        color: "bg-blue-500",
+      },
+      {
+        title: "Total Items",
+        value: formatValue(data.totalItems.value),
+        change: formatChange(data.totalItems.percentageChange, data.totalItems.changeDirection),
+        changeDirection: data.totalItems.changeDirection,
+        icon: Shirt,
+        color: "bg-green-500",
+      },
+      {
+        title: "Revenue Today",
+        value: `$${formatValue(data.revenueToday.value)}`,
+        change: formatChange(data.revenueToday.percentageChange, data.revenueToday.changeDirection),
+        changeDirection: data.revenueToday.changeDirection,
+        icon: DollarSign,
+        color: "bg-purple-500",
+      },
+      {
+        title: "Posts Today",
+        value: formatValue(data.communityPostsToday.value),
+        change: formatChange(data.communityPostsToday.percentageChange, data.communityPostsToday.changeDirection),
+        changeDirection: data.communityPostsToday.changeDirection,
+        icon: MessageSquare,
+        color: "bg-orange-500",
+      },
+    ];
+  }, [overview.data]);
 
   const handlePushNotification = async () => {
     if (!formTitle.trim()) {
@@ -101,37 +183,6 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const stats = [
-    {
-      title: "Total Users",
-      value: "2,543",
-      change: "+12.5%",
-      icon: Users,
-      color: "bg-blue-500",
-    },
-    {
-      title: "Total Items",
-      value: "8,921",
-      change: "+8.2%",
-      icon: Shirt,
-      color: "bg-green-500",
-    },
-    {
-      title: "Active Today",
-      value: "1,234",
-      change: "+5.1%",
-      icon: Activity,
-      color: "bg-purple-500",
-    },
-    {
-      title: "Growth",
-      value: "24.3%",
-      change: "+2.4%",
-      icon: TrendingUp,
-      color: "bg-orange-500",
-    },
-  ];
-
   return (
     <div className="space-y-8">
       {/* Page Header */}
@@ -148,33 +199,48 @@ export default function AdminDashboardPage() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat) => {
-          const Icon = stat.icon;
-          return (
-            <Card
-              key={stat.title}
-              className="border border-white/10 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 bg-white/5 backdrop-blur-xl overflow-hidden relative group"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <CardHeader className="flex flex-row items-center justify-between pb-2 relative z-10">
-                <CardTitle className="text-sm font-medium text-white/70">
-                  {stat.title}
-                </CardTitle>
-                <div className={`${stat.color} p-3 rounded-xl shadow-lg`}>
-                  <Icon className="w-5 h-5 text-white" />
-                </div>
-              </CardHeader>
-              <CardContent className="relative z-10">
-                <div className="text-3xl font-bold text-white">
-                  {stat.value}
-                </div>
-                <p className="text-sm text-cyan-400 mt-1 font-medium">
-                  {stat.change} from last month
-                </p>
-              </CardContent>
-            </Card>
-          );
-        })}
+        {overview.isLoading ? (
+          <>
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+          </>
+        ) : (
+          stats.map((stat) => {
+            const Icon = stat.icon;
+            const isPositive = stat.changeDirection === "up";
+            const isNegative = stat.changeDirection === "down";
+            return (
+              <Card
+                key={stat.title}
+                className="border border-white/10 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 bg-white/5 backdrop-blur-xl overflow-hidden relative group"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <CardHeader className="flex flex-row items-center justify-between pb-2 relative z-10">
+                  <CardTitle className="text-sm font-medium text-white/70">
+                    {stat.title}
+                  </CardTitle>
+                  <div className={`${stat.color} p-3 rounded-xl shadow-lg`}>
+                    <Icon className="w-5 h-5 text-white" />
+                  </div>
+                </CardHeader>
+                <CardContent className="relative z-10">
+                  <div className="text-3xl font-bold text-white">
+                    {stat.value}
+                  </div>
+                  <p className={`text-sm mt-1 font-medium flex items-center gap-1 ${
+                    isPositive ? "text-green-400" : isNegative ? "text-red-400" : "text-white/60"
+                  }`}>
+                    {isPositive && <ArrowUp className="w-3 h-3" />}
+                    {isNegative && <ArrowDown className="w-3 h-3" />}
+                    {stat.change} from last period
+                  </p>
+                </CardContent>
+              </Card>
+            );
+          })
+        )}
       </div>
 
       {/* Charts Row 1 */}
@@ -182,37 +248,68 @@ export default function AdminDashboardPage() {
         {/* User Growth Chart */}
         <Card className="border border-white/10 shadow-xl hover:shadow-2xl transition-shadow duration-300 bg-white/5 backdrop-blur-xl">
           <CardHeader>
-            <CardTitle className="text-xl font-bold text-white">
-              User Growth
-            </CardTitle>
-            <p className="text-sm text-white/60">
-              Monthly user registration trends
-            </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-xl font-bold text-white">
+                  User Growth
+                </CardTitle>
+                <p className="text-sm text-white/60">
+                  Monthly user registration trends
+                </p>
+              </div>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value)}
+                className="px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50 backdrop-blur-sm"
+              >
+                {YEAR_OPTIONS.map((year) => (
+                  <option key={year} value={year} className="bg-gray-800">
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </div>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={userGrowthData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="users"
-                  stroke="#3B82F6"
-                  strokeWidth={2}
-                  name="New Users"
-                />
-                <Line
-                  type="monotone"
-                  dataKey="active"
-                  stroke="#10B981"
-                  strokeWidth={2}
-                  name="Active Users"
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            {userGrowth.isLoading ? (
+              <ChartSkeleton />
+            ) : userGrowthData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={userGrowthData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                  <XAxis dataKey="month" stroke="rgba(255,255,255,0.6)" />
+                  <YAxis stroke="rgba(255,255,255,0.6)" />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'rgba(0,0,0,0.8)', 
+                      border: '1px solid rgba(255,255,255,0.2)',
+                      borderRadius: '8px'
+                    }}
+                  />
+                  <Legend />
+                  <Line
+                    type="monotone"
+                    dataKey="users"
+                    stroke="#3B82F6"
+                    strokeWidth={2}
+                    name="New Users"
+                    dot={{ fill: '#3B82F6' }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="active"
+                    stroke="#10B981"
+                    strokeWidth={2}
+                    name="Active Users"
+                    dot={{ fill: '#10B981' }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[300px] flex items-center justify-center text-white/40">
+                No data available
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -227,33 +324,47 @@ export default function AdminDashboardPage() {
             </p>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={itemsData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={(props) => {
-                    const name = (props as unknown as { name: string }).name;
-                    const percent = (props as unknown as { percent: number })
-                      .percent;
-                    return `${name}: ${(percent * 100).toFixed(0)}%`;
-                  }}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="count"
-                >
-                  {itemsData.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={COLORS[index % COLORS.length]}
-                    />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+            {itemsByCategory.isLoading ? (
+              <ChartSkeleton />
+            ) : itemsData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={itemsData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={(props) => {
+                      const { name, percent } = props as unknown as { name: string; percent: number };
+                      return `${name}: ${(percent * 100).toFixed(0)}%`;
+                    }}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="count"
+                    nameKey="category"
+                  >
+                    {itemsData.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={COLORS[index % COLORS.length]}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'rgba(0,0,0,0.8)', 
+                      border: '1px solid rgba(255,255,255,0.2)',
+                      borderRadius: '8px'
+                    }}
+                    formatter={(value: number) => [value.toLocaleString(), 'Items']}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[300px] flex items-center justify-center text-white/40">
+                No data available
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -267,21 +378,35 @@ export default function AdminDashboardPage() {
               Weekly Activity
             </CardTitle>
             <p className="text-sm text-white/60">
-              User logins and item uploads
+              New users and items this week
             </p>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={activityData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="day" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="logins" fill="#3B82F6" name="Logins" />
-                <Bar dataKey="uploads" fill="#8B5CF6" name="Uploads" />
-              </BarChart>
-            </ResponsiveContainer>
+            {weeklyActivity.isLoading ? (
+              <ChartSkeleton />
+            ) : activityData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={activityData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                  <XAxis dataKey="day" stroke="rgba(255,255,255,0.6)" />
+                  <YAxis stroke="rgba(255,255,255,0.6)" />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'rgba(0,0,0,0.8)', 
+                      border: '1px solid rgba(255,255,255,0.2)',
+                      borderRadius: '8px'
+                    }}
+                  />
+                  <Legend />
+                  <Bar dataKey="newUsers" fill="#3B82F6" name="New Users" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="newItems" fill="#8B5CF6" name="New Items" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[300px] flex items-center justify-center text-white/40">
+                No data available
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

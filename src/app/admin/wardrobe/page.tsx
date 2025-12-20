@@ -324,9 +324,10 @@ export default function AdminWardrobePage() {
     }
   }, [viewItemId]);
 
-  const handleDeleteItem = useCallback((id: number) => {
-    // TODO: Implement delete functionality with confirmation modal
-    console.log("Delete item:", id);
+  const handleDeleteItem = useCallback(async (id: number) => {
+     await wardrobeAPI.deleteItem(id);
+     await queryClient.invalidateQueries({ queryKey: ["admin-wardrobe-system"] });
+    // console.log("Delete item:", id);
   }, []);
 
   const handleDeleteItemWrapper = useCallback((id: string) => {
