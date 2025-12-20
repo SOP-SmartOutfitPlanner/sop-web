@@ -2,7 +2,7 @@
 
 import { useState, useCallback, memo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Upload, X, Sparkles, CheckCircle2, AlertCircle, Images, Shirt } from "lucide-react";
+import { Upload, X, Sparkles, CheckCircle2, AlertCircle, Images, Shirt, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Image, TreeSelect } from "antd";
 import type { DataNode } from "antd/es/tree";
@@ -503,6 +503,45 @@ export function AddItemWizard({ open, onOpenChange, editMode, editItemId, editIt
       console.error("❌ Split error:", error);
       toast.error(
         error instanceof Error ? error.message : "Failed to split outfit image",
+        { id: loadingToast }
+      );
+    } finally {
+      setIsSplitting(false);
+    }
+  };
+
+  // Handle re-generate split items
+  const handleRegenerateSplit = async () => {
+    if (selectedFiles.length === 0) {
+      toast.error("No outfit image to regenerate");
+      return;
+    }
+
+    setIsSplitting(true);
+    const loadingToast = toast.loading("Re-generating items from outfit...");
+
+    try {
+      // Re-split the outfit image
+      const splitResults = await wardrobeAPI.splitOutfitImage(selectedFiles[0]);
+
+      if (splitResults.length === 0) {
+        toast.error("No items detected in the image", { id: loadingToast });
+        setIsSplitting(false);
+        return;
+      }
+
+      toast.success(
+        `Successfully re-generated ${splitResults.length} item${splitResults.length > 1 ? 's' : ''}!`,
+        { id: loadingToast }
+      );
+
+      // Update split results and pre-select all new images
+      setSplitImages(splitResults);
+      setSelectedSplitImages(splitResults.map(img => img.url));
+    } catch (error) {
+      console.error("❌ Re-generate error:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to re-generate items",
         { id: loadingToast }
       );
     } finally {
@@ -1134,7 +1173,7 @@ export function AddItemWizard({ open, onOpenChange, editMode, editItemId, editIt
                     <>
                       <GlassButton
                         onClick={resetAndClose}
-                        disabled={isUploading}
+                        disabled={isUploading || isSplitting}
                         variant="custom"
                         backgroundColor="rgba(255, 255, 255, 0.3)"
                         borderColor="rgba(255, 255, 255, 0.5)"
@@ -1146,8 +1185,30 @@ export function AddItemWizard({ open, onOpenChange, editMode, editItemId, editIt
                       </GlassButton>
 
                       <GlassButton
+                        onClick={handleRegenerateSplit}
+                        disabled={isUploading || isSplitting}
+                        variant="custom"
+                        backgroundColor="rgba(168, 85, 247, 0.6)"
+                        borderColor="rgba(168, 85, 247, 0.8)"
+                        textColor="white"
+                        size="md"
+                      >
+                        {isSplitting ? (
+                          <>
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                            Re-generating...
+                          </>
+                        ) : (
+                          <>
+                            <RefreshCw className="w-5 h-5" />
+                            Re-generate
+                          </>
+                        )}
+                      </GlassButton>
+
+                      <GlassButton
                         onClick={handleBulkAutoFromSplit}
-                        disabled={isUploading || selectedSplitImages.length === 0}
+                        disabled={isUploading || isSplitting || selectedSplitImages.length === 0}
                         variant="custom"
                         backgroundColor="rgba(59, 130, 246, 0.6)"
                         borderColor="rgba(59, 130, 246, 0.8)"
