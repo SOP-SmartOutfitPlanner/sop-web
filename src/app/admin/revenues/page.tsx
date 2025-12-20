@@ -485,9 +485,9 @@ export default function AdminRevenuePage() {
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Monthly Revenue Chart */}
-        <Card className="border border-white/10 shadow-xl bg-white/5 backdrop-blur-xl">
+        <Card className="border border-white/10 shadow-xl bg-white/5 backdrop-blur-xl lg:col-span-2">
           <CardHeader>
             <CardTitle className="text-xl font-bold text-white">Monthly Revenue</CardTitle>
             <p className="text-sm text-white/60">Revenue breakdown by month</p>
@@ -500,12 +500,16 @@ export default function AdminRevenuePage() {
                   <XAxis dataKey="name" stroke="rgba(255,255,255,0.5)" />
                   <YAxis
                     stroke="rgba(255,255,255,0.5)"
-                    tickFormatter={(value) =>
-                      new Intl.NumberFormat("vi-VN", {
-                        notation: "compact",
-                        compactDisplay: "short",
-                      }).format(value)
-                    }
+                    tickFormatter={(value) => {
+                      if (value >= 1000000000) {
+                        return (value / 1000000000).toFixed(1) + "B";
+                      } else if (value >= 1000000) {
+                        return (value / 1000000).toFixed(1) + "M";
+                      } else if (value >= 1000) {
+                        return (value / 1000).toFixed(0) + "k";
+                      }
+                      return value.toString();
+                    }}
                   />
                   <Tooltip
                     contentStyle={{

@@ -484,7 +484,7 @@ function PurchaseContent() {
         <div className="flex flex-col sm:flex-row flex-wrap gap-3 justify-center mt-4">
           <Button
             variant="outline"
-            className="border-white/40 text-white hover:bg-white/10"
+            className="border-white/40 text-black hover:bg-white/10"
             onClick={handleBackToPlans}
           >
             Back to plans
