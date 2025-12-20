@@ -3,6 +3,12 @@
  * API functions for admin operations
  */
 
+import { 
+  Overview,
+  UserGrowth,
+  ItemByCategory,
+  WeeklyActivity
+} from "@/types/dashboard";
 import { apiClient } from "./client";
 import type { ApiResponse } from "@/lib/types/api.types";
 import { ItemsListRequest, ItemsListResponse } from "@/types/item";
@@ -704,6 +710,27 @@ export const adminAPI = {
       ApiResponse<{ notificationId: number; message: string }>
     >("/notifications/push", data);
   },
+  overView: async (): Promise<ApiResponse<Overview>> => {
+    return apiClient.get<ApiResponse<Overview>>(
+      `/admin-dashboard/overview`
+    );
+  },
+  userGrowth: async (year?: string): Promise<ApiResponse<UserGrowth[]>> => {
+    const url = year 
+      ? `/admin-dashboard/user-growth?year=${year}`
+      : `/admin-dashboard/user-growth`;
+    return apiClient.get<ApiResponse<UserGrowth[]>>(url);
+  },
+  ItemByCategory: async (): Promise<ApiResponse<ItemByCategory[]>> => {
+    return apiClient.get<ApiResponse<ItemByCategory[]>>(
+      `/admin-dashboard/items-by-category`
+    );
+  },
+  WeeklyActivity: async (): Promise<ApiResponse<WeeklyActivity[]>> => {
+    return apiClient.get<ApiResponse<WeeklyActivity[]>>(
+      `/admin-dashboard/weekly-activity`
+    );
+  }
 };
 
 const buildReportQueryString = (params?: GetReportsParams) => {
