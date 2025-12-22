@@ -481,19 +481,25 @@ export default function AdminUsersPage() {
                   <ChevronLeft className="w-4 h-4 mr-1" />
                   Previous
                 </Button>
-                {Array.from(
-                  { length: Math.min(5, metaData.totalPages) },
-                  (_: unknown, i: number): React.ReactElement | null => {
-                    const page = i + 1;
-                    if (page > metaData.totalPages) {
-                      return null;
-                    }
-                    return (
+                {(() => {
+                  const totalPages = metaData.totalPages;
+                  const maxVisiblePages = 5;
+                  let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+                  const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+                  
+                  // Adjust startPage if we're near the end
+                  if (endPage - startPage + 1 < maxVisiblePages) {
+                    startPage = Math.max(1, endPage - maxVisiblePages + 1);
+                  }
+                  
+                  const pages = [];
+                  for (let page = startPage; page <= endPage; page++) {
+                    pages.push(
                       <Button
                         key={page}
                         variant={page === currentPage ? "default" : "outline"}
                         size="sm"
-                        disabled={isFetching || page > metaData.totalPages}
+                        disabled={isFetching}
                         onClick={() => setCurrentPage(page)}
                         className={
                           page === currentPage 
@@ -505,7 +511,8 @@ export default function AdminUsersPage() {
                       </Button>
                     );
                   }
-                )}
+                  return pages;
+                })()}
                 <Button
                   variant="outline"
                   size="sm"

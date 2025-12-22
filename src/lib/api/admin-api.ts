@@ -255,9 +255,9 @@ export const adminAPI = {
   ): Promise<ApiResponse<UsersListResponse>> => {
     const queryParams = new URLSearchParams();
 
-    if (params.page) queryParams.append("page", params.page.toString());
+    if (params.page) queryParams.append("page-index", params.page.toString());
     if (params.pageSize)
-      queryParams.append("pageSize", params.pageSize.toString());
+      queryParams.append("page-size", params.pageSize.toString());
     if (params.search) queryParams.append("search", params.search);
     if (params.role !== undefined)
       queryParams.append("role", params.role.toString());
